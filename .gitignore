@@ -1,0 +1,171 @@
+# ============================================================
+# Unity Project Gitignore
+# ============================================================
+# Standard Unity project ignores with Git LFS configuration
+# for collaborative multiplayer FPS development.
+# ============================================================
+
+# ============================================================
+# Unity Generated Files & Folders
+# ============================================================
+
+# Auto-generated library folder (regenerated on load)
+/Library/
+
+# Auto-generated temporary folder
+/Temp/
+
+# Auto-generated build output
+/Builds/
+/Build/
+/Obj/
+
+# Auto-generated logs
+/Logs/
+*.log
+.tools/logs/*
+!.tools/logs/.gitkeep
+
+# User-specific settings (NOT shared across team)
+/UserSettings/
+
+# ============================================================
+# IDE & Editor Files
+# ============================================================
+
+# Visual Studio
+.vs/
+.vscode/
+*.csproj
+*.sln
+*.DotSettings
+*.sln.iml
+
+# JetBrains IDEs (Rider, IntelliJ)
+.idea/
+*.iml
+.idea/workspace.xml
+.idea/dictionaries/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Visual Studio Code user settings (not team defaults)
+.vscode/settings.json.user
+
+# ============================================================
+# Operating System Files
+# ============================================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+
+# Text editors
+*.swp
+*.swo
+*~
+
+# ============================================================
+# Local Environment & Configuration
+# ============================================================
+
+.env
+.env.local
+.env.*.local
+
+# ============================================================
+# Backup Files
+# ============================================================
+
+.backup_*/
+*.backup
+*.bak
+
+# ============================================================
+# Unity Specific
+# ============================================================
+
+# Package metadata
+*.unitypackage
+*.asmdef~
+
+# Build cache and artifacts
+*.exe
+*.msi
+*.apk
+*.ipa
+*.exe
+*.app
+*.unity3d
+
+# Profiler results
+profiler_results/
+*.prof
+
+# ============================================================
+# Testing
+# ============================================================
+
+TestResults/
+[Tt]est[Rr]esults/
+test-results/
+
+# ============================================================
+# Cache Folders
+# ============================================================
+
+/Library/ShaderCache/
+/Library/BurstCache/
+/Library/SourceAssetDB/
+/Library/Artifacts/
+/Library/PackageCache/
+/Library/Bee/
+/Library/ScriptAssemblies/
+/Library/Search/
+
+# ============================================================
+# IMPORTANT: DO NOT IGNORE THESE
+# ============================================================
+
+# Always include Assets folder (core project)
+!Assets/
+!Assets/**
+
+# Always include Packages manifest
+!Packages/manifest.json
+!Packages/packages-lock.json
+
+# Always include ProjectSettings (project configuration)
+!ProjectSettings/
+
+# Always include documentation and configuration
+!.docs/
+!.tools/
+!.reference_project/
+!.gitattributes
+!.gitignore
+!.unity-version
+
+# Meta files (Unity serialization - CRITICAL)
+!**/*.meta
+*.wixobj
+*.wixout
+*.elf
+*.o
+
+# Package manager
+Packages/Library/

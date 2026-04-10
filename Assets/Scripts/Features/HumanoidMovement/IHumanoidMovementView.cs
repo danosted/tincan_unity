@@ -15,7 +15,17 @@ namespace TinCan.Features.HumanoidMovement
         float SprintMultiplier { get; }
         float JumpForce { get; }
         float Gravity { get; }
-        
+
+        /// <summary>
+        /// The direction the camera is currently looking (used for movement relativity).
+        /// </summary>
+        Quaternion LookRotation { get; }
+
         void Move(Vector3 motion);
+
+        /// <summary>
+        /// Sets the physical rotation of the character body.
+        /// </summary>
+        void SetRotation(Quaternion rotation);
     }
 }

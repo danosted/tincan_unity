@@ -45,10 +45,17 @@ namespace TinCan.Features.HumanoidMovement
             float vertical = _inputService.GetAxis(ActionNames.MoveForward, ActionNames.MoveBackward);
             Vector3 inputDirection = new Vector3(horizontal, 0, vertical).normalized;
 
-            // Transform input to world space relative to camera/controller orientation
-            Vector3 worldDirection = view.Transform.TransformDirection(inputDirection);
-            worldDirection.y = 0; // Ensure movement is horizontal
+            // Transform input to world space relative to the Look Rotation
+            Vector3 worldDirection = view.LookRotation * inputDirection;
+            worldDirection.y = 0;
             if (worldDirection.sqrMagnitude > 1) worldDirection.Normalize();
+
+            // Rotate character to face movement direction if moving
+            if (inputDirection.sqrMagnitude > 0.01f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(worldDirection);
+                view.SetRotation(Quaternion.Slerp(view.Transform.rotation, targetRotation, 10f * Time.deltaTime));
+            }
 
             // Determine Target Speed
             bool isSprinting = _inputService.IsActionPressed(ActionNames.Sprint);

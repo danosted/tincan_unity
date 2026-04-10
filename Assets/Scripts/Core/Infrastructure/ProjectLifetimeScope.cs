@@ -29,6 +29,7 @@ namespace TinCan.Core.Infrastructure
             {
                 entryPoints.Add<FreeCameraMovementUseCase>();
                 entryPoints.Add<HumanoidMovementUseCase>();
+                entryPoints.Add<HumanoidLookUseCase>();
                 entryPoints.Add<PossessionUseCase>();
                 entryPoints.Add<UnityInputService>().As<IInputService>();
 
@@ -38,6 +39,7 @@ namespace TinCan.Core.Infrastructure
             {
                 components.AddInHierarchy<FreeCameraTransformView>().AsImplementedInterfaces();
                 components.AddInHierarchy<HumanoidControllerView>().AsImplementedInterfaces();
+                components.AddInHierarchy<ThirdPersonLookView>().AsImplementedInterfaces();
             });
         }
     }

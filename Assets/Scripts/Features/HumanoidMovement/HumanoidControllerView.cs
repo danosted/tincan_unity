@@ -25,6 +25,16 @@ namespace TinCan.Features.HumanoidMovement
         public float JumpForce => _jumpForce;
         public float Gravity => _gravity;
 
+        public Quaternion LookRotation
+        {
+            get
+            {
+                // Return horizontal rotation based on current yaw from a look view if available
+                var lookView = GetComponent<IHumanoidLookView>();
+                return lookView != null ? Quaternion.Euler(0, lookView.Yaw, 0) : transform.rotation;
+            }
+        }
+
         protected override void Awake()
         {
             base.Awake();
@@ -34,6 +44,11 @@ namespace TinCan.Features.HumanoidMovement
         public void Move(Vector3 motion)
         {
             _controller.Move(motion);
+        }
+
+        public void SetRotation(Quaternion rotation)
+        {
+            transform.rotation = rotation;
         }
 
     }

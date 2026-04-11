@@ -1,10 +1,12 @@
 using VContainer;
 using VContainer.Unity;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Networking;
 using TinCan.Core.Application;
 using TinCan.Features.FreeCamera;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Features.Possession;
+using TinCan.Network.Infrastructure;
 
 namespace TinCan.Core.Infrastructure
 {
@@ -24,6 +26,9 @@ namespace TinCan.Core.Infrastructure
 
             // Register Application Use Cases
             builder.Register<DriveAirshipUseCase>(Lifetime.Singleton);
+
+            // Register Networking
+            builder.Register<NGONetworkService>(Lifetime.Singleton).As<INetworkService>();
 
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {

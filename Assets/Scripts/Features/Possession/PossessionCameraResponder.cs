@@ -5,9 +5,10 @@ namespace TinCan.Features.Possession
     /// <summary>
     /// A generic responder that toggles a Camera component when its parent IControllable is possessed.
     /// </summary>
+    [RequireComponent(typeof(Camera))]
     public class PossessionCameraResponder : MonoBehaviour, IPossessionResponder
     {
-        [SerializeField] private Camera _camera;
+        private Camera _camera;
 
         private void Awake()
         {

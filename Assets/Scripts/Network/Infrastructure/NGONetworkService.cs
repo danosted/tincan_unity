@@ -23,6 +23,7 @@ namespace TinCan.Network.Infrastructure
         public bool IsServer => Manager != null && Manager.IsServer;
         public bool IsClient => Manager != null && Manager.IsClient;
         public bool IsHost => Manager != null && Manager.IsHost;
+        public ulong LocalClientId => Manager != null ? Manager.LocalClientId : 0;
 
         public void StartHost() => Manager.StartHost();
         public void StartServer() => Manager.StartServer();

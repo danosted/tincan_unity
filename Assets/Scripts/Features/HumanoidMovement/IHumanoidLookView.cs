@@ -1,14 +1,14 @@
 using UnityEngine;
+using TinCan.Core.Domain;
 
 namespace TinCan.Features.HumanoidMovement
 {
     /// <summary>
-    /// Interface for any look behavior (1st person, 3rd person)
-    /// associated with a humanoid character.
+    /// Domain Layer: Interface for look behavior (1st person, 3rd person).
+    /// Purely behavioral, delegated to by a Character Facade or Mediator.
     /// </summary>
     public interface IHumanoidLookView
     {
-        bool IsActive { get; }
         float Pitch { get; set; }
         float Yaw { get; set; }
         float Sensitivity { get; }

@@ -1,5 +1,7 @@
+using System;
 using UnityEngine;
 using TinCan.Features.Possession;
+using TinCan.Core.Domain;
 
 namespace TinCan.Features.HumanoidMovement
 {
@@ -16,7 +18,7 @@ namespace TinCan.Features.HumanoidMovement
         [SerializeField] private float _sensitivity = 0.5f;
         [SerializeField] private float _maxPitch = 85f;
 
-        public bool IsActive { get; private set; } = true;
+        public bool IsActive { get; private set; } = false;
         public float Pitch { get; set; }
         public float Yaw { get; set; }
         public float Sensitivity => _sensitivity;
@@ -52,7 +54,15 @@ namespace TinCan.Features.HumanoidMovement
             Yaw = yaw;
         }
 
-        public void OnPossessed() => IsActive = true;
-        public void OnUnpossessed() => IsActive = false;
+        public void OnPossessed()
+        {
+            IsActive = true;
+            _cameraPivot.gameObject.SetActive(true);
+        }
+        public void OnUnpossessed()
+        {
+            IsActive = false;
+            _cameraPivot.gameObject.SetActive(false);
+        }
     }
 }

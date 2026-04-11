@@ -13,8 +13,9 @@ GameObject:
   - component: {fileID: 8532390389276066714}
   - component: {fileID: 1050058315768670666}
   - component: {fileID: 4174054025470359214}
-  - component: {fileID: 4451879818072060901}
-  - component: {fileID: 1326600399980646504}
+  - component: {fileID: 5426185008856515901}
+  - component: {fileID: 4997630264965024405}
+  - component: {fileID: 8351071329268796620}
   m_Layer: 0
   m_Name: NewPlayer
   m_TagString: Untagged
@@ -143,7 +144,7 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4451879818072060901
+--- !u!114 &5426185008856515901
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -159,7 +160,7 @@ MonoBehaviour:
   _sprintMultiplier: 1.8
   _jumpForce: 8
   _gravity: 20
---- !u!114 &1326600399980646504
+--- !u!114 &4997630264965024405
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -168,13 +169,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 925472637626500556}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4b67b72183589ca4285b899c538fdd31, type: 3}
+  m_Script: {fileID: 11500000, guid: eba76c897c4becb438a96965b4b8fe3b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.HumanoidMovement.ThirdPersonLookView
   _cameraPivot: {fileID: 526800738218255295}
   _distance: 5
   _sensitivity: 0.5
   _maxPitch: 85
+--- !u!114 &8351071329268796620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 925472637626500556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bee6b5bff20f384297efc23272e6d07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.ThirdPersonCharacter.ThirdPersonHumanoidView
 --- !u!1 &5585002282877400610
 GameObject:
   m_ObjectHideFlags: 0

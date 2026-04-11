@@ -106,6 +106,16 @@ When discussing implementations, the AI should be mindful of potential Unity ver
 
 ---
 
+### Rule 10: Mandatory Post-Modification Verification
+
+**AI MUST always perform a verification pass after modifying code:**
+
+1.  **Check for Errors:** Immediately after any file edit, use `get_errors` on the modified files to check for compilation errors, syntax issues, or lint warnings.
+2.  **Verify API Usage:** Check for deprecated API usage (e.g., ensure `linearVelocity` is used instead of `velocity` if required by the Unity version).
+3.  **Validate Logic & Syntax:** Briefly review the resulting file to ensure no "end-of-file expected" or brace mismatch issues were introduced by the edit tool.
+
+---
+
 ## ✅ Summary: How AI Should Operate in TinCan Unity
 
 1.  **Conceptualize & Discuss:** Focus on *how* to write C# Unity code, not writing it directly.
@@ -113,6 +123,7 @@ When discussing implementations, the AI should be mindful of potential Unity ver
 3.  **Reference (if asked):** Be ready to consult official Unity documentation for specifics.
 4.  **Declare Knowledge Age:** State "April 2024 knowledge" and offer to verify for evolving topics.
 5.  **Ask for Clarification:** Proactively ask the user when details are unclear, or decisions are needed.
+6.  **Verify Changes:** Always run a second pass with `get_errors` after any modification to ensure syntactical and API correctness.
 
 ---
 

@@ -1,13 +1,15 @@
-using System;
 using UnityEngine;
+using TinCan.Core.Domain;
+using TinCan.Features.Possession;
 
 namespace TinCan.Features.HumanoidMovement
 {
     /// <summary>
     /// View/Infrastructure Layer: Unity-specific implementation using CharacterController.
+    /// Handles physical movement, ground detection, and actor lifecycle.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
-    public class HumanoidControllerView : ControllableActorBase, IHumanoidMovementView
+    public class HumanoidControllerView : ControllableActorBase, IHumanoidMovementView, IPossessionResponder
     {
         [Header("Movement Settings")]
         [SerializeField] private float _walkSpeed = 7f;
@@ -16,9 +18,12 @@ namespace TinCan.Features.HumanoidMovement
         [SerializeField] private float _gravity = 20f;
 
         private CharacterController _controller;
+        private GroundData _currentGround;
+        private IMovingPlatform _activePlatform;
+
 
         public Transform Transform => transform;
-        public bool IsActive => IsControlsEnabled;
+        public GroundData CurrentGround => _currentGround;
         public bool IsGrounded => _controller.isGrounded;
         public float WalkSpeed => _walkSpeed;
         public float SprintMultiplier => _sprintMultiplier;
@@ -29,16 +34,47 @@ namespace TinCan.Features.HumanoidMovement
         {
             get
             {
-                // Return horizontal rotation based on current yaw from a look view if available
                 var lookView = GetComponent<IHumanoidLookView>();
                 return lookView != null ? Quaternion.Euler(0, lookView.Yaw, 0) : transform.rotation;
             }
         }
 
-        protected override void Awake()
+        protected void Awake()
         {
-            base.Awake();
             _controller = GetComponent<CharacterController>();
+        }
+
+        private void Update()
+        {
+            UpdateGroundData();
+        }
+
+        private void UpdateGroundData()
+        {
+            _currentGround.IsGrounded = _controller.isGrounded;
+
+            if (_activePlatform != null)
+            {
+                _currentGround.SurfaceDelta = _activePlatform.PositionDelta;
+                _currentGround.GroundVelocity = _activePlatform.Velocity;
+            }
+            else
+            {
+                _currentGround.SurfaceDelta = Vector3.zero;
+                _currentGround.GroundVelocity = Vector3.zero;
+            }
+        }
+
+        private void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            // Detect if we hit a moving platform
+            var platform = hit.gameObject.GetComponentInParent<IMovingPlatform>();
+            _activePlatform = platform;
+
+            if (hit.normal.y > 0.7f) // Valid ground normal
+            {
+                _currentGround.GroundNormal = hit.normal;
+            }
         }
 
         public void Move(Vector3 motion)
@@ -51,5 +87,14 @@ namespace TinCan.Features.HumanoidMovement
             transform.rotation = rotation;
         }
 
+        public void OnPossessed()
+        {
+            EnableControls();
+        }
+
+        public void OnUnpossessed()
+        {
+            DisableControls();
+        }
     }
 }

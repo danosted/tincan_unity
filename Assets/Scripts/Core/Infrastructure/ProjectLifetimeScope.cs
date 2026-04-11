@@ -6,7 +6,9 @@ using TinCan.Core.Application;
 using TinCan.Features.FreeCamera;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Features.Possession;
+using TinCan.Features.ThirdPersonCharacter;
 using TinCan.Network.Infrastructure;
+using UnityEngine;
 
 namespace TinCan.Core.Infrastructure
 {
@@ -29,6 +31,7 @@ namespace TinCan.Core.Infrastructure
 
             // Register Networking
             builder.Register<NGONetworkService>(Lifetime.Singleton).As<INetworkService>();
+            builder.Register<ActorRegistry>(Lifetime.Singleton).As<IActorRegistry>();
 
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
@@ -40,11 +43,27 @@ namespace TinCan.Core.Infrastructure
 
             });
 
-            builder.UseComponents((components) =>
+            // Handle multi-instance actors in the scene hierarchy
+            builder.RegisterBuildCallback(container =>
             {
-                components.AddInHierarchy<FreeCameraTransformView>().AsImplementedInterfaces();
-                components.AddInHierarchy<HumanoidControllerView>().AsImplementedInterfaces();
-                components.AddInHierarchy<ThirdPersonLookView>().AsImplementedInterfaces();
+                var registry = container.Resolve<IActorRegistry>();
+
+                // Find and inject all "Complete" Humanoid characters
+                foreach (var character in Object.FindObjectsByType<ThirdPersonHumanoidView>(FindObjectsInactive.Exclude))
+                {
+                    // Recommended: Inject into the entire GameObject hierarchy
+                    container.InjectGameObject(character.gameObject);
+
+                    // Register the character facade with the global actor system
+                    registry.Register(character);
+                }
+
+                // Find and inject all standalone Network Mediators
+                foreach (var mediator in Object.FindObjectsByType<HumanoidCharacterNetworkMediator>(FindObjectsInactive.Exclude))
+                {
+                    container.InjectGameObject(mediator.gameObject);
+                    registry.Register(mediator);
+                }
             });
         }
     }

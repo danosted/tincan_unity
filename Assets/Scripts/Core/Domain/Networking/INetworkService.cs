@@ -16,6 +16,7 @@ namespace TinCan.Core.Domain.Networking
         bool IsServer { get; }
         bool IsClient { get; }
         bool IsHost { get; }
+        ulong LocalClientId { get; }
 
         void StartHost();
         void StartServer();

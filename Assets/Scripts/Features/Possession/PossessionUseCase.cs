@@ -1,47 +1,49 @@
 using System.Collections.Generic;
 using System.Linq;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Networking;
 using UnityEngine;
 using VContainer.Unity;
 
 namespace TinCan.Features.Possession
 {
     /// <summary>
-    /// Application Layer: Manages the possession of different IControllable actors.
-    /// Handles switching between characters, vehicles, or cameras.
+    /// Application Layer: Manages the possession of different IPossessable actors.
+    /// Handles switching between characters, vehicles, or cameras using the ActorRegistry.
     /// </summary>
     public class PossessionUseCase : ITickable, IInitializable
     {
         private readonly IInputService _inputService;
-        private readonly List<IControllable> _controllables;
+        private readonly INetworkService _networkService;
+        private readonly IActorRegistry _registry;
         private int _currentIndex = -1;
 
-        public PossessionUseCase(IInputService inputService, IEnumerable<IControllable> controllables)
+        public PossessionUseCase(IInputService inputService, INetworkService networkService, IActorRegistry registry)
         {
             _inputService = inputService;
-            // Filter out nulls and duplicates (VContainer might inject the same instance via multiple interfaces)
-            _controllables = controllables.Where(c => c != null).Distinct().ToList();
+            _networkService = networkService;
+            _registry = registry;
         }
 
         public void Initialize()
         {
-            if (_controllables.Count == 0)
-            {
-                Debug.LogWarning("[PossessionUseCase] No IControllable actors found in the registry.");
-                return;
-            }
-
-            // Initially disable all and enable the first one
-            foreach (var controllable in _controllables)
-            {
-                controllable.DisableControls();
-            }
-
-            Possess(0);
+            Debug.Log("[PossessionUseCase] Initializing...");
+            // For testing: attempt to possess the first available actor after a short delay
+            // or just ensure we have a valid index if any exist.
         }
 
         public void Tick()
         {
+            // Auto-possess first actor if none possessed yet
+            if (_currentIndex == -1)
+            {
+                var possessables = _registry.GetActors<IPossessable>().ToList();
+                if (possessables.Count > 0)
+                {
+                    Possess(possessables[0]);
+                }
+            }
+
             if (_inputService.WasActionTriggered(ActionNames.ToggleControl))
             {
                 SwitchToNext();
@@ -50,43 +52,39 @@ namespace TinCan.Features.Possession
 
         public void SwitchToNext()
         {
-            if (_controllables.Count <= 1) return;
+            var possessables = _registry.GetActors<IPossessable>().ToList();
+            if (possessables.Count <= 1) return;
 
-            int nextIndex = (_currentIndex + 1) % _controllables.Count;
-            Possess(nextIndex);
+            int nextIndex = (_currentIndex + 1) % possessables.Count;
+            Possess(possessables[nextIndex]);
         }
 
-        public void Possess(int index)
+        public void Possess(IPossessable target)
         {
-            if (index < 0 || index >= _controllables.Count) return;
-
-            // Disable current
-            if (_currentIndex >= 0 && _currentIndex < _controllables.Count)
+            var possessables = _registry.GetActors<IPossessable>().ToList();
+            int index = possessables.IndexOf(target);
+            if (index == -1)
             {
-                _controllables[_currentIndex].DisableControls();
+                Debug.LogWarning($"[PossessionUseCase] Target {target} not found in registry.");
+                return;
+            }
+
+            // Unpossess current
+            if (_currentIndex >= 0 && _currentIndex < possessables.Count)
+            {
+                Debug.Log($"[PossessionUseCase] Unpossessing actor at index {_currentIndex}");
+                possessables[_currentIndex].OnUnpossessed();
             }
 
             _currentIndex = index;
-            _controllables[_currentIndex].EnableControls();
 
-            var mono = _controllables[_currentIndex] as MonoBehaviour;
+            ulong localId = _networkService.LocalClientId;
+            Debug.Log($"[PossessionUseCase] Possessing actor '{target}' for PlayerId: {localId}");
+            possessables[_currentIndex].OnPossessed(localId);
+
+            var mono = possessables[_currentIndex] as MonoBehaviour;
             string targetName = mono != null ? mono.gameObject.name : "Unknown";
-            Debug.Log($"[PossessionUseCase] Possessed: {targetName}");
-        }
-
-        public void Possess(IControllable target)
-        {
-            int index = _controllables.IndexOf(target);
-            if (index != -1)
-            {
-                Possess(index);
-            }
-            else
-            {
-                // If it's a new dynamic controllable, add it
-                _controllables.Add(target);
-                Possess(_controllables.Count - 1);
-            }
+            Debug.Log($"[PossessionUseCase] Successfully possessed: {targetName}");
         }
     }
 }

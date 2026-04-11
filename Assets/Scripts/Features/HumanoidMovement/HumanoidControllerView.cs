@@ -19,7 +19,7 @@ namespace TinCan.Features.HumanoidMovement
 
         private CharacterController _controller;
         private GroundData _currentGround;
-        private IMovingPlatform _activePlatform;
+        private IMovingGround _activeMovingGround;
 
 
         public Transform Transform => transform;
@@ -53,25 +53,51 @@ namespace TinCan.Features.HumanoidMovement
         {
             _currentGround.IsGrounded = _controller.isGrounded;
 
-            if (_activePlatform != null)
+            // Use a raycast to verify the ground and platform
+            bool hasPlatform = false;
+            if (_controller.isGrounded)
             {
-                _currentGround.SurfaceDelta = _activePlatform.PositionDelta;
-                _currentGround.GroundVelocity = _activePlatform.Velocity;
+                RaycastHit hit;
+                // Raycast slightly further than the controller's skin width
+                if (Physics.Raycast(transform.position, Vector3.down, out hit, _controller.height * 0.5f + 0.2f))
+                {
+                    var platform = hit.collider.gameObject.GetComponentInParent<IMovingGround>();
+                    if (platform != null)
+                    {
+                        _activeMovingGround = platform;
+                        _currentGround.GroundNormal = hit.normal;
+                        hasPlatform = true;
+                    }
+                }
+            }
+
+            if (hasPlatform && _activeMovingGround != null)
+            {
+                // Use velocity for smooth, frame-rate independent movement
+                _currentGround.GroundVelocity = _activeMovingGround.Velocity;
+                _currentGround.SurfaceDelta = _activeMovingGround.PositionDelta;
             }
             else
             {
-                _currentGround.SurfaceDelta = Vector3.zero;
+                _activeMovingGround = null;
                 _currentGround.GroundVelocity = Vector3.zero;
+                _currentGround.SurfaceDelta = Vector3.zero;
+                _currentGround.GroundNormal = Vector3.up;
             }
         }
 
         private void OnControllerColliderHit(ControllerColliderHit hit)
         {
-            // Detect if we hit a moving platform
-            var platform = hit.gameObject.GetComponentInParent<IMovingPlatform>();
-            _activePlatform = platform;
+            // Fallback detection if raycast missed but we hit something while moving
+            if (!_currentGround.IsGrounded) return;
 
-            if (hit.normal.y > 0.7f) // Valid ground normal
+            var platform = hit.gameObject.GetComponentInParent<IMovingGround>();
+            if (platform != null)
+            {
+                _activeMovingGround = platform;
+            }
+
+            if (hit.normal.y > 0.7f)
             {
                 _currentGround.GroundNormal = hit.normal;
             }

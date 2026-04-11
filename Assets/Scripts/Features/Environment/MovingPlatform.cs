@@ -4,7 +4,7 @@ using TinCan.Core.Domain;
 namespace TinCan.Features.Environment
 {
     [RequireComponent(typeof(Rigidbody))]
-    public class MovingPlatform : MonoBehaviour, IMovingPlatform
+    public class MovingPlatform : MonoBehaviour, IMovingGround
     {
         private Rigidbody _rb;
         private Vector3 _lastPosition;
@@ -17,14 +17,18 @@ namespace TinCan.Features.Environment
         private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
-            _rb.isKinematic = true; // Essential for moving platforms
+            _rb.isKinematic = true;
+            _rb.interpolation = RigidbodyInterpolation.Interpolate; // Visual smoothness for high refresh rates
+
             _lastPosition = transform.position;
             _lastRotation = transform.rotation;
         }
 
-        private void FixedUpdate()
+        private void Update()
         {
-            // Calculate deltas based on physics update
+            // Calculate deltas based on frame-to-frame movement (Update)
+            // instead of physics-to-physics movement (FixedUpdate).
+            // This ensures the delta matches the frequency of the player's movement loop.
             PositionDelta = transform.position - _lastPosition;
             RotationDelta = transform.rotation * Quaternion.Inverse(_lastRotation);
 

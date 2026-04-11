@@ -103,9 +103,25 @@ namespace TinCan.Features.HumanoidMovement
                 movement.JumpForce,
                 Time.deltaTime);
 
-            // Apply Total Movement: Local Motion + Ground Delta
-            Vector3 relativeMotion = (_horizontalVelocities[authority.Id] + (Vector3.up * _verticalVelocities[authority.Id])) * Time.deltaTime;
-            Vector3 finalMove = relativeMotion + movement.CurrentGround.SurfaceDelta;
+            // Momentum Inheritance: If jumping, add the platform's velocity to our internal buffers
+            if (jumpTriggered && movement.CurrentGround.IsGrounded)
+            {
+                Debug.Log("Adding platform velocity to jump momentum");
+                Debug.Log($"Platform Velocity: {movement.CurrentGround.GroundVelocity}");
+                Vector3 platformVelocity = movement.CurrentGround.GroundVelocity;
+                _horizontalVelocities[character.Id] += new Vector3(platformVelocity.x, 0, platformVelocity.z);
+                _verticalVelocities[character.Id] += platformVelocity.y;
+            }
+
+            // Apply Total Movement: Local Motion + Ground Delta (Frame-accurate displacement)
+            Vector3 relativeMotion = (_horizontalVelocities[character.Id] + (Vector3.up * _verticalVelocities[character.Id])) * Time.deltaTime;
+
+            // "Sticky" logic: If grounded on a moving platform, add its actual displacement this frame
+            Vector3 finalMove = relativeMotion;
+            if (movement.CurrentGround.IsGrounded && movement.CurrentGround.SurfaceDelta.sqrMagnitude > 0.000001f)
+            {
+                finalMove += movement.CurrentGround.SurfaceDelta;
+            }
 
             movement.Move(finalMove);
         }

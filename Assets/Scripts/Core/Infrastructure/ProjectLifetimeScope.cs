@@ -77,14 +77,11 @@ namespace TinCan.Core.Infrastructure
                     // Register the character facade with the global actor system
                     registry.Register(character);
                 }
-                // Find and inject all "Complete" Humanoid characters
-                foreach (var character in FindObjectsByType<HumanoidCharacterNetworkMediator>(FindObjectsInactive.Exclude))
+                // Find and inject all "Complete" NetworkMediator actors (e.g. FreeCamera) to ensure they have their Registry reference
+                foreach (var character in FindObjectsByType<NetworkMediator>(FindObjectsInactive.Exclude))
                 {
-                    // Recommended: Inject into the entire GameObject hierarchy
+                    // Injection is required for the Mediator to get its Registry reference
                     container.InjectGameObject(character.gameObject);
-
-                    // Register the character facade with the global actor system
-                    registry.Register(character);
                 }
 
             });

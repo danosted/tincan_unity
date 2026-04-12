@@ -16,7 +16,7 @@ namespace TinCan.Features.Possession
         private readonly IInputService _inputService;
         private readonly INetworkService _networkService;
         private readonly IActorRegistry _registry;
-        private int _currentIndex = -1;
+        private IPossessable _currentActor;
 
         public PossessionUseCase(IInputService inputService, INetworkService networkService, IActorRegistry registry)
         {
@@ -28,8 +28,6 @@ namespace TinCan.Features.Possession
         public void Initialize()
         {
             Debug.Log("[PossessionUseCase] Initializing...");
-            // For testing: attempt to possess the first available actor after a short delay
-            // or just ensure we have a valid index if any exist.
         }
 
         public void Tick()
@@ -37,7 +35,7 @@ namespace TinCan.Features.Possession
             ulong localId = _networkService.LocalClientId;
 
             // Auto-possess first ALLOWED actor if none possessed yet
-            if (_currentIndex == -1)
+            if (_currentActor == null)
             {
                 var possessables = _registry.GetActors<IPossessable>()
                     .Where(p => p.CanPossess(localId))
@@ -67,34 +65,31 @@ namespace TinCan.Features.Possession
                 Debug.Log("[PossessionUseCase] No other allowed possessable actors to switch to.");
                 return;
             }
-            int nextIndex = (_currentIndex + 1) % possessables.Count;
+
+            int currentIndex = possessables.IndexOf(_currentActor);
+            int nextIndex = (currentIndex + 1) % possessables.Count;
+
             Possess(possessables[nextIndex]);
         }
 
         public void Possess(IPossessable target)
         {
-            var possessables = _registry.GetActors<IPossessable>().ToList();
-            int index = possessables.IndexOf(target);
-            if (index == -1)
-            {
-                Debug.LogWarning($"[PossessionUseCase] Target {target} not found in registry.");
-                return;
-            }
+            if (target == null) return;
 
             // Unpossess current
-            if (_currentIndex >= 0 && _currentIndex < possessables.Count)
+            if (_currentActor != null)
             {
-                Debug.Log($"[PossessionUseCase] Unpossessing actor at index {_currentIndex}");
-                possessables[_currentIndex].OnUnpossessed();
+                Debug.Log($"[PossessionUseCase] Unpossessing current actor");
+                _currentActor.OnUnpossessed();
             }
 
-            _currentIndex = index;
+            _currentActor = target;
 
             ulong localId = _networkService.LocalClientId;
             Debug.Log($"[PossessionUseCase] Possessing actor '{target}' for PlayerId: {localId}");
-            possessables[_currentIndex].OnPossessed(localId);
+            _currentActor.OnPossessed(localId);
 
-            var mono = possessables[_currentIndex] as MonoBehaviour;
+            var mono = _currentActor as MonoBehaviour;
             string targetName = mono != null ? mono.gameObject.name : "Unknown";
             Debug.Log($"[PossessionUseCase] Successfully possessed: {targetName}");
         }

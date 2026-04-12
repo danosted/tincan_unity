@@ -1,5 +1,6 @@
 using UnityEngine;
 using TinCan.Core.Domain;
+using Unity.Netcode;
 
 namespace TinCan.Features.Environment
 {
@@ -18,7 +19,7 @@ namespace TinCan.Features.Environment
         {
             _rb = GetComponent<Rigidbody>();
             _rb.isKinematic = true;
-            _rb.interpolation = RigidbodyInterpolation.Interpolate; // Visual smoothness for high refresh rates
+            _rb.interpolation = RigidbodyInterpolation.Interpolate;
 
             _lastPosition = transform.position;
             _lastRotation = transform.rotation;
@@ -26,9 +27,7 @@ namespace TinCan.Features.Environment
 
         private void Update()
         {
-            // Calculate deltas based on frame-to-frame movement (Update)
-            // instead of physics-to-physics movement (FixedUpdate).
-            // This ensures the delta matches the frequency of the player's movement loop.
+            // Calculate deltas based on local movement
             PositionDelta = transform.position - _lastPosition;
             RotationDelta = transform.rotation * Quaternion.Inverse(_lastRotation);
 

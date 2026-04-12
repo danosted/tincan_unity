@@ -21,7 +21,6 @@ namespace TinCan.Features.HumanoidMovement
         private GroundData _currentGround;
         private IMovingGround _activeMovingGround;
 
-
         public Transform Transform => transform;
         public GroundData CurrentGround => _currentGround;
         public bool IsGrounded => _controller.isGrounded;
@@ -62,6 +61,8 @@ namespace TinCan.Features.HumanoidMovement
                 if (Physics.Raycast(transform.position, Vector3.down, out hit, _controller.height * 0.5f + 0.2f))
                 {
                     var platform = hit.collider.gameObject.GetComponentInParent<IMovingGround>();
+                    _currentGround.GroundTransform = hit.transform; // Always track what we are standing on
+
                     if (platform != null)
                     {
                         _activeMovingGround = platform;
@@ -80,6 +81,7 @@ namespace TinCan.Features.HumanoidMovement
             else
             {
                 _activeMovingGround = null;
+                _currentGround.GroundTransform = null;
                 _currentGround.GroundVelocity = Vector3.zero;
                 _currentGround.SurfaceDelta = Vector3.zero;
                 _currentGround.GroundNormal = Vector3.up;

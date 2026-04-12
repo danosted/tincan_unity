@@ -1,4 +1,6 @@
 using UnityEngine;
+using TinCan.Core.Domain;
+using VContainer;
 
 namespace TinCan.Features.Environment
 {
@@ -15,6 +17,13 @@ namespace TinCan.Features.Environment
 
         private Rigidbody _rb;
         private Vector3 _startPosition;
+        private ITimeService _timeService;
+
+        [Inject]
+        public void Construct(ITimeService timeService)
+        {
+            _timeService = timeService;
+        }
 
         private void Awake()
         {
@@ -25,11 +34,17 @@ namespace TinCan.Features.Environment
 
         private void FixedUpdate()
         {
+            if (_timeService == null) return;
+
+            // Use ITimeService for synchronized local simulation across all clients.
+            // This prevents network lag between the player and the platform.
+            float networkTime = _timeService.Time;
+
             // Move in FixedUpdate so the Rigidbody has an accurate linearVelocity for physics
             Vector3 offset = new Vector3(
-                _amplitude.x > 0 ? Mathf.Sin(Time.time * _frequency.x) * _amplitude.x : 0,
-                _amplitude.y > 0 ? Mathf.Sin(Time.time * _frequency.y) * _amplitude.y : 0,
-                _amplitude.z > 0 ? Mathf.Sin(Time.time * _frequency.z) * _amplitude.z : 0
+                _amplitude.x > 0 ? Mathf.Sin(networkTime * _frequency.x) * _amplitude.x : 0,
+                _amplitude.y > 0 ? Mathf.Sin(networkTime * _frequency.y) * _amplitude.y : 0,
+                _amplitude.z > 0 ? Mathf.Sin(networkTime * _frequency.z) * _amplitude.z : 0
             );
 
             _rb.MovePosition(_startPosition + offset);

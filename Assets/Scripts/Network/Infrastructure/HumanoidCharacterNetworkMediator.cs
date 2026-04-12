@@ -26,6 +26,11 @@ namespace TinCan.Network.Infrastructure
         private readonly NetworkVariable<ulong> _netOwnerId = new NetworkVariable<ulong>(ulong.MaxValue);
         private readonly NetworkVariable<ulong> _netPossessorId = new NetworkVariable<ulong>(ulong.MaxValue);
 
+        private readonly NetworkVariable<NetworkObjectReference> _netParentPlatform = new NetworkVariable<NetworkObjectReference>(
+            writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<Vector3> _netLocalPosition = new NetworkVariable<Vector3>(
+            writePerm: NetworkVariableWritePermission.Owner);
+
         private IPossessionReceiver[] _receivers = Array.Empty<IPossessionReceiver>();
 
         // IActor Implementation
@@ -74,6 +79,13 @@ namespace TinCan.Network.Infrastructure
 
         private void NotifyPossessionChanged(ulong playerId, bool possessed)
         {
+            // Only notify local components (Camera, Controls) if this is the local player's possession event.
+            // This prevents the Host from "possessing" joining clients' characters locally.
+            if (NetworkManager.Singleton != null && playerId != NetworkManager.Singleton.LocalClientId)
+            {
+                return;
+            }
+
             foreach (var receiver in _receivers)
             {
                 if (receiver == (IPossessionReceiver)this) continue;
@@ -92,14 +104,42 @@ namespace TinCan.Network.Infrastructure
 
         private void UpdateToNetwork()
         {
+            var groundTransform = _movement.CurrentGround.GroundTransform;
+            if (groundTransform != null)
+            {
+                var netObj = groundTransform.GetComponentInParent<NetworkObject>();
+                if (netObj != null)
+                {
+                    _netParentPlatform.Value = netObj;
+                    _netLocalPosition.Value = netObj.transform.InverseTransformPoint(transform.position);
+                    _netRotation.Value = transform.rotation;
+                    return;
+                }
+            }
+
+            // Default: No networked ground under feet
+            _netParentPlatform.Value = new NetworkObjectReference();
             _netPosition.Value = transform.position;
             _netRotation.Value = transform.rotation;
         }
 
         private void UpdateFromNetwork()
         {
-            transform.position = _netPosition.Value;
-            transform.rotation = _netRotation.Value;
+            if (_netParentPlatform.Value.TryGet(out NetworkObject netObj))
+            {
+                // Resolve world position relative to the platform's current transform
+                Vector3 targetWorldPos = netObj.transform.TransformPoint(_netLocalPosition.Value);
+
+                // Interpolate to smooth out network jitter and maintain visual "glue" to the platform
+                transform.position = Vector3.Lerp(transform.position, targetWorldPos, Time.deltaTime * 15f);
+                transform.rotation = Quaternion.Slerp(transform.rotation, _netRotation.Value, Time.deltaTime * 15f);
+            }
+            else
+            {
+                // Standard world-space interpolation
+                transform.position = Vector3.Lerp(transform.position, _netPosition.Value, Time.deltaTime * 15f);
+                transform.rotation = Quaternion.Slerp(transform.rotation, _netRotation.Value, Time.deltaTime * 15f);
+            }
         }
 
         public void OnPossessed(ulong playerId)

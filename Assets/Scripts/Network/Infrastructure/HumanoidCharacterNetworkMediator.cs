@@ -26,6 +26,9 @@ namespace TinCan.Network.Infrastructure
         private readonly NetworkVariable<ulong> _netOwnerId = new NetworkVariable<ulong>(ulong.MaxValue);
         private readonly NetworkVariable<ulong> _netPossessorId = new NetworkVariable<ulong>(ulong.MaxValue);
 
+        private readonly NetworkVariable<HumanoidInputState> _netInputState = new NetworkVariable<HumanoidInputState>(
+            writePerm: NetworkVariableWritePermission.Owner);
+
         private readonly NetworkVariable<NetworkObjectReference> _netParentPlatform = new NetworkVariable<NetworkObjectReference>(
             writePerm: NetworkVariableWritePermission.Owner);
         private readonly NetworkVariable<Vector3> _netLocalPosition = new NetworkVariable<Vector3>(
@@ -35,7 +38,7 @@ namespace TinCan.Network.Infrastructure
 
         // IActor Implementation
         public Guid Id { get; } = Guid.NewGuid();
-        public bool IsSimulating => IsOwner; // Only run movement logic on the owner client
+        public bool IsSimulating => true; // All clients simulate all characters locally based on input
 
         // IPossessable Implementation
         public ulong? OwnerId => _netOwnerId.Value == ulong.MaxValue ? null : _netOwnerId.Value;
@@ -44,6 +47,7 @@ namespace TinCan.Network.Infrastructure
         // IHumanoidCharacterView Implementation
         public IHumanoidMovementView Movement => _movement;
         public IHumanoidLookView Look => _look;
+        public HumanoidInputState InputState { get; set; }
 
         public bool CanPossess(ulong playerId)
         {
@@ -67,6 +71,7 @@ namespace TinCan.Network.Infrastructure
             _receivers = GetComponentsInChildren<IPossessionReceiver>(true);
 
             _netOwnerId.OnValueChanged += OnOwnerChanged;
+            _netInputState.OnValueChanged += OnInputStateChanged;
 
             // Server-side: Initialize the shared network state based on the Netcode assigned owner
             if (IsServer)
@@ -82,6 +87,7 @@ namespace TinCan.Network.Infrastructure
         public override void OnNetworkDespawn()
         {
             _netOwnerId.OnValueChanged -= OnOwnerChanged;
+            _netInputState.OnValueChanged -= OnInputStateChanged;
             base.OnNetworkDespawn();
         }
 
@@ -89,6 +95,14 @@ namespace TinCan.Network.Infrastructure
         {
             if (current != ulong.MaxValue) NotifyPossessionChanged(current, true);
             else NotifyPossessionChanged(previous, false);
+        }
+
+        private void OnInputStateChanged(HumanoidInputState previous, HumanoidInputState current)
+        {
+            if (!IsOwner)
+            {
+                InputState = current;
+            }
         }
 
         private void NotifyPossessionChanged(ulong playerId, bool possessed)
@@ -118,6 +132,9 @@ namespace TinCan.Network.Infrastructure
 
         private void UpdateToNetwork()
         {
+            // Sync Input State for remote simulation
+            _netInputState.Value = InputState;
+
             var groundTransform = _movement.CurrentGround.GroundTransform;
             if (groundTransform != null)
             {
@@ -139,21 +156,30 @@ namespace TinCan.Network.Infrastructure
 
         private void UpdateFromNetwork()
         {
+            // HARD SYNC / RECONCILIATION:
+            // We use the networked position as the authoritative truth.
+            // If the local simulation drifts too far, we interpolate/snap to corrected position.
+
+            Vector3 targetWorldPos;
             if (_netParentPlatform.Value.TryGet(out NetworkObject netObj))
             {
-                // Resolve world position relative to the platform's current transform
-                Vector3 targetWorldPos = netObj.transform.TransformPoint(_netLocalPosition.Value);
-
-                // Interpolate to smooth out network jitter and maintain visual "glue" to the platform
-                transform.position = Vector3.Lerp(transform.position, targetWorldPos, Time.deltaTime * 15f);
-                transform.rotation = Quaternion.Slerp(transform.rotation, _netRotation.Value, Time.deltaTime * 15f);
+                targetWorldPos = netObj.transform.TransformPoint(_netLocalPosition.Value);
             }
             else
             {
-                // Standard world-space interpolation
-                transform.position = Vector3.Lerp(transform.position, _netPosition.Value, Time.deltaTime * 15f);
-                transform.rotation = Quaternion.Slerp(transform.rotation, _netRotation.Value, Time.deltaTime * 15f);
+                targetWorldPos = _netPosition.Value;
             }
+
+            // Only correct if the drift is significant (e.g. > 10cm)
+            float drift = Vector3.Distance(transform.position, targetWorldPos);
+            if (drift > 0.1f)
+            {
+                // Smoothly pull the character towards the correct position
+                transform.position = Vector3.Lerp(transform.position, targetWorldPos, Time.deltaTime * 10f);
+            }
+
+            // Always smooth rotation towards the authoritative truth
+            transform.rotation = Quaternion.Slerp(transform.rotation, _netRotation.Value, Time.deltaTime * 15f);
         }
 
         public void OnPossessed(ulong playerId)

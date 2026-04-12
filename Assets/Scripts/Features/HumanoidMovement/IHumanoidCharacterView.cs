@@ -10,5 +10,6 @@ namespace TinCan.Features.HumanoidMovement
     {
         IHumanoidMovementView Movement { get; }
         IHumanoidLookView Look { get; }
+        HumanoidInputState InputState { get; set; }
     }
 }

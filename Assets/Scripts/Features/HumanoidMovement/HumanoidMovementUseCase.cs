@@ -71,12 +71,32 @@ namespace TinCan.Features.HumanoidMovement
                 float horizontal = _inputService.GetAxis(ActionNames.MoveRight, ActionNames.MoveLeft);
                 float vertical = _inputService.GetAxis(ActionNames.MoveForward, ActionNames.MoveBackward);
                 inputDirection = new Vector3(horizontal, 0, vertical).normalized;
-                jumpTriggered = _inputService.WasActionTriggered(ActionNames.Jump);
+                jumpTriggered = _inputService.WasActionTriggered(ActionNames.Jump) || _inputService.IsActionPressed(ActionNames.Jump);
                 isSprinting = _inputService.IsActionPressed(ActionNames.Sprint);
+
+                // Update the synced state for remote clients
+                character.InputState = new HumanoidInputState
+                {
+                    MovementDirection = inputDirection,
+                    IsJumping = jumpTriggered,
+                    IsSprinting = isSprinting,
+                    LookRotation = movement.LookRotation
+                };
+            }
+            else
+            {
+                // Use the networked input state from the owner
+                var remoteInput = character.InputState;
+                inputDirection = remoteInput.MovementDirection;
+                jumpTriggered = remoteInput.IsJumping;
+                isSprinting = remoteInput.IsSprinting;
             }
 
+            // Use the authoritative look rotation (either local or synced)
+            Quaternion currentLookRotation = isCaptured ? movement.LookRotation : character.InputState.LookRotation;
+
             // Transform input to world space relative to the Look Rotation
-            Vector3 worldDirection = movement.LookRotation * inputDirection;
+            Vector3 worldDirection = currentLookRotation * inputDirection;
             worldDirection.y = 0;
             if (worldDirection.sqrMagnitude > 1) worldDirection.Normalize();
 

@@ -6,7 +6,6 @@ using TinCan.Core.Application;
 using TinCan.Features.FreeCamera;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Features.Possession;
-using TinCan.Features.ThirdPersonCharacter;
 using TinCan.Network.Infrastructure;
 using UnityEngine;
 using Unity.Netcode;
@@ -68,16 +67,6 @@ namespace TinCan.Core.Infrastructure
                     var interceptor = new NetworkPrefabInterceptor(container, _playerPrefab);
                     networkManager.PrefabHandler.AddHandler(_playerPrefab, interceptor);
                     Debug.Log($"[ProjectLifetimeScope] Registered NetworkPrefabInterceptor for {_playerPrefab.name}");
-                }
-
-                // Find and inject all "Complete" Humanoid characters
-                foreach (var character in FindObjectsByType<ThirdPersonHumanoidView>(FindObjectsInactive.Exclude))
-                {
-                    // Recommended: Inject into the entire GameObject hierarchy
-                    container.InjectGameObject(character.gameObject);
-
-                    // Register the character facade with the global actor system
-                    registry.Register(character);
                 }
 
                 // Inject into environmental components

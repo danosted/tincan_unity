@@ -3,7 +3,6 @@ using Unity.Netcode;
 using VContainer;
 using VContainer.Unity;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Possession;
 
 namespace TinCan.Network.Infrastructure
 {
@@ -34,15 +33,7 @@ namespace TinCan.Network.Infrastructure
             if (networkObject != null)
             {
                 networkObject.SpawnAsPlayerObject(clientId);
-
-                // 4. Initialize possession state on the server
-                var possessable = instance.GetComponent<IPossessable>();
-                if (possessable != null)
-                {
-                    possessable.OnPossessed(clientId);
-                }
-
-                Debug.Log($"[NetworkPlayerSpawner] Successfully spawned and possessed player for client {clientId}");
+                Debug.Log($"[NetworkPlayerSpawner] Successfully spawned player for client {clientId}");
             }
             else
             {

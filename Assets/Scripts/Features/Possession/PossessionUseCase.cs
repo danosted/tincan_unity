@@ -91,7 +91,7 @@ namespace TinCan.Features.Possession
 
             var mono = _currentActor as MonoBehaviour;
             string targetName = mono != null ? mono.gameObject.name : "Unknown";
-            Debug.Log($"[PossessionUseCase] Successfully possessed: {targetName}");
+            Debug.Log($"[PossessionUseCase] Successfully possessed: {targetName}. OwnerId: {_currentActor.OwnerId}");
         }
     }
 }

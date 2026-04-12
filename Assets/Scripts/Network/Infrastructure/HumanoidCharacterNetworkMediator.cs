@@ -47,6 +47,13 @@ namespace TinCan.Network.Infrastructure
 
         public bool CanPossess(ulong playerId)
         {
+            // If this is a networked player object, only the actual network owner can possess it.
+            if (IsSpawned && IsLocalPlayer)
+            {
+                return OwnerClientId == playerId;
+            }
+
+            // Otherwise (bots, vehicles, or before spawn), allow if unowned or matching ID
             return !OwnerId.HasValue || OwnerId == playerId;
         }
 
@@ -61,7 +68,14 @@ namespace TinCan.Network.Infrastructure
 
             _netOwnerId.OnValueChanged += OnOwnerChanged;
 
-            // Initial sync
+            // Server-side: Initialize the shared network state based on the Netcode assigned owner
+            if (IsServer)
+            {
+                _netOwnerId.Value = OwnerClientId;
+                _netPossessorId.Value = OwnerClientId;
+            }
+
+            // Initial sync for the local client
             if (OwnerId.HasValue) NotifyPossessionChanged(OwnerId.Value, true);
         }
 

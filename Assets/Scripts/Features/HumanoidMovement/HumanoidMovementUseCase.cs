@@ -23,6 +23,11 @@ namespace TinCan.Features.HumanoidMovement
         private Dictionary<Guid, Vector3> _horizontalVelocities = new();
         private Dictionary<Guid, float> _verticalVelocities = new();
 
+        // Virtual Parenting State
+        private Dictionary<Guid, Transform> _lastGroundTransforms = new();
+        private Dictionary<Guid, Vector3> _lastLocalPositions = new();
+        private Dictionary<Guid, Quaternion> _lastLocalRotations = new();
+
         public HumanoidMovementUseCase(
             IInputService inputService,
             INetworkService networkService,
@@ -85,7 +90,25 @@ namespace TinCan.Features.HumanoidMovement
             // Determine Target Speed
             float targetSpeed = movement.WalkSpeed * (isSprinting && movement.CurrentGround.IsGrounded ? movement.SprintMultiplier : 1f);
 
-            // Calculate Horizontal Velocity with Momentum
+            // 1. Calculate Platform Frame Delta (The WoW/Sea of Thieves "Glue")
+            Vector3 platformFrameDelta = Vector3.zero;
+            Quaternion platformRotationDelta = Quaternion.identity;
+            Transform currentGroundTransform = movement.CurrentGround.GroundTransform;
+
+            if (movement.CurrentGround.IsGrounded && currentGroundTransform != null)
+            {
+                // If we were on this same platform last frame, calculate how much it moved us
+                if (_lastGroundTransforms.TryGetValue(character.Id, out Transform lastTransform) && lastTransform == currentGroundTransform)
+                {
+                    Vector3 expectedWorldPos = currentGroundTransform.TransformPoint(_lastLocalPositions[character.Id]);
+                    platformFrameDelta = expectedWorldPos - movement.Transform.position;
+
+                    Quaternion expectedWorldRot = currentGroundTransform.rotation * _lastLocalRotations[character.Id];
+                    platformRotationDelta = expectedWorldRot * Quaternion.Inverse(movement.Transform.rotation);
+                }
+            }
+
+            // 2. Calculate Horizontal Velocity with Momentum
             _horizontalVelocities[authority.Id] = _processor.CalculateHorizontalVelocity(
                 _horizontalVelocities[authority.Id],
                 worldDirection,
@@ -94,7 +117,7 @@ namespace TinCan.Features.HumanoidMovement
                 20f, // Deceleration
                 Time.deltaTime);
 
-            // Calculate Vertical Velocity (Jump & Gravity)
+            // 3. Calculate Vertical Velocity (Jump & Gravity)
             _verticalVelocities[authority.Id] = _processor.CalculateVerticalVelocity(
                 _verticalVelocities[authority.Id],
                 movement.Gravity,
@@ -103,25 +126,40 @@ namespace TinCan.Features.HumanoidMovement
                 movement.JumpForce,
                 Time.deltaTime);
 
-            // Momentum Inheritance: If jumping, add the platform's velocity to our internal buffers
+            // 4. Momentum Inheritance: If jumping, add the platform's velocity to our internal buffers
             if (jumpTriggered && movement.CurrentGround.IsGrounded)
             {
                 Vector3 platformVelocity = movement.CurrentGround.GroundVelocity;
                 _horizontalVelocities[character.Id] += new Vector3(platformVelocity.x, 0, platformVelocity.z);
                 _verticalVelocities[character.Id] += platformVelocity.y;
+
+                // Reset platform tracking when jumping
+                _lastGroundTransforms.Remove(character.Id);
             }
 
-            // Apply Total Movement: Local Motion + Ground Delta (Frame-accurate displacement)
-            Vector3 relativeMotion = (_horizontalVelocities[character.Id] + (Vector3.up * _verticalVelocities[character.Id])) * Time.deltaTime;
+            // 5. Apply Final Movement
+            Vector3 intentionalMotion = (_horizontalVelocities[character.Id] + (Vector3.up * _verticalVelocities[character.Id])) * Time.deltaTime;
 
-            // "Sticky" logic: If grounded on a moving platform, add its actual displacement this frame
-            Vector3 finalMove = relativeMotion;
-            if (movement.CurrentGround.IsGrounded && movement.CurrentGround.SurfaceDelta.sqrMagnitude > 0.000001f)
+            // The magic: Movement = Intentional Movement + Platform Frame Delta
+            movement.Move(intentionalMotion + platformFrameDelta);
+
+            // 6. Apply Platform Rotation (if any)
+            if (platformRotationDelta != Quaternion.identity)
             {
-                finalMove += movement.CurrentGround.SurfaceDelta;
+                movement.SetRotation(platformRotationDelta * movement.Transform.rotation);
             }
 
-            movement.Move(finalMove);
+            // 7. Update Local Anchor for next frame
+            if (movement.CurrentGround.IsGrounded && currentGroundTransform != null)
+            {
+                _lastGroundTransforms[character.Id] = currentGroundTransform;
+                _lastLocalPositions[character.Id] = currentGroundTransform.InverseTransformPoint(movement.Transform.position);
+                _lastLocalRotations[character.Id] = Quaternion.Inverse(currentGroundTransform.rotation) * movement.Transform.rotation;
+            }
+            else
+            {
+                _lastGroundTransforms.Remove(character.Id);
+            }
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using TinCan.Features.Possession;
 using TinCan.Core.Domain;
+using Unity.Netcode;
 
 namespace TinCan.Features.HumanoidMovement
 {
@@ -14,6 +15,7 @@ namespace TinCan.Features.HumanoidMovement
     {
         [Header("Camera Configuration")]
         [SerializeField] private Transform _cameraPivot;
+        private Camera _camera => _cameraPivot.GetComponent<Camera>();
         [SerializeField] private float _distance = 5f;
         [SerializeField] private float _sensitivity = 0.5f;
         [SerializeField] private float _maxPitch = 85f;
@@ -56,11 +58,21 @@ namespace TinCan.Features.HumanoidMovement
 
         public void OnPossessed(ulong playerId)
         {
-            IsActive = true;
-            _cameraPivot.gameObject.SetActive(true);
+            ulong localId = NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClientId : 0;
+            Debug.Log($"[ThirdPersonLookView] OnPossessed event for {gameObject.name}. EventPlayerId: {playerId}, LocalPlayerId: {localId}");
+
+            if (localId == playerId)
+            {
+                Debug.Log($"[ThirdPersonLookView] ACTIVATING camera for {gameObject.name} (Match found)");
+                IsActive = true;
+                _cameraPivot.gameObject.SetActive(true);
+                _camera.enabled = true;
+            }
         }
+
         public void OnUnpossessed()
         {
+            Debug.Log($"[ThirdPersonLookView] OnUnpossessed for {gameObject.name}");
             IsActive = false;
             _cameraPivot.gameObject.SetActive(false);
         }

@@ -9,6 +9,8 @@ using TinCan.Features.Possession;
 using TinCan.Features.ThirdPersonCharacter;
 using TinCan.Network.Infrastructure;
 using UnityEngine;
+using Unity.Netcode;
+using System.Linq;
 
 namespace TinCan.Core.Infrastructure
 {
@@ -18,6 +20,9 @@ namespace TinCan.Core.Infrastructure
     /// </summary>
     public class ProjectLifetimeScope : LifetimeScope
     {
+        [Header("Networking")]
+        [SerializeField] private GameObject _playerPrefab;
+
         protected override void Configure(IContainerBuilder builder)
         {
             // Register Domain logic (Plain C# classes)
@@ -30,7 +35,10 @@ namespace TinCan.Core.Infrastructure
             builder.Register<DriveAirshipUseCase>(Lifetime.Singleton);
 
             // Register Networking
-            builder.Register<NGONetworkService>(Lifetime.Singleton).As<INetworkService>();
+            builder.RegisterComponentInHierarchy<NetworkManager>().AsSelf();
+            builder.Register<NetworkPlayerSpawner>(Lifetime.Singleton).As<INetworkPlayerSpawner>();
+            builder.Register<NGONetworkService>(Lifetime.Singleton).As<INetworkService, IInitializable>();
+
             builder.Register<ActorRegistry>(Lifetime.Singleton).As<IActorRegistry>();
 
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
@@ -40,16 +48,37 @@ namespace TinCan.Core.Infrastructure
                 entryPoints.Add<HumanoidLookUseCase>();
                 entryPoints.Add<PossessionUseCase>();
                 entryPoints.Add<UnityInputService>().As<IInputService>();
-
             });
 
             // Handle multi-instance actors in the scene hierarchy
             builder.RegisterBuildCallback(container =>
             {
                 var registry = container.Resolve<IActorRegistry>();
+                var networkService = container.Resolve<INetworkService>();
+
+                // Configure the network service with the prefab from the Inspector
+                networkService.SetPlayerPrefab(_playerPrefab);
+
+                // Register the Prefab Interceptor to ensure VContainer injection on all clients
+                var networkManager = container.Resolve<NetworkManager>();
+                if (networkManager != null && _playerPrefab != null)
+                {
+                    var interceptor = new NetworkPrefabInterceptor(container, _playerPrefab);
+                    networkManager.PrefabHandler.AddHandler(_playerPrefab, interceptor);
+                    Debug.Log($"[ProjectLifetimeScope] Registered NetworkPrefabInterceptor for {_playerPrefab.name}");
+                }
 
                 // Find and inject all "Complete" Humanoid characters
-                foreach (var character in Object.FindObjectsByType<ThirdPersonHumanoidView>(FindObjectsInactive.Exclude))
+                foreach (var character in FindObjectsByType<ThirdPersonHumanoidView>(FindObjectsInactive.Exclude))
+                {
+                    // Recommended: Inject into the entire GameObject hierarchy
+                    container.InjectGameObject(character.gameObject);
+
+                    // Register the character facade with the global actor system
+                    registry.Register(character);
+                }
+                // Find and inject all "Complete" Humanoid characters
+                foreach (var character in FindObjectsByType<HumanoidCharacterNetworkMediator>(FindObjectsInactive.Exclude))
                 {
                     // Recommended: Inject into the entire GameObject hierarchy
                     container.InjectGameObject(character.gameObject);
@@ -58,13 +87,8 @@ namespace TinCan.Core.Infrastructure
                     registry.Register(character);
                 }
 
-                // Find and inject all standalone Network Mediators
-                foreach (var mediator in Object.FindObjectsByType<HumanoidCharacterNetworkMediator>(FindObjectsInactive.Exclude))
-                {
-                    container.InjectGameObject(mediator.gameObject);
-                    registry.Register(mediator);
-                }
             });
+
         }
     }
 }

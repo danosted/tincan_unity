@@ -5,12 +5,12 @@ namespace TinCan.Features.Possession
     /// <summary>
     /// A responder that handles cursor locking when its parent IControllable is possessed.
     /// </summary>
-    public class PossessionCursorResponder : MonoBehaviour, IPossessionResponder
+    public class PossessionCursorResponder : MonoBehaviour, IPossessionReceiver
     {
         [SerializeField] private CursorLockMode _lockMode = CursorLockMode.Locked;
         [SerializeField] private bool _hideCursor = true;
 
-        public void OnPossessed()
+        public void OnPossessed(ulong playerId)
         {
             Cursor.lockState = _lockMode;
             Cursor.visible = !_hideCursor;

@@ -106,8 +106,6 @@ namespace TinCan.Features.HumanoidMovement
             // Momentum Inheritance: If jumping, add the platform's velocity to our internal buffers
             if (jumpTriggered && movement.CurrentGround.IsGrounded)
             {
-                Debug.Log("Adding platform velocity to jump momentum");
-                Debug.Log($"Platform Velocity: {movement.CurrentGround.GroundVelocity}");
                 Vector3 platformVelocity = movement.CurrentGround.GroundVelocity;
                 _horizontalVelocities[character.Id] += new Vector3(platformVelocity.x, 0, platformVelocity.z);
                 _verticalVelocities[character.Id] += platformVelocity.y;

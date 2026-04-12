@@ -18,6 +18,7 @@ namespace TinCan.Core.Domain.Networking
         bool IsHost { get; }
         ulong LocalClientId { get; }
 
+        void SetPlayerPrefab(UnityEngine.GameObject prefab);
         void StartHost();
         void StartServer();
         void StartClient();

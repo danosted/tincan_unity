@@ -34,10 +34,15 @@ namespace TinCan.Features.Possession
 
         public void Tick()
         {
-            // Auto-possess first actor if none possessed yet
+            ulong localId = _networkService.LocalClientId;
+
+            // Auto-possess first ALLOWED actor if none possessed yet
             if (_currentIndex == -1)
             {
-                var possessables = _registry.GetActors<IPossessable>().ToList();
+                var possessables = _registry.GetActors<IPossessable>()
+                    .Where(p => p.CanPossess(localId))
+                    .ToList();
+
                 if (possessables.Count > 0)
                 {
                     Possess(possessables[0]);
@@ -52,9 +57,16 @@ namespace TinCan.Features.Possession
 
         public void SwitchToNext()
         {
-            var possessables = _registry.GetActors<IPossessable>().ToList();
-            if (possessables.Count <= 1) return;
+            ulong localId = _networkService.LocalClientId;
+            var possessables = _registry.GetActors<IPossessable>()
+                .Where(p => p.CanPossess(localId))
+                .ToList();
 
+            if (possessables.Count <= 1)
+            {
+                Debug.Log("[PossessionUseCase] No other allowed possessable actors to switch to.");
+                return;
+            }
             int nextIndex = (_currentIndex + 1) % possessables.Count;
             Possess(possessables[nextIndex]);
         }

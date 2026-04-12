@@ -10,7 +10,7 @@ namespace TinCan.Features.HumanoidMovement
     /// Attach this to the character prefab.
     /// </summary>
     [RequireComponent(typeof(HumanoidControllerView))]
-    public class ThirdPersonLookView : MonoBehaviour, IHumanoidLookView, IPossessionResponder
+    public class ThirdPersonLookView : MonoBehaviour, IHumanoidLookView, IPossessionReceiver
     {
         [Header("Camera Configuration")]
         [SerializeField] private Transform _cameraPivot;
@@ -54,7 +54,7 @@ namespace TinCan.Features.HumanoidMovement
             Yaw = yaw;
         }
 
-        public void OnPossessed()
+        public void OnPossessed(ulong playerId)
         {
             IsActive = true;
             _cameraPivot.gameObject.SetActive(true);

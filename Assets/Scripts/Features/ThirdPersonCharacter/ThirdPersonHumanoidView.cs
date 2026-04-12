@@ -3,6 +3,7 @@ using UnityEngine;
 using TinCan.Features.Possession;
 using TinCan.Core.Domain;
 using TinCan.Features.HumanoidMovement;
+using System.Collections.Generic;
 
 namespace TinCan.Features.ThirdPersonCharacter
 {
@@ -15,9 +16,9 @@ namespace TinCan.Features.ThirdPersonCharacter
     [RequireComponent(typeof(ThirdPersonLookView))]
     public class ThirdPersonHumanoidView : MonoBehaviour, IHumanoidCharacterView
     {
-        private IHumanoidMovementView _movement;
-        private IHumanoidLookView _look;
-        private IPossessionResponder[] _receivers;
+        private HumanoidControllerView _movement;
+        private ThirdPersonLookView _look;
+        private IPossessionReceiver[] _receivers;
 
         public Guid Id { get; } = Guid.NewGuid();
         public bool IsSimulating => true;
@@ -28,11 +29,16 @@ namespace TinCan.Features.ThirdPersonCharacter
         public IHumanoidMovementView Movement => _movement;
         public IHumanoidLookView Look => _look;
 
+        public bool CanPossess(ulong playerId)
+        {
+            return !OwnerId.HasValue || OwnerId == playerId;
+        }
+
         private void Awake()
         {
             _movement = GetComponent<HumanoidControllerView>();
             _look = GetComponent<ThirdPersonLookView>();
-            _receivers = GetComponentsInChildren<IPossessionResponder>(true);
+            _receivers = GetComponentsInChildren<IPossessionReceiver>(true);
 
             ValidateSetup();
         }
@@ -44,7 +50,8 @@ namespace TinCan.Features.ThirdPersonCharacter
 
             foreach (var receiver in _receivers)
             {
-                receiver.OnPossessed();
+                if (receiver == (IPossessionReceiver)this) continue;
+                receiver.OnPossessed(playerId);
             }
         }
 
@@ -54,6 +61,7 @@ namespace TinCan.Features.ThirdPersonCharacter
 
             foreach (var receiver in _receivers)
             {
+                if (receiver == (IPossessionReceiver)this) continue;
                 receiver.OnUnpossessed();
             }
         }

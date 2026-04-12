@@ -6,7 +6,7 @@ namespace TinCan.Features.Possession
     /// A generic responder that toggles a Camera component when its parent IControllable is possessed.
     /// </summary>
     [RequireComponent(typeof(Camera))]
-    public class PossessionCameraResponder : MonoBehaviour, IPossessionResponder
+    public class PossessionCameraResponder : MonoBehaviour, IPossessionReceiver
     {
         private Camera _camera;
 
@@ -23,7 +23,7 @@ namespace TinCan.Features.Possession
             }
         }
 
-        public void OnPossessed()
+        public void OnPossessed(ulong playerId)
         {
             if (_camera != null) _camera.enabled = true;
         }

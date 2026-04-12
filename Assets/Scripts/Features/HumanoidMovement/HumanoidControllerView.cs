@@ -9,7 +9,7 @@ namespace TinCan.Features.HumanoidMovement
     /// Handles physical movement, ground detection, and actor lifecycle.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
-    public class HumanoidControllerView : ControllableActorBase, IHumanoidMovementView, IPossessionResponder
+    public class HumanoidControllerView : ControllableActorBase, IHumanoidMovementView, IPossessionReceiver
     {
         [Header("Movement Settings")]
         [SerializeField] private float _walkSpeed = 7f;
@@ -113,7 +113,7 @@ namespace TinCan.Features.HumanoidMovement
             transform.rotation = rotation;
         }
 
-        public void OnPossessed()
+        public void OnPossessed(ulong playerId)
         {
             EnableControls();
         }

@@ -384,9 +384,9 @@ MonoBehaviour:
   parentReference:
     TypeName: 
   autoRun: 1
-  autoInjectGameObjects:
-  - {fileID: 925472637626500556, guid: fc298da6d560fb04fba62a7e6f38f196, type: 3}
+  autoInjectGameObjects: []
   _playerPrefab: {fileID: 925472637626500556, guid: fc298da6d560fb04fba62a7e6f38f196, type: 3}
+  _airshipPrefab: {fileID: 4741218207008056854, guid: f227451d8202511408d6163b0a319dd4, type: 3}
 --- !u!4 &250139849
 Transform:
   m_ObjectHideFlags: 0
@@ -603,7 +603,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1060179602
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -771,7 +771,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1146883197
 MonoBehaviour:
   m_ObjectHideFlags: 0

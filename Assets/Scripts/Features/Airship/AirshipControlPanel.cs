@@ -1,5 +1,5 @@
 using UnityEngine;
-using TinCan.Core.Domain;
+using TinCan.Features.Interaction;
 using TinCan.Features.Possession;
 using VContainer;
 
@@ -7,58 +7,34 @@ namespace TinCan.Features.Airship
 {
     /// <summary>
     /// Infrastructure Layer: Allows a boarded player to interact with an airship control panel to take control.
+    /// Implements IInteractable so players can point and interact with it.
     /// </summary>
-    public class AirshipControlPanel : MonoBehaviour
+    public class AirshipControlPanel : MonoBehaviour, IInteractable
     {
         private PossessionUseCase _possessionUseCase;
-        private IInputService _inputService;
-        private IPossessable _possessable;
-
-        private bool _playerInControlZone = false;
+        private IPossessable _possessableAirship;
 
         [Inject]
-        public void Construct(PossessionUseCase possessionUseCase, IInputService inputService)
+        public void Construct(PossessionUseCase possessionUseCase)
         {
             _possessionUseCase = possessionUseCase;
-            _inputService = inputService;
         }
 
         private void Start()
         {
-            _possessable = GetComponentInParent<IPossessable>();
-            if (_possessable == null)
+            _possessableAirship = GetComponentInParent<IPossessable>();
+            if (_possessableAirship == null)
             {
-                Debug.LogError($"IPossessable not found in parent of {gameObject.name}. Disabling control panel.");
-                enabled = false;
+                Debug.LogError($"IPossessable not found in parent of {gameObject.name}. Control panel won't function.");
             }
         }
 
-        private void OnTriggerEnter(Collider other)
+        public void OnInteract(ulong interactorId)
         {
-            if (other.CompareTag("Player"))
-            {
-                _playerInControlZone = true;
-                Debug.Log("Player entered control panel zone. Press Interact to take control.");
-            }
-        }
+            if (_possessableAirship == null || _possessionUseCase == null) return;
 
-        private void OnTriggerExit(Collider other)
-        {
-            if (other.CompareTag("Player"))
-            {
-                _playerInControlZone = false;
-            }
-        }
-
-        private void Update()
-        {
-            if (!_playerInControlZone || _possessionUseCase == null) return;
-
-            if (_inputService.WasActionTriggered(ActionNames.Interact))
-            {
-                _possessionUseCase.Possess(_possessable);
-                Debug.Log("Player triggered possession of airship.");
-            }
+            Debug.Log($"[AirshipControlPanel] Triggering possession for player {interactorId}");
+            _possessionUseCase.Possess(_possessableAirship);
         }
     }
 }

@@ -3,6 +3,7 @@ using UnityEngine;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Core.Domain;
 using TinCan.Features.Possession;
+using TinCan.Features.Interaction;
 using System;
 using VContainer;
 
@@ -14,6 +15,7 @@ namespace TinCan.Network.Infrastructure
     /// </summary>
     [RequireComponent(typeof(HumanoidControllerView))]
     [RequireComponent(typeof(ThirdPersonLookView))]
+    [RequireComponent(typeof(InteractorControllerView))]
     public class HumanoidCharacterNetworkMediator : NetworkMediator, IHumanoidCharacterView
     {
         private HumanoidControllerView _movement;
@@ -239,7 +241,5 @@ namespace TinCan.Network.Infrastructure
             _netOwnerId.Value = ulong.MaxValue;
             _netPossessorId.Value = ulong.MaxValue;
         }
-
-        public void Dispose() { }
     }
 }

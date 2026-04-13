@@ -114,10 +114,5 @@ namespace TinCan.Network.Infrastructure
                 }
             }
         }
-
-        public void Dispose()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

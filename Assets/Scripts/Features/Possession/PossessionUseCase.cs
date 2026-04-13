@@ -18,6 +18,8 @@ namespace TinCan.Features.Possession
         private readonly IActorRegistry _registry;
         private IPossessable _currentActor;
 
+        public IPossessable CurrentActor => _currentActor;
+
         public PossessionUseCase(IInputService inputService, INetworkService networkService, IActorRegistry registry)
         {
             _inputService = inputService;

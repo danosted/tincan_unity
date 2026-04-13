@@ -23,6 +23,7 @@ namespace TinCan.Core.Infrastructure
     {
         [Header("Networking")]
         [SerializeField] private GameObject _playerPrefab;
+        [SerializeField] private GameObject _airshipPrefab;
 
         protected override void Configure(IContainerBuilder builder)
         {
@@ -49,6 +50,7 @@ namespace TinCan.Core.Infrastructure
                 entryPoints.Add<HumanoidLookUseCase>();
                 entryPoints.Add<AirshipMovementUseCase>();
                 entryPoints.Add<PossessionUseCase>();
+                entryPoints.Add<TinCan.Features.Interaction.InteractivityUseCase>();
                 entryPoints.Add<UnityInputService>().As<IInputService>();
             });
 
@@ -68,6 +70,21 @@ namespace TinCan.Core.Infrastructure
                     var interceptor = new NetworkPrefabInterceptor(container, _playerPrefab);
                     networkManager.PrefabHandler.AddHandler(_playerPrefab, interceptor);
                     Debug.Log($"[ProjectLifetimeScope] Registered NetworkPrefabInterceptor for {_playerPrefab.name}");
+                }
+
+                if (networkManager != null && _airshipPrefab != null)
+                {
+                    var airshipInterceptor = new NetworkPrefabInterceptor(container, _airshipPrefab);
+                    networkManager.PrefabHandler.AddHandler(_airshipPrefab, airshipInterceptor);
+                    Debug.Log($"[ProjectLifetimeScope] Registered NetworkPrefabInterceptor for {_airshipPrefab.name}");
+
+                    // Spawn the airship on server start
+                    networkManager.OnServerStarted += () =>
+                    {
+                        var airshipInstance = Instantiate(_airshipPrefab);
+                        var netObj = airshipInstance.GetComponent<NetworkObject>();
+                        netObj.Spawn();
+                    };
                 }
 
                 // Inject into environmental components

@@ -77,6 +77,7 @@ namespace TinCan.Features.HumanoidMovement
                 // Use velocity for smooth, frame-rate independent movement
                 _currentGround.GroundVelocity = _activeMovingGround.Velocity;
                 _currentGround.SurfaceDelta = _activeMovingGround.PositionDelta;
+                _currentGround.RotationDelta = _activeMovingGround.RotationDelta;
             }
             else
             {
@@ -84,6 +85,7 @@ namespace TinCan.Features.HumanoidMovement
                 _currentGround.GroundTransform = null;
                 _currentGround.GroundVelocity = Vector3.zero;
                 _currentGround.SurfaceDelta = Vector3.zero;
+                _currentGround.RotationDelta = Quaternion.identity;
                 _currentGround.GroundNormal = Vector3.up;
             }
         }

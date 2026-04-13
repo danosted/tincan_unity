@@ -1,4 +1,5 @@
 using TinCan.Features.Possession;
+using TinCan.Core.Domain;
 
 namespace TinCan.Features.HumanoidMovement
 {
@@ -6,10 +7,9 @@ namespace TinCan.Features.HumanoidMovement
     /// Domain Layer: A composite interface representing a complete humanoid character.
     /// Combines movement and look capabilities under a single possession authority.
     /// </summary>
-    public interface IHumanoidCharacterView : IPossessable
+    public interface IHumanoidCharacterView : ISimulatedPossessable<HumanoidInputState>, IPossessable
     {
         IHumanoidMovementView Movement { get; }
         IHumanoidLookView Look { get; }
-        HumanoidInputState InputState { get; set; }
     }
 }

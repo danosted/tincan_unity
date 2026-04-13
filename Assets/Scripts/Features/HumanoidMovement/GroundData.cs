@@ -12,5 +12,6 @@ namespace TinCan.Features.HumanoidMovement
         public Vector3 GroundNormal;
         public Vector3 GroundVelocity;
         public Vector3 SurfaceDelta; // The actual world-space movement of the ground since the last frame
+        public Quaternion RotationDelta; // The actual world-space rotation of the ground since the last frame
     }
 }

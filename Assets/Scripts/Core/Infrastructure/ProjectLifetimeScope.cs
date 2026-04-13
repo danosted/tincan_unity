@@ -6,6 +6,7 @@ using TinCan.Core.Application;
 using TinCan.Features.FreeCamera;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Features.Possession;
+using TinCan.Features.Airship;
 using TinCan.Network.Infrastructure;
 using UnityEngine;
 using Unity.Netcode;
@@ -26,13 +27,12 @@ namespace TinCan.Core.Infrastructure
         protected override void Configure(IContainerBuilder builder)
         {
             // Register Domain logic (Plain C# classes)
-            builder.Register<AirshipEngine>(Lifetime.Transient);
+            builder.Register<AirshipMovementProcessor>(Lifetime.Transient);
             builder.Register<FreeCameraMovementProcessor>(Lifetime.Transient);
             builder.Register<FreeCameraRotationProcessor>(Lifetime.Transient);
             builder.Register<HumanoidMovementProcessor>(Lifetime.Transient);
 
             // Register Application Use Cases
-            builder.Register<DriveAirshipUseCase>(Lifetime.Singleton);
 
             // Register Networking
             builder.RegisterComponentInHierarchy<NetworkManager>().AsSelf();
@@ -47,6 +47,7 @@ namespace TinCan.Core.Infrastructure
                 entryPoints.Add<FreeCameraMovementUseCase>();
                 entryPoints.Add<HumanoidMovementUseCase>();
                 entryPoints.Add<HumanoidLookUseCase>();
+                entryPoints.Add<AirshipMovementUseCase>();
                 entryPoints.Add<PossessionUseCase>();
                 entryPoints.Add<UnityInputService>().As<IInputService>();
             });

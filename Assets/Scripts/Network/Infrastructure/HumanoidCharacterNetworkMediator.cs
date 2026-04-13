@@ -47,7 +47,17 @@ namespace TinCan.Network.Infrastructure
         // IHumanoidCharacterView Implementation
         public IHumanoidMovementView Movement => _movement;
         public IHumanoidLookView Look => _look;
-        public HumanoidInputState InputState { get; set; }
+
+        public HumanoidInputState InputState
+        {
+            get => _netInputState.Value;
+            set
+            {
+                if (IsOwner) _netInputState.Value = value;
+            }
+        }
+
+        public bool IsCapturedBy(ulong playerId) => PossessorId == playerId;
 
         public bool CanPossess(ulong playerId)
         {

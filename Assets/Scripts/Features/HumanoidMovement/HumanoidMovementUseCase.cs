@@ -11,174 +11,109 @@ namespace TinCan.Features.HumanoidMovement
 {
     /// <summary>
     /// Application Layer: Coordinates input and domain logic to move the humanoid character.
-    /// Implements ITickable for the VContainer update loop.
+    /// Inherits from SimulationUseCase for unified actor simulation.
     /// </summary>
-    public class HumanoidMovementUseCase : ITickable
+    public class HumanoidMovementUseCase : SimulationUseCase<IHumanoidCharacterView, HumanoidInputState>
     {
-        private readonly IInputService _inputService;
-        private readonly INetworkService _networkService;
         private readonly HumanoidMovementProcessor _processor;
-        private readonly IActorRegistry _registry;
-
-        private Dictionary<Guid, Vector3> _horizontalVelocities = new();
-        private Dictionary<Guid, float> _verticalVelocities = new();
-
-        // Virtual Parenting State
-        private Dictionary<Guid, Transform> _lastGroundTransforms = new();
-        private Dictionary<Guid, Vector3> _lastLocalPositions = new();
-        private Dictionary<Guid, Quaternion> _lastLocalRotations = new();
+        private readonly Dictionary<Guid, Vector3> _horizontalVelocities = new();
+        private readonly Dictionary<Guid, float> _verticalVelocities = new();
 
         public HumanoidMovementUseCase(
             IInputService inputService,
             INetworkService networkService,
             HumanoidMovementProcessor processor,
-            IActorRegistry registry)
+            IActorRegistry registry,
+            ITimeService timeService)
+            : base(inputService, networkService, registry, timeService)
         {
-            _inputService = inputService;
-            _networkService = networkService;
             _processor = processor;
-            _registry = registry;
         }
 
-        public void Tick()
+        protected override HumanoidInputState GatherLocalInput(IHumanoidCharacterView character)
         {
-            // Process all complete characters (Facade pattern or Mediator)
-            foreach (var character in _registry.GetActors<IHumanoidCharacterView>())
+            float horizontal = InputService.GetAxis(ActionNames.MoveRight, ActionNames.MoveLeft);
+            float vertical = InputService.GetAxis(ActionNames.MoveForward, ActionNames.MoveBackward);
+            Vector3 inputDirection = new Vector3(horizontal, 0, vertical).normalized;
+            bool jumpTriggered = InputService.WasActionTriggered(ActionNames.Jump) || InputService.IsActionPressed(ActionNames.Jump);
+            bool isSprinting = InputService.IsActionPressed(ActionNames.Sprint);
+
+            return new HumanoidInputState
             {
-                if (!character.IsSimulating) continue;
-                HandleMovement(character);
-            }
+                MovementDirection = inputDirection,
+                IsJumping = jumpTriggered,
+                IsSprinting = isSprinting,
+                LookRotation = character.Movement.LookRotation
+            };
         }
 
-        private void HandleMovement(IHumanoidCharacterView character)
+        protected override void ProcessSimulation(IHumanoidCharacterView character, HumanoidInputState input, bool isCaptured)
         {
             var movement = character.Movement;
-            var authority = character;
+            float deltaTime = TimeService.DeltaTime;
 
             // Initialize velocity tracking for this specific actor if missing
             if (!_horizontalVelocities.ContainsKey(character.Id)) _horizontalVelocities[character.Id] = Vector3.zero;
             if (!_verticalVelocities.ContainsKey(character.Id)) _verticalVelocities[character.Id] = 0f;
 
-            Vector3 inputDirection = Vector3.zero;
-            bool jumpTriggered = false;
-            bool isSprinting = false;
-
-            ulong localId = _networkService.LocalClientId;
-            bool isCaptured = authority.IsCapturedBy(localId);
-
-            if (isCaptured)
-            {
-                float horizontal = _inputService.GetAxis(ActionNames.MoveRight, ActionNames.MoveLeft);
-                float vertical = _inputService.GetAxis(ActionNames.MoveForward, ActionNames.MoveBackward);
-                inputDirection = new Vector3(horizontal, 0, vertical).normalized;
-                jumpTriggered = _inputService.WasActionTriggered(ActionNames.Jump) || _inputService.IsActionPressed(ActionNames.Jump);
-                isSprinting = _inputService.IsActionPressed(ActionNames.Sprint);
-
-                // Update the synced state for remote clients
-                character.InputState = new HumanoidInputState
-                {
-                    MovementDirection = inputDirection,
-                    IsJumping = jumpTriggered,
-                    IsSprinting = isSprinting,
-                    LookRotation = movement.LookRotation
-                };
-            }
-            else
-            {
-                // Use the networked input state from the owner
-                var remoteInput = character.InputState;
-                inputDirection = remoteInput.MovementDirection;
-                jumpTriggered = remoteInput.IsJumping;
-                isSprinting = remoteInput.IsSprinting;
-            }
-
             // Use the authoritative look rotation (either local or synced)
-            Quaternion currentLookRotation = isCaptured ? movement.LookRotation : character.InputState.LookRotation;
+            Quaternion currentLookRotation = isCaptured ? movement.LookRotation : input.LookRotation;
 
             // Transform input to world space relative to the Look Rotation
-            Vector3 worldDirection = currentLookRotation * inputDirection;
+            Vector3 worldDirection = currentLookRotation * input.MovementDirection;
             worldDirection.y = 0;
             if (worldDirection.sqrMagnitude > 1) worldDirection.Normalize();
 
             // Rotate character to face movement direction if moving
-            if (inputDirection.sqrMagnitude > 0.01f)
+            if (input.MovementDirection.sqrMagnitude > 0.01f)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(worldDirection);
-                movement.SetRotation(Quaternion.Slerp(movement.Transform.rotation, targetRotation, 10f * Time.deltaTime));
+                movement.SetRotation(Quaternion.Slerp(movement.Transform.rotation, targetRotation, 10f * deltaTime));
             }
 
             // Determine Target Speed
-            float targetSpeed = movement.WalkSpeed * (isSprinting && movement.CurrentGround.IsGrounded ? movement.SprintMultiplier : 1f);
+            float targetSpeed = movement.WalkSpeed * (input.IsSprinting && movement.CurrentGround.IsGrounded ? movement.SprintMultiplier : 1f);
 
-            // 1. Calculate Platform Frame Delta (The WoW/Sea of Thieves "Glue")
-            Vector3 platformFrameDelta = Vector3.zero;
-            Quaternion platformRotationDelta = Quaternion.identity;
-            Transform currentGroundTransform = movement.CurrentGround.GroundTransform;
-
-            if (movement.CurrentGround.IsGrounded && currentGroundTransform != null)
-            {
-                // If we were on this same platform last frame, calculate how much it moved us
-                if (_lastGroundTransforms.TryGetValue(character.Id, out Transform lastTransform) && lastTransform == currentGroundTransform)
-                {
-                    Vector3 expectedWorldPos = currentGroundTransform.TransformPoint(_lastLocalPositions[character.Id]);
-                    platformFrameDelta = expectedWorldPos - movement.Transform.position;
-
-                    Quaternion expectedWorldRot = currentGroundTransform.rotation * _lastLocalRotations[character.Id];
-                    platformRotationDelta = expectedWorldRot * Quaternion.Inverse(movement.Transform.rotation);
-                }
-            }
-
-            // 2. Calculate Horizontal Velocity with Momentum
-            _horizontalVelocities[authority.Id] = _processor.CalculateHorizontalVelocity(
-                _horizontalVelocities[authority.Id],
+            // 1. Calculate Horizontal Velocity with Momentum
+            _horizontalVelocities[character.Id] = _processor.CalculateHorizontalVelocity(
+                _horizontalVelocities[character.Id],
                 worldDirection,
                 targetSpeed,
                 30f, // Acceleration
                 20f, // Deceleration
-                Time.deltaTime);
+                deltaTime);
 
-            // 3. Calculate Vertical Velocity (Jump & Gravity)
-            _verticalVelocities[authority.Id] = _processor.CalculateVerticalVelocity(
-                _verticalVelocities[authority.Id],
+            // 2. Calculate Vertical Velocity (Jump & Gravity)
+            _verticalVelocities[character.Id] = _processor.CalculateVerticalVelocity(
+                _verticalVelocities[character.Id],
                 movement.Gravity,
                 movement.CurrentGround.IsGrounded,
-                jumpTriggered,
+                input.IsJumping,
                 movement.JumpForce,
-                Time.deltaTime);
+                deltaTime);
 
-            // 4. Momentum Inheritance: If jumping, add the platform's velocity to our internal buffers
-            if (jumpTriggered && movement.CurrentGround.IsGrounded)
+            // 3. Momentum Inheritance: If jumping, add the platform's velocity to our internal buffers
+            if (input.IsJumping && movement.CurrentGround.IsGrounded)
             {
                 Vector3 platformVelocity = movement.CurrentGround.GroundVelocity;
                 _horizontalVelocities[character.Id] += new Vector3(platformVelocity.x, 0, platformVelocity.z);
                 _verticalVelocities[character.Id] += platformVelocity.y;
-
-                // Reset platform tracking when jumping
-                _lastGroundTransforms.Remove(character.Id);
             }
 
-            // 5. Apply Final Movement
-            Vector3 intentionalMotion = (_horizontalVelocities[character.Id] + (Vector3.up * _verticalVelocities[character.Id])) * Time.deltaTime;
+            // 4. Calculate Final Movement
+            Vector3 intentionalMotion = (_horizontalVelocities[character.Id] + (Vector3.up * _verticalVelocities[character.Id])) * deltaTime;
 
-            // The magic: Movement = Intentional Movement + Platform Frame Delta
-            movement.Move(intentionalMotion + platformFrameDelta);
+            // 5. Apply Platform Push (Simplified logic as requested)
+            Vector3 platformPush = movement.CurrentGround.SurfaceDelta;
+            Quaternion platformRotationPush = movement.CurrentGround.RotationDelta;
 
-            // 6. Apply Platform Rotation (if any)
-            if (platformRotationDelta != Quaternion.identity)
-            {
-                movement.SetRotation(platformRotationDelta * movement.Transform.rotation);
-            }
+            // The magic: Movement = Intentional Movement + Platform Push
+            movement.Move(intentionalMotion + platformPush);
 
-            // 7. Update Local Anchor for next frame
-            if (movement.CurrentGround.IsGrounded && currentGroundTransform != null)
+            // Apply Platform Rotation
+            if (platformRotationPush != Quaternion.identity)
             {
-                _lastGroundTransforms[character.Id] = currentGroundTransform;
-                _lastLocalPositions[character.Id] = currentGroundTransform.InverseTransformPoint(movement.Transform.position);
-                _lastLocalRotations[character.Id] = Quaternion.Inverse(currentGroundTransform.rotation) * movement.Transform.rotation;
-            }
-            else
-            {
-                _lastGroundTransforms.Remove(character.Id);
+                movement.SetRotation(platformRotationPush * movement.Transform.rotation);
             }
         }
     }

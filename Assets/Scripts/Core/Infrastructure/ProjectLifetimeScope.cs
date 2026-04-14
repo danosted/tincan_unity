@@ -7,6 +7,7 @@ using TinCan.Features.FreeCamera;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Features.Possession;
 using TinCan.Features.Airship;
+using TinCan.Features.Interaction;
 using TinCan.Network.Infrastructure;
 using UnityEngine;
 using Unity.Netcode;
@@ -42,6 +43,8 @@ namespace TinCan.Core.Infrastructure
             builder.Register<ProjectTimeService>(Lifetime.Singleton).As<ITimeService>();
 
             builder.Register<ActorRegistry>(Lifetime.Singleton).As<IActorRegistry>();
+            builder.Register<InteractorRegistry>(Lifetime.Singleton).As<IInteractorRegistry>();
+            builder.Register<ActorOrchestrator>(Lifetime.Singleton).As<IActorOrchestrator>();
 
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
@@ -50,14 +53,14 @@ namespace TinCan.Core.Infrastructure
                 entryPoints.Add<HumanoidLookUseCase>();
                 entryPoints.Add<AirshipMovementUseCase>();
                 entryPoints.Add<PossessionUseCase>();
-                entryPoints.Add<TinCan.Features.Interaction.InteractivityUseCase>();
+                entryPoints.Add<InteractivityUseCase>();
                 entryPoints.Add<UnityInputService>().As<IInputService>();
             });
 
             // Handle multi-instance actors in the scene hierarchy
             builder.RegisterBuildCallback(container =>
             {
-                var registry = container.Resolve<IActorRegistry>();
+                var orchestrator = container.Resolve<IActorOrchestrator>();
                 var networkService = container.Resolve<INetworkService>();
 
                 // Configure the network service with the prefab from the Inspector
@@ -67,14 +70,14 @@ namespace TinCan.Core.Infrastructure
                 var networkManager = container.Resolve<NetworkManager>();
                 if (networkManager != null && _playerPrefab != null)
                 {
-                    var interceptor = new NetworkPrefabInterceptor(container, _playerPrefab);
+                    var interceptor = new NetworkPrefabInterceptor(container, orchestrator, _playerPrefab);
                     networkManager.PrefabHandler.AddHandler(_playerPrefab, interceptor);
                     Debug.Log($"[ProjectLifetimeScope] Registered NetworkPrefabInterceptor for {_playerPrefab.name}");
                 }
 
                 if (networkManager != null && _airshipPrefab != null)
                 {
-                    var airshipInterceptor = new NetworkPrefabInterceptor(container, _airshipPrefab);
+                    var airshipInterceptor = new NetworkPrefabInterceptor(container, orchestrator, _airshipPrefab);
                     networkManager.PrefabHandler.AddHandler(_airshipPrefab, airshipInterceptor);
                     Debug.Log($"[ProjectLifetimeScope] Registered NetworkPrefabInterceptor for {_airshipPrefab.name}");
 
@@ -87,17 +90,14 @@ namespace TinCan.Core.Infrastructure
                     };
                 }
 
-                // Inject into environmental components
-                foreach (var oscillator in FindObjectsByType<SimpleOscillator>(FindObjectsInactive.Exclude))
-                {
-                    container.InjectGameObject(oscillator.gameObject);
-                }
-
                 // Find and inject all "Complete" NetworkMediator actors (e.g. FreeCamera) to ensure they have their Registry reference
                 foreach (var character in FindObjectsByType<NetworkMediator>(FindObjectsInactive.Exclude))
                 {
-                    // Injection is required for the Mediator to get its Registry reference
+                    // Injection handles dependency resolution
                     container.InjectGameObject(character.gameObject);
+
+                    // Orchestrate registration
+                    orchestrator.RegisterHierarchy(character.gameObject);
                 }
 
             });

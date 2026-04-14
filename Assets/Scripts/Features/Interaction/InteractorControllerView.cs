@@ -2,6 +2,7 @@ using UnityEngine;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
 using System;
+using VContainer;
 
 namespace TinCan.Features.Interaction
 {
@@ -16,16 +17,14 @@ namespace TinCan.Features.Interaction
         [SerializeField] private LayerMask _interactableMask = ~0; // Default: hit everything
 
         private Camera _mainCamera; // Usually we raycast from the camera center in first/third person
+        private IActor _owner;
+
         public IInteractable CurrentTarget { get; private set; }
+        public IActor Owner => _owner;
 
-        public Guid Id { get; } = Guid.NewGuid();
-        public bool IsSimulating => false; // Just scanning, not doing physical simulation
-
-        // Needs to be tied to possession to know if the local player is currently controlling this actor
-        public bool IsCapturedBy(ulong playerId)
+        private void Awake()
         {
-            var possessable = GetComponent<Possession.IPossessable>();
-            return possessable != null && possessable.IsCapturedBy(playerId);
+            _owner = GetComponentInParent<IActor>();
         }
 
         private void Start()
@@ -63,10 +62,13 @@ namespace TinCan.Features.Interaction
             {
                 CurrentTarget = null;
             }
+
+            // Runtime debug visualization
+            Debug.DrawRay(ray.origin, ray.direction * _interactionRange, CurrentTarget != null ? Color.green : Color.red);
         }
 
         // Draw debug line in editor
-        private void OnDrawGizmosSelected()
+        private void OnDrawGizmos()
         {
             Gizmos.color = CurrentTarget != null ? Color.green : Color.red;
             Gizmos.DrawRay(transform.position + Vector3.up * 1.5f, transform.forward * _interactionRange);

@@ -64,12 +64,8 @@ namespace TinCan.Features.HumanoidMovement
             worldDirection.y = 0;
             if (worldDirection.sqrMagnitude > 1) worldDirection.Normalize();
 
-            // Rotate character to face movement direction if moving
-            if (input.MovementDirection.sqrMagnitude > 0.01f)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(worldDirection);
-                movement.SetRotation(Quaternion.Slerp(movement.Transform.rotation, targetRotation, 10f * deltaTime));
-            }
+            // Rotate character to always face the look direction
+            movement.SetRotation(Quaternion.Slerp(movement.Transform.rotation, currentLookRotation, 20f * deltaTime));
 
             // Determine Target Speed
             float targetSpeed = movement.WalkSpeed * (input.IsSprinting && movement.CurrentGround.IsGrounded ? movement.SprintMultiplier : 1f);

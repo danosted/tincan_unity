@@ -19,26 +19,5 @@ namespace TinCan.Network.Infrastructure
         {
             Registry = registry;
         }
-
-        public override void OnNetworkSpawn()
-        {
-            base.OnNetworkSpawn();
-
-            if (this is IActor actor && Registry != null)
-            {
-                Registry.Register(actor);
-                Debug.Log($"[NetworkMediator] Registered {gameObject.name} (ID: {actor.Id}) with IActorRegistry");
-            }
-        }
-
-        public override void OnNetworkDespawn()
-        {
-            if (this is IActor actor && Registry != null)
-            {
-                Registry.Unregister(actor);
-            }
-
-            base.OnNetworkDespawn();
-        }
     }
 }

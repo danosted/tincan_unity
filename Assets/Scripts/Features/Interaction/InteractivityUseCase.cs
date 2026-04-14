@@ -14,16 +14,16 @@ namespace TinCan.Features.Interaction
     {
         private readonly IInputService _inputService;
         private readonly INetworkService _networkService;
-        private readonly IActorRegistry _registry;
+        private readonly IInteractorRegistry _interactionRegistry;
 
         public InteractivityUseCase(
             IInputService inputService,
             INetworkService networkService,
-            IActorRegistry registry)
+            IInteractorRegistry interactionRegistry)
         {
             _inputService = inputService;
             _networkService = networkService;
-            _registry = registry;
+            _interactionRegistry = interactionRegistry;
         }
 
         public void Tick()
@@ -33,16 +33,17 @@ namespace TinCan.Features.Interaction
             ulong localId = _networkService.LocalClientId;
 
             // Find all interactors (typically just one for the local player)
-            foreach (var interactor in _registry.GetActors<IInteractorView>())
+            foreach (var interactor in _interactionRegistry.AllInteractors)
             {
-                if (interactor is IPossessable possessable && !possessable.IsCapturedBy(localId))
+                if (interactor.Owner is IPossessable possessable && !possessable.IsCapturedBy(localId))
                 {
-                    continue; // Skip if this interactor is not captured by the local player
+                    continue; // Skip if this interactor's owner is not captured by the local player
                 }
+
+                if (interactor.CurrentTarget == null) continue;
 
                 Debug.Log($"[InteractivityUseCase] Player {localId} interacting with {interactor.CurrentTarget.GetType().Name}");
                 interactor.CurrentTarget.OnInteract(localId);
-
             }
         }
     }

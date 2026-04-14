@@ -3,6 +3,8 @@ using Unity.Netcode;
 using VContainer;
 using VContainer.Unity;
 using TinCan.Core.Domain.Networking;
+using TinCan.Core.Domain;
+using TinCan.Features.Interaction;
 
 namespace TinCan.Network.Infrastructure
 {
@@ -13,10 +15,12 @@ namespace TinCan.Network.Infrastructure
     public class NetworkPlayerSpawner : INetworkPlayerSpawner
     {
         private readonly IObjectResolver _container;
+        private readonly IActorOrchestrator _orchestrator;
 
-        public NetworkPlayerSpawner(IObjectResolver container)
+        public NetworkPlayerSpawner(IObjectResolver container, IActorOrchestrator orchestrator)
         {
             _container = container;
+            _orchestrator = orchestrator;
         }
 
         public void SpawnPlayer(ulong clientId, GameObject prefab)
@@ -28,9 +32,11 @@ namespace TinCan.Network.Infrastructure
             // Note: The Interceptor handles proxies on clients, but the Spawner handles the initial Server instance
             _container.InjectGameObject(instance);
 
-            // 3. Register as a player object in Netcode
-            var networkObject = instance.GetComponent<NetworkObject>();
-            if (networkObject != null)
+            // 3. Orchestration: Register actor and its capabilities
+            _orchestrator.RegisterHierarchy(instance);
+
+            // 4. Register as a player object in Netcode
+            var networkObject = instance.GetComponent<NetworkObject>(); if (networkObject != null)
             {
                 networkObject.SpawnAsPlayerObject(clientId);
                 Debug.Log($"[NetworkPlayerSpawner] Successfully spawned player for client {clientId}");

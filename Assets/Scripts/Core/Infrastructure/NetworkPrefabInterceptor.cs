@@ -1,11 +1,11 @@
+#nullable enable
 using Unity.Netcode;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
-using TinCan.Core.Domain;
-using TinCan.Features.Interaction;
+using System;
 
-namespace TinCan.Network.Infrastructure
+namespace TinCan.Core.Infrastructure
 {
     /// <summary>
     /// Infrastructure Layer: Intercepts NGO instantiation to ensure VContainer injection
@@ -13,35 +13,41 @@ namespace TinCan.Network.Infrastructure
     /// </summary>
     public class NetworkPrefabInterceptor : INetworkPrefabInstanceHandler
     {
-        private readonly IObjectResolver _resolver;
-        private readonly IActorOrchestrator _orchestrator;
+        private readonly IObjectResolver _container;
+        private readonly Action<GameObject, ulong>? _configureInit;
+        private readonly Action<GameObject>? _configureDestroy;
         private readonly GameObject _prefab;
 
-        public NetworkPrefabInterceptor(IObjectResolver resolver, IActorOrchestrator orchestrator, GameObject prefab)
+        public NetworkPrefabInterceptor(
+            IObjectResolver container,
+            GameObject prefab,
+            Action<GameObject, ulong>? configureInit = null,
+            Action<GameObject>? configureDestroy = null)
         {
-            _resolver = resolver;
-            _orchestrator = orchestrator;
+            _container = container;
+            _configureInit = configureInit;
+            _configureDestroy = configureDestroy;
             _prefab = prefab;
         }
 
         public NetworkObject Instantiate(ulong ownerClientId, Vector3 position, Quaternion rotation)
         {
             // This method is called by NGO on clients (and host proxies) when a player spawns.
-            var instance = Object.Instantiate(_prefab, position, rotation);
+            var instance = UnityEngine.Object.Instantiate(_prefab, position, rotation);
 
             // Ensure the entire hierarchy is injected before NGO's internal callbacks
-            _resolver.InjectGameObject(instance);
+            _container.InjectGameObject(instance);
 
             // Orchestration: Register actor and its capabilities
-            _orchestrator.RegisterHierarchy(instance);
+            _configureInit?.Invoke(instance, ownerClientId);
 
             return instance.GetComponent<NetworkObject>();
         }
 
         public void Destroy(NetworkObject networkObject)
         {
-            _orchestrator.UnregisterHierarchy(networkObject.gameObject);
-            Object.Destroy(networkObject.gameObject);
+            _configureDestroy?.Invoke(networkObject.gameObject);
+            UnityEngine.Object.Destroy(networkObject.gameObject);
         }
     }
 }

@@ -2,7 +2,6 @@ using VContainer;
 using VContainer.Unity;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Core.Application;
 using TinCan.Features.FreeCamera;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Features.Possession;
@@ -11,8 +10,8 @@ using TinCan.Features.Interaction;
 using TinCan.Network.Infrastructure;
 using UnityEngine;
 using Unity.Netcode;
-using System.Linq;
-using TinCan.Features.Environment;
+using TinCan.Core.Infrastructure.Extensions;
+using TinCan.Features.Possession.Infrastructure;
 
 namespace TinCan.Core.Infrastructure
 {
@@ -25,6 +24,9 @@ namespace TinCan.Core.Infrastructure
         [Header("Networking")]
         [SerializeField] private GameObject _playerPrefab;
         [SerializeField] private GameObject _airshipPrefab;
+
+        [Header("APIs")]
+        [SerializeField] private GameObject _possessionApiPrefab;
 
         protected override void Configure(IContainerBuilder builder)
         {
@@ -46,13 +48,20 @@ namespace TinCan.Core.Infrastructure
             builder.Register<InteractorRegistry>(Lifetime.Singleton).As<IInteractorRegistry>();
             builder.Register<ActorOrchestrator>(Lifetime.Singleton).As<IActorOrchestrator>();
 
+            // Register Possession API Factory lazily
+            builder.RegisterFactory<IPossessionApi>((c) => () => FindAnyObjectByType<Features.Possession.Infrastructure.PossessionApi>(), Lifetime.Singleton);
+
+            builder.Register<VehicleBoardingUseCase>(Lifetime.Singleton).As<IVehicleBoardingUseCase>();
+            builder.Register<InteractionOrchestrator>(Lifetime.Singleton).As<IInteractionOrchestrator>();
+            builder.Register<PossessionUseCase>(Lifetime.Singleton).AsSelf();
+
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
                 entryPoints.Add<FreeCameraMovementUseCase>();
                 entryPoints.Add<HumanoidMovementUseCase>();
                 entryPoints.Add<HumanoidLookUseCase>();
                 entryPoints.Add<AirshipMovementUseCase>();
-                entryPoints.Add<PossessionUseCase>();
+                entryPoints.Add<PossessionInputController>();
                 entryPoints.Add<InteractivityUseCase>();
                 entryPoints.Add<UnityInputService>().As<IInputService>();
             });
@@ -68,27 +77,47 @@ namespace TinCan.Core.Infrastructure
 
                 // Register the Prefab Interceptor to ensure VContainer injection on all clients
                 var networkManager = container.Resolve<NetworkManager>();
-                if (networkManager != null && _playerPrefab != null)
-                {
-                    var interceptor = new NetworkPrefabInterceptor(container, orchestrator, _playerPrefab);
-                    networkManager.PrefabHandler.AddHandler(_playerPrefab, interceptor);
-                    Debug.Log($"[ProjectLifetimeScope] Registered NetworkPrefabInterceptor for {_playerPrefab.name}");
-                }
-
-                if (networkManager != null && _airshipPrefab != null)
-                {
-                    var airshipInterceptor = new NetworkPrefabInterceptor(container, orchestrator, _airshipPrefab);
-                    networkManager.PrefabHandler.AddHandler(_airshipPrefab, airshipInterceptor);
-                    Debug.Log($"[ProjectLifetimeScope] Registered NetworkPrefabInterceptor for {_airshipPrefab.name}");
-
-                    // Spawn the airship on server start
-                    networkManager.OnServerStarted += () =>
+                container.AddNetworkedPrefab(
+                    networkManager,
+                    _playerPrefab,
+                    configureInit: (instance, ownerId) =>
                     {
+                        // container.Resolve<IActorOrchestrator>().RegisterHierarchy(instance);
+
+                        // // Initialize the player actor in the PossessionUseCase if this is the local player
+                        // if (ownerId != networkManager.LocalClientId) return;
+
+                        // if (instance.TryGetComponent<TinCan.Features.Possession.IPossessable>(out var possessable))
+                        // {
+                        //     container.Resolve<TinCan.Features.Possession.PossessionUseCase>().SetPlayerActor(possessable);
+                        // }
+                    },
+                    configureDestroy: (instance) =>
+                    {
+                        container.Resolve<IActorOrchestrator>().UnregisterHierarchy(instance);
+                    }
+                );
+                container.AddNetworkedPrefab(
+                    networkManager: networkManager,
+                    prefab: _airshipPrefab,
+                    onServerStarted: () =>
+                    {
+                        // Spawn the airship on server start
                         var airshipInstance = Instantiate(_airshipPrefab);
                         var netObj = airshipInstance.GetComponent<NetworkObject>();
                         netObj.Spawn();
-                    };
-                }
+                    });
+
+                container.AddNetworkedPrefab(
+                    networkManager: networkManager,
+                    prefab: _possessionApiPrefab,
+                    onServerStarted: () =>
+                    {
+                        var instance = Instantiate(_possessionApiPrefab);
+                        var netObj = instance.GetComponent<NetworkObject>();
+                        netObj.Spawn();
+                        DontDestroyOnLoad(instance);
+                    });
 
                 // Find and inject all "Complete" NetworkMediator actors (e.g. FreeCamera) to ensure they have their Registry reference
                 foreach (var character in FindObjectsByType<NetworkMediator>(FindObjectsInactive.Exclude))
@@ -103,5 +132,7 @@ namespace TinCan.Core.Infrastructure
             });
 
         }
+
     }
 }
+

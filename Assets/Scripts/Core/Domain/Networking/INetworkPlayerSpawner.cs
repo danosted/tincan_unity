@@ -8,6 +8,6 @@ namespace TinCan.Core.Domain.Networking
     /// </summary>
     public interface INetworkPlayerSpawner
     {
-        void SpawnPlayer(ulong clientId, GameObject prefab);
+        void SpawnPlayer(ulong clientId, GameObject prefab, bool isLocalPlayer = false);
     }
 }

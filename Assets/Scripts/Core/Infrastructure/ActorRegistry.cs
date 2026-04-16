@@ -1,3 +1,4 @@
+#nullable enable
 using System.Collections.Generic;
 using System.Linq;
 using TinCan.Core.Domain;
@@ -6,6 +7,7 @@ namespace TinCan.Core.Infrastructure
 {
     public class ActorRegistry : IActorRegistry
     {
+        public event System.Action<IActor>? OnActorUnregistered;
         private readonly List<IActor> _actors = new();
 
         public IEnumerable<IActor> AllActors => _actors;
@@ -25,7 +27,10 @@ namespace TinCan.Core.Infrastructure
 
         public void Unregister(IActor actor)
         {
-            _actors.Remove(actor);
+            if (_actors.Remove(actor))
+            {
+                OnActorUnregistered?.Invoke(actor);
+            }
         }
     }
 }

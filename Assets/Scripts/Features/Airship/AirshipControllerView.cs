@@ -3,6 +3,7 @@ using TinCan.Core.Domain;
 using TinCan.Features.Possession;
 using TinCan.Features.Airship;
 using System;
+using System.Collections.Generic;
 
 namespace TinCan.Features.Airship
 {
@@ -27,6 +28,7 @@ namespace TinCan.Features.Airship
         private Vector3 _velocity;
         private Vector3 _positionDelta;
         private Quaternion _rotationDelta;
+
 
         // Configuration
         public float MaxForwardSpeed => _maxForwardSpeed;
@@ -81,11 +83,23 @@ namespace TinCan.Features.Airship
         public void OnPossessed(ulong playerId)
         {
             EnableControls();
+            // foreach (var receiver in _receivers)
+            // {
+            //     if (receiver == (IPossessionReceiver)this) continue;
+            //     receiver.OnPossessed(playerId);
+            //     // receiver.OnUnpossessed();
+            // }
         }
 
         public void OnUnpossessed()
         {
             DisableControls();
+            // foreach (var receiver in _receivers)
+            // {
+            //     if (receiver == (IPossessionReceiver)this) continue;
+            //     // receiver.OnPossessed(playerId);
+            //     receiver.OnUnpossessed();
+            // }
         }
     }
 }

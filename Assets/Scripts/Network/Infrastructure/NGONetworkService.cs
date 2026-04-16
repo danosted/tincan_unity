@@ -50,7 +50,7 @@ namespace TinCan.Network.Infrastructure
             if (IsServer && _playerPrefab != null)
             {
                 Debug.Log($"[NGONetworkService] Client {clientId} connected. Spawning player...");
-                _spawner.SpawnPlayer(clientId, _playerPrefab);
+                _spawner.SpawnPlayer(clientId, _playerPrefab, IsClient && clientId == LocalClientId);
             }
         }
 

@@ -5,6 +5,7 @@ using VContainer.Unity;
 using TinCan.Core.Domain.Networking;
 using TinCan.Core.Domain;
 using TinCan.Features.Interaction;
+using TinCan.Features.Possession;
 
 namespace TinCan.Network.Infrastructure
 {
@@ -15,15 +16,17 @@ namespace TinCan.Network.Infrastructure
     public class NetworkPlayerSpawner : INetworkPlayerSpawner
     {
         private readonly IObjectResolver _container;
-        private readonly IActorOrchestrator _orchestrator;
+        private readonly PossessionUseCase _possessionUsecase;
 
-        public NetworkPlayerSpawner(IObjectResolver container, IActorOrchestrator orchestrator)
+        public NetworkPlayerSpawner(
+            IObjectResolver container,
+            PossessionUseCase possessionUsecase)
         {
             _container = container;
-            _orchestrator = orchestrator;
+            _possessionUsecase = possessionUsecase;
         }
 
-        public void SpawnPlayer(ulong clientId, GameObject prefab)
+        public void SpawnPlayer(ulong clientId, GameObject prefab, bool isLocalPlayer = false)
         {
             // 1. Create the instance locally (Server-side)
             var instance = Object.Instantiate(prefab);
@@ -32,11 +35,15 @@ namespace TinCan.Network.Infrastructure
             // Note: The Interceptor handles proxies on clients, but the Spawner handles the initial Server instance
             _container.InjectGameObject(instance);
 
-            // 3. Orchestration: Register actor and its capabilities
-            _orchestrator.RegisterHierarchy(instance);
+            // 3. Orchestration: Initialize player actor in the PossessionUseCase
+            if (isLocalPlayer)
+            {
+                _possessionUsecase.InitializePlayerActor(instance);
+            }
 
             // 4. Register as a player object in Netcode
-            var networkObject = instance.GetComponent<NetworkObject>(); if (networkObject != null)
+            var networkObject = instance.GetComponent<NetworkObject>();
+            if (networkObject != null)
             {
                 networkObject.SpawnAsPlayerObject(clientId);
                 Debug.Log($"[NetworkPlayerSpawner] Successfully spawned player for client {clientId}");

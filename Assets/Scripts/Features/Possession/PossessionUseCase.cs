@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+#nullable enable
 using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
@@ -11,56 +11,130 @@ namespace TinCan.Features.Possession
     /// Application Layer: Manages the possession of different IPossessable actors.
     /// Handles switching between characters, vehicles, or cameras using the ActorRegistry.
     /// </summary>
-    public class PossessionUseCase : ITickable, IInitializable
+    public class PossessionUseCase : IInitializable, System.IDisposable
     {
-        private readonly IInputService _inputService;
         private readonly INetworkService _networkService;
         private readonly IActorRegistry _registry;
-        private IPossessable _currentActor;
+        private readonly IActorOrchestrator _orchestrator;
+        private readonly System.Func<IPossessionApi> _apiFactory;
+        private IPossessable? _playerActor;
+        private IPossessable? _currentPossession;
 
-        public IPossessable CurrentActor => _currentActor;
+        public IPossessable? CurrentPossession => _currentPossession;
+        public IPossessable? PlayerActor => _playerActor;
 
-        public PossessionUseCase(IInputService inputService, INetworkService networkService, IActorRegistry registry)
+        public PossessionUseCase(
+            INetworkService networkService,
+            IActorRegistry registry,
+            IActorOrchestrator orchestrator,
+            System.Func<IPossessionApi> apiFactory)
         {
-            _inputService = inputService;
             _networkService = networkService;
             _registry = registry;
+            _orchestrator = orchestrator;
+            _apiFactory = apiFactory;
         }
 
         public void Initialize()
         {
             Debug.Log("[PossessionUseCase] Initializing...");
+            _registry.OnActorUnregistered += HandleActorUnregistered;
+
+            var api = _apiFactory();
+            if (api == null) return;
+
+            api.OnPossessionChanged += HandlePossessionChanged;
         }
 
-        public void Tick()
+        public void Dispose()
         {
-            ulong localId = _networkService.LocalClientId;
+            _registry.OnActorUnregistered -= HandleActorUnregistered;
 
-            // Auto-possess first ALLOWED actor if none possessed yet
-            if (_currentActor == null)
+            var api = _apiFactory();
+            if (api == null) return;
+
+            api.OnPossessionChanged -= HandlePossessionChanged;
+        }
+
+        private void HandleActorUnregistered(IActor actor)
+        {
+            if (actor is not IPossessable possessable || _currentPossession != possessable) return;
+
+            Debug.Log($"[PossessionUseCase] Current possession {possessable} was unregistered/destroyed. Returning to body.");
+
+            // We don't call OnUnpossessed because the object is already gone/going
+            _currentPossession = null;
+
+            if (_playerActor != null)
             {
-                var possessables = _registry.GetActors<IPossessable>()
-                    .Where(p => p.CanPossess(localId))
-                    .ToList();
+                PerformLocalPossession(_playerActor);
+            }
+        }
 
-                if (possessables.Count > 0)
-                {
-                    Possess(possessables[0]);
-                }
+        public void InitializePlayerActor(GameObject actorGameObject)
+        {
+            // if (!_networkService.IsClient) return;
+            if (_playerActor != null)
+            {
+                Debug.LogWarning($"[PossessionUseCase] Player actor is already set to {_playerActor}. Ignoring new assignment of {actorGameObject}.");
+                return;
+            }
+            var actor = actorGameObject.GetComponent<IPossessable>();
+            if (actor == null)
+            {
+                Debug.LogError($"[PossessionUseCase] Attempted to initialize player actor with {actorGameObject}, but it does not implement IPossessable!");
+                return;
+            }
+            _orchestrator.RegisterHierarchy(actorGameObject);
+            _playerActor = actor;
+            Debug.Log($"[PossessionUseCase] Player actor set to: {(_playerActor as MonoBehaviour)?.name ?? "Unknown"}");
+
+            // If we aren't possessing anything, or if we were waiting for our body to spawn
+            if (_currentPossession == null)
+            {
+                PerformLocalPossession(actor);
+            }
+        }
+
+        private void HandlePossessionChanged(IPossessable target, ulong newOwnerId)
+        {
+            if (newOwnerId == _networkService.LocalClientId)
+            {
+                // Filter: If we already predicted this, don't do it again
+                if (_currentPossession == target) return;
+
+                Debug.Log($"[PossessionUseCase] Server confirmed possession of {target}");
+                PerformLocalPossession(target);
+                return;
             }
 
-            if (_inputService.WasActionTriggered(ActionNames.ToggleControl))
+            if (_currentPossession != target) return;
+
+            // We lost possession of our current actor to someone else (or it was revoked)
+            Debug.Log($"[PossessionUseCase] Possession of {_currentPossession} lost to Player {newOwnerId}. Falling back to player actor.");
+            _currentPossession = null;
+
+            // Fallback to body if we have one
+            if (_playerActor != null && _playerActor != target)
             {
-                SwitchToNext();
+                PerformLocalPossession(_playerActor);
             }
         }
 
         public void SwitchToNext()
         {
             ulong localId = _networkService.LocalClientId;
+
+            // Get all possessables we are allowed to have
             var possessables = _registry.GetActors<IPossessable>()
                 .Where(p => p.CanPossess(localId))
                 .ToList();
+
+            // Ensure the primary player actor is always in the consideration pool
+            if (_playerActor != null && !possessables.Contains(_playerActor))
+            {
+                possessables.Insert(0, _playerActor);
+            }
 
             if (possessables.Count <= 1)
             {
@@ -68,32 +142,57 @@ namespace TinCan.Features.Possession
                 return;
             }
 
-            int currentIndex = possessables.IndexOf(_currentActor);
+            int currentIndex = _currentPossession != null ? possessables.IndexOf(_currentPossession) : -1;
             int nextIndex = (currentIndex + 1) % possessables.Count;
 
             Possess(possessables[nextIndex]);
         }
 
-        public void Possess(IPossessable target)
+        public void Possess(IPossessable? target)
         {
-            if (target == null) return;
-
-            // Unpossess current
-            if (_currentActor != null)
+            if (target == null)
             {
-                Debug.Log($"[PossessionUseCase] Unpossessing current actor");
-                _currentActor.OnUnpossessed();
+                // If we try to possess "nothing", return to the body
+                if (_playerActor != null) Possess(_playerActor);
+                return;
             }
 
-            _currentActor = target;
+            // 1. Authoritative Request via the API
+            var api = _apiFactory();
+            if (api != null)
+            {
+                api.RequestPossession(new PossessionRequest.Request { Target = target });
+            }
 
-            ulong localId = _networkService.LocalClientId;
-            Debug.Log($"[PossessionUseCase] Possessing actor '{target}' for PlayerId: {localId}");
-            _currentActor.OnPossessed(localId);
+            // 2. Local Prediction
+            PerformLocalPossession(target);
+        }
 
-            var mono = _currentActor as MonoBehaviour;
-            string targetName = mono != null ? mono.gameObject.name : "Unknown";
-            Debug.Log($"[PossessionUseCase] Successfully possessed: {targetName}. OwnerId: {_currentActor.OwnerId}");
+        private void PerformLocalPossession(IPossessable target)
+        {
+            if (_currentPossession != null && _currentPossession != target)
+            {
+                NotifyReceivers(_currentPossession, false, 0);
+            }
+
+            _currentPossession = target;
+            if (_currentPossession != null)
+            {
+                NotifyReceivers(_currentPossession, true, _networkService.LocalClientId);
+            }
+        }
+
+        private void NotifyReceivers(IPossessable target, bool possessed, ulong playerId)
+        {
+            if (target is not MonoBehaviour mono) return;
+
+            // Automatically find and notify all receivers in the hierarchy
+            var receivers = mono.GetComponentsInChildren<IPossessionReceiver>(true);
+            foreach (var receiver in receivers)
+            {
+                if (possessed) receiver.OnPossessed(playerId);
+                else receiver.OnUnpossessed();
+            }
         }
     }
 }

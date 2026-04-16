@@ -16,9 +16,10 @@ GameObject:
   - component: {fileID: -734890987286230950}
   - component: {fileID: 2852744458392217971}
   - component: {fileID: 6709567091061567914}
-  - component: {fileID: -3384824819682203178}
   - component: {fileID: 1432328464721159207}
   - component: {fileID: 1521276771639306349}
+  - component: {fileID: 112455933561736211}
+  - component: {fileID: 4549251832716770165}
   m_Layer: 0
   m_Name: NetworkPlayer
   m_TagString: Untagged
@@ -205,19 +206,6 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &-3384824819682203178
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 925472637626500556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5414c3d4f29beaa4c9a072d74c8e38d0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.HumanoidCharacterNetworkMediator
-  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &1432328464721159207
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -250,6 +238,32 @@ MonoBehaviour:
   _interactableMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &112455933561736211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 925472637626500556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f12fe60a2b46c464f8f28d0f9a1e7944, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.NetworkTransformMediator
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &4549251832716770165
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 925472637626500556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 517f96d45600e3c4d963f811fac4b577, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.HumanoidPlayer
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &1507221878992738649
 GameObject:
   m_ObjectHideFlags: 0

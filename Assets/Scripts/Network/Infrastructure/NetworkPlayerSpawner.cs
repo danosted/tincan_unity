@@ -3,9 +3,6 @@ using Unity.Netcode;
 using VContainer;
 using VContainer.Unity;
 using TinCan.Core.Domain.Networking;
-using TinCan.Core.Domain;
-using TinCan.Features.Interaction;
-using TinCan.Features.Possession;
 
 namespace TinCan.Network.Infrastructure
 {
@@ -15,15 +12,12 @@ namespace TinCan.Network.Infrastructure
     /// </summary>
     public class NetworkPlayerSpawner : INetworkPlayerSpawner
     {
+        public event System.Action<GameObject, ulong, bool>? OnPlayerSpawned;
         private readonly IObjectResolver _container;
-        private readonly PossessionUseCase _possessionUsecase;
 
-        public NetworkPlayerSpawner(
-            IObjectResolver container,
-            PossessionUseCase possessionUsecase)
+        public NetworkPlayerSpawner(IObjectResolver container)
         {
             _container = container;
-            _possessionUsecase = possessionUsecase;
         }
 
         public void SpawnPlayer(ulong clientId, GameObject prefab, bool isLocalPlayer = false)
@@ -32,14 +26,7 @@ namespace TinCan.Network.Infrastructure
             var instance = Object.Instantiate(prefab);
 
             // 2. Inject dependencies immediately
-            // Note: The Interceptor handles proxies on clients, but the Spawner handles the initial Server instance
             _container.InjectGameObject(instance);
-
-            // 3. Orchestration: Initialize player actor in the PossessionUseCase
-            if (isLocalPlayer)
-            {
-                _possessionUsecase.InitializePlayerActor(instance);
-            }
 
             // 4. Register as a player object in Netcode
             var networkObject = instance.GetComponent<NetworkObject>();
@@ -47,6 +34,9 @@ namespace TinCan.Network.Infrastructure
             {
                 networkObject.SpawnAsPlayerObject(clientId);
                 Debug.Log($"[NetworkPlayerSpawner] Successfully spawned player for client {clientId}");
+
+                // 3. Notify listeners (breaks circular dependency with PossessionUseCase)
+                OnPlayerSpawned?.Invoke(instance, clientId, isLocalPlayer);
             }
             else
             {

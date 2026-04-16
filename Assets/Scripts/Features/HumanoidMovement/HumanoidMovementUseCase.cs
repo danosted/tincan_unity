@@ -50,6 +50,8 @@ namespace TinCan.Features.HumanoidMovement
         protected override void ProcessSimulation(IHumanoidCharacterView character, HumanoidInputState input, bool isCaptured)
         {
             var movement = character.Movement;
+            if (movement.IsControlsEnabled == false) return;
+
             float deltaTime = TimeService.DeltaTime;
 
             // Initialize velocity tracking for this specific actor if missing

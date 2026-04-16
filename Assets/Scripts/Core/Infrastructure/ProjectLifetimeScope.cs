@@ -53,7 +53,7 @@ namespace TinCan.Core.Infrastructure
 
             builder.Register<VehicleBoardingUseCase>(Lifetime.Singleton).As<IVehicleBoardingUseCase>();
             builder.Register<InteractionOrchestrator>(Lifetime.Singleton).As<IInteractionOrchestrator>();
-            builder.Register<PossessionUseCase>(Lifetime.Singleton).AsSelf();
+            builder.Register<PossessionUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>(); ;
 
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {

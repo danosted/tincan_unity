@@ -14,6 +14,7 @@ namespace TinCan.Features.Possession
     public class PossessionUseCase : IInitializable, System.IDisposable
     {
         private readonly INetworkService _networkService;
+        private readonly INetworkPlayerSpawner _spawner;
         private readonly IActorRegistry _registry;
         private readonly IActorOrchestrator _orchestrator;
         private readonly System.Func<IPossessionApi> _apiFactory;
@@ -25,11 +26,13 @@ namespace TinCan.Features.Possession
 
         public PossessionUseCase(
             INetworkService networkService,
+            INetworkPlayerSpawner spawner,
             IActorRegistry registry,
             IActorOrchestrator orchestrator,
             System.Func<IPossessionApi> apiFactory)
         {
             _networkService = networkService;
+            _spawner = spawner;
             _registry = registry;
             _orchestrator = orchestrator;
             _apiFactory = apiFactory;
@@ -39,6 +42,7 @@ namespace TinCan.Features.Possession
         {
             Debug.Log("[PossessionUseCase] Initializing...");
             _registry.OnActorUnregistered += HandleActorUnregistered;
+            _spawner.OnPlayerSpawned += HandlePlayerSpawned;
 
             var api = _apiFactory();
             if (api == null) return;
@@ -49,11 +53,20 @@ namespace TinCan.Features.Possession
         public void Dispose()
         {
             _registry.OnActorUnregistered -= HandleActorUnregistered;
+            _spawner.OnPlayerSpawned -= HandlePlayerSpawned;
 
             var api = _apiFactory();
             if (api == null) return;
 
             api.OnPossessionChanged -= HandlePossessionChanged;
+        }
+
+        private void HandlePlayerSpawned(GameObject instance, ulong clientId, bool isLocal)
+        {
+            if (isLocal)
+            {
+                InitializePlayerActor(instance);
+            }
         }
 
         private void HandleActorUnregistered(IActor actor)
@@ -73,7 +86,6 @@ namespace TinCan.Features.Possession
 
         public void InitializePlayerActor(GameObject actorGameObject)
         {
-            // if (!_networkService.IsClient) return;
             if (_playerActor != null)
             {
                 Debug.LogWarning($"[PossessionUseCase] Player actor is already set to {_playerActor}. Ignoring new assignment of {actorGameObject}.");
@@ -136,7 +148,7 @@ namespace TinCan.Features.Possession
                 possessables.Insert(0, _playerActor);
             }
 
-            if (possessables.Count <= 1)
+            if (possessables.Count <= 1 && _currentPossession == _playerActor)
             {
                 Debug.Log("[PossessionUseCase] No other allowed possessable actors to switch to.");
                 return;
@@ -188,6 +200,8 @@ namespace TinCan.Features.Possession
 
             // Automatically find and notify all receivers in the hierarchy
             var receivers = mono.GetComponentsInChildren<IPossessionReceiver>(true);
+            Debug.Log($"[PossessionUseCase] Notifying {receivers.Length} receivers of {(possessed ? "possession" : "unpossession")} of {target} by Player {playerId}.");
+            Debug.Log($"[PossessionUseCase] Receivers: {string.Join(", ", receivers.Select(r => r.GetType().Name))}");
             foreach (var receiver in receivers)
             {
                 if (possessed) receiver.OnPossessed(playerId);

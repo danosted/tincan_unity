@@ -76,6 +76,7 @@ namespace TinCan.Features.Airship
         public void ApplyMovement(Vector3 velocity, Vector3 angularVelocity)
         {
             if (_rb == null) return;
+            Debug.Log($"[AirshipControllerView] Applying movement. Velocity: {velocity}, AngularVelocity: {angularVelocity}");
             _rb.linearVelocity = velocity;
             _rb.angularVelocity = angularVelocity;
         }
@@ -83,23 +84,11 @@ namespace TinCan.Features.Airship
         public void OnPossessed(ulong playerId)
         {
             EnableControls();
-            // foreach (var receiver in _receivers)
-            // {
-            //     if (receiver == (IPossessionReceiver)this) continue;
-            //     receiver.OnPossessed(playerId);
-            //     // receiver.OnUnpossessed();
-            // }
         }
 
         public void OnUnpossessed()
         {
             DisableControls();
-            // foreach (var receiver in _receivers)
-            // {
-            //     if (receiver == (IPossessionReceiver)this) continue;
-            //     // receiver.OnPossessed(playerId);
-            //     receiver.OnUnpossessed();
-            // }
         }
     }
 }

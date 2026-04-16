@@ -6,7 +6,7 @@ namespace TinCan.Features.HumanoidMovement
     /// Domain Layer: Interface for the physical movement motor.
     /// Purely behavioral, delegated to by a Character Facade or Mediator.
     /// </summary>
-    public interface IHumanoidMovementView
+    public interface IHumanoidMovementView : IControllable
     {
         Transform Transform { get; }
         GroundData CurrentGround { get; }

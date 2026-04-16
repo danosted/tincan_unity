@@ -16,7 +16,6 @@ namespace TinCan.Features.Possession
         private readonly INetworkService _networkService;
         private readonly INetworkPlayerSpawner _spawner;
         private readonly IActorRegistry _registry;
-        private readonly IActorOrchestrator _orchestrator;
         private readonly System.Func<IPossessionApi> _apiFactory;
         private IPossessable? _playerActor;
         private IPossessable? _currentPossession;
@@ -28,13 +27,11 @@ namespace TinCan.Features.Possession
             INetworkService networkService,
             INetworkPlayerSpawner spawner,
             IActorRegistry registry,
-            IActorOrchestrator orchestrator,
             System.Func<IPossessionApi> apiFactory)
         {
             _networkService = networkService;
             _spawner = spawner;
             _registry = registry;
-            _orchestrator = orchestrator;
             _apiFactory = apiFactory;
         }
 
@@ -97,7 +94,6 @@ namespace TinCan.Features.Possession
                 Debug.LogError($"[PossessionUseCase] Attempted to initialize player actor with {actorGameObject}, but it does not implement IPossessable!");
                 return;
             }
-            _orchestrator.RegisterHierarchy(actorGameObject);
             _playerActor = actor;
             Debug.Log($"[PossessionUseCase] Player actor set to: {(_playerActor as MonoBehaviour)?.name ?? "Unknown"}");
 

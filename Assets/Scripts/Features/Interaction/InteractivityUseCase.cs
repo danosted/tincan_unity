@@ -32,12 +32,14 @@ namespace TinCan.Features.Interaction
 
         public void Tick()
         {
+            ulong localId = _networkService.LocalClientId;
+            if (_inputService.WasActionTriggered(ActionNames.Cancel))
+            {
+                // 1. Check if we are currently in a vehicle and want to exit
+                if (HandleVehicleExit(localId)) return;
+            }
             if (!_inputService.WasActionTriggered(ActionNames.Interact)) return;
 
-            ulong localId = _networkService.LocalClientId;
-
-            // 1. Check if we are currently in a vehicle and want to exit
-            if (HandleVehicleExit(localId)) return;
 
             // 2. Otherwise, check for world interactions
             HandleWorldInteraction(localId);

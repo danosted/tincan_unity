@@ -8,7 +8,7 @@ namespace TinCan.Features.Airship
     /// Domain Layer: Interface for an airship that can be simulated and possessed.
     /// Also acts as a moving ground for actors standing on it.
     /// </summary>
-    public interface IAirshipView : ISimulatedActor<AirshipInputState>, IPossessable, IMovingGround
+    public interface IAirshipView : ISimulatedActor<AirshipInputState>, IPossessable, IMovingGround, IControllable
     {
         Transform Transform { get; }
 

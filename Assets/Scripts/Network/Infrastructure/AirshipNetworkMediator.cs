@@ -44,6 +44,8 @@ namespace TinCan.Network.Infrastructure
         public Vector3 PositionDelta => _view.PositionDelta;
         public Quaternion RotationDelta => _view.RotationDelta;
 
+        public bool IsControlsEnabled => _view.IsControlsEnabled;
+
         public void ApplyMovement(Vector3 velocity, Vector3 angularVelocity) => _view.ApplyMovement(velocity, angularVelocity);
 
         public override void OnNetworkSpawn()
@@ -74,6 +76,16 @@ namespace TinCan.Network.Infrastructure
         private void RequestExitVehicleServerRpc()
         {
             InteractionOrchestrator?.HandleExit(OwnerClientId);
+        }
+
+        public void EnableControls()
+        {
+            _view.EnableControls();
+        }
+
+        public void DisableControls()
+        {
+            _view.DisableControls();
         }
     }
 }

@@ -42,6 +42,7 @@ namespace TinCan.Features.Airship
 
         protected override void ProcessSimulation(IAirshipView airship, AirshipInputState input, bool isCaptured)
         {
+            if (airship.IsControlsEnabled == false) return;
             if (!_linearVelocities.ContainsKey(airship.Id))
                 _linearVelocities[airship.Id] = Vector3.zero;
 

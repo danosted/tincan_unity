@@ -20,12 +20,26 @@ namespace TinCan.Network.Infrastructure
 
         protected IActorRegistry Registry { get; private set; }
         protected IInteractionOrchestrator InteractionOrchestrator { get; private set; }
+        protected IActorOrchestrator ActorOrchestrator { get; private set; }
 
         [Inject]
-        public void Construct(IActorRegistry registry, IInteractionOrchestrator interactionOrchestrator)
+        public void Construct(IActorRegistry registry, IInteractionOrchestrator interactionOrchestrator, IActorOrchestrator actorOrchestrator)
         {
             Registry = registry;
             InteractionOrchestrator = interactionOrchestrator;
+            ActorOrchestrator = actorOrchestrator;
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            ActorOrchestrator?.RegisterHierarchy(gameObject);
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            ActorOrchestrator?.UnregisterHierarchy(gameObject);
+            base.OnNetworkDespawn();
         }
 
         public virtual bool CanPossess(ulong playerId)

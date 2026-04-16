@@ -80,22 +80,8 @@ namespace TinCan.Core.Infrastructure
                 container.AddNetworkedPrefab(
                     networkManager,
                     _playerPrefab,
-                    configureInit: (instance, ownerId) =>
-                    {
-                        // container.Resolve<IActorOrchestrator>().RegisterHierarchy(instance);
-
-                        // // Initialize the player actor in the PossessionUseCase if this is the local player
-                        // if (ownerId != networkManager.LocalClientId) return;
-
-                        // if (instance.TryGetComponent<TinCan.Features.Possession.IPossessable>(out var possessable))
-                        // {
-                        //     container.Resolve<TinCan.Features.Possession.PossessionUseCase>().SetPlayerActor(possessable);
-                        // }
-                    },
-                    configureDestroy: (instance) =>
-                    {
-                        container.Resolve<IActorOrchestrator>().UnregisterHierarchy(instance);
-                    }
+                    configureInit: null,
+                    configureDestroy: null
                 );
                 container.AddNetworkedPrefab(
                     networkManager: networkManager,
@@ -104,6 +90,7 @@ namespace TinCan.Core.Infrastructure
                     {
                         // Spawn the airship on server start
                         var airshipInstance = Instantiate(_airshipPrefab);
+                        container.InjectGameObject(airshipInstance);
                         var netObj = airshipInstance.GetComponent<NetworkObject>();
                         netObj.Spawn();
                     });
@@ -114,6 +101,7 @@ namespace TinCan.Core.Infrastructure
                     onServerStarted: () =>
                     {
                         var instance = Instantiate(_possessionApiPrefab);
+                        container.InjectGameObject(instance);
                         var netObj = instance.GetComponent<NetworkObject>();
                         netObj.Spawn();
                         DontDestroyOnLoad(instance);
@@ -124,9 +112,6 @@ namespace TinCan.Core.Infrastructure
                 {
                     // Injection handles dependency resolution
                     container.InjectGameObject(character.gameObject);
-
-                    // Orchestrate registration
-                    orchestrator.RegisterHierarchy(character.gameObject);
                 }
 
             });

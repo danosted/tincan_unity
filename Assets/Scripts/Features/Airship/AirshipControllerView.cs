@@ -12,7 +12,7 @@ namespace TinCan.Features.Airship
     /// Handles Rigidbody physics and acts as a moving platform for other actors.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
-    public class AirshipControllerView : ControllableActorBase, IPossessionReceiver
+    public class AirshipControllerView : ControllableActorBase, IPossessionReceiver, IMovingGround
     {
         [Header("Movement Settings")]
         [SerializeField] private float _maxForwardSpeed = 15f;
@@ -21,7 +21,6 @@ namespace TinCan.Features.Airship
         [SerializeField] private float _decelerationRate = 2f;
         [SerializeField] private float _turnSpeed = 45f;
         [SerializeField] private float _pitchSpeed = 30f;
-
         private Rigidbody _rb;
         private Vector3 _lastPosition;
         private Quaternion _lastRotation;

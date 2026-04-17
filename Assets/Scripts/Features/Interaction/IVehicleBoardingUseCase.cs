@@ -8,7 +8,7 @@ namespace TinCan.Features.Interaction
     /// </summary>
     public interface IVehicleBoardingUseCase
     {
-        void BoardVehicle(ulong playerId, IVehicleBoardable boardable);
-        void ExitVehicle(ulong playerId);
+        void BoardVehicle(IVehicleBoardable boardable);
+        void ExitVehicle();
     }
 }

@@ -169,11 +169,17 @@ namespace TinCan.Features.Possession
             var api = _apiFactory();
             if (api != null)
             {
-                api.RequestPossession(new PossessionRequest.Request { Target = target });
+                api.RequestPossession(new PossessionRequest.Request
+                {
+                    Target = target
+                });
             }
 
             // 2. Local Prediction
-            PerformLocalPossession(target);
+            if (target.CanPossess(_networkService.LocalClientId))
+            {
+                PerformLocalPossession(target);
+            }
         }
 
         private void PerformLocalPossession(IPossessable target)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Features.Possession;
 using UnityEngine;
+using VContainer.Unity;
 
 namespace TinCan.Features.Interaction
 {
@@ -10,27 +11,51 @@ namespace TinCan.Features.Interaction
     /// Application Layer: Handles the logic of boarding and exiting vehicles.
     /// Manages the "parked" state of humanoid characters while their player is controlling a vehicle.
     /// </summary>
-    public class VehicleBoardingUseCase : IVehicleBoardingUseCase
+    public class VehicleBoardingUseCase : IVehicleBoardingUseCase, ITickable
     {
         private readonly PossessionUseCase _possessionUseCase;
+        private readonly IInputService _inputService;
 
-        public VehicleBoardingUseCase(PossessionUseCase possessionUseCase)
+        public VehicleBoardingUseCase(
+            PossessionUseCase possessionUseCase,
+            IInputService inputService)
         {
             _possessionUseCase = possessionUseCase;
+            _inputService = inputService;
         }
 
-        public void BoardVehicle(ulong playerId, IVehicleBoardable boardable)
+        public void BoardVehicle(IVehicleBoardable boardable)
         {
-            // 3. Swap possession to the vehicle
+            // Request possession for the interactor (identity handled by API)
             _possessionUseCase.Possess(boardable.TargetVehicle);
 
-            Debug.Log($"[VehicleBoardingUseCase] Player {playerId} boarded vehicle.");
+            Debug.Log($"[VehicleBoardingUseCase] Boarding vehicle.");
         }
 
-        public void ExitVehicle(ulong playerId)
+        public void ExitVehicle()
         {
+            // Return to body (identity handled by API)
+            if (_possessionUseCase.CurrentPossession == null)
+            {
+                Debug.LogWarning($"[VehicleBoardingUseCase] No current possession found. Cannot exit vehicle.");
+                return;
+            }
+            if (_possessionUseCase.CurrentPossession is not IVehicleBoardable currentBoarding)
+            {
+                Debug.LogWarning($"[VehicleBoardingUseCase] Current possession is not a vehicle. Cannot exit.");
+                return;
+            }
             _possessionUseCase.Possess(null);
-            Debug.Log($"[VehicleBoardingUseCase] Player {playerId} exited vehicle and returned to character.");
+            Debug.Log($"[VehicleBoardingUseCase] Exited vehicle and returned to character.");
+        }
+
+        public void Tick()
+        {
+            if (_inputService.WasActionTriggered(ActionNames.Cancel))
+            {
+                // 1. Check if we are currently in a vehicle and want to exit
+                ExitVehicle();
+            }
         }
     }
 }

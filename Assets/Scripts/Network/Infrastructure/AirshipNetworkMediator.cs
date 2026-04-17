@@ -14,7 +14,7 @@ namespace TinCan.Network.Infrastructure
     /// </summary>
     [RequireComponent(typeof(AirshipControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
-    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, IExitVehicleMediator
+    public class AirshipNetworkMediator : NetworkMediator, IAirshipView
     {
         private AirshipControllerView _view;
 
@@ -62,20 +62,6 @@ namespace TinCan.Network.Infrastructure
             {
                 _netInputState.Value = InputState;
             }
-        }
-
-        public void RequestExitVehicle()
-        {
-            if (IsOwner)
-            {
-                RequestExitVehicleServerRpc();
-            }
-        }
-
-        [Rpc(SendTo.Server)]
-        private void RequestExitVehicleServerRpc()
-        {
-            InteractionOrchestrator?.HandleExit(OwnerClientId);
         }
 
         public void EnableControls()

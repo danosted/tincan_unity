@@ -53,8 +53,8 @@ namespace TinCan.Features.HumanoidMovement
         private void UpdateSensing()
         {
             // Raw sensing: Perform a raycast regardless of isGrounded state to detect platforms
-
-            if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out var hit, _controller.height * 0.5f + 0.5f, _interactableMask))
+            // Increased range to 2.0m to maintain stickiness during jumps
+            if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out var hit, _controller.height * 0.5f + 2.0f, _interactableMask))
             {
                 _lastGroundHit = hit;
                 Debug.DrawLine(transform.position, hit.point, Color.green);

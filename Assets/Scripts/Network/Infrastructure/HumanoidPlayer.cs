@@ -17,7 +17,7 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(ThirdPersonLookView))]
     [RequireComponent(typeof(InteractorControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
-    public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView, IInteractionMediator
+    public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView
     {
         private HumanoidControllerView _movement;
         private ThirdPersonLookView _look;
@@ -75,23 +75,6 @@ namespace TinCan.Network.Infrastructure
 
                 // Update platform for transform sync
                 _transformSync.SetPlatform(_movement.CurrentGround.GroundTransform);
-            }
-        }
-
-        public void RequestInteract(NetworkObject target)
-        {
-            if (IsOwner)
-            {
-                RequestInteractServerRpc(target);
-            }
-        }
-
-        [Rpc(SendTo.Server)]
-        private void RequestInteractServerRpc(NetworkObjectReference targetRef)
-        {
-            if (targetRef.TryGet(out NetworkObject target))
-            {
-                InteractionOrchestrator?.HandleInteraction(OwnerClientId, target);
             }
         }
     }

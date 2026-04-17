@@ -51,7 +51,7 @@ namespace TinCan.Core.Infrastructure
             // Register Possession API Factory lazily
             builder.RegisterFactory<IPossessionApi>((c) => () => FindAnyObjectByType<Features.Possession.Infrastructure.PossessionApi>(), Lifetime.Singleton);
 
-            builder.Register<VehicleBoardingUseCase>(Lifetime.Singleton).As<IVehicleBoardingUseCase>();
+            // builder.Register<VehicleBoardingUseCase>(Lifetime.Singleton).As<IVehicleBoardingUseCase>();
             builder.Register<InteractionOrchestrator>(Lifetime.Singleton).As<IInteractionOrchestrator>();
             builder.Register<PossessionUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>(); ;
 
@@ -60,6 +60,7 @@ namespace TinCan.Core.Infrastructure
                 entryPoints.Add<FreeCameraMovementUseCase>();
                 entryPoints.Add<HumanoidMovementUseCase>();
                 entryPoints.Add<HumanoidLookUseCase>();
+                entryPoints.Add<VehicleBoardingUseCase>().As<IVehicleBoardingUseCase>();
                 entryPoints.Add<AirshipMovementUseCase>();
                 entryPoints.Add<PossessionInputController>();
                 entryPoints.Add<InteractivityUseCase>();

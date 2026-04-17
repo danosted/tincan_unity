@@ -1,71 +1,62 @@
 # Git Large File Storage (LFS) Configuration for Unity
 
-## About This File
+# About This File
+#
+# This .gitattributes file configures Git LFS for binary assets in the TinCan project.
+# It ensures large files are tracked efficiently and prevents repo bloat.
 
-This `.gitattributes` file configures Git LFS for binary assets in the TinCan project.
-It ensures large files are tracked efficiently and prevents repo bloat.
+# What Gets Tracked by LFS
+#
+# All binary assets are tracked by Git LFS:
+# - 3D Models (.fbx, .obj, .blend, .max)
+# - Textures (.png, .jpg, .tga, .exr, .psd)
+# - Audio (.wav, .mp3, .ogg, .flac)
+# - Video (.mp4, .mov, .webm)
+# - Animations (.anim)
+# - Shader Binaries (.so, .dll)
 
-## What Gets Tracked by LFS
+# Configuration Details
+#
+# See below for what's tracked. This prevents:
+# - Massive repository sizes (Git stores full history of every version)
+# - Slow clones and pulls
+# - Merge conflicts on binary files
+# - Performance issues with large teams
 
-All binary assets are tracked by Git LFS:
-- **3D Models** (`.fbx`, `.obj`, `.blend`, `.max`)
-- **Textures** (`.png`, `.jpg`, `.tga`, `.exr`, `.psd`)
-- **Audio** (`.wav`, `.mp3`, `.ogg`, `.flac`)
-- **Video** (`.mp4`, `.mov`, `.webm`)
-- **Animations** (`.anim`)
-- **Shader Binaries** (`.so`, `.dll`)
+# Setup
+#
+# First time using this repo:
+# git lfs install
+#
+# This configures your local Git to use LFS.
 
-## Configuration Details
+# When pushing large files:
+# Git will automatically handle LFS. Just commit normally:
+# git add Assets/Textures/myfile.png
+# git commit -m "Add texture"
+# git push
+#
+# Git LFS transparently handles the rest.
 
-See below for what's tracked. This prevents:
-- ❌ Massive repository sizes (Git stores full history of every version)
-- ❌ Slow clones and pulls
-- ❌ Merge conflicts on binary files
-- ❌ Performance issues with large teams
+# Troubleshooting
+#
+# "LFS file not found" error?
+# git lfs pull  # Download all LFS files
+#
+# Want to see what's in LFS?
+# git lfs ls-files  # List all LFS tracked files
+#
+# File not being tracked by LFS?
+# 1. Add pattern to this file
+# 2. Run: git lfs migrate import --include="*.ext" (for existing files)
+# 3. Push changes
 
-## Setup
+# ---
 
-**First time using this repo:**
-```bash
-git lfs install
-```
+# File Pattern Tracking
+# The patterns below are automatically enforced:
 
-This configures your local Git to use LFS.
-
-**When pushing large files:**
-Git will automatically handle LFS. Just commit normally:
-```bash
-git add Assets/Textures/myfile.png
-git commit -m "Add texture"
-git push
-```
-
-Git LFS transparently handles the rest.
-
-## Troubleshooting
-
-**"LFS file not found" error?**
-```bash
-git lfs pull  # Download all LFS files
-```
-
-**Want to see what's in LFS?**
-```bash
-git lfs ls-files  # List all LFS tracked files
-```
-
-**File not being tracked by LFS?**
-1. Add pattern to this file
-2. Run: `git lfs migrate import --include="*.ext"` (for existing files)
-3. Push changes
-
----
-
-## File Pattern Tracking
-
-The patterns below are automatically enforced:
-
-*Generated on: January 18, 2026*
+# Generated on: January 18, 2026
 
 # Text files (treat as text for merging)
 *.cs text eol=lf

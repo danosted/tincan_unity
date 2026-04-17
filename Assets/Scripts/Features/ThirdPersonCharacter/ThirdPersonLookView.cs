@@ -10,7 +10,6 @@ namespace TinCan.Features.HumanoidMovement
     /// View/Infrastructure Layer: Orbital third-person camera implementation.
     /// Attach this to the character prefab.
     /// </summary>
-    [RequireComponent(typeof(HumanoidControllerView))]
     public class ThirdPersonLookView : MonoBehaviour, IHumanoidLookView, IPossessionReceiver
     {
         [Header("Camera Configuration")]

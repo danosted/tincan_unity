@@ -49,8 +49,8 @@ namespace TinCan.Network.Infrastructure
             // If we are the server (or host), spawn the player when they connect
             if (IsServer && _playerPrefab != null)
             {
-                Debug.Log($"[NGONetworkService] Client {clientId} connected. Spawning player...");
-                _spawner.SpawnPlayer(clientId, _playerPrefab, IsClient && clientId == LocalClientId);
+                Debug.Log($"[NGONetworkService] SERVER: Client {clientId} connected. Spawning player...");
+                _spawner.SpawnPlayer(clientId, _playerPrefab, IsServer, clientId == LocalClientId);
             }
         }
 

@@ -1,3 +1,4 @@
+#nullable enable
 using UnityEngine;
 using Unity.Netcode;
 using VContainer;
@@ -20,28 +21,36 @@ namespace TinCan.Network.Infrastructure
             _container = container;
         }
 
-        public void SpawnPlayer(ulong clientId, GameObject prefab, bool isLocalPlayer = false)
+        public void SpawnPlayer(ulong clientId, GameObject prefab, bool isServer, bool isLocalPlayer = false)
         {
             // 1. Create the instance locally (Server-side)
             var instance = Object.Instantiate(prefab);
+            instance.name = $"{prefab.name}_Client{clientId}";
 
             // 2. Inject dependencies immediately
             _container.InjectGameObject(instance);
 
             // 4. Register as a player object in Netcode
             var networkObject = instance.GetComponent<NetworkObject>();
-            if (networkObject != null)
-            {
-                networkObject.SpawnAsPlayerObject(clientId);
-                Debug.Log($"[NetworkPlayerSpawner] Successfully spawned player for client {clientId}");
-
-                // 3. Notify listeners (breaks circular dependency with PossessionUseCase)
-                OnPlayerSpawned?.Invoke(instance, clientId, isLocalPlayer);
-            }
-            else
+            if (networkObject == null)
             {
                 Debug.LogError($"[NetworkPlayerSpawner] Prefab {prefab.name} is missing a NetworkObject component!");
+                return;
             }
+
+            if (isServer)
+            {
+                networkObject.SpawnAsPlayerObject(clientId);
+                Debug.Log($"[NetworkPlayerSpawner] SERVER Successfully spawned player for client {clientId}");
+            }
+
+            // 3. Notify listeners (breaks circular dependency with PossessionUseCase)
+            NotifyPlayerSpawned(instance, clientId, isLocalPlayer);
+        }
+
+        public void NotifyPlayerSpawned(GameObject instance, ulong clientId, bool isLocalPlayer)
+        {
+            OnPlayerSpawned?.Invoke(instance, clientId, isLocalPlayer);
         }
     }
 }

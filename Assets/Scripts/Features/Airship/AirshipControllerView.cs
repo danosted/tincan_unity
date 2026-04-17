@@ -4,6 +4,7 @@ using TinCan.Features.Possession;
 using TinCan.Features.Airship;
 using System;
 using System.Collections.Generic;
+using TinCan.Features.HumanoidMovement;
 
 namespace TinCan.Features.Airship
 {
@@ -12,6 +13,7 @@ namespace TinCan.Features.Airship
     /// Handles Rigidbody physics and acts as a moving platform for other actors.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(ThirdPersonLookView))]
     public class AirshipControllerView : ControllableActorBase, IPossessionReceiver, IMovingGround
     {
         [Header("Movement Settings")]
@@ -21,6 +23,7 @@ namespace TinCan.Features.Airship
         [SerializeField] private float _decelerationRate = 2f;
         [SerializeField] private float _turnSpeed = 45f;
         [SerializeField] private float _pitchSpeed = 30f;
+        private ThirdPersonLookView _look;
         private Rigidbody _rb;
         private Vector3 _lastPosition;
         private Quaternion _lastRotation;
@@ -38,7 +41,7 @@ namespace TinCan.Features.Airship
         public float PitchSpeed => _pitchSpeed;
 
         // IMovingGround data
-        public Vector3 Velocity => _velocity;
+        public Vector3 Velocity => _rb != null ? _rb.linearVelocity : Vector3.zero;
         public Vector3 PositionDelta => _positionDelta;
         public Quaternion RotationDelta => _rotationDelta;
 
@@ -57,25 +60,32 @@ namespace TinCan.Features.Airship
 
             _lastPosition = transform.position;
             _lastRotation = transform.rotation;
+
+            _look = GetComponent<ThirdPersonLookView>();
         }
 
-        private void FixedUpdate()
+        private void Update()
         {
             // Calculate Deltas for IMovingGround consumers (players on deck)
+            // Sampling in Update ensures one delta per rendered frame
             _positionDelta = transform.position - _lastPosition;
             _rotationDelta = transform.rotation * Quaternion.Inverse(_lastRotation);
 
-            float dt = Time.fixedDeltaTime;
+            float dt = Time.deltaTime;
             _velocity = dt > 0 ? _positionDelta / dt : Vector3.zero;
 
             _lastPosition = transform.position;
             _lastRotation = transform.rotation;
         }
 
+        private void FixedUpdate()
+        {
+            // Physics application remains here
+        }
+
         public void ApplyMovement(Vector3 velocity, Vector3 angularVelocity)
         {
             if (_rb == null) return;
-            Debug.Log($"[AirshipControllerView] Applying movement. Velocity: {velocity}, AngularVelocity: {angularVelocity}");
             _rb.linearVelocity = velocity;
             _rb.angularVelocity = angularVelocity;
         }

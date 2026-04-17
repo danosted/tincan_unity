@@ -77,10 +77,24 @@ namespace TinCan.Core.Infrastructure
 
                 // Register the Prefab Interceptor to ensure VContainer injection on all clients
                 var networkManager = container.Resolve<NetworkManager>();
+                var spawner = container.Resolve<INetworkPlayerSpawner>();
+
                 container.AddNetworkedPrefab(
                     networkManager,
                     _playerPrefab,
-                    configureInit: null,
+                    configureInit: (instance, ownerClientId) =>
+                    {
+                        // Ensure consistent naming across network
+                        instance.name = $"{_playerPrefab.name}_Client{ownerClientId}";
+
+                        // On clients (and host), notify if this is our local player
+                        // This triggers possession logic for the networked object
+                        if (ownerClientId == networkManager.LocalClientId)
+                        {
+                            Debug.Log($"[ProjectLifetimeScope] Local player object {instance.name} detected. Notifying spawner.");
+                            spawner.NotifyPlayerSpawned(instance, ownerClientId, true);
+                        }
+                    },
                     configureDestroy: null
                 );
                 container.AddNetworkedPrefab(

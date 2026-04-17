@@ -16,13 +16,15 @@ namespace TinCan.Features.HumanoidMovement
         [SerializeField] private float _sprintMultiplier = 1.8f;
         [SerializeField] private float _jumpForce = 8f;
         [SerializeField] private float _gravity = 20f;
+        [SerializeField] private LayerMask _interactableMask = ~0; // Default: hit everything
 
         private CharacterController _controller;
         private GroundData _currentGround;
-        private IMovingGround _activeMovingGround;
+        private RaycastHit? _lastGroundHit;
 
         public Transform Transform => transform;
         public GroundData CurrentGround => _currentGround;
+        public RaycastHit? LastGroundHit => _lastGroundHit;
         public bool IsGrounded => _controller.isGrounded;
         public float WalkSpeed => _walkSpeed;
         public float SprintMultiplier => _sprintMultiplier;
@@ -45,62 +47,30 @@ namespace TinCan.Features.HumanoidMovement
 
         private void Update()
         {
-            UpdateGroundData();
+            UpdateSensing();
         }
 
-        private void UpdateGroundData()
+        private void UpdateSensing()
         {
-            _currentGround.IsGrounded = _controller.isGrounded;
+            // Raw sensing: Perform a raycast regardless of isGrounded state to detect platforms
 
-            // Use a raycast to verify the ground and platform
-            bool hasPlatform = false;
-            if (_controller.isGrounded)
+            if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out var hit, _controller.height * 0.5f + 0.5f, _interactableMask))
             {
-                RaycastHit hit;
-                // Raycast slightly further than the controller's skin width
-                if (Physics.Raycast(transform.position, Vector3.down, out hit, _controller.height * 0.5f + 0.2f))
-                {
-                    var platform = hit.collider.gameObject.GetComponentInParent<IMovingGround>();
-                    _currentGround.GroundTransform = hit.transform; // Always track what we are standing on
-
-                    if (platform != null)
-                    {
-                        _activeMovingGround = platform;
-                        _currentGround.GroundNormal = hit.normal;
-                        hasPlatform = true;
-                    }
-                }
-            }
-
-            if (hasPlatform && _activeMovingGround != null)
-            {
-                // Use velocity for smooth, frame-rate independent movement
-                _currentGround.GroundVelocity = _activeMovingGround.Velocity;
-                _currentGround.SurfaceDelta = _activeMovingGround.PositionDelta;
-                _currentGround.RotationDelta = _activeMovingGround.RotationDelta;
+                _lastGroundHit = hit;
+                Debug.DrawLine(transform.position, hit.point, Color.green);
             }
             else
             {
-                _activeMovingGround = null;
-                _currentGround.GroundTransform = null;
-                _currentGround.GroundVelocity = Vector3.zero;
-                _currentGround.SurfaceDelta = Vector3.zero;
-                _currentGround.RotationDelta = Quaternion.identity;
-                _currentGround.GroundNormal = Vector3.up;
+                _lastGroundHit = null;
             }
+
+            // Infrastructure state
+            _currentGround.IsGrounded = _controller.isGrounded;
         }
 
         private void OnControllerColliderHit(ControllerColliderHit hit)
         {
-            // Fallback detection if raycast missed but we hit something while moving
-            if (!_currentGround.IsGrounded) return;
-
-            var platform = hit.gameObject.GetComponentInParent<IMovingGround>();
-            if (platform != null)
-            {
-                _activeMovingGround = platform;
-            }
-
+            // Fallback for normal detection
             if (hit.normal.y > 0.7f)
             {
                 _currentGround.GroundNormal = hit.normal;
@@ -115,6 +85,11 @@ namespace TinCan.Features.HumanoidMovement
         public void SetRotation(Quaternion rotation)
         {
             transform.rotation = rotation;
+        }
+
+        public void UpdateGroundData(GroundData data)
+        {
+            _currentGround = data;
         }
 
         public void OnPossessed(ulong playerId)

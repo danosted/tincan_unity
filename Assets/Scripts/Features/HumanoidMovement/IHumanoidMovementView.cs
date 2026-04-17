@@ -10,6 +10,7 @@ namespace TinCan.Features.HumanoidMovement
     {
         Transform Transform { get; }
         GroundData CurrentGround { get; }
+        void UpdateGroundData(GroundData data);
 
         float WalkSpeed { get; }
         float SprintMultiplier { get; }
@@ -20,6 +21,11 @@ namespace TinCan.Features.HumanoidMovement
         /// The direction the camera is currently looking (used for movement relativity).
         /// </summary>
         Quaternion LookRotation { get; }
+
+        /// <summary>
+        /// Raw sensing data from the physical world.
+        /// </summary>
+        RaycastHit? LastGroundHit { get; }
 
         void Move(Vector3 motion);
 

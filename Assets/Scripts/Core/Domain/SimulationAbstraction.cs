@@ -51,7 +51,7 @@ namespace TinCan.Core.Domain
             }
         }
 
-        private void HandleGenericSimulation(TView actor)
+        protected void HandleGenericSimulation(TView actor)
         {
             bool isCaptured = false;
             if (actor is IPossessable possessable)

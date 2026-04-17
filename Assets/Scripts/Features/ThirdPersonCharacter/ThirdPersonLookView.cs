@@ -16,6 +16,7 @@ namespace TinCan.Features.HumanoidMovement
         [SerializeField] private Transform _cameraPivot;
         private Camera _camera => _cameraPivot.GetComponent<Camera>();
         [SerializeField] private float _distance = 5f;
+        [SerializeField] private float _height = 0f;
         [SerializeField] private float _sensitivity = 0.5f;
         [SerializeField] private float _maxPitch = 85f;
 
@@ -43,7 +44,8 @@ namespace TinCan.Features.HumanoidMovement
 
             // Simple orbital camera math
             Quaternion rotation = Quaternion.Euler(Pitch, Yaw, 0);
-            Vector3 position = transform.position - (rotation * Vector3.forward * _distance);
+            Vector3 center = transform.position + Vector3.up * _height;
+            Vector3 position = center - (rotation * Vector3.forward * _distance);
 
             _cameraPivot.rotation = rotation;
             _cameraPivot.position = position;

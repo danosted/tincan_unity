@@ -1,6 +1,5 @@
-using System;
-using System.Collections.Generic;
 using TinCan.Core.Domain;
+using TinCan.Features.Airship;
 using TinCan.Features.Possession;
 using UnityEngine;
 using VContainer.Unity;
@@ -40,7 +39,7 @@ namespace TinCan.Features.Interaction
                 Debug.LogWarning($"[VehicleBoardingUseCase] No current possession found. Cannot exit vehicle.");
                 return;
             }
-            if (_possessionUseCase.CurrentPossession is not IVehicleBoardable currentBoarding)
+            if (_possessionUseCase.CurrentPossession is not IAirshipView currentBoarding)
             {
                 Debug.LogWarning($"[VehicleBoardingUseCase] Current possession is not a vehicle. Cannot exit.");
                 return;

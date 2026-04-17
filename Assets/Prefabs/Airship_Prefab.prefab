@@ -411,8 +411,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.HumanoidMovement.ThirdPersonLookView
   _cameraPivot: {fileID: 4295072262532451526}
   _distance: 20
+  _height: 5
   _sensitivity: 0.5
-  _maxPitch: 85
+  _maxPitch: 90
 --- !u!1 &5392219454942549380
 GameObject:
   m_ObjectHideFlags: 0

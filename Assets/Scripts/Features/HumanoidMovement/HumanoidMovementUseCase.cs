@@ -118,6 +118,20 @@ namespace TinCan.Features.HumanoidMovement
             if (platformRotationPush != Quaternion.identity)
             {
                 movement.SetRotation(platformRotationPush * movement.Transform.rotation);
+
+                // Keep the camera orientation synchronized with the platform's rotation
+                if (isCaptured && character.Look != null)
+                {
+                    float yawDelta = platformRotationPush.eulerAngles.y;
+                    
+                    // Normalize the euler angle to [-180, 180] to avoid jumping by 360 degrees
+                    if (yawDelta > 180f) yawDelta -= 360f;
+
+                    if (Mathf.Abs(yawDelta) > 0.001f)
+                    {
+                        character.Look.Yaw += yawDelta;
+                    }
+                }
             }
         }
 

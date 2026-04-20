@@ -10,9 +10,13 @@ namespace TinCan.Features.Possession
     /// </summary>
     public interface IPossessable : IActor
     {
-        // Default implementations to derive state from the underlying NetworkObject
+        // Explicitly set the possessor on the server.
+        void AuthoritativeSetPossessor(ulong? playerId);
+
+        // Optional value indicating explicit possession.
+        ulong? PossessorId { get; }
+
         ulong? OwnerId => (this as MonoBehaviour)?.GetComponent<NetworkObject>()?.OwnerClientId;
-        ulong? PossessorId => OwnerId;
 
         bool IsCapturedBy(ulong playerId) => PossessorId == playerId;
 

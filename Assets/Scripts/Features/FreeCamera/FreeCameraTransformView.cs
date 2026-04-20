@@ -10,12 +10,24 @@ namespace TinCan.Features.FreeCamera
     /// This component bridges the pure logic to the Unity Transform.
     /// </summary>
     [RequireComponent(typeof(PossessionCameraResponder))]
-    public class FreeCameraTransformView : ControllableActorBase, IFreeCameraView
+    public class FreeCameraTransformView : MonoBehaviour, IControllable, IFreeCameraView
     {
         [SerializeField] private float _moveSpeed = 10f;
         [SerializeField] private float _rotationSensitivity = 0.5f;
         [SerializeField] private float _maxPitchAngle = 90f;
         [SerializeField] private bool _lockCursorOnStart = true;
+
+        public bool IsControlsEnabled { get; private set; } = false;
+
+        public void DisableControls()
+        {
+            IsControlsEnabled = false;
+        }
+
+        public void EnableControls()
+        {
+            IsControlsEnabled = true;
+        }
 
         public Transform CameraTransform => transform;
         public bool IsActive => IsControlsEnabled;
@@ -26,6 +38,11 @@ namespace TinCan.Features.FreeCamera
 
         public float CurrentPitch { get; set; }
         public float CurrentYaw { get; set; }
+
+        public Guid Id { get; } = Guid.NewGuid();
+
+        public bool IsSimulating => IsActive;
+        public ulong? PossessorId { get; private set; }
 
         private void Start()
         {
@@ -43,14 +60,24 @@ namespace TinCan.Features.FreeCamera
             transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
         }
 
-        public void OnPossessed()
+        public void OnPossessed(ulong playerId)
         {
-            throw new NotImplementedException();
+            EnableControls();
         }
 
         public void OnUnpossessed()
         {
-            throw new NotImplementedException();
+            DisableControls();
+        }
+
+        public bool CanPossess(ulong playerId)
+        {
+            return PossessorId == null || PossessorId == playerId;
+        }
+
+        public void AuthoritativeSetPossessor(ulong? playerId)
+        {
+            PossessorId = playerId;
         }
     }
 }

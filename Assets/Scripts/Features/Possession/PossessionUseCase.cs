@@ -44,7 +44,8 @@ namespace TinCan.Features.Possession
             var api = _apiFactory();
             if (api == null) return;
 
-            api.OnPossessionChanged += HandlePossessionChanged;
+            api.OnPossessionReceived += HandlePossessionReceived;
+            api.OnPossessionLost += HandlePossessionLost;
         }
 
         public void Dispose()
@@ -55,7 +56,8 @@ namespace TinCan.Features.Possession
             var api = _apiFactory();
             if (api == null) return;
 
-            api.OnPossessionChanged -= HandlePossessionChanged;
+            api.OnPossessionReceived -= HandlePossessionReceived;
+            api.OnPossessionLost -= HandlePossessionLost;
         }
 
         private void HandlePlayerSpawned(GameObject instance, ulong clientId, bool isLocal)
@@ -68,16 +70,25 @@ namespace TinCan.Features.Possession
 
         private void HandleActorUnregistered(IActor actor)
         {
-            if (actor is not IPossessable possessable || _currentPossession != possessable) return;
+            if (actor is not IPossessable possessable) return;
 
-            Debug.Log($"[PossessionUseCase] Current possession {possessable} was unregistered/destroyed. Returning to body.");
-
-            // We don't call OnUnpossessed because the object is already gone/going
-            _currentPossession = null;
-
-            if (_playerActor != null)
+            if (_playerActor == possessable)
             {
-                PerformLocalPossession(_playerActor);
+                _playerActor = null;
+                Debug.Log($"[PossessionUseCase] Player actor was unregistered.");
+            }
+
+            if (_currentPossession == possessable)
+            {
+                Debug.Log($"[PossessionUseCase] Current possession {possessable} was unregistered/destroyed. Returning to body.");
+
+                // We don't call OnUnpossessed because the object is already gone/going
+                _currentPossession = null;
+
+                if (_playerActor != null)
+                {
+                    PerformLocalPossession(_playerActor);
+                }
             }
         }
 
@@ -85,8 +96,7 @@ namespace TinCan.Features.Possession
         {
             if (_playerActor != null)
             {
-                Debug.LogWarning($"[PossessionUseCase] Player actor is already set to {_playerActor}. Ignoring new assignment of {actorGameObject}.");
-                return;
+                Debug.LogWarning($"[PossessionUseCase] Player actor is already set to {_playerActor}. Updating assignment to {actorGameObject}.");
             }
             var actor = actorGameObject.GetComponent<IPossessable>();
             if (actor == null)
@@ -104,7 +114,20 @@ namespace TinCan.Features.Possession
             }
         }
 
-        private void HandlePossessionChanged(IPossessable target, ulong newOwnerId)
+        private void HandlePossessionLost(IPossessable lostPossession, ulong ownerId)
+        {
+            if (ownerId != _networkService.LocalClientId) return; // Not our possession that was lost, ignore
+
+            Debug.Log($"[PossessionUseCase] Possession of {_currentPossession} was lost (ownership changed to another player or revoked). Returning to body.");
+            _currentPossession = null;
+
+            if (_playerActor != null)
+            {
+                PerformLocalPossession(_playerActor);
+            }
+        }
+
+        private void HandlePossessionReceived(IPossessable target, ulong newOwnerId)
         {
             if (newOwnerId == _networkService.LocalClientId)
             {
@@ -171,7 +194,8 @@ namespace TinCan.Features.Possession
             {
                 api.RequestPossession(new PossessionRequest.Request
                 {
-                    Target = target
+                    Target = target,
+                    CurrentPossession = CurrentPossession
                 });
             }
 

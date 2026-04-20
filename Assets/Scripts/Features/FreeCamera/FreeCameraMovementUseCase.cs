@@ -14,24 +14,24 @@ namespace TinCan.Features.FreeCamera
         private readonly IInputService _inputService;
         private readonly FreeCameraMovementProcessor _moveProcessor;
         private readonly FreeCameraRotationProcessor _rotationProcessor;
-        private readonly IEnumerable<IFreeCameraView> _views;
+        private readonly IActorRegistry _registry;
 
         public FreeCameraMovementUseCase(
             IInputService inputService,
             FreeCameraMovementProcessor moveProcessor,
             FreeCameraRotationProcessor rotationProcessor,
-            IEnumerable<IFreeCameraView> views)
+            IActorRegistry registry)
         {
             _inputService = inputService;
             _moveProcessor = moveProcessor;
             _rotationProcessor = rotationProcessor;
-            _views = views;
+            _registry = registry;
         }
 
         public void Tick()
         {
             bool anyActive = false;
-            foreach (var view in _views)
+            foreach (var view in _registry.GetActors<IFreeCameraView>())
             {
                 if (!view.IsActive) continue;
                 anyActive = true;

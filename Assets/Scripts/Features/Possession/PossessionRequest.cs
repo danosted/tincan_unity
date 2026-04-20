@@ -6,6 +6,7 @@ namespace TinCan.Features.Possession
     {
         public class Request
         {
+            public IPossessable CurrentPossession { get; set; }
             public IPossessable Target { get; set; }
         }
 

@@ -1,3 +1,4 @@
+using TinCan.Features.Possession;
 using UnityEngine;
 
 namespace TinCan.Features.FreeCamera
@@ -6,7 +7,7 @@ namespace TinCan.Features.FreeCamera
     /// Interface for the Free Camera view to allow the Application layer
     /// to interact with Unity's Transform without a direct dependency on MonoBehaviour.
     /// </summary>
-    public interface IFreeCameraView
+    public interface IFreeCameraView : IPossessable
     {
         Transform CameraTransform { get; }
         bool IsActive { get; }

@@ -34,16 +34,11 @@ namespace TinCan.Features.Interaction
         public void ExitVehicle()
         {
             // Return to body (identity handled by API)
-            if (_possessionUseCase.CurrentPossession == null)
+            if (_possessionUseCase.CurrentPossession == null || _possessionUseCase.CurrentPossession == _possessionUseCase.PlayerActor)
             {
-                Debug.LogWarning($"[VehicleBoardingUseCase] No current possession found. Cannot exit vehicle.");
                 return;
             }
-            if (_possessionUseCase.CurrentPossession is not IAirshipView currentBoarding)
-            {
-                Debug.LogWarning($"[VehicleBoardingUseCase] Current possession is not a vehicle. Cannot exit.");
-                return;
-            }
+
             _possessionUseCase.Possess(null);
             Debug.Log($"[VehicleBoardingUseCase] Exited vehicle and returned to character.");
         }

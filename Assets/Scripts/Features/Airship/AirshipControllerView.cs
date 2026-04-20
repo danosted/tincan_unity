@@ -14,7 +14,7 @@ namespace TinCan.Features.Airship
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(ThirdPersonLookView))]
-    public class AirshipControllerView : ControllableActorBase, IPossessionReceiver, IMovingGround
+    public class AirshipControllerView : MonoBehaviour, IControllable, IPossessionReceiver, IMovingGround
     {
         [Header("Movement Settings")]
         [SerializeField] private float _maxForwardSpeed = 15f;
@@ -31,6 +31,17 @@ namespace TinCan.Features.Airship
         private Vector3 _positionDelta;
         private Quaternion _rotationDelta;
 
+        public bool IsControlsEnabled { get; private set; } = false;
+
+        public void DisableControls()
+        {
+            IsControlsEnabled = false;
+        }
+
+        public void EnableControls()
+        {
+            IsControlsEnabled = true;
+        }
 
         // Configuration
         public float MaxForwardSpeed => _maxForwardSpeed;

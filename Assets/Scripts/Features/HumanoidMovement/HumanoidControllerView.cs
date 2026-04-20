@@ -9,7 +9,7 @@ namespace TinCan.Features.HumanoidMovement
     /// Handles physical movement, ground detection, and actor lifecycle.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
-    public class HumanoidControllerView : ControllableActorBase, IHumanoidMovementView, IPossessionReceiver
+    public class HumanoidControllerView : MonoBehaviour, IControllable, IHumanoidMovementView, IPossessionReceiver
     {
         [Header("Movement Settings")]
         [SerializeField] private float _walkSpeed = 7f;
@@ -21,6 +21,18 @@ namespace TinCan.Features.HumanoidMovement
         private CharacterController _controller;
         private GroundData _currentGround;
         private RaycastHit? _lastGroundHit;
+
+        public bool IsControlsEnabled { get; private set; } = false;
+
+        public void DisableControls()
+        {
+            IsControlsEnabled = false;
+        }
+
+        public void EnableControls()
+        {
+            IsControlsEnabled = true;
+        }
 
         public Transform Transform => transform;
         public GroundData CurrentGround => _currentGround;

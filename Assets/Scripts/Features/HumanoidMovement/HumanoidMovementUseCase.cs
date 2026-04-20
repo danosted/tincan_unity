@@ -146,8 +146,27 @@ namespace TinCan.Features.HumanoidMovement
             // "Stickiness" Logic: If we sense a platform close enough, we apply its deltas
             // even if Unity's physics says we aren't technically grounded yet.
             ground.GroundVelocity = platform.Velocity;
-            ground.SurfaceDelta = platform.PositionDelta;
             ground.RotationDelta = platform.RotationDelta;
+
+            // Calculate rotational displacement
+            // We use the Transform property of the hit object to get the platform's current pivot.
+            // (Assuming the IMovingGround component is on the same object or we use the hit transform as the pivot)
+            Transform platformTransform = hit.transform;
+
+            // 1. Where was the platform's center before it moved this frame?
+            Vector3 platformOldPos = platformTransform.position - platform.PositionDelta;
+
+            // 2. What was the player's offset from that old center?
+            Vector3 offsetFromOldPivot = movement.Transform.position - platformOldPos;
+
+            // 3. Rotate the offset by the platform's rotation delta
+            Vector3 rotatedOffset = platform.RotationDelta * offsetFromOldPivot;
+
+            // 4. The new absolute position of the ground under the player's feet
+            Vector3 newSpotPos = platformTransform.position + rotatedOffset;
+
+            // 5. The total displacement for the player is the difference
+            ground.SurfaceDelta = newSpotPos - movement.Transform.position;
 
             return ground;
         }

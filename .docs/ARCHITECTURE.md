@@ -1,34 +1,34 @@
 # Architecture Overview
 
-**Document Version:** 1.0  
-**Last Updated:** January 18, 2026  
+**Document Version:** 2.0
+**Last Updated:** April 23, 2026
 **Maintainer:** AI Assistant + Lead Architect
 
-## Status: PLANNED
+## Core Pillars
 
-This document will contain the overall system architecture for TinCan. It will be created and expanded as features are designed.
+TinCan is built on three core technical pillars designed to make multiplayer development scalable and modular:
 
-## Expected Sections
+### 1. Dependency Injection (VContainer)
+We use [VContainer](https://vcontainer.hadashikick.jp/) as our DI framework.
+- **No Singletons:** Avoid using `Instance` patterns. Inject dependencies via constructors or standard VContainer `[Inject]` attributes on MonoBehaviours.
+- **ProjectLifetimeScope:** Found in `Core/Infrastructure/ProjectLifetimeScope.cs`. This is the composition root where services, UseCases, and NGO networking services are bound.
+- **Entry Points:** We heavily utilize `IInitializable`, `ITickable`, and UseCases bound via `builder.UseEntryPoints(...)`.
 
-- **System Components** - Overview of major systems and their relationships
-- **Data Flow** - How information flows through the game
-- **Class Hierarchy** - Main classes and inheritance patterns
-- **Design Patterns** - Patterns used in this codebase
-- **Networking Architecture** - How multiplayer synchronization works
-- **Player Controller Flow** - First-person controller architecture
-- **Extensibility Points** - Where new systems can be integrated
+### 2. Networking (Netcode for GameObjects - NGO)
+All multiplayer synchronization runs through Unity's official Netcode for GameObjects.
+- **NetworkMediators:** MonoBehaviours that inherit from `NetworkBehaviour` act as the authoritative bridge. Logic should be separated into pure C# `UseCase` or `Processor` classes, while the Mediator handles the RPCs and `NetworkVariables`.
+- **Prefab Spawning:** Controlled strictly via VContainer's `AddNetworkedPrefab` extensions. See `ProjectLifetimeScope` for examples of how we spawn the player and airship.
 
-## Referenced By
+### 3. Possession & Interaction Flow
+The game relies heavily on dynamic possession (e.g., leaving a humanoid body to fly a free-camera, or boarding an airship).
+- **IPossessable:** Implemented by entities that can be owned by a player (e.g., Humanoid, Airship).
+- **IPossessionApi:** Authoritatively assigns ownership on the server and broadcasts `OnPossessionReceived` events.
+- **InteractivityUseCase:** A global `ITickable` that listens for the Interact input. It uses an `IInteractorRegistry` to find what the player is looking at, and routes the request to the `InteractionOrchestrator` (e.g., to board a vehicle).
 
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Before implementing any system
-- [NETWORKING.md](./NETWORKING.md) - Networking system design
-- [FPS_CORE.md](./FPS_CORE.md) - Player controller design
+## Extensibility Points
 
-## Creation Trigger
-
-This document will be created when:
-1. AI begins implementing core systems
-2. First major system design is finalized
-3. As foundational code is written
-
-**Check back after initial feature implementations for this document.**
+When adding a new feature (like a new vehicle or weapon):
+1. Create pure C# domain logic (e.g., `GunShootingProcessor`).
+2. Create an `IUseCase` to bind input and trigger the logic.
+3. If it needs networking, create a `WeaponNetworkMediator` (`NetworkBehaviour`) and attach it to the prefab.
+4. Bind everything in `ProjectLifetimeScope`.

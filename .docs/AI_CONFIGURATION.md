@@ -15,7 +15,7 @@ This document outlines the AI assistant's role in the `TinCan` Unity3D project. 
 **The AI's primary function is to assist in the conceptualization, design, and discussion of code components. This includes:**
 
 1.  **Understanding Requirements:** Help clarify the desired functionality and purpose of a new component or feature.
-2.  **Design Patterns & Architecture:** Discuss suitable design patterns, architectural considerations, and best practices within the Unity3D and C# context.
+2.  **Design Patterns & Architecture:** Discuss suitable design patterns, architectural considerations, and best practices within the Unity3D and C# context. Read `.docs/ARCHITECTURE.md` before making architectural decisions.
 3.  **API Guidance:** Provide guidance on relevant Unity3D SDK APIs, C# language features, and common Unity patterns (e.g., MonoBehaviours, ScriptableObjects, networking with Netcode for GameObjects).
 4.  **Code Structure & Logic:** Offer suggestions on how to structure the code, break down complex logic, and implement specific functionalities.
 5.  **Problem Solving:** Assist in brainstorming solutions for technical challenges and discussing trade-offs between different implementation approaches.
@@ -90,17 +90,19 @@ When discussing implementations, the AI should be mindful of potential Unity ver
 ### Rule 8: Be Concise in Communication
 
 **AI MUST:**
-- Keep output to a minimum.
+- Keep output to an absolute minimum.
+- Do not output large blocks of text or code unless explicitly asked.
 - List options concisely when tasks are completed.
 - Ask questions concisely and directly. If the user wants more information, they will ask.
 - Avoid verbose explanations or summaries unless explicitly requested.
 
 ---
 
-### Rule 9: Prefer Dynamic Property Insertion
+### Rule 9: Code Generation Preferences
 
 **AI MUST:**
-- Focus on conceptualizing solutions that utilize dynamic property insertion and runtime discovery of components (e.g., `GetComponent`, `FindObjectOfType`, interfaces) instead of relying heavily on `[SerializeField]` attributes for component references.
+- Adhere strictly to `.docs/CODE_STANDARDS.md` when generating any code.
+- Prefer dynamic property insertion and runtime discovery of components (e.g., `GetComponent`, VContainer injection, interfaces) instead of relying heavily on `[SerializeField]` attributes for component references.
 - Use `[SerializeField]` primarily for primitive types (floats, ints, bools), custom structs/classes, or values that are genuinely intended to be tweaked directly in the Inspector and are not readily discoverable or configurable through code.
 - Promote robust, less error-prone architectures where object references are established programmatically when possible.
 

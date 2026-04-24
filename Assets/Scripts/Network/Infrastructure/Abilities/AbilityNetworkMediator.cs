@@ -16,7 +16,7 @@ namespace TinCan.Network.Infrastructure.Abilities
     /// NGO Mediator for the Ability System.
     /// Syncs tags and handles state synchronization for abilities.
     /// </summary>
-    public class AbilityNetworkMediator : NetworkMediator, IAbilityController
+    public class AbilityNetworkMediator : NetworkMediator, IAbilityControllerBase
     {
         private AbilitySystemUseCase _abilitySystem = null!; // Injected
         private GameplayTagContainer _activeTags = new GameplayTagContainer(null);

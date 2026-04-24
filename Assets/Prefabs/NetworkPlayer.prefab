@@ -185,6 +185,7 @@ MonoBehaviour:
   _height: 0
   _sensitivity: 0.5
   _maxPitch: 85
+  _isRotationRelative: 0
 --- !u!114 &6709567091061567914
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -271,6 +272,7 @@ MonoBehaviour:
   _moveSpeedAttribute: {fileID: 11400000, guid: a3969ba58e30bf14991f1248364d7cf8, type: 2}
   _jumpForceAttribute: {fileID: 11400000, guid: dffb50361639b754e9c2c8497cf425f9, type: 2}
   _staminaAttribute: {fileID: 11400000, guid: 6076f295bb68c884bb94e8c0c73a1226, type: 2}
+  _healthAttribute: {fileID: 11400000, guid: 8b14d6bb0c2e84b40a3ec90b5bbb15b2, type: 2}
   _startingAbilities:
   - {fileID: 11400000, guid: bea9a128da82acc45899384dfba0c566, type: 2}
 --- !u!114 &917994041440066554

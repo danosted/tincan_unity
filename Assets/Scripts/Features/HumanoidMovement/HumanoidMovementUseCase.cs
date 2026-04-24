@@ -103,16 +103,11 @@ namespace TinCan.Features.HumanoidMovement
             float targetSpeed = movement.WalkSpeed;
             float jumpForce = movement.JumpForce;
 
-            var attributes = character.GetAttributeSet<HumanoidAttributeSet>();
+            var attributes = character.GetAttributeSet();
             if (attributes != null)
             {
                 targetSpeed = attributes.MoveSpeed;
                 jumpForce = attributes.JumpForce;
-
-                if (input.IsSprinting)
-                {
-                    Debug.Log($"[Movement] Sprinting. Target Speed is: {targetSpeed}");
-                }
             }
 
             // 1. Calculate Horizontal Velocity with Momentum

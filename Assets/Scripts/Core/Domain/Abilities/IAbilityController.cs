@@ -8,7 +8,7 @@ namespace TinCan.Core.Domain.Abilities
     /// <summary>
     /// Domain interface for managing an actor's abilities, tags, and attributes.
     /// </summary>
-    public interface IAbilityController : IActor
+    public interface IAbilityControllerBase : IActor
     {
         GameplayTagContainer ActiveTags { get; }
 
@@ -16,7 +16,6 @@ namespace TinCan.Core.Domain.Abilities
         void AddTag(GameplayTag tag);
         void RemoveTag(GameplayTag tag);
 
-        T GetAttributeSet<T>() where T : class, IAttributeSet;
         bool TryGetAttribute(GameplayAttribute attribute, out AttributeValue value);
         void SetAttribute(GameplayAttribute attribute, AttributeValue value);
         void ResetAttributesToBase();
@@ -26,5 +25,9 @@ namespace TinCan.Core.Domain.Abilities
         bool TryActivateAbility(AbilityDefinition definition);
 
         void HandleGameplayEvent(GameplayEventData eventData);
+    }
+    public interface IAbilityController<TAttributeSet> : IAbilityControllerBase where TAttributeSet : class, IAttributeSet
+    {
+        TAttributeSet GetAttributeSet();
     }
 }

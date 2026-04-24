@@ -35,6 +35,7 @@ namespace TinCan.Network.Infrastructure
         [SerializeField] private GameplayAttribute _moveSpeedAttribute;
         [SerializeField] private GameplayAttribute _jumpForceAttribute;
         [SerializeField] private GameplayAttribute _staminaAttribute;
+        [SerializeField] private GameplayAttribute _healthAttribute;
         [SerializeField] private List<AbilityDefinition> _startingAbilities;
 
         private readonly NetworkVariable<HumanoidInputState> _netInputState = new NetworkVariable<HumanoidInputState>(
@@ -66,10 +67,10 @@ namespace TinCan.Network.Infrastructure
             _abilitySync = GetComponent<AbilityNetworkMediator>();
 
             // Register default attribute set wrapper for humanoids
-            var attributes = new HumanoidAttributeSet(this, _moveSpeedAttribute, _jumpForceAttribute, _staminaAttribute);
+            var attributes = new HumanoidAttributeSet(this, _moveSpeedAttribute, _jumpForceAttribute, _staminaAttribute, _healthAttribute);
 
             // Initialize base values for all clients and server to ensure prediction works instantly
-            attributes.InitializeBaseValues(_movement.WalkSpeed, _movement.JumpForce, 100f);
+            attributes.InitializeBaseValues(_movement.WalkSpeed, _movement.JumpForce, 100f, 100f);
 
             _abilitySync.RegisterAttributeSet(attributes);
 
@@ -115,7 +116,7 @@ namespace TinCan.Network.Infrastructure
         public void AddTag(GameplayTag tag) => _abilitySync.AddTag(tag);
 
         public void RemoveTag(GameplayTag tag) => _abilitySync.RemoveTag(tag);
-        T IAbilityController.GetAttributeSet<T>() => _abilitySync.GetAttributeSet<T>();
+        public HumanoidAttributeSet GetAttributeSet() => _abilitySync.GetAttributeSet<HumanoidAttributeSet>();
 
         public bool TryGetAttribute(GameplayAttribute attribute, out AttributeValue value) => _abilitySync.TryGetAttribute(attribute, out value);
         public void SetAttribute(GameplayAttribute attribute, AttributeValue value) => _abilitySync.SetAttribute(attribute, value);

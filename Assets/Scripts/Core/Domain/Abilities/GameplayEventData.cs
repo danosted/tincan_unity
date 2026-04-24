@@ -10,8 +10,8 @@ namespace TinCan.Core.Domain.Abilities
     public struct GameplayEventData
     {
         public GameplayTag EventTag;
-        public IAbilityController Instigator;
-        public IAbilityController Target;
+        public IAbilityControllerBase Instigator;
+        public IAbilityControllerBase Target;
         public float Score; // 0.0 to 1.0 if applicable
     }
 }

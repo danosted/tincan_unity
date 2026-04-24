@@ -36,7 +36,7 @@ namespace TinCan.Features.Abilities
         {
             float currentTime = _timeService.Time;
 
-            foreach (var actor in _registry.GetActors<IAbilityController>())
+            foreach (var actor in _registry.GetActors<IAbilityControllerBase>())
             {
                 // Global effects and non-predicted actors still tick here
                 if (!actor.IsSimulating) continue;
@@ -51,7 +51,7 @@ namespace TinCan.Features.Abilities
         /// Authoritative simulation tick for a specific actor.
         /// Called by movement systems to ensure predicted abilities are synced with movement.
         /// </summary>
-        public void ProcessAbilitySimulation(IAbilityController actor, HumanoidInputState input, ulong previousInputMask, float deltaTime)
+        public void ProcessAbilitySimulation(IAbilityControllerBase actor, HumanoidInputState input, ulong previousInputMask, float deltaTime)
         {
             float currentTime = _timeService.Time;
 
@@ -92,7 +92,7 @@ namespace TinCan.Features.Abilities
             }
         }
 
-        public void EndAbility(IAbilityController actor, AbilitySpec spec)
+        public void EndAbility(IAbilityControllerBase actor, AbilitySpec spec)
         {
             if (!spec.IsActive) return;
             spec.IsActive = false;
@@ -114,7 +114,7 @@ namespace TinCan.Features.Abilities
             Debug.Log($"[AbilitySystem] Actor {actor.Id} ended {spec.Definition.name}");
         }
 
-        private void UpdateAbilities(IAbilityController actor, float currentTime)
+        private void UpdateAbilities(IAbilityControllerBase actor, float currentTime)
         {
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
 
@@ -126,7 +126,7 @@ namespace TinCan.Features.Abilities
             }
         }
 
-        private void UpdateTimingWindows(IAbilityController actor, AbilitySpec spec, float currentTime)
+        private void UpdateTimingWindows(IAbilityControllerBase actor, AbilitySpec spec, float currentTime)
         {
             float elapsed = currentTime - spec.StartTime;
             var def = spec.Definition;
@@ -152,7 +152,7 @@ namespace TinCan.Features.Abilities
             // For now, let's assume abilities have a fixed duration or manual end.
         }
 
-        private void UpdateEffects(IAbilityController actor, float currentTime)
+        private void UpdateEffects(IAbilityControllerBase actor, float currentTime)
         {
             if (!_activeEffects.TryGetValue(actor.Id, out var effects)) return;
 
@@ -166,7 +166,7 @@ namespace TinCan.Features.Abilities
             }
         }
 
-        public void GrantAbility(IAbilityController actor, AbilityDefinition definition)
+        public void GrantAbility(IAbilityControllerBase actor, AbilityDefinition definition)
         {
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities))
             {
@@ -178,7 +178,7 @@ namespace TinCan.Features.Abilities
             abilities.Add(new AbilitySpec(definition));
         }
 
-        public bool TryActivateAbility(IAbilityController actor, AbilityDefinition definition)
+        public bool TryActivateAbility(IAbilityControllerBase actor, AbilityDefinition definition)
         {
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return false;
 
@@ -195,7 +195,7 @@ namespace TinCan.Features.Abilities
             return true;
         }
 
-        private bool CanActivateAbility(IAbilityController actor, AbilitySpec spec)
+        private bool CanActivateAbility(IAbilityControllerBase actor, AbilitySpec spec)
         {
             var tags = actor.ActiveTags;
             var def = spec.Definition;
@@ -212,7 +212,7 @@ namespace TinCan.Features.Abilities
             return true;
         }
 
-        private void ExecuteAbility(IAbilityController actor, AbilitySpec spec)
+        private void ExecuteAbility(IAbilityControllerBase actor, AbilitySpec spec)
         {
             spec.Activate(_timeService.Time);
             Debug.Log($"[AbilitySystem] Actor {actor.Id} activated {spec.Definition.name}");
@@ -230,7 +230,7 @@ namespace TinCan.Features.Abilities
             }
         }
 
-        public ActiveGameplayEffect ApplyEffect(IAbilityController actor, GameplayEffectDefinition definition)
+        public ActiveGameplayEffect ApplyEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition)
         {
             var effect = new ActiveGameplayEffect(definition, _timeService.Time);
 
@@ -279,7 +279,7 @@ namespace TinCan.Features.Abilities
             }
         }
 
-        private void RemoveEffect(IAbilityController actor, ActiveGameplayEffect effect)
+        private void RemoveEffect(IAbilityControllerBase actor, ActiveGameplayEffect effect)
         {
             if (!_activeEffects.TryGetValue(actor.Id, out var effects)) return;
             effects.Remove(effect);
@@ -294,13 +294,13 @@ namespace TinCan.Features.Abilities
             UpdateAttributes(actor);
         }
 
-        private void ExecuteInstantEffect(IAbilityController actor, GameplayEffectDefinition definition)
+        private void ExecuteInstantEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition)
         {
             // Apply modifiers once and forget
             // UpdateAttributes(actor); // Instant effects need special handling for non-permanent changes
         }
 
-        private void UpdateAttributes(IAbilityController actor)
+        private void UpdateAttributes(IAbilityControllerBase actor)
         {
             // Reset to base
             actor.ResetAttributesToBase();

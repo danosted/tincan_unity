@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 1521276771639306349}
   - component: {fileID: 112455933561736211}
   - component: {fileID: 4549251832716770165}
+  - component: {fileID: 917994041440066554}
   m_Layer: 0
   m_Name: NetworkPlayer
   m_TagString: Untagged
@@ -164,6 +165,9 @@ MonoBehaviour:
   _sprintMultiplier: 1.8
   _jumpForce: 8
   _gravity: 20
+  _interactableMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!114 &2852744458392217971
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -178,6 +182,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.HumanoidMovement.ThirdPersonLookView
   _cameraPivot: {fileID: 526800738218255295}
   _distance: 5
+  _height: 0
   _sensitivity: 0.5
   _maxPitch: 85
 --- !u!114 &6709567091061567914
@@ -192,7 +197,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1990363469
+  GlobalObjectIdHash: 2550321072
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -262,6 +267,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 517f96d45600e3c4d963f811fac4b577, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.HumanoidPlayer
+  ShowTopMostFoldoutHeaderGroup: 1
+  _moveSpeedAttribute: {fileID: 11400000, guid: a3969ba58e30bf14991f1248364d7cf8, type: 2}
+  _jumpForceAttribute: {fileID: 11400000, guid: dffb50361639b754e9c2c8497cf425f9, type: 2}
+  _staminaAttribute: {fileID: 11400000, guid: 6076f295bb68c884bb94e8c0c73a1226, type: 2}
+  _startingAbilities:
+  - {fileID: 11400000, guid: bea9a128da82acc45899384dfba0c566, type: 2}
+--- !u!114 &917994041440066554
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 925472637626500556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6331163e1c0ffc4998a3ec00ff00dc3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &5585002282877400610
 GameObject:

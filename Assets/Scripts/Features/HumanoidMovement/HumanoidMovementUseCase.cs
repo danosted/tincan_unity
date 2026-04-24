@@ -7,6 +7,9 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 
+using TinCan.Features.Abilities;
+using TinCan.Features.FreeCamera;
+
 namespace TinCan.Features.HumanoidMovement
 {
     /// <summary>
@@ -16,18 +19,27 @@ namespace TinCan.Features.HumanoidMovement
     public class HumanoidMovementUseCase : SimulationUseCase<IHumanoidCharacterView, HumanoidInputState>
     {
         private readonly HumanoidMovementProcessor _processor;
+        private readonly AbilitySystemUseCase _abilitySystem;
         private readonly Dictionary<Guid, Vector3> _horizontalVelocities = new();
         private readonly Dictionary<Guid, float> _verticalVelocities = new();
+        private readonly Dictionary<Guid, ulong> _previousInputMasks = new();
+
+        // Platform tracking to avoid execution order bugs with deltas
+        private readonly Dictionary<Guid, Transform> _lastPlatforms = new();
+        private readonly Dictionary<Guid, Vector3> _lastPlatformPositions = new();
+        private readonly Dictionary<Guid, Quaternion> _lastPlatformRotations = new();
 
         public HumanoidMovementUseCase(
             IInputService inputService,
             INetworkService networkService,
             HumanoidMovementProcessor processor,
+            AbilitySystemUseCase abilitySystem,
             IActorRegistry registry,
             ITimeService timeService)
             : base(inputService, networkService, registry, timeService)
         {
             _processor = processor;
+            _abilitySystem = abilitySystem;
         }
 
         protected override HumanoidInputState GatherLocalInput(IHumanoidCharacterView character)
@@ -46,15 +58,27 @@ namespace TinCan.Features.HumanoidMovement
                 MovementDirection = inputDirection,
                 IsJumping = jumpTriggered,
                 IsSprinting = isSprinting,
-                LookRotation = character.Movement.LookRotation
+                LookRotation = character.Movement.LookRotation,
+                ActiveInputMask = InputService.GetActiveInputMask()
             };
         }
 
         protected override void ProcessSimulation(IHumanoidCharacterView character, HumanoidInputState input, bool isCaptured)
         {
+            if (!_previousInputMasks.TryGetValue(character.Id, out ulong prevMask))
+            {
+                prevMask = 0;
+            }
+
+            // 1. Process Abilities first (Ensures prediction of tags/attributes for movement)
+            _abilitySystem.ProcessAbilitySimulation(character, input, prevMask, TimeService.DeltaTime);
+
+            // Store the mask for the next tick
+            _previousInputMasks[character.Id] = input.ActiveInputMask;
+
             var movement = character.Movement;
 
-            // 1. Resolve grounding and platforms
+            // 2. Resolve grounding and platforms
             GroundData ground = ResolveGrounding(character);
             movement.UpdateGroundData(ground);
 
@@ -75,8 +99,21 @@ namespace TinCan.Features.HumanoidMovement
             // Rotate character to always face the look direction
             movement.SetRotation(Quaternion.Slerp(movement.Transform.rotation, currentLookRotation, 20f * deltaTime));
 
-            // Determine Target Speed
-            float targetSpeed = movement.WalkSpeed * (input.IsSprinting && ground.IsGrounded ? movement.SprintMultiplier : 1f);
+            // Determine Target Speed from Attributes
+            float targetSpeed = movement.WalkSpeed;
+            float jumpForce = movement.JumpForce;
+
+            var attributes = character.GetAttributeSet<HumanoidAttributeSet>();
+            if (attributes != null)
+            {
+                targetSpeed = attributes.MoveSpeed;
+                jumpForce = attributes.JumpForce;
+
+                if (input.IsSprinting)
+                {
+                    Debug.Log($"[Movement] Sprinting. Target Speed is: {targetSpeed}");
+                }
+            }
 
             // 1. Calculate Horizontal Velocity with Momentum
             _horizontalVelocities[character.Id] = _processor.CalculateHorizontalVelocity(
@@ -93,7 +130,7 @@ namespace TinCan.Features.HumanoidMovement
                 movement.Gravity,
                 ground.IsGrounded,
                 input.IsJumping,
-                movement.JumpForce,
+                jumpForce,
                 deltaTime);
 
             // 3. Momentum Inheritance: If jumping, add the platform's velocity to our internal buffers
@@ -107,29 +144,29 @@ namespace TinCan.Features.HumanoidMovement
             // 4. Calculate Final Movement
             Vector3 intentionalMotion = (_horizontalVelocities[character.Id] + (Vector3.up * _verticalVelocities[character.Id])) * deltaTime;
 
-            // 5. Apply Platform Push (Simplified logic as requested)
-            Vector3 platformPush = ground.SurfaceDelta;
-            Quaternion platformRotationPush = ground.RotationDelta;
-
-            // The magic: Movement = Intentional Movement + Platform Push
-            movement.Move(intentionalMotion + platformPush);
+            // The magic: Movement = Intentional Movement
+            // We no longer manually apply surface delta to the controller here.
+            // If the platform is truly kinematic and we rely on standard Unity nesting or continuous collision,
+            // standard physics / character controller may sweep with the platform.
+            // BUT, if we explicitly need to move with the platform, we add it back:
+            movement.Move(intentionalMotion + ground.SurfaceDelta);
 
             // Apply Platform Rotation
-            if (platformRotationPush != Quaternion.identity)
+            if (ground.RotationDelta != Quaternion.identity)
             {
-                movement.SetRotation(platformRotationPush * movement.Transform.rotation);
+                movement.SetRotation(ground.RotationDelta * movement.Transform.rotation);
 
                 // Keep the camera orientation synchronized with the platform's rotation
-                if (isCaptured && character.Look != null)
+                if (isCaptured && character is IHasOrbitalCamera hasCamera && hasCamera.Look != null)
                 {
-                    float yawDelta = platformRotationPush.eulerAngles.y;
-                    
+                    float yawDelta = ground.RotationDelta.eulerAngles.y;
+
                     // Normalize the euler angle to [-180, 180] to avoid jumping by 360 degrees
                     if (yawDelta > 180f) yawDelta -= 360f;
 
                     if (Mathf.Abs(yawDelta) > 0.001f)
                     {
-                        character.Look.Yaw += yawDelta;
+                        hasCamera.Look.Yaw += yawDelta;
                     }
                 }
             }
@@ -155,29 +192,49 @@ namespace TinCan.Features.HumanoidMovement
 
             // 2. Identify Moving Platforms (Logic moved from Infrastructure to Application)
             var platform = hit.collider.GetComponentInParent<IMovingGround>();
-            if (platform == null) return ground;
+            if (platform == null)
+            {
+                _lastPlatforms.Remove(character.Id);
+                return ground;
+            }
 
-            // "Stickiness" Logic: If we sense a platform close enough, we apply its deltas
-            // even if Unity's physics says we aren't technically grounded yet.
-            ground.GroundVelocity = platform.Velocity;
-            ground.RotationDelta = platform.RotationDelta;
-
-            // Calculate rotational displacement
-            // We use the Transform property of the hit object to get the platform's current pivot.
-            // (Assuming the IMovingGround component is on the same object or we use the hit transform as the pivot)
             Transform platformTransform = hit.transform;
 
+            // Retrieve precise current transform
+            Vector3 currentPos = platformTransform.position;
+            Quaternion currentRot = platformTransform.rotation;
+
+            // Calculate precise Deltas based on our OWN cache to avoid execution order issues
+            Vector3 positionDelta = Vector3.zero;
+            Quaternion rotationDelta = Quaternion.identity;
+
+            if (_lastPlatforms.TryGetValue(character.Id, out var lastPlatform) && lastPlatform == platformTransform)
+            {
+                positionDelta = currentPos - _lastPlatformPositions[character.Id];
+                rotationDelta = currentRot * Quaternion.Inverse(_lastPlatformRotations[character.Id]);
+            }
+
+            // Update cache
+            _lastPlatforms[character.Id] = platformTransform;
+            _lastPlatformPositions[character.Id] = currentPos;
+            _lastPlatformRotations[character.Id] = currentRot;
+
+            // "Stickiness" Logic: We apply computed deltas even if Unity's physics says not grounded yet
+            ground.GroundVelocity = platform.Velocity; // Logical velocity for jump momentum
+            ground.RotationDelta = rotationDelta;
+
+            // Calculate rotational and translational displacement
             // 1. Where was the platform's center before it moved this frame?
-            Vector3 platformOldPos = platformTransform.position - platform.PositionDelta;
+            Vector3 platformOldPos = currentPos - positionDelta;
 
             // 2. What was the player's offset from that old center?
             Vector3 offsetFromOldPivot = movement.Transform.position - platformOldPos;
 
             // 3. Rotate the offset by the platform's rotation delta
-            Vector3 rotatedOffset = platform.RotationDelta * offsetFromOldPivot;
+            Vector3 rotatedOffset = rotationDelta * offsetFromOldPivot;
 
             // 4. The new absolute position of the ground under the player's feet
-            Vector3 newSpotPos = platformTransform.position + rotatedOffset;
+            Vector3 newSpotPos = currentPos + rotatedOffset;
 
             // 5. The total displacement for the player is the difference
             ground.SurfaceDelta = newSpotPos - movement.Transform.position;

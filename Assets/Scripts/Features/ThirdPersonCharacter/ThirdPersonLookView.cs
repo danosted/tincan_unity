@@ -10,7 +10,7 @@ namespace TinCan.Features.HumanoidMovement
     /// View/Infrastructure Layer: Orbital third-person camera implementation.
     /// Attach this to the character prefab.
     /// </summary>
-    public class ThirdPersonLookView : MonoBehaviour, IHumanoidLookView, IPossessionReceiver
+    public class ThirdPersonLookView : MonoBehaviour, IOrbitalLookView, IPossessionReceiver
     {
         [Header("Camera Configuration")]
         [SerializeField] private Transform _cameraPivot;
@@ -19,6 +19,9 @@ namespace TinCan.Features.HumanoidMovement
         [SerializeField] private float _height = 0f;
         [SerializeField] private float _sensitivity = 0.5f;
         [SerializeField] private float _maxPitch = 85f;
+
+        [Header("Vehicle Settings")]
+        [SerializeField] private bool _isRotationRelative = false;
 
         public bool IsActive { get; private set; } = false;
         public float Pitch { get; set; }
@@ -31,9 +34,21 @@ namespace TinCan.Features.HumanoidMovement
             // Initialize from current rotation if pivot exists
             if (_cameraPivot != null)
             {
-                Vector3 euler = _cameraPivot.eulerAngles;
-                Yaw = euler.y;
-                Pitch = euler.x;
+                if (_isRotationRelative)
+                {
+                    // Relative starting rotation
+                    Quaternion localRot = Quaternion.Inverse(transform.rotation) * _cameraPivot.rotation;
+                    Vector3 euler = localRot.eulerAngles;
+                    Yaw = euler.y;
+                    Pitch = euler.x;
+                }
+                else
+                {
+                    // Absolute starting rotation
+                    Vector3 euler = _cameraPivot.eulerAngles;
+                    Yaw = euler.y;
+                    Pitch = euler.x;
+                }
                 if (Pitch > 180) Pitch -= 360;
             }
         }
@@ -43,11 +58,17 @@ namespace TinCan.Features.HumanoidMovement
             if (!IsActive || _cameraPivot == null) return;
 
             // Simple orbital camera math
-            Quaternion rotation = Quaternion.Euler(Pitch, Yaw, 0);
-            Vector3 center = transform.position + Vector3.up * _height;
-            Vector3 position = center - (rotation * Vector3.forward * _distance);
+            Quaternion rotationOffset = Quaternion.Euler(Pitch, Yaw, 0);
 
-            _cameraPivot.rotation = rotation;
+            // Apply relativity if configured
+            Quaternion finalRotation = _isRotationRelative
+                ? transform.rotation * rotationOffset
+                : rotationOffset;
+
+            Vector3 center = transform.position + Vector3.up * _height;
+            Vector3 position = center - (finalRotation * Vector3.forward * _distance);
+
+            _cameraPivot.rotation = finalRotation;
             _cameraPivot.position = position;
         }
 

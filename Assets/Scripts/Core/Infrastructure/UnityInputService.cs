@@ -1,42 +1,74 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Abilities;
 using VContainer.Unity;
 
 namespace TinCan.Core.Infrastructure
 {
     public class UnityInputService : IInputService, IInitializable
     {
-        private readonly Dictionary<string, Key> _keyMappings = new Dictionary<string, Key>();
+        private readonly Dictionary<string, ButtonControl> _keyMappings = new Dictionary<string, ButtonControl>();
+        private readonly InputBindingConfig _bindingConfig;
+
+        public UnityInputService(InputBindingConfig bindingConfig)
+        {
+            _bindingConfig = bindingConfig;
+        }
 
         public void Initialize()
         {
-            _keyMappings[ActionNames.MoveForward] = Key.W;
-            _keyMappings[ActionNames.MoveBackward] = Key.S;
-            _keyMappings[ActionNames.MoveLeft] = Key.A;
-            _keyMappings[ActionNames.MoveRight] = Key.D;
-            _keyMappings[ActionNames.ToggleControl] = Key.Tab;
-            _keyMappings[ActionNames.Interact] = Key.E;
-            _keyMappings[ActionNames.Jump] = Key.Space;
-            _keyMappings[ActionNames.Cancel] = Key.Escape;
-            _keyMappings[ActionNames.Sprint] = Key.LeftShift;
+            if (Keyboard.current != null)
+            {
+                _keyMappings[ActionNames.MoveForward] = Keyboard.current.wKey;
+                _keyMappings[ActionNames.MoveBackward] = Keyboard.current.sKey;
+                _keyMappings[ActionNames.MoveLeft] = Keyboard.current.aKey;
+                _keyMappings[ActionNames.MoveRight] = Keyboard.current.dKey;
+                _keyMappings[ActionNames.ToggleControl] = Keyboard.current.tabKey;
+                _keyMappings[ActionNames.Interact] = Keyboard.current.eKey;
+                _keyMappings[ActionNames.Jump] = Keyboard.current.spaceKey;
+                _keyMappings[ActionNames.Cancel] = Keyboard.current.escapeKey;
+                _keyMappings[ActionNames.Sprint] = Keyboard.current.leftShiftKey;
+            }
+
+            if (Mouse.current != null)
+            {
+                _keyMappings[ActionNames.AbilityPrimary] = Mouse.current.leftButton;
+                _keyMappings[ActionNames.AbilitySecondary] = Mouse.current.rightButton;
+            }
+
+            if (_bindingConfig != null && _bindingConfig.Bindings != null)
+            {
+                for (int i = 0; i < _bindingConfig.Bindings.Count && i < 64; i++)
+                {
+                    if (_bindingConfig.Bindings[i].InputType != null)
+                    {
+                        _bindingConfig.Bindings[i].InputType.BitIndex = i;
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[UnityInputService] InputBindingConfig was not injected or is empty.");
+            }
         }
 
         public bool IsActionPressed(string actionName)
         {
-            if (_keyMappings.TryGetValue(actionName, out Key key))
+            if (_keyMappings.TryGetValue(actionName, out var control))
             {
-                return Keyboard.current != null && Keyboard.current[key].isPressed;
+                return control != null && control.isPressed;
             }
             return false;
         }
 
         public bool WasActionTriggered(string actionName)
         {
-            if (_keyMappings.TryGetValue(actionName, out Key key))
+            if (_keyMappings.TryGetValue(actionName, out var control))
             {
-                return Keyboard.current != null && Keyboard.current[key].wasPressedThisFrame;
+                return control != null && control.wasPressedThisFrame;
             }
             return false;
         }
@@ -52,6 +84,30 @@ namespace TinCan.Core.Infrastructure
         public Vector2 GetMouseDelta()
         {
             return Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero;
+        }
+
+        public ulong GetActiveInputMask()
+        {
+            ulong mask = 0;
+
+            if (_bindingConfig == null || _bindingConfig.Bindings == null)
+            {
+                Debug.LogWarning("[UnityInputService] InputBindingConfig is not set. Returning empty input mask.");
+                return mask;
+            }
+
+            foreach (var binding in _bindingConfig.Bindings)
+            {
+                if (binding.InputType != null && binding.InputType.BitIndex >= 0)
+                {
+                    if (IsActionPressed(binding.UnityActionName))
+                    {
+                        mask |= (1UL << binding.InputType.BitIndex);
+                    }
+                }
+            }
+
+            return mask;
         }
     }
 }

@@ -8,6 +8,12 @@ namespace TinCan.Core.Domain
         bool WasActionTriggered(string actionName);
         float GetAxis(string positiveAction, string negativeAction);
         Vector2 GetMouseDelta();
+
+        /// <summary>
+        /// Returns a 64-bit mask representing all currently pressed GameplayInputs.
+        /// Configured via InputBindingConfig.
+        /// </summary>
+        ulong GetActiveInputMask();
     }
 
     public static class ActionNames
@@ -21,5 +27,7 @@ namespace TinCan.Core.Domain
         public const string Jump = "Jump";
         public const string Cancel = "Cancel";
         public const string Sprint = "Sprint";
+        public const string AbilityPrimary = "AbilityPrimary";
+        public const string AbilitySecondary = "AbilitySecondary";
     }
 }

@@ -7,7 +7,7 @@ namespace TinCan.Features.HumanoidMovement
     /// Domain Layer: Interface for look behavior (1st person, 3rd person).
     /// Purely behavioral, delegated to by a Character Facade or Mediator.
     /// </summary>
-    public interface IHumanoidLookView
+    public interface IOrbitalLookView
     {
         float Pitch { get; set; }
         float Yaw { get; set; }

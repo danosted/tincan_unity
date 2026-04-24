@@ -7,20 +7,20 @@ Safely upgrades the project to a specified Unity version with backup,
 compatibility checking, and validation.
 
 .PARAMETER TargetVersion
-The Unity version to upgrade to (e.g., "2024.1.0f1")
+The Unity version to upgrade to (e.g., "6000.4.2f1")
 
 .PARAMETER CreateBackup
 Create a backup before upgrading (default: true)
 
 .EXAMPLE
-.\upgrade-unity.ps1 -TargetVersion "2024.1.0f1"
+.\upgrade-unity.ps1 -TargetVersion "6000.4.2f1"
 .\upgrade-unity.ps1 -TargetVersion "2023.3.0f1" -CreateBackup $false
 #>
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$TargetVersion,
-    
+
     [bool]$CreateBackup = $true
 )
 
@@ -67,7 +67,7 @@ Write-Log "Target version: $TargetVersion"
 
 # Validate version format
 if ($TargetVersion -notmatch '^\d{4}\.\d{1,2}\.\d{1,2}(f|b|a|rc)\d+$') {
-    Write-Log "ERROR: Invalid version format. Expected format: 2024.1.0f1" "ERROR"
+    Write-Log "ERROR: Invalid version format. Expected format: 6000.4.2f1" "ERROR"
     exit 1
 }
 
@@ -76,11 +76,11 @@ if ($CreateBackup) {
     Write-Section "Creating Backup"
     $BackupDir = Join-Path $ProjectRoot ".backup_$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss')"
     Write-Log "Creating backup at: $BackupDir"
-    
+
     Copy-Item -Path (Join-Path $ProjectRoot "Assets") -Destination (Join-Path $BackupDir "Assets") -Recurse -Force
     Copy-Item -Path (Join-Path $ProjectRoot "ProjectSettings") -Destination (Join-Path $BackupDir "ProjectSettings") -Recurse -Force
     Copy-Item -Path (Join-Path $ProjectRoot "Packages") -Destination (Join-Path $BackupDir "Packages") -Recurse -Force
-    
+
     Write-Log "✓ Backup created"
 }
 

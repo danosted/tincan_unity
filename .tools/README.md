@@ -6,8 +6,8 @@ This folder contains automation scripts for project setup, maintenance, and CI/C
 
 ### `setup.ps1` / `setup.sh`
 
-**Purpose:** One-command project initialization  
-**When to use:** Running on a fresh clone or setting up a new developer machine  
+**Purpose:** One-command project initialization
+**When to use:** Running on a fresh clone or setting up a new developer machine
 **Usage (Windows):**
 ```powershell
 .\.tools\setup.ps1
@@ -26,15 +26,15 @@ This folder contains automation scripts for project setup, maintenance, and CI/C
 
 ### `upgrade-unity.ps1` / `upgrade-unity.sh`
 
-**Purpose:** Safely upgrade to a new Unity version  
-**When to use:** When you need to update the project to a different Unity release  
+**Purpose:** Safely upgrade to a new Unity version
+**When to use:** When you need to update the project to a different Unity release
 **Usage (Windows):**
 ```powershell
-.\.tools\upgrade-unity.ps1 -TargetVersion "2024.1.0f1"
+.\.tools\upgrade-unity.ps1 -TargetVersion "6000.4.2f1"
 ```
 **Usage (macOS/Linux):**
 ```bash
-./.tools/upgrade-unity.sh 2024.1.0f1
+./.tools/upgrade-unity.sh 6000.4.2f1
 ```
 
 **What it does:**

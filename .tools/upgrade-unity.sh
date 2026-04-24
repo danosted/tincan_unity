@@ -31,7 +31,7 @@ log() {
     local timestamp=$(date '+%H:%M:%S')
     local level=${2:-INFO}
     local message="[$timestamp] [$level] $1"
-    
+
     echo -e "$message" | tee -a "$LOG_FILE"
 }
 
@@ -48,7 +48,7 @@ log_section() {
 if [ -z "$1" ]; then
     echo -e "${RED}ERROR: Target version required${NC}"
     echo "Usage: ./upgrade-unity.sh <version>"
-    echo "Example: ./upgrade-unity.sh 2024.1.0f1"
+    echo "Example: ./upgrade-unity.sh 6000.4.2f1"
     exit 1
 fi
 
@@ -62,7 +62,7 @@ log "Target version: $TARGET_VERSION"
 
 # Validate version format
 if ! [[ "$TARGET_VERSION" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]{1,2}(f|b|a|rc)[0-9]+$ ]]; then
-    log "ERROR: Invalid version format. Expected format: 2024.1.0f1" "ERROR"
+    log "ERROR: Invalid version format. Expected format: 6000.4.2f1" "ERROR"
     exit 1
 fi
 

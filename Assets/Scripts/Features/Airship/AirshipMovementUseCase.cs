@@ -68,6 +68,14 @@ namespace TinCan.Features.Airship
 
             // 3. Apply to view
             airship.ApplyMovement(_linearVelocities[airship.Id], angularVelocity);
+
+            // 4. Update Camera Rotation if the Airship has an orbital camera attached
+            if (isCaptured && airship is TinCan.Features.FreeCamera.IHasOrbitalCamera hasCamera && hasCamera.Look != null)
+            {
+                // The Airship controller view handles the base rotation interpolation,
+                // but we need to ensure the camera script knows its pivot has moved.
+                // Because _isRotationRelative is set, we don't need to manually add YawDelta.
+            }
         }
     }
 }

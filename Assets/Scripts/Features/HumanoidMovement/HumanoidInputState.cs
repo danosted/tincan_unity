@@ -14,12 +14,18 @@ namespace TinCan.Features.HumanoidMovement
         public bool IsSprinting;
         public Quaternion LookRotation;
 
+        /// <summary>
+        /// A 64-bit mask where each bit represents a specific GameplayInput that is currently active.
+        /// </summary>
+        public ulong ActiveInputMask;
+
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref MovementDirection);
             serializer.SerializeValue(ref IsJumping);
             serializer.SerializeValue(ref IsSprinting);
             serializer.SerializeValue(ref LookRotation);
+            serializer.SerializeValue(ref ActiveInputMask);
         }
     }
 }

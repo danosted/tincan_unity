@@ -16,10 +16,17 @@ We use [VContainer](https://vcontainer.hadashikick.jp/) as our DI framework.
 
 ### 2. Networking (Netcode for GameObjects - NGO)
 All multiplayer synchronization runs through Unity's official Netcode for GameObjects.
-- **NetworkMediators:** MonoBehaviours that inherit from `NetworkBehaviour` act as the authoritative bridge. Logic should be separated into pure C# `UseCase` or `Processor` classes, while the Mediator handles the RPCs and `NetworkVariables`.
+- **Naming Convention:** All components that inherit from `NetworkBehaviour` MUST be suffixed with `NetworkMediator` (e.g., `AbilityNetworkMediator`, not `AbilityController`).
+- **NetworkMediators:** MonoBehaviours that act as the authoritative bridge. Logic should be separated into pure C# `UseCase` or `Processor` classes, while the Mediator handles the RPCs and `NetworkVariables`.
 - **Prefab Spawning:** Controlled strictly via VContainer's `AddNetworkedPrefab` extensions. See `ProjectLifetimeScope` for examples of how we spawn the player and airship.
 
-### 3. Possession & Interaction Flow
+### 3. Simulation & Synchronization Paradigms
+To maintain a responsive FPS experience, we follow an **Input-Driven Simulation** paradigm:
+- **Input-Driven Simulation (Input Sync):** Primary for movement and time-critical actions. Clients capture intent as an `InputState`. Both Client (Prediction) and Server (Authority) execute the same Use Case logic using this input stream.
+- **State-Driven Synchronization (State Sync):** The server is the source of truth for high-level state changes (Tags, Attributes, Inventory). Mediators sync these back to clients via `NetworkVariable` or `ClientRpc` for visual confirmation.
+- **Avoid Side-Channels:** Do not use independent `ServerRpc` calls for actions that are part of the core simulation loop (like ability triggers or jumping). These should be bits in the `InputState` to ensure they are processed at the correct simulation tick.
+
+### 4. Possession & Interaction Flow
 The game relies heavily on dynamic possession (e.g., leaving a humanoid body to fly a free-camera, or boarding an airship).
 - **IPossessable:** Implemented by entities that can be owned by a player (e.g., Humanoid, Airship).
 - **IPossessionApi:** Authoritatively assigns ownership on the server and broadcasts `OnPossessionReceived` events.

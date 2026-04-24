@@ -15,7 +15,7 @@ namespace TinCan.Network.Infrastructure
     /// </summary>
     public abstract class NetworkMediator : NetworkBehaviour, IPossessable
     {
-        public Guid Id { get; } = Guid.NewGuid();
+        public virtual Guid Id { get; } = Guid.NewGuid();
         public virtual bool IsSimulating => IsSpawned;
 
         protected IActorRegistry Registry { get; private set; }

@@ -47,7 +47,7 @@ namespace TinCan.Features.HumanoidMovement
         {
             get
             {
-                var lookView = GetComponent<IHumanoidLookView>();
+                var lookView = GetComponent<IOrbitalLookView>();
                 return lookView != null ? Quaternion.Euler(0, lookView.Yaw, 0) : transform.rotation;
             }
         }

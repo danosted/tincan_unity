@@ -51,3 +51,4 @@ MonoBehaviour:
   _playerPrefab: {fileID: 925472637626500556, guid: fc298da6d560fb04fba62a7e6f38f196, type: 3}
   _airshipPrefab: {fileID: 4741218207008056854, guid: f227451d8202511408d6163b0a319dd4, type: 3}
   _possessionApiPrefab: {fileID: 7436285547912372809, guid: d61734141ac623b43b6120ccf6b09da6, type: 3}
+  _inputBindingConfig: {fileID: 11400000, guid: aee68fefa381a6847b1b923c5ba0df4c, type: 2}

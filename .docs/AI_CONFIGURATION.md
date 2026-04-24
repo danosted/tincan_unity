@@ -27,6 +27,14 @@ This document outlines the AI assistant's role in the `TinCan` Unity3D project. 
 -   Iterate on code fixes or debugging without human guidance.
 -   Make architectural decisions independently.
 
+### Rule 1.1: Architectural Constraints & Naming
+
+**The AI MUST strictly adhere to the following architectural constraints defined in `.docs/ARCHITECTURE.md`:**
+
+1.  **Mediator Naming:** Any new `NetworkBehaviour` MUST be suffixed with `NetworkMediator`. Never use `Controller` or `Manager` for networked components.
+2.  **Input-Driven Simulation:** Prioritize "Input Sync" for simulation-critical features (Movement, Abilities, Gunplay). Use `InputState` structs and `SimulationUseCase` patterns.
+3.  **No Side-Channels:** Avoid using `ServerRpc` for "triggering" actions that are part of the simulation loop. Pack these intents into the synchronized `InputState`.
+
 ### Rule 2: Project Context - Unity3D, C#, Unity3D SDK
 
 **This project is a Unity3D project, and all code discussions will be in the context of C# programming language and the Unity3D Software Development Kit (SDK).**
@@ -108,7 +116,15 @@ When discussing implementations, the AI should be mindful of potential Unity ver
 
 ---
 
-### Rule 10: Mandatory Post-Modification Verification
+### Rule 10: Mandatory Pre-Modification Context Check
+
+**AI MUST always verify the current state of files before commencing any work:**
+
+1.  **Check for External Edits:** The human developer may have formatted, refactored, or modified files since the AI's last action.
+2.  **Read Before Replace:** Always use the `read_file` tool to inspect the exact target area before using `replace_string_in_file`. Never assume the line numbers or surrounding whitespace match your previous output.
+3.  **Acknowledge Context:** If the file structure has drastically changed, pause and re-evaluate the plan based on the current reality of the codebase.
+
+### Rule 11: Mandatory Post-Modification Verification
 
 **AI MUST always perform a verification pass after modifying code:**
 

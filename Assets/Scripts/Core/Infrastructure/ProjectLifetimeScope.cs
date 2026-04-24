@@ -7,6 +7,7 @@ using TinCan.Features.HumanoidMovement;
 using TinCan.Features.Possession;
 using TinCan.Features.Airship;
 using TinCan.Features.Interaction;
+using TinCan.Features.Abilities;
 using TinCan.Network.Infrastructure;
 using UnityEngine;
 using Unity.Netcode;
@@ -25,11 +26,15 @@ namespace TinCan.Core.Infrastructure
         [SerializeField] private GameObject _playerPrefab;
         [SerializeField] private GameObject _airshipPrefab;
 
-        [Header("APIs")]
+        [Header("APIs & Configs")]
         [SerializeField] private GameObject _possessionApiPrefab;
+        [SerializeField] private TinCan.Core.Domain.Abilities.InputBindingConfig _inputBindingConfig;
 
         protected override void Configure(IContainerBuilder builder)
         {
+            // Register Configs
+            builder.RegisterInstance(_inputBindingConfig);
+
             // Register Domain logic (Plain C# classes)
             builder.Register<AirshipMovementProcessor>(Lifetime.Transient);
             builder.Register<FreeCameraMovementProcessor>(Lifetime.Transient);
@@ -53,13 +58,14 @@ namespace TinCan.Core.Infrastructure
 
             // builder.Register<VehicleBoardingUseCase>(Lifetime.Singleton).As<IVehicleBoardingUseCase>();
             builder.Register<InteractionOrchestrator>(Lifetime.Singleton).As<IInteractionOrchestrator>();
-            builder.Register<PossessionUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>(); ;
+            builder.Register<PossessionUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>();
+            builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
 
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
                 entryPoints.Add<FreeCameraMovementUseCase>();
                 entryPoints.Add<HumanoidMovementUseCase>();
-                entryPoints.Add<HumanoidLookUseCase>();
+                entryPoints.Add<TinCan.Features.HumanoidMovement.PlayerLookUseCase>();
                 entryPoints.Add<VehicleBoardingUseCase>().As<IVehicleBoardingUseCase>();
                 entryPoints.Add<AirshipMovementUseCase>();
                 entryPoints.Add<PossessionInputController>();

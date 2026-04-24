@@ -154,16 +154,17 @@ namespace TinCan.Features.HumanoidMovement
             // Apply Platform Rotation
             if (ground.RotationDelta != Quaternion.identity)
             {
-                movement.SetRotation(ground.RotationDelta * movement.Transform.rotation);
+                // Isolate the Yaw (Y-axis) rotation from the platform's full 3D rotation delta
+                // This ensures characters standing on banking airships or slanted platforms don't lean sideways
+                float yawDelta = ground.RotationDelta.eulerAngles.y;
+                if (yawDelta > 180f) yawDelta -= 360f; // Normalize to [-180, 180]
+
+                Quaternion yawOnlyDelta = Quaternion.Euler(0f, yawDelta, 0f);
+                movement.SetRotation(yawOnlyDelta * movement.Transform.rotation);
 
                 // Keep the camera orientation synchronized with the platform's rotation
                 if (isCaptured && character is IHasOrbitalCamera hasCamera && hasCamera.Look != null)
                 {
-                    float yawDelta = ground.RotationDelta.eulerAngles.y;
-
-                    // Normalize the euler angle to [-180, 180] to avoid jumping by 360 degrees
-                    if (yawDelta > 180f) yawDelta -= 360f;
-
                     if (Mathf.Abs(yawDelta) > 0.001f)
                     {
                         hasCamera.Look.Yaw += yawDelta;

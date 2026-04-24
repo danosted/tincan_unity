@@ -11,8 +11,15 @@ namespace TinCan.Features.Airship
     /// </summary>
     public class AirshipMovementUseCase : SimulationUseCase<IAirshipView, AirshipInputState>
     {
+        private class MovementState
+        {
+            public float CurrentSpeed;
+            public Vector3 CurrentVelocity;
+            public Vector3 CurrentAngularVelocity;
+        }
+
         private readonly AirshipMovementProcessor _processor;
-        private readonly Dictionary<Guid, Vector3> _linearVelocities = new();
+        private readonly Dictionary<Guid, MovementState> _states = new();
 
         public AirshipMovementUseCase(
             IInputService inputService,
@@ -32,50 +39,71 @@ namespace TinCan.Features.Airship
             if (InputService.IsActionPressed(ActionNames.Jump)) pitch = 1f;
             else if (InputService.IsActionPressed(ActionNames.Sprint)) pitch = -1f;
 
-            return new AirshipInputState
+            var input = new AirshipInputState
             {
                 Throttle = InputService.GetAxis(ActionNames.MoveForward, ActionNames.MoveBackward),
                 Yaw = InputService.GetAxis(ActionNames.MoveRight, ActionNames.MoveLeft),
                 Pitch = pitch
             };
+
+            if (input.Throttle != 0 || input.Yaw != 0 || input.Pitch != 0)
+            {
+                Debug.Log($"[AirshipMovementUseCase] Gathered Input for {airship.Id}: T:{input.Throttle}, Y:{input.Yaw}, P:{input.Pitch}");
+            }
+
+            return input;
         }
 
         protected override void ProcessSimulation(IAirshipView airship, AirshipInputState input, bool isCaptured)
         {
-            if (airship.IsControlsEnabled == false) return;
-            if (!_linearVelocities.ContainsKey(airship.Id))
-                _linearVelocities[airship.Id] = Vector3.zero;
+            // If controls are disabled (unpossessed), we treat input as zeroed
+            // but we do NOT return early so that momentum/drift can continue to simulate.
+            if (airship.IsControlsEnabled == false)
+            {
+                input = new AirshipInputState();
+            }
 
+            if (!_states.ContainsKey(airship.Id))
+                _states[airship.Id] = new MovementState();
+
+            var state = _states[airship.Id];
             float deltaTime = TimeService.DeltaTime;
 
-            // 1. Calculate Linear Velocity
-            _linearVelocities[airship.Id] = _processor.CalculateLinearVelocity(
-                _linearVelocities[airship.Id],
+            // 1. Calculate Linear Speed
+            state.CurrentSpeed = _processor.CalculateLinearSpeed(
+                state.CurrentSpeed,
                 input,
-                airship.Transform,
                 airship.MaxForwardSpeed,
                 airship.MaxBackwardSpeed,
                 airship.AccelerationRate,
                 airship.DecelerationRate,
                 deltaTime);
 
-            // 2. Calculate Angular Velocity
-            Vector3 angularVelocity = _processor.CalculateAngularVelocity(
+            // 2. Calculate Drift Velocity
+            state.CurrentVelocity = _processor.CalculateVelocityWithDrift(
+                state.CurrentVelocity,
+                airship.Transform.forward,
+                state.CurrentSpeed,
+                airship.VelocityBlendRate,
+                deltaTime);
+
+            // 3. Calculate Angular Velocity with Momentum and Banking
+            state.CurrentAngularVelocity = _processor.CalculateAngularVelocity(
+                state.CurrentAngularVelocity,
                 input,
-                airship.Transform,
+                state.CurrentSpeed,
+                airship.MaxForwardSpeed,
+                airship.Transform.rotation.eulerAngles.z,
                 airship.TurnSpeed,
-                airship.PitchSpeed);
+                airship.PitchSpeed,
+                airship.AngularAcceleration,
+                airship.AngularDeceleration,
+                airship.MaxBankAngle,
+                airship.BankSpeed,
+                deltaTime);
 
-            // 3. Apply to view
-            airship.ApplyMovement(_linearVelocities[airship.Id], angularVelocity);
-
-            // 4. Update Camera Rotation if the Airship has an orbital camera attached
-            if (isCaptured && airship is TinCan.Features.FreeCamera.IHasOrbitalCamera hasCamera && hasCamera.Look != null)
-            {
-                // The Airship controller view handles the base rotation interpolation,
-                // but we need to ensure the camera script knows its pivot has moved.
-                // Because _isRotationRelative is set, we don't need to manually add YawDelta.
-            }
+            // 4. Apply to view
+            airship.ApplyMovement(state.CurrentVelocity, state.CurrentAngularVelocity);
         }
     }
 }

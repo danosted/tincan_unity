@@ -22,8 +22,13 @@ namespace TinCan.Features.Airship
         [SerializeField] private float _maxBackwardSpeed = 8f;
         [SerializeField] private float _accelerationRate = 5f;
         [SerializeField] private float _decelerationRate = 2f;
+        [SerializeField] private float _angularAcceleration = 15f;
+        [SerializeField] private float _angularDeceleration = 20f;
+        [SerializeField] private float _velocityBlendRate = 2f;
         [SerializeField] private float _turnSpeed = 45f;
         [SerializeField] private float _pitchSpeed = 30f;
+        [SerializeField] private float _maxBankAngle = 15f;
+        [SerializeField] private float _bankSpeed = 2f;
         private ThirdPersonLookView _look;
         private Rigidbody _rb;
         private Vector3 _lastPosition;
@@ -58,8 +63,13 @@ namespace TinCan.Features.Airship
         public float MaxBackwardSpeed => _maxBackwardSpeed;
         public float AccelerationRate => _accelerationRate;
         public float DecelerationRate => _decelerationRate;
+        public float AngularAcceleration => _angularAcceleration;
+        public float AngularDeceleration => _angularDeceleration;
+        public float VelocityBlendRate => _velocityBlendRate;
         public float TurnSpeed => _turnSpeed;
         public float PitchSpeed => _pitchSpeed;
+        public float MaxBankAngle => _maxBankAngle;
+        public float BankSpeed => _bankSpeed;
 
         // IMovingGround data
         public Vector3 Velocity => _velocity;
@@ -105,9 +115,13 @@ namespace TinCan.Features.Airship
             if (_rb == null || !_rb.isKinematic) return;
 
             Vector3 deltaPosition = _targetLinearVelocity * Time.fixedDeltaTime;
-            Quaternion deltaRotation = Quaternion.Euler(_targetAngularVelocity * Mathf.Rad2Deg * Time.fixedDeltaTime);
+
+            // _targetAngularVelocity is now provided in local euler angles per second.
+            Quaternion deltaRotation = Quaternion.Euler(_targetAngularVelocity * Time.fixedDeltaTime);
 
             _rb.MovePosition(_rb.position + deltaPosition);
+
+            // Multiplying on the right applies the rotation locally!
             _rb.MoveRotation(_rb.rotation * deltaRotation);
         }
 

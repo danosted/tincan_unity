@@ -321,8 +321,13 @@ MonoBehaviour:
   _maxBackwardSpeed: 8
   _accelerationRate: 5
   _decelerationRate: 2
+  _angularAcceleration: 15
+  _angularDeceleration: 20
+  _velocityBlendRate: 2
   _turnSpeed: 45
   _pitchSpeed: 30
+  _maxBankAngle: 15
+  _bankSpeed: 2
 --- !u!114 &544907830611805058
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -357,7 +362,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4741218207008056854}
   serializedVersion: 5
-  m_Mass: 5
+  m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -372,10 +377,10 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 1
+  m_CollisionDetection: 3
 --- !u!65 &7311033975831166929
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -414,6 +419,7 @@ MonoBehaviour:
   _height: 5
   _sensitivity: 0.5
   _maxPitch: 90
+  _isRotationRelative: 0
 --- !u!1 &5392219454942549380
 GameObject:
   m_ObjectHideFlags: 0

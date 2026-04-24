@@ -14,12 +14,15 @@ namespace TinCan.Network.Infrastructure
     /// </summary>
     [RequireComponent(typeof(AirshipControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
-    public class AirshipNetworkMediator : NetworkMediator, IAirshipView
+    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Features.FreeCamera.IHasOrbitalCamera
     {
         private AirshipControllerView _view;
 
         private readonly NetworkVariable<AirshipInputState> _netInputState = new NetworkVariable<AirshipInputState>(
             writePerm: NetworkVariableWritePermission.Owner);
+
+        // IHasOrbitalCamera Implementation
+        public TinCan.Features.HumanoidMovement.IOrbitalLookView Look => _view.Look;
 
         // IAirshipView Implementation (Forwarding to view)
         public Transform Transform => _view.transform;
@@ -27,8 +30,13 @@ namespace TinCan.Network.Infrastructure
         public float MaxBackwardSpeed => _view.MaxBackwardSpeed;
         public float AccelerationRate => _view.AccelerationRate;
         public float DecelerationRate => _view.DecelerationRate;
+        public float AngularAcceleration => _view.AngularAcceleration;
+        public float AngularDeceleration => _view.AngularDeceleration;
+        public float VelocityBlendRate => _view.VelocityBlendRate;
         public float TurnSpeed => _view.TurnSpeed;
         public float PitchSpeed => _view.PitchSpeed;
+        public float MaxBankAngle => _view.MaxBankAngle;
+        public float BankSpeed => _view.BankSpeed;
 
         public AirshipInputState InputState
         {
@@ -52,15 +60,10 @@ namespace TinCan.Network.Infrastructure
         {
             base.OnNetworkSpawn();
             _view = GetComponent<AirshipControllerView>();
-        }
 
-        private void Update()
-        {
-            if (!IsSpawned) return;
-
-            if (IsOwner)
+            if (Registry != null)
             {
-                _netInputState.Value = InputState;
+                Registry.Register(this);
             }
         }
 

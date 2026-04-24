@@ -17,8 +17,13 @@ namespace TinCan.Features.Airship
         float MaxBackwardSpeed { get; }
         float AccelerationRate { get; }
         float DecelerationRate { get; }
+        float AngularAcceleration { get; }
+        float AngularDeceleration { get; }
+        float VelocityBlendRate { get; }
         float TurnSpeed { get; }
         float PitchSpeed { get; }
+        float MaxBankAngle { get; }
+        float BankSpeed { get; }
 
         /// <summary>
         /// Apply the calculated physical velocities to the view.

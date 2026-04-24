@@ -43,9 +43,14 @@ namespace TinCan.Core.Domain
 
         public virtual void Tick()
         {
-            foreach (var actor in Registry.GetActors<TView>())
+            var actors = Registry.GetActors<TView>();
+
+            foreach (var actor in actors)
             {
-                if (!actor.IsSimulating) continue;
+                if (!actor.IsSimulating)
+                {
+                    continue;
+                }
 
                 HandleGenericSimulation(actor);
             }

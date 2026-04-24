@@ -8,10 +8,9 @@ namespace TinCan.Features.Airship
     /// </summary>
     public class AirshipMovementProcessor
     {
-        public Vector3 CalculateLinearVelocity(
-            Vector3 currentVelocity,
+        public float CalculateLinearSpeed(
+            float currentSpeed,
             AirshipInputState input,
-            Transform transform,
             float maxForward,
             float maxBackward,
             float accel,
@@ -22,32 +21,61 @@ namespace TinCan.Features.Airship
                 ? input.Throttle * maxForward
                 : input.Throttle * maxBackward;
 
-            // Get current speed relative to forward direction
-            float currentSpeed = Vector3.Dot(currentVelocity, transform.forward);
-
             // Apply acceleration or deceleration
             float rate = input.Throttle != 0 ? accel : decel;
-            float speed = Mathf.MoveTowards(currentSpeed, targetSpeed, rate * deltaTime);
+            return Mathf.MoveTowards(currentSpeed, targetSpeed, rate * deltaTime);
+        }
 
-            // Return world-space velocity
-            return transform.forward * speed;
+        public Vector3 CalculateVelocityWithDrift(
+            Vector3 currentVelocity,
+            Vector3 targetForwardDirection,
+            float currentSpeed,
+            float blendRate,
+            float deltaTime)
+        {
+            Vector3 targetVelocity = targetForwardDirection * currentSpeed;
+            return Vector3.Lerp(currentVelocity, targetVelocity, blendRate * deltaTime);
         }
 
         public Vector3 CalculateAngularVelocity(
+            Vector3 currentAngularVelocity,
             AirshipInputState input,
-            Transform transform,
+            float currentSpeed,
+            float maxForwardSpeed,
+            float currentRoll,
             float turnSpeed,
-            float pitchSpeed)
+            float pitchSpeed,
+            float angularAccel,
+            float angularDecel,
+            float maxBankAngle,
+            float bankSpeed,
+            float deltaTime)
         {
-            // Calculate local rotations first
-            float yawAmount = input.Yaw * turnSpeed * Mathf.Deg2Rad;
-            float pitchAmount = input.Pitch * pitchSpeed * Mathf.Deg2Rad;
+            // Calculate local rotations (Degrees per second) for Pitch and Yaw
+            float targetYawAmount = input.Yaw * turnSpeed;
+            float targetPitchAmount = input.Pitch * pitchSpeed;
 
-            // Transform local rotation axes to world space
-            Vector3 worldYaw = transform.up * yawAmount;
-            Vector3 worldPitch = transform.right * pitchAmount;
+            // Apply angular momentum (acceleration / deceleration)
+            float yawRate = input.Yaw != 0 ? angularAccel : angularDecel;
+            float currentYaw = Mathf.MoveTowards(currentAngularVelocity.y, targetYawAmount, yawRate * deltaTime);
 
-            return worldYaw + worldPitch;
+            float pitchRate = input.Pitch != 0 ? angularAccel : angularDecel;
+            float currentPitch = Mathf.MoveTowards(currentAngularVelocity.x, targetPitchAmount, pitchRate * deltaTime);
+
+            // Calculate Visual Banking (Roll)
+            // Bank angle scales with input yaw and current speed
+            float speedFactor = Mathf.Clamp01(Mathf.Abs(currentSpeed) / maxForwardSpeed);
+            float targetBankAngle = -input.Yaw * maxBankAngle * speedFactor;
+
+            // Convert currentRoll to -180 to 180 range
+            if (currentRoll > 180f) currentRoll -= 360f;
+
+            // Smoothly interpolate towards target bank angle
+            float rollDifference = targetBankAngle - currentRoll;
+            // The angular velocity needed to close the difference this frame
+            float currentRollVel = rollDifference * bankSpeed;
+
+            return new Vector3(currentPitch, currentYaw, currentRollVel);
         }
     }
 }

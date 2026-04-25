@@ -1,4 +1,4 @@
-# TinCan - Co-op Multiplayer FPS
+# TinCan - Co-op Multiplayer on a Boat!
 
 Welcome to TinCan! This is a Unity3D multiplayer game built with Netcode for GameObjects (NGO) and VContainer for dependency injection.
 

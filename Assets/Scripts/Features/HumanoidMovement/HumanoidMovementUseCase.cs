@@ -1,3 +1,4 @@
+#nullable enable
 using UnityEngine;
 using VContainer.Unity;
 using TinCan.Core.Domain;
@@ -18,6 +19,9 @@ namespace TinCan.Features.HumanoidMovement
     /// </summary>
     public class HumanoidMovementUseCase : SimulationUseCase<IHumanoidCharacterView, HumanoidInputState>
     {
+        // Toggle to easily switch between the new Local-to-World matrix math and the legacy vector math
+        public bool UseLocalToWorldCalculation = true;
+
         private readonly HumanoidMovementProcessor _processor;
         private readonly AbilitySystemUseCase _abilitySystem;
         private readonly Dictionary<Guid, Vector3> _horizontalVelocities = new();
@@ -28,6 +32,8 @@ namespace TinCan.Features.HumanoidMovement
         private readonly Dictionary<Guid, Transform> _lastPlatforms = new();
         private readonly Dictionary<Guid, Vector3> _lastPlatformPositions = new();
         private readonly Dictionary<Guid, Quaternion> _lastPlatformRotations = new();
+        private readonly Dictionary<Guid, float> _platformRetentionTimers = new();
+        private const float PLATFORM_RETENTION_TIME = 0.5f;
 
         public HumanoidMovementUseCase(
             IInputService inputService,
@@ -79,7 +85,7 @@ namespace TinCan.Features.HumanoidMovement
             var movement = character.Movement;
 
             // 2. Resolve grounding and platforms
-            GroundData ground = ResolveGrounding(character);
+            var ground = ResolveGrounding(character);
             movement.UpdateGroundData(ground);
 
             float deltaTime = TimeService.DeltaTime;
@@ -128,22 +134,10 @@ namespace TinCan.Features.HumanoidMovement
                 jumpForce,
                 deltaTime);
 
-            // 3. Momentum Inheritance: If jumping, add the platform's velocity to our internal buffers
-            if (input.IsJumping && ground.IsGrounded)
-            {
-                Vector3 platformVelocity = ground.GroundVelocity;
-                _horizontalVelocities[character.Id] += new Vector3(platformVelocity.x, 0, platformVelocity.z);
-                _verticalVelocities[character.Id] += platformVelocity.y;
-            }
-
-            // 4. Calculate Final Movement
+            // 3. Calculate Final Movement
             Vector3 intentionalMotion = (_horizontalVelocities[character.Id] + (Vector3.up * _verticalVelocities[character.Id])) * deltaTime;
 
-            // The magic: Movement = Intentional Movement
-            // We no longer manually apply surface delta to the controller here.
-            // If the platform is truly kinematic and we rely on standard Unity nesting or continuous collision,
-            // standard physics / character controller may sweep with the platform.
-            // BUT, if we explicitly need to move with the platform, we add it back:
+            // The magic: Movement = Intentional Movement + Surface Delta (from platform)
             movement.Move(intentionalMotion + ground.SurfaceDelta);
 
             // Apply Platform Rotation
@@ -173,41 +167,92 @@ namespace TinCan.Features.HumanoidMovement
             var movement = character.Movement;
             var ground = movement.CurrentGround;
 
-            // Reset dynamic platform data
+            // Reset dynamic platform data for this frame
             ground.GroundTransform = null;
             ground.GroundVelocity = Vector3.zero;
             ground.SurfaceDelta = Vector3.zero;
             ground.RotationDelta = Quaternion.identity;
 
-            // 1. Analyze Sensing data from the View
-            if (!movement.LastGroundHit.HasValue) return ground;
+            Transform? platformTransform = null;
+            IMovingGround? movingGround = null;
 
-            var hit = movement.LastGroundHit.Value;
-            ground.GroundTransform = hit.transform;
-            ground.GroundNormal = hit.normal;
+            // 1. Detect if we are standing on something
+            if (movement.LastGroundHit.HasValue)
+            {
+                var hit = movement.LastGroundHit.Value;
+                ground.GroundNormal = hit.normal;
 
-            // 2. Identify Moving Platforms (Logic moved from Infrastructure to Application)
-            var platform = hit.collider.GetComponentInParent<IMovingGround>();
-            if (platform == null)
+                // Check for moving platforms
+                movingGround = hit.collider.GetComponentInParent<IMovingGround>();
+                if (movingGround != null)
+                {
+                    // FIX: Track the ROOT of the moving ground (the component itself)
+                    // instead of the specific child collider hit. This prevents resets when
+                    // walking across different colliders (stairs, floors) on the same ship.
+                    platformTransform = ((Component)movingGround).transform;
+                    ground.GroundTransform = platformTransform;
+                    ground.GroundVelocity = movingGround.Velocity;
+
+                    // Reset retention timer while grounded
+                    _platformRetentionTimers[character.Id] = PLATFORM_RETENTION_TIME;
+                }
+            }
+
+            // 2. Check for Airborne Retention (Coyote Time for platforms)
+            // If we aren't hitting the ground, but we were recently on a platform, keep tracking it.
+            if (platformTransform == null && _lastPlatforms.TryGetValue(character.Id, out var lastPlat) && lastPlat != null)
+            {
+                if (_platformRetentionTimers.TryGetValue(character.Id, out float timer) && timer > 0)
+                {
+                    platformTransform = lastPlat;
+                    _platformRetentionTimers[character.Id] -= TimeService.DeltaTime;
+
+                    // If it's the airship, we might still want its velocity
+                    movingGround = platformTransform.GetComponent<IMovingGround>();
+                    if (movingGround != null)
+                    {
+                        ground.GroundVelocity = movingGround.Velocity;
+                    }
+                }
+                else
+                {
+                    // Retention expired! This is the moment of true detachment.
+                    // Transfer the platform's velocity to the player's internal momentum.
+                    if (movingGround == null) movingGround = lastPlat.GetComponent<IMovingGround>();
+                    if (movingGround != null)
+                    {
+                        Vector3 vel = movingGround.Velocity;
+                        _horizontalVelocities[character.Id] += new Vector3(vel.x, 0, vel.z);
+                        _verticalVelocities[character.Id] += vel.y;
+                    }
+
+                    _lastPlatforms.Remove(character.Id);
+                    _lastPlatformPositions.Remove(character.Id);
+                    _lastPlatformRotations.Remove(character.Id);
+                    _platformRetentionTimers.Remove(character.Id);
+                    return ground;
+                }
+            }
+
+            if (platformTransform == null)
             {
                 _lastPlatforms.Remove(character.Id);
                 return ground;
             }
 
-            Transform platformTransform = hit.transform;
-
-            // Retrieve precise current transform
+            // 3. Calculate Deltas
             Vector3 currentPos = platformTransform.position;
             Quaternion currentRot = platformTransform.rotation;
 
-            // Calculate precise Deltas based on our OWN cache to avoid execution order issues
-            Vector3 positionDelta = Vector3.zero;
-            Quaternion rotationDelta = Quaternion.identity;
+            Vector3 oldPlatformPos = currentPos;
+            Quaternion oldPlatformRot = currentRot;
 
-            if (_lastPlatforms.TryGetValue(character.Id, out var lastPlatform) && lastPlatform == platformTransform)
+            if (_lastPlatforms.TryGetValue(character.Id, out var cachedPlat) && cachedPlat == platformTransform)
             {
-                positionDelta = currentPos - _lastPlatformPositions[character.Id];
-                rotationDelta = currentRot * Quaternion.Inverse(_lastPlatformRotations[character.Id]);
+                oldPlatformPos = _lastPlatformPositions[character.Id];
+                oldPlatformRot = _lastPlatformRotations[character.Id];
+
+                ground.RotationDelta = currentRot * Quaternion.Inverse(oldPlatformRot);
             }
 
             // Update cache
@@ -215,27 +260,26 @@ namespace TinCan.Features.HumanoidMovement
             _lastPlatformPositions[character.Id] = currentPos;
             _lastPlatformRotations[character.Id] = currentRot;
 
-            // "Stickiness" Logic: We apply computed deltas even if Unity's physics says not grounded yet
-            ground.GroundVelocity = platform.Velocity; // Logical velocity for jump momentum
-            ground.RotationDelta = rotationDelta;
-
-            // Calculate rotational and translational displacement
-            // 1. Where was the platform's center before it moved this frame?
-            Vector3 platformOldPos = currentPos - positionDelta;
-
-            // 2. What was the player's offset from that old center?
-            Vector3 offsetFromOldPivot = movement.Transform.position - platformOldPos;
-
-            // 3. Rotate the offset by the platform's rotation delta
-            Vector3 rotatedOffset = rotationDelta * offsetFromOldPivot;
-
-            // 4. The new absolute position of the ground under the player's feet
-            Vector3 newSpotPos = currentPos + rotatedOffset;
-
-            // 5. The total displacement for the player is the difference
-            ground.SurfaceDelta = newSpotPos - movement.Transform.position;
+            // Compute Surface Displacement
+            if (UseLocalToWorldCalculation)
+            {
+                // Character-Anchor Matrix Transformation
+                Matrix4x4 oldMatrix = Matrix4x4.TRS(oldPlatformPos, oldPlatformRot, platformTransform.lossyScale);
+                Vector3 charLocalPos = oldMatrix.inverse.MultiplyPoint3x4(movement.Transform.position);
+                Vector3 expectedWorldPos = platformTransform.TransformPoint(charLocalPos);
+                ground.SurfaceDelta = expectedWorldPos - movement.Transform.position;
+            }
+            else
+            {
+                // Vector Offset Rotation (Legacy)
+                Vector3 offsetFromOldPivot = movement.Transform.position - oldPlatformPos;
+                Vector3 rotatedOffset = ground.RotationDelta * offsetFromOldPivot;
+                Vector3 expectedWorldPos = currentPos + rotatedOffset;
+                ground.SurfaceDelta = expectedWorldPos - movement.Transform.position;
+            }
 
             return ground;
         }
     }
 }
+

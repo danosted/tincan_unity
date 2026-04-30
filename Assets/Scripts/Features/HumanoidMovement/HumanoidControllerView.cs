@@ -66,7 +66,7 @@ namespace TinCan.Features.HumanoidMovement
         {
             // Raw sensing: Perform a raycast regardless of isGrounded state to detect platforms
             // Increased range to 2.0m to maintain stickiness during jumps
-            if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out var hit, _controller.height * 0.5f + 2.0f, _interactableMask))
+            if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out var hit, _controller.height, _interactableMask))
             {
                 _lastGroundHit = hit;
                 Debug.DrawLine(transform.position, hit.point, Color.green);
@@ -78,6 +78,7 @@ namespace TinCan.Features.HumanoidMovement
 
             // Infrastructure state
             _currentGround.IsGrounded = _controller.isGrounded;
+
         }
 
         private void OnControllerColliderHit(ControllerColliderHit hit)

@@ -1,3 +1,4 @@
+#nullable enable
 using Unity.Netcode;
 using UnityEngine;
 using TinCan.Features.HumanoidMovement;
@@ -26,17 +27,17 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(AbilityNetworkMediator))]
     public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView
     {
-        private HumanoidControllerView _movement;
-        private ThirdPersonLookView _look;
-        private NetworkTransformMediator _transformSync;
-        private AbilityNetworkMediator _abilitySync;
+        private HumanoidControllerView _movement = null!;
+        private ThirdPersonLookView _look = null!;
+        private NetworkTransformMediator _transformSync = null!;
+        private AbilityNetworkMediator _abilitySync = null!;
 
         [Header("Attributes (GAS)")]
-        [SerializeField] private GameplayAttribute _moveSpeedAttribute;
-        [SerializeField] private GameplayAttribute _jumpForceAttribute;
-        [SerializeField] private GameplayAttribute _staminaAttribute;
-        [SerializeField] private GameplayAttribute _healthAttribute;
-        [SerializeField] private List<AbilityDefinition> _startingAbilities;
+        [SerializeField] private GameplayAttribute? _moveSpeedAttribute;
+        [SerializeField] private GameplayAttribute? _jumpForceAttribute;
+        [SerializeField] private GameplayAttribute? _staminaAttribute;
+        [SerializeField] private GameplayAttribute? _healthAttribute;
+        [SerializeField] private List<AbilityDefinition>? _startingAbilities;
 
         private readonly NetworkVariable<HumanoidInputState> _netInputState = new NetworkVariable<HumanoidInputState>(
             writePerm: NetworkVariableWritePermission.Owner);
@@ -75,7 +76,7 @@ namespace TinCan.Network.Infrastructure
             _abilitySync.RegisterAttributeSet(attributes);
 
             // Grant abilities directly through the mediator, which now correctly resolves the parent ID
-            foreach (var ability in _startingAbilities)
+            foreach (var ability in _startingAbilities ?? new List<AbilityDefinition>())
             {
                 _abilitySync.GrantAbility(ability);
             }
@@ -116,7 +117,7 @@ namespace TinCan.Network.Infrastructure
         public void AddTag(GameplayTag tag) => _abilitySync.AddTag(tag);
 
         public void RemoveTag(GameplayTag tag) => _abilitySync.RemoveTag(tag);
-        public HumanoidAttributeSet GetAttributeSet() => _abilitySync.GetAttributeSet<HumanoidAttributeSet>();
+        public HumanoidAttributeSet? GetAttributeSet() => _abilitySync.GetAttributeSet<HumanoidAttributeSet>();
 
         public bool TryGetAttribute(GameplayAttribute attribute, out AttributeValue value) => _abilitySync.TryGetAttribute(attribute, out value);
         public void SetAttribute(GameplayAttribute attribute, AttributeValue value) => _abilitySync.SetAttribute(attribute, value);

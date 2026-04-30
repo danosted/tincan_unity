@@ -17,7 +17,12 @@ namespace TinCan.Features.Abilities
         public GameplayAttribute StaminaDef { get; }
         public GameplayAttribute HealthDef { get; }
 
-        public HumanoidAttributeSet(IAbilityController<HumanoidAttributeSet> controller, GameplayAttribute moveSpeed, GameplayAttribute jumpForce, GameplayAttribute stamina, GameplayAttribute health)
+        public HumanoidAttributeSet(
+            IAbilityController<HumanoidAttributeSet> controller,
+            GameplayAttribute moveSpeed,
+            GameplayAttribute jumpForce,
+            GameplayAttribute stamina,
+            GameplayAttribute health)
         {
             _controller = controller;
             MoveSpeedDef = moveSpeed;

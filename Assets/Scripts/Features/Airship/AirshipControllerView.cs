@@ -29,6 +29,12 @@ namespace TinCan.Features.Airship
         [SerializeField] private float _pitchSpeed = 30f;
         [SerializeField] private float _maxBankAngle = 15f;
         [SerializeField] private float _bankSpeed = 2f;
+
+        [Header("Visual Smoothing")]
+        [SerializeField] private Transform _visualRoot;
+        [SerializeField] private float _visualPositionSmoothSpeed = 15f;
+        [SerializeField] private float _visualRotationSmoothSpeed = 15f;
+
         private ThirdPersonLookView _look;
         private Rigidbody _rb;
         private Vector3 _lastPosition;
@@ -38,6 +44,11 @@ namespace TinCan.Features.Airship
         private Quaternion _rotationDelta;
         private Vector3 _targetLinearVelocity;
         private Vector3 _targetAngularVelocity;
+
+        private Vector3 _visualPosition;
+        private Quaternion _visualRotation;
+        private Vector3 _lastVisualPosition;
+        private Quaternion _lastVisualRotation;
 
         public bool IsControlsEnabled { get; private set; } = false;
 
@@ -84,7 +95,7 @@ namespace TinCan.Features.Airship
             {
                 _rb.isKinematic = true; // The fix: Make the ship immune to physics pushing
                 _rb.useGravity = false;
-                _rb.interpolation = RigidbodyInterpolation.Interpolate;
+                _rb.interpolation = RigidbodyInterpolation.None; // Manual smoothing handles this now
                 _rb.linearDamping = 0f;
                 _rb.angularDamping = 0f;
                 _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative; // Required for smooth kinematic pushing
@@ -93,37 +104,58 @@ namespace TinCan.Features.Airship
             _lastPosition = transform.position;
             _lastRotation = transform.rotation;
 
+            _visualPosition = transform.position;
+            _visualRotation = transform.rotation;
+            _lastVisualPosition = transform.position;
+            _lastVisualRotation = transform.rotation;
+
             _look = GetComponent<ThirdPersonLookView>();
         }
 
         private void Update()
         {
-            // Calculate Deltas for IMovingGround consumers (players on deck)
-            // Sampling in Update ensures one delta per rendered frame
-            _positionDelta = transform.position - _lastPosition;
-            _rotationDelta = transform.rotation * Quaternion.Inverse(_lastRotation);
+            // 1. Simulation (The "Instant" truth)
+            if (_rb != null && _rb.isKinematic)
+            {
+                Vector3 deltaPosition = _targetLinearVelocity * Time.deltaTime;
+                Quaternion deltaRotation = Quaternion.Euler(_targetAngularVelocity * Time.deltaTime);
+
+                transform.position += deltaPosition;
+                transform.rotation = transform.rotation * deltaRotation;
+            }
+
+            // 2. Smoothing (Applied to visuals + colliders child)
+            Transform syncSource = _visualRoot != null ? _visualRoot : transform;
+
+            if (_visualRoot != null)
+            {
+                _visualPosition = Vector3.Lerp(_visualPosition, transform.position, Time.deltaTime * _visualPositionSmoothSpeed);
+                _visualRotation = Quaternion.Slerp(_visualRotation, transform.rotation, Time.deltaTime * _visualRotationSmoothSpeed);
+
+                _visualRoot.position = _visualPosition;
+                _visualRoot.rotation = _visualRotation;
+            }
+
+            // 3. Calculate Deltas from the smoothed surface
+            // This ensures players standing on the deck follow the smooth movement, not the "snap"
+            _positionDelta = syncSource.position - _lastVisualPosition;
+            _rotationDelta = syncSource.rotation * Quaternion.Inverse(_lastVisualRotation);
 
             // We use _targetLinearVelocity for logical velocity so it's consistent for momentum
             _velocity = _targetLinearVelocity;
 
             _lastPosition = transform.position;
             _lastRotation = transform.rotation;
+            _lastVisualPosition = syncSource.position;
+            _lastVisualRotation = syncSource.rotation;
         }
 
-        private void FixedUpdate()
+        private void LateUpdate()
         {
-            if (_rb == null || !_rb.isKinematic) return;
-
-            Vector3 deltaPosition = _targetLinearVelocity * Time.fixedDeltaTime;
-
-            // _targetAngularVelocity is now provided in local euler angles per second.
-            Quaternion deltaRotation = Quaternion.Euler(_targetAngularVelocity * Time.fixedDeltaTime);
-
-            _rb.MovePosition(_rb.position + deltaPosition);
-
-            // Multiplying on the right applies the rotation locally!
-            _rb.MoveRotation(_rb.rotation * deltaRotation);
+            // Visual logic moved to Update to ensure IMovingGround deltas are ready for CharacterControllers
         }
+
+        /* FixedUpdate removed to prevent Update/FixedUpdate desync with CharacterController */
 
         public void ApplyMovement(Vector3 linearVelocity, Vector3 angularVelocity)
         {

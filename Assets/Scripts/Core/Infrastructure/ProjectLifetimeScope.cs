@@ -12,8 +12,6 @@ using TinCan.Network.Infrastructure;
 using UnityEngine;
 using Unity.Netcode;
 using TinCan.Core.Infrastructure.Extensions;
-using TinCan.Features.Possession.Infrastructure;
-
 namespace TinCan.Core.Infrastructure
 {
     /// <summary>
@@ -65,7 +63,7 @@ namespace TinCan.Core.Infrastructure
             {
                 entryPoints.Add<FreeCameraMovementUseCase>();
                 entryPoints.Add<HumanoidMovementUseCase>();
-                entryPoints.Add<TinCan.Features.HumanoidMovement.PlayerLookUseCase>();
+                entryPoints.Add<PlayerLookUseCase>();
                 entryPoints.Add<VehicleBoardingUseCase>().As<IVehicleBoardingUseCase>();
                 entryPoints.Add<AirshipMovementUseCase>();
                 entryPoints.Add<PossessionInputController>();

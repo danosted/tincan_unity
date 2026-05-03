@@ -1,8 +1,9 @@
 # AI Copilot Instructions for TinCan Unity
 
-**Last Updated:** January 21, 2026
+**Last Updated:** May 3, 2026
 **Project:** TinCan - Co-op Multiplayer FPS (Unity3D)
 **Development Model:** Human + AI Collaboration
+**Current Unity Version:** 6000.4.5f1
 
 ---
 

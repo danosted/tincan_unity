@@ -11,7 +11,7 @@ Optional: Direct path to Unity executable. If not provided, searches Unity Hub.
 
 .EXAMPLE
 .\setup.ps1
-.\setup.ps1 -UnityPath "C:\Program Files\Unity\Hub\Editor\2023.2.15f1"
+.\setup.ps1 -UnityPath "C:\Program Files\Unity\Hub\Editor\6000.4.5f1"
 #>
 
 param(
@@ -54,45 +54,45 @@ function Write-Section {
 
 function Test-UnityVersion {
     param([string]$TargetVersion)
-    
+
     Write-Log "Checking for Unity version: $TargetVersion"
-    
+
     # Check if .unity-version file exists
     $VersionFile = Join-Path $ProjectRoot ".unity-version"
     if (-not (Test-Path $VersionFile)) {
         Write-Log "ERROR: .unity-version file not found at $VersionFile" "ERROR"
         return $false
     }
-    
+
     $ActualVersion = Get-Content $VersionFile -Raw | ForEach-Object { $_.Trim() }
     Write-Log "Detected version from .unity-version: $ActualVersion"
-    
+
     return $true
 }
 
 function Find-UnityEditor {
     param([string]$TargetVersion)
-    
+
     Write-Log "Searching for Unity Editor: $TargetVersion"
-    
+
     if ($UnityPath -and (Test-Path $UnityPath)) {
         Write-Log "Using provided Unity path: $UnityPath"
         return $UnityPath
     }
-    
+
     # Default Unity Hub installation paths
     $UnityHubPaths = @(
         "C:\Program Files\Unity\Hub\Editor\$TargetVersion\Editor\Unity.exe",
         "C:\Program Files (x86)\Unity\Hub\Editor\$TargetVersion\Editor\Unity.exe"
     )
-    
+
     foreach ($Path in $UnityHubPaths) {
         if (Test-Path $Path) {
             Write-Log "Found Unity at: $Path"
             return $Path
         }
     }
-    
+
     Write-Log "Could not find Unity Editor for version $TargetVersion" "WARN"
     Write-Log "Please install via Unity Hub: https://unity.com/download" "WARN"
     return $null
@@ -100,7 +100,7 @@ function Find-UnityEditor {
 
 function Test-RequiredFolders {
     Write-Log "Validating required folders..."
-    
+
     $RequiredFolders = @(
         "Assets\Scripts\Core",
         "Assets\Scripts\Network",
@@ -113,7 +113,7 @@ function Test-RequiredFolders {
         ".docs",
         ".tools\logs"
     )
-    
+
     $AllExist = $true
     foreach ($Folder in $RequiredFolders) {
         $FullPath = Join-Path $ProjectRoot $Folder
@@ -124,13 +124,13 @@ function Test-RequiredFolders {
             $AllExist = $false
         }
     }
-    
+
     return $AllExist
 }
 
 function Create-EnvFile {
     Write-Log "Creating .env configuration file..."
-    
+
     $EnvFile = Join-Path $ProjectRoot ".env"
     $EnvContent = @"
 # Auto-generated environment configuration
@@ -146,7 +146,7 @@ LOG_PATH=$ProjectRoot\.tools\logs
 # CI_BUILD_ENABLED=true
 # CI_TEST_ENABLED=true
 "@
-    
+
     Set-Content -Path $EnvFile -Value $EnvContent
     Write-Log "✓ Created .env at $EnvFile"
 }
@@ -165,7 +165,7 @@ Write-Section "Step 1: Validating Folder Structure"
 if (-not (Test-RequiredFolders)) {
     Write-Log "Creating missing folders..." "INFO"
     $FoldersCreated = 0
-    
+
     $RequiredFolders = @(
         "Assets\Scripts\Core",
         "Assets\Scripts\Network",
@@ -178,7 +178,7 @@ if (-not (Test-RequiredFolders)) {
         ".docs",
         ".tools\logs"
     )
-    
+
     foreach ($Folder in $RequiredFolders) {
         $FullPath = Join-Path $ProjectRoot $Folder
         if (-not (Test-Path $FullPath)) {
@@ -186,7 +186,7 @@ if (-not (Test-RequiredFolders)) {
             $FoldersCreated++
         }
     }
-    
+
     Write-Log "✓ Created $FoldersCreated folders"
 }
 
@@ -216,7 +216,7 @@ Write-Section "Step 4: Checking Package Configuration"
 $ManifestPath = Join-Path $ProjectRoot "Packages\manifest.json"
 if (-not (Test-Path $ManifestPath)) {
     Write-Log "Creating placeholder Packages/manifest.json..."
-    
+
     $ManifestContent = @"
 {
   "dependencies": {
@@ -227,7 +227,7 @@ if (-not (Test-Path $ManifestPath)) {
   }
 }
 "@
-    
+
     Set-Content -Path $ManifestPath -Value $ManifestContent
     Write-Log "✓ Created manifest.json with core multiplayer packages"
 }
@@ -261,7 +261,7 @@ Write-Section "Setup Summary"
 
 if ($AllGood) {
     Write-Host "`n✅ Setup completed successfully!`n" -ForegroundColor Green
-    
+
     Write-Host "Next steps:" -ForegroundColor Yellow
     Write-Host "1. Open the project in Unity Editor"
     Write-Host "   Path: $UnityEditorPath"
@@ -273,7 +273,7 @@ if ($AllGood) {
     Write-Host ""
     Write-Host "3. Read SETUP_AND_UPGRADES.md for version management"
     Write-Host ""
-    
+
     Write-Log "Setup completed successfully"
 } else {
     Write-Host "`n❌ Setup had issues. Review log:" -ForegroundColor Red

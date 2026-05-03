@@ -1,7 +1,7 @@
 # Architecture Overview
 
-**Document Version:** 2.0
-**Last Updated:** April 23, 2026
+**Document Version:** 2.1
+**Last Updated:** May 3, 2026
 **Maintainer:** AI Assistant + Lead Architect
 
 ## Core Pillars

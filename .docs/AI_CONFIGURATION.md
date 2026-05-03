@@ -1,7 +1,8 @@
 # AI Configuration & Operational Guidelines for TinCan Unity
 
-**Document Version:** 2.0
-**Last Updated:** January 25, 2026
+**Document Version:** 2.1
+**Last Updated:** May 3, 2026
+**Current Unity Version:** 6000.4.5f1
 **Purpose:** Define how the AI assistant should operate on this project for conceptualization and discussion.
 
 ---

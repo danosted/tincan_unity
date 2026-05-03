@@ -13,8 +13,8 @@ The Unity version to upgrade to (e.g., "6000.4.2f1")
 Create a backup before upgrading (default: true)
 
 .EXAMPLE
-.\upgrade-unity.ps1 -TargetVersion "6000.4.2f1"
-.\upgrade-unity.ps1 -TargetVersion "2023.3.0f1" -CreateBackup $false
+.\upgrade-unity.ps1 -TargetVersion "6000.4.5f1"
+.\upgrade-unity.ps1 -TargetVersion "6000.4.5f1" -CreateBackup $false
 #>
 
 param(

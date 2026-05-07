@@ -9,7 +9,7 @@ namespace TinCan.Features.Interaction
     /// </summary>
     public interface IInteractionOrchestrator
     {
-        void HandleInteraction(IInteractable target);
+        void HandleInteraction(IActor interactor, IInteractable target);
         void HandleExit();
     }
 }

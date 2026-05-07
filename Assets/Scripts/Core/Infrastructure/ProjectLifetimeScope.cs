@@ -8,6 +8,7 @@ using TinCan.Features.Possession;
 using TinCan.Features.Airship;
 using TinCan.Features.Interaction;
 using TinCan.Features.Abilities;
+using TinCan.Features.Events;
 using TinCan.Network.Infrastructure;
 using UnityEngine;
 using Unity.Netcode;
@@ -25,7 +26,7 @@ namespace TinCan.Core.Infrastructure
         [SerializeField] private GameObject _airshipPrefab;
 
         [Header("APIs & Configs")]
-        [SerializeField] private GameObject _possessionApiPrefab;
+        [SerializeField] private GameObject _possessionMediatorPrefab;
         [SerializeField] private TinCan.Core.Domain.Abilities.InputBindingConfig _inputBindingConfig;
 
         protected override void Configure(IContainerBuilder builder)
@@ -51,13 +52,18 @@ namespace TinCan.Core.Infrastructure
             builder.Register<InteractorRegistry>(Lifetime.Singleton).As<IInteractorRegistry>();
             builder.Register<ActorOrchestrator>(Lifetime.Singleton).As<IActorOrchestrator>();
 
-            // Register Possession API Factory lazily
-            builder.RegisterFactory<IPossessionApi>((c) => () => FindAnyObjectByType<Features.Possession.Infrastructure.PossessionApi>(), Lifetime.Singleton);
+            // Register Possession Mediator Factory lazily
+            builder.RegisterFactory<IPossessionNetworkMediator>((c) => () => FindAnyObjectByType<Features.Possession.Infrastructure.PossessionNetworkMediator>(), Lifetime.Singleton);
+
+            // Register Server Possession Manager
+            builder.Register<ServerPossessionManager>(Lifetime.Singleton).AsImplementedInterfaces().AsSelf();
 
             // builder.Register<VehicleBoardingUseCase>(Lifetime.Singleton).As<IVehicleBoardingUseCase>();
             builder.Register<InteractionOrchestrator>(Lifetime.Singleton).As<IInteractionOrchestrator>();
             builder.Register<PossessionUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>();
             builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
+            builder.Register<ShipStateProvider>(Lifetime.Singleton).As<IShipState>();
+            builder.Register<EventStationUseCase>(Lifetime.Singleton);
 
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
@@ -69,6 +75,7 @@ namespace TinCan.Core.Infrastructure
                 entryPoints.Add<PossessionInputController>();
                 entryPoints.Add<InteractivityUseCase>();
                 entryPoints.Add<UnityInputService>().As<IInputService>();
+                entryPoints.Add<EventOrchestratorUseCase>().As<IEventOrchestrator>();
             });
 
             // Handle multi-instance actors in the scene hierarchy
@@ -116,14 +123,21 @@ namespace TinCan.Core.Infrastructure
 
                 container.AddNetworkedPrefab(
                     networkManager: networkManager,
-                    prefab: _possessionApiPrefab,
+                    prefab: _possessionMediatorPrefab,
                     onServerStarted: () =>
                     {
-                        var instance = Instantiate(_possessionApiPrefab);
+                        var instance = Instantiate(_possessionMediatorPrefab);
                         container.InjectGameObject(instance);
                         var netObj = instance.GetComponent<NetworkObject>();
                         netObj.Spawn();
                         DontDestroyOnLoad(instance);
+
+                        // Explicitly initialize the authoritative service when the mediator is ready
+                        if (instance.TryGetComponent(out IPossessionNetworkMediator mediator))
+                        {
+                            var manager = container.Resolve<ServerPossessionManager>();
+                            manager.Subscribe();
+                        }
                     });
 
                 // Find and inject all "Complete" NetworkMediator actors (e.g. FreeCamera) to ensure they have their Registry reference

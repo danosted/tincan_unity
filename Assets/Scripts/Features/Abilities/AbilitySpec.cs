@@ -16,6 +16,7 @@ namespace TinCan.Features.Abilities
         public bool IsActive { get; set; }
         public HashSet<GameplayTag> ActiveWindowTags { get; } = new();
         public ActiveGameplayEffect AppliedActiveEffect { get; set; }
+        public TinCan.Core.Domain.Abilities.IAbilityControllerBase EffectRecipient { get; set; }
 
         public AbilitySpec(AbilityDefinition definition)
         {
@@ -25,7 +26,7 @@ namespace TinCan.Features.Abilities
         public bool IsOnCooldown(float currentTime)
         {
             if (Definition.CooldownEffect == null) return false;
-            return currentTime < LastActivatedTime + Definition.CooldownEffect.Duration;
+            return currentTime < LastActivatedTime + Definition.CooldownEffect.DurationSeconds;
         }
 
         public void Activate(float currentTime)

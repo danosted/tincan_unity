@@ -131,5 +131,6 @@ namespace TinCan.Network.Infrastructure
 
         public void HandleGameplayEvent(GameplayEventData eventData) => _abilitySync.HandleGameplayEvent(eventData);
 
+        public bool TryActivateAbility(AbilityDefinition definition, IAbilityControllerBase? target = null) => _abilitySync.TryActivateAbility(definition, target);
     }
 }

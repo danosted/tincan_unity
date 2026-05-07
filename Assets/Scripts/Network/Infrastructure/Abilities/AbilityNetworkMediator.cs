@@ -102,15 +102,12 @@ namespace TinCan.Network.Infrastructure.Abilities
 
         public void RemoveAbility(AbilityDefinition definition)
         {
-            // Future
+            _abilitySystem.RemoveAbility(this, definition);
         }
 
-        public bool TryActivateAbility(AbilityDefinition definition)
+        public bool TryActivateAbility(AbilityDefinition definition, IAbilityControllerBase? target = null)
         {
-            // Note: In the Input-Driven Simulation paradigm, activation intent should be
-            // part of the InputState synchronized via the movement/action mediator.
-            // This method returns whether the actor HAS the ability to be activated.
-            return HasTag(definition.AbilityTag);
+            return _abilitySystem.TryActivateAbility(this, definition, target);
         }
 
         public T? GetAttributeSet<T>() where T : class, IAttributeSet

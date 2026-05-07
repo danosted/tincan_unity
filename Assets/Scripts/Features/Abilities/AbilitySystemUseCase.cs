@@ -97,11 +97,12 @@ namespace TinCan.Features.Abilities
             if (!spec.IsActive) return;
             spec.IsActive = false;
 
-            // Remove the active buff when the ability stops (e.g., player releases Shift)
-            if (spec.AppliedActiveEffect != null)
+            // Remove the active buff when the ability stops (from whoever received it)
+            if (spec.AppliedActiveEffect != null && spec.EffectRecipient != null)
             {
-                RemoveEffect(actor, spec.AppliedActiveEffect);
+                RemoveEffect(spec.EffectRecipient, spec.AppliedActiveEffect);
                 spec.AppliedActiveEffect = null;
+                spec.EffectRecipient = null;
             }
 
             // Remove any tags added by this ability's timing windows
@@ -178,7 +179,19 @@ namespace TinCan.Features.Abilities
             abilities.Add(new AbilitySpec(definition));
         }
 
-        public bool TryActivateAbility(IAbilityControllerBase actor, AbilityDefinition definition)
+        public void RemoveAbility(IAbilityControllerBase actor, AbilityDefinition definition)
+        {
+            if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
+
+            var spec = abilities.FirstOrDefault(a => a.Definition == definition);
+            if (spec != null)
+            {
+                if (spec.IsActive) EndAbility(actor, spec);
+                abilities.Remove(spec);
+            }
+        }
+
+        public bool TryActivateAbility(IAbilityControllerBase actor, AbilityDefinition definition, IAbilityControllerBase target = null)
         {
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return false;
 
@@ -191,8 +204,21 @@ namespace TinCan.Features.Abilities
             // 2. Check Costs (Future implementation)
 
             // 3. Activate
-            ExecuteAbility(actor, spec);
+            ExecuteAbility(actor, spec, target);
             return true;
+        }
+
+        /// <summary>
+        /// Public entry point to apply a gameplay effect to an actor.
+        /// Returns a result object for easier integration with Visual Scripting.
+        /// </summary>
+        public GameplayEffectResult ApplyGameplayEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition)
+        {
+            if (actor == null) return GameplayEffectResult.Failure("Target actor is null.");
+            if (definition == null) return GameplayEffectResult.Failure("Effect definition is null.");
+
+            ApplyEffect(actor, definition);
+            return GameplayEffectResult.Successful();
         }
 
         private bool CanActivateAbility(IAbilityControllerBase actor, AbilitySpec spec)
@@ -212,18 +238,24 @@ namespace TinCan.Features.Abilities
             return true;
         }
 
-        private void ExecuteAbility(IAbilityControllerBase actor, AbilitySpec spec)
+        private void ExecuteAbility(IAbilityControllerBase actor, AbilitySpec spec, IAbilityControllerBase target = null)
         {
             spec.Activate(_timeService.Time);
             Debug.Log($"[AbilitySystem] Actor {actor.Id} activated {spec.Definition.name}");
 
-            // Apply the active buff (e.g., the 1.5x speed boost)
+            // Apply the active buff to the correct target
             if (spec.Definition.ActiveEffect != null)
             {
-                spec.AppliedActiveEffect = ApplyEffect(actor, spec.Definition.ActiveEffect);
+                var effectRecipient = spec.Definition.ActiveEffectTarget == EffectTarget.ProvidedTarget ? target : actor;
+
+                if (effectRecipient != null)
+                {
+                    spec.AppliedActiveEffect = ApplyEffect(effectRecipient, spec.Definition.ActiveEffect);
+                    spec.EffectRecipient = effectRecipient;
+                }
             }
 
-            // Apply Cooldown Effect if any
+            // Apply Cooldown Effect to the activator
             if (spec.Definition.CooldownEffect != null)
             {
                 ApplyEffect(actor, spec.Definition.CooldownEffect);

@@ -33,8 +33,8 @@ This document outlines the AI assistant's role in the `TinCan` Unity3D project. 
 **The AI MUST strictly adhere to the following architectural constraints defined in `.docs/ARCHITECTURE.md`:**
 
 1.  **Mediator Naming:** Any new `NetworkBehaviour` MUST be suffixed with `NetworkMediator`. Never use `Controller` or `Manager` for networked components.
-2.  **Input-Driven Simulation:** Prioritize "Input Sync" for simulation-critical features (Movement, Abilities, Gunplay). Use `InputState` structs and `SimulationUseCase` patterns.
-3.  **No Side-Channels:** Avoid using `ServerRpc` for "triggering" actions that are part of the simulation loop. Pack these intents into the synchronized `InputState`.
+2.  **Input-Driven Simulation (Contextual):** Prioritize "Input Sync" for simulation-critical features (Movement, Abilities, Gunplay) where inputs must be replicated and simulated across clients. Use `InputState` structs and `SimulationUseCase` patterns. If an input or action does not require high-frequency network replication or simulation across clients, do not force it into the `InputState` pattern.
+3.  **No Side-Channels (For Simulated State):** Avoid using `ServerRpc` for "triggering" actions that are part of the simulation loop. Pack these intents into the synchronized `InputState`. RPCs remain appropriate for discrete, non-simulated events (e.g., UI interactions, discrete game state changes like requesting possession).
 
 ### Rule 2: Project Context - Unity3D, C#, Unity3D SDK
 

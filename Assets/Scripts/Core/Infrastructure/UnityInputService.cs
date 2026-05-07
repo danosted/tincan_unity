@@ -102,7 +102,7 @@ namespace TinCan.Core.Infrastructure
                 {
                     if (IsActionPressed(binding.UnityActionName))
                     {
-                        mask |= (1UL << binding.InputType.BitIndex);
+                        mask |= 1UL << binding.InputType.BitIndex;
                     }
                 }
             }

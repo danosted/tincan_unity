@@ -17,7 +17,7 @@ namespace TinCan.Features.Abilities
             Definition = definition;
             StartTime = currentTime;
             ExpiryTime = definition.DurationType == DurationType.Duration
-                ? currentTime + definition.Duration
+                ? currentTime + definition.DurationSeconds
                 : float.MaxValue;
         }
 

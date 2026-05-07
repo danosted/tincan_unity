@@ -13,6 +13,7 @@ namespace TinCan.Features.Abilities
     }
 
     public enum AbilityInputPolicy { OnInputTriggered, OnInputHeld, OnInputReleased }
+    public enum EffectTarget { Self, ProvidedTarget }
 
     /// <summary>
     /// ScriptableObject defining a gameplay ability's static properties.
@@ -37,6 +38,7 @@ namespace TinCan.Features.Abilities
 
         [Header("Effects")]
         public GameplayEffectDefinition ActiveEffect; // The buff/debuff applied while active
+        public EffectTarget ActiveEffectTarget = EffectTarget.Self; // Who gets the ActiveEffect
         public GameplayEffectDefinition CostEffect;
         public GameplayEffectDefinition CooldownEffect;
 

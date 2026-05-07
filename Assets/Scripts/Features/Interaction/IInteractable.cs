@@ -1,3 +1,6 @@
+#nullable enable
+using System;
+
 namespace TinCan.Features.Interaction
 {
     /// <summary>

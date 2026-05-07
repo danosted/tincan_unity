@@ -22,7 +22,7 @@ namespace TinCan.Core.Domain.Abilities
 
         void GrantAbility(AbilityDefinition definition);
         void RemoveAbility(AbilityDefinition definition);
-        bool TryActivateAbility(AbilityDefinition definition);
+        bool TryActivateAbility(AbilityDefinition definition, IAbilityControllerBase target = null);
 
         void HandleGameplayEvent(GameplayEventData eventData);
     }

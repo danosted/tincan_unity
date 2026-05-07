@@ -1,6 +1,7 @@
 using TinCan.Core.Domain;
 using UnityEngine;
 using System.Collections.Generic;
+using TinCan.Features.Events;
 
 namespace TinCan.Features.Interaction
 {
@@ -11,13 +12,17 @@ namespace TinCan.Features.Interaction
     public class InteractionOrchestrator : IInteractionOrchestrator
     {
         private readonly IVehicleBoardingUseCase _vehicleBoardingUseCase;
+        private readonly EventStationUseCase _eventStationUseCase;
 
-        public InteractionOrchestrator(IVehicleBoardingUseCase vehicleBoardingUseCase)
+        public InteractionOrchestrator(
+            IVehicleBoardingUseCase vehicleBoardingUseCase,
+            EventStationUseCase eventStationUseCase)
         {
             _vehicleBoardingUseCase = vehicleBoardingUseCase;
+            _eventStationUseCase = eventStationUseCase;
         }
 
-        public void HandleInteraction(IInteractable target)
+        public void HandleInteraction(IActor interactor, IInteractable target)
         {
             if (target == null) return;
 
@@ -29,6 +34,14 @@ namespace TinCan.Features.Interaction
             {
                 Debug.Log($"[InteractionOrchestrator] Routing vehicle boarding interaction");
                 _vehicleBoardingUseCase.BoardVehicle(boardable);
+                return;
+            }
+
+            var eventStation = targetMono.GetComponentInChildren<IEventStation>();
+            if (eventStation != null)
+            {
+                Debug.Log($"[InteractionOrchestrator] Routing event station interaction");
+                _eventStationUseCase.HandleStationInteraction(interactor, eventStation);
                 return;
             }
 

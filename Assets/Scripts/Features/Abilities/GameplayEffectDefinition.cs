@@ -33,7 +33,7 @@ namespace TinCan.Features.Abilities
     public class GameplayEffectDefinition : ScriptableObject
     {
         public DurationType DurationType;
-        public float Duration; // Only used if DurationType is Duration
+        public float DurationSeconds; // Only used if DurationType is Duration
 
         public List<AttributeModifier> Modifiers;
         public List<GameplayTag> GrantedTags;

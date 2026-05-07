@@ -16,7 +16,7 @@ namespace TinCan.Features.Possession
         private readonly INetworkService _networkService;
         private readonly INetworkPlayerSpawner _spawner;
         private readonly IActorRegistry _registry;
-        private readonly System.Func<IPossessionApi> _apiFactory;
+        private readonly System.Func<IPossessionNetworkMediator> _mediatorFactory;
         private IPossessable? _playerActor;
         private IPossessable? _currentPossession;
 
@@ -27,12 +27,12 @@ namespace TinCan.Features.Possession
             INetworkService networkService,
             INetworkPlayerSpawner spawner,
             IActorRegistry registry,
-            System.Func<IPossessionApi> apiFactory)
+            System.Func<IPossessionNetworkMediator> mediatorFactory)
         {
             _networkService = networkService;
             _spawner = spawner;
             _registry = registry;
-            _apiFactory = apiFactory;
+            _mediatorFactory = mediatorFactory;
         }
 
         public void Initialize()
@@ -41,11 +41,12 @@ namespace TinCan.Features.Possession
             _registry.OnActorUnregistered += HandleActorUnregistered;
             _spawner.OnPlayerSpawned += HandlePlayerSpawned;
 
-            var api = _apiFactory();
-            if (api == null) return;
+            var mediator = _mediatorFactory();
+            if (mediator == null) return;
 
-            api.OnPossessionReceived += HandlePossessionReceived;
-            api.OnPossessionLost += HandlePossessionLost;
+            mediator.OnPossessionReceived += HandlePossessionReceived;
+            mediator.OnPossessionLost += HandlePossessionLost;
+            mediator.OnPossessionDenied += HandlePossessionDenied;
         }
 
         public void Dispose()
@@ -53,11 +54,12 @@ namespace TinCan.Features.Possession
             _registry.OnActorUnregistered -= HandleActorUnregistered;
             _spawner.OnPlayerSpawned -= HandlePlayerSpawned;
 
-            var api = _apiFactory();
-            if (api == null) return;
+            var mediator = _mediatorFactory();
+            if (mediator == null) return;
 
-            api.OnPossessionReceived -= HandlePossessionReceived;
-            api.OnPossessionLost -= HandlePossessionLost;
+            mediator.OnPossessionReceived -= HandlePossessionReceived;
+            mediator.OnPossessionLost -= HandlePossessionLost;
+            mediator.OnPossessionDenied -= HandlePossessionDenied;
         }
 
         private void HandlePlayerSpawned(GameObject instance, ulong clientId, bool isLocal)
@@ -126,6 +128,21 @@ namespace TinCan.Features.Possession
                 PerformLocalPossession(_playerActor);
             }
         }
+        private void HandlePossessionDenied(IPossessable target)
+        {
+            // If the server denied the possession request that we locally predicted,
+            // we must roll back to our player actor.
+            if (_currentPossession == target)
+            {
+                Debug.LogWarning($"[PossessionUseCase] Possession request for {target} was denied by the server. Rolling back to body.");
+                _currentPossession = null;
+
+                if (_playerActor != null)
+                {
+                    PerformLocalPossession(_playerActor);
+                }
+            }
+        }
 
         private void HandlePossessionReceived(IPossessable target, ulong newOwnerId)
         {
@@ -188,11 +205,11 @@ namespace TinCan.Features.Possession
                 return;
             }
 
-            // 1. Authoritative Request via the API
-            var api = _apiFactory();
-            if (api != null)
+            // 1. Authoritative Request via the Mediator
+            var mediator = _mediatorFactory();
+            if (mediator != null)
             {
-                api.RequestPossession(new PossessionRequest.Request
+                mediator.RequestPossession(new PossessionRequest.Request
                 {
                     Target = target,
                     CurrentPossession = CurrentPossession

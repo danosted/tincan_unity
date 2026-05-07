@@ -4,6 +4,12 @@ using TinCan.Features.Airship;
 using TinCan.Core.Domain;
 using TinCan.Features.Possession;
 using TinCan.Features.Interaction;
+using TinCan.Features.Events;
+using TinCan.Core.Domain.Abilities;
+using TinCan.Core.Domain.Abilities.Tags;
+using TinCan.Core.Domain.Abilities.Attributes;
+using TinCan.Features.Abilities;
+using TinCan.Network.Infrastructure.Abilities;
 using System;
 
 namespace TinCan.Network.Infrastructure
@@ -14,9 +20,19 @@ namespace TinCan.Network.Infrastructure
     /// </summary>
     [RequireComponent(typeof(AirshipControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
-    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Features.FreeCamera.IHasOrbitalCamera
+    [RequireComponent(typeof(AbilityNetworkMediator))]
+    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Features.FreeCamera.IHasOrbitalCamera, IShipState
     {
         private AirshipControllerView _view;
+        private AbilityNetworkMediator _abilitySync;
+        private AirshipAttributeSet _attributes;
+
+        [Header("GAS Attributes")]
+        [SerializeField] private GameplayAttribute _flightSpeedAttribute;
+        [SerializeField] private GameplayAttribute _turnSpeedAttribute;
+
+        // IShipState Implementation
+        public IAbilityControllerBase Controller => _abilitySync;
 
         private readonly NetworkVariable<AirshipInputState> _netInputState = new NetworkVariable<AirshipInputState>(
             writePerm: NetworkVariableWritePermission.Owner);
@@ -24,16 +40,16 @@ namespace TinCan.Network.Infrastructure
         // IHasOrbitalCamera Implementation
         public TinCan.Features.HumanoidMovement.IOrbitalLookView Look => _view.Look;
 
-        // IAirshipView Implementation (Forwarding to view)
+        // IAirshipView Implementation (Forwarding to view or using attributes)
         public Transform Transform => _view.transform;
-        public float MaxForwardSpeed => _view.MaxForwardSpeed;
+        public float MaxForwardSpeed => _attributes?.MoveSpeed ?? _view.MaxForwardSpeed;
         public float MaxBackwardSpeed => _view.MaxBackwardSpeed;
         public float AccelerationRate => _view.AccelerationRate;
         public float DecelerationRate => _view.DecelerationRate;
         public float AngularAcceleration => _view.AngularAcceleration;
         public float AngularDeceleration => _view.AngularDeceleration;
         public float VelocityBlendRate => _view.VelocityBlendRate;
-        public float TurnSpeed => _view.TurnSpeed;
+        public float TurnSpeed => _attributes?.TurnSpeed ?? _view.TurnSpeed;
         public float PitchSpeed => _view.PitchSpeed;
         public float MaxBankAngle => _view.MaxBankAngle;
         public float BankSpeed => _view.BankSpeed;
@@ -60,6 +76,12 @@ namespace TinCan.Network.Infrastructure
         {
             base.OnNetworkSpawn();
             _view = GetComponent<AirshipControllerView>();
+            _abilitySync = GetComponent<AbilityNetworkMediator>();
+
+            // Initialize and register attributes
+            _attributes = new AirshipAttributeSet(_abilitySync, _flightSpeedAttribute, _turnSpeedAttribute);
+            _attributes.InitializeBaseValues(_view.MaxForwardSpeed, _view.TurnSpeed);
+            _abilitySync.RegisterAttributeSet(_attributes);
 
             if (Registry != null)
             {

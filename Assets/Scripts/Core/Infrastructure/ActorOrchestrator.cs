@@ -1,5 +1,6 @@
 using UnityEngine;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Abilities;
 using TinCan.Features.Interaction;
 
 namespace TinCan.Core.Infrastructure
@@ -13,11 +14,13 @@ namespace TinCan.Core.Infrastructure
     {
         private readonly IActorRegistry _actorRegistry;
         private readonly IInteractorRegistry _interactorRegistry;
+        private readonly IAbilityRegistry _abilityRegistry;
 
-        public ActorOrchestrator(IActorRegistry actorRegistry, IInteractorRegistry interactorRegistry)
+        public ActorOrchestrator(IActorRegistry actorRegistry, IInteractorRegistry interactorRegistry, IAbilityRegistry abilityRegistry)
         {
             _actorRegistry = actorRegistry;
             _interactorRegistry = interactorRegistry;
+            _abilityRegistry = abilityRegistry;
         }
 
         public void RegisterHierarchy(GameObject root)
@@ -34,6 +37,12 @@ namespace TinCan.Core.Infrastructure
             {
                 _interactorRegistry.Register(interactor);
             }
+
+            var abilityControllers = root.GetComponentsInChildren<IAbilityControllerBase>(true);
+            foreach (var controller in abilityControllers)
+            {
+                _abilityRegistry.Register(controller);
+            }
         }
 
         public void UnregisterHierarchy(GameObject root)
@@ -49,6 +58,12 @@ namespace TinCan.Core.Infrastructure
             foreach (var interactor in interactors)
             {
                 _interactorRegistry.Unregister(interactor);
+            }
+
+            var abilityControllers = root.GetComponentsInChildren<IAbilityControllerBase>(true);
+            foreach (var controller in abilityControllers)
+            {
+                _abilityRegistry.Unregister(controller);
             }
         }
     }

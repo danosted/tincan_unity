@@ -6,10 +6,16 @@ using TinCan.Features.Possession;
 namespace TinCan.Core.Domain
 {
     /// <summary>
+    /// Marker interface for any actor that is simulated locally.
+    /// Used by systems like GAS to skip global ticks for actors that are explicitly ticked by a movement simulation.
+    /// </summary>
+    public interface ISimulatedActor : IActor { }
+
+    /// <summary>
     /// Domain Layer: Interface for any actor that is simulated locally based on a networked input state.
     /// </summary>
     /// <typeparam name="TInput">The type of input state used for simulation.</typeparam>
-    public interface ISimulatedActor<TInput> : IActor
+    public interface ISimulatedActor<TInput> : ISimulatedActor
     {
         /// <summary>
         /// The current input state (either gathered locally or received from the network).

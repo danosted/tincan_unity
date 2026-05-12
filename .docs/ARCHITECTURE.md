@@ -23,6 +23,7 @@ All multiplayer synchronization runs through Unity's official Netcode for GameOb
 ### 3. Simulation & Synchronization Paradigms
 To maintain a responsive FPS experience, we follow an **Input-Driven Simulation** paradigm:
 - **Input-Driven Simulation (Input Sync):** Primary for movement and time-critical actions. Clients capture intent as an `InputState`. Both Client (Prediction) and Server (Authority) execute the same Use Case logic using this input stream.
+- **Decoupled Prediction Loop:** UseCases that own a simulation loop (e.g., `HumanoidMovementUseCase`) are strictly responsible for passing their predicted `InputState` to auxiliary systems (like `AbilitySystemUseCase.ProcessAbilitySimulation`). Global systems must check `actor is ISimulatedActor` and skip global ticking for actors that handle their own prediction, guaranteeing that simulation physics and abilities share the exact same temporal tick.
 - **State-Driven Synchronization (State Sync):** The server is the source of truth for high-level state changes (Tags, Attributes, Inventory). Mediators sync these back to clients via `NetworkVariable` or `ClientRpc` for visual confirmation.
 - **Avoid Side-Channels:** Do not use independent `ServerRpc` calls for actions that are part of the core simulation loop (like ability triggers or jumping). These should be bits in the `InputState` to ensure they are processed at the correct simulation tick.
 
@@ -31,6 +32,12 @@ The game relies heavily on dynamic possession (e.g., leaving a humanoid body to 
 - **IPossessable:** Implemented by entities that can be owned by a player (e.g., Humanoid, Airship).
 - **IPossessionApi:** Authoritatively assigns ownership on the server and broadcasts `OnPossessionReceived` events.
 - **InteractivityUseCase:** A global `ITickable` that listens for the Interact input. It uses an `IInteractorRegistry` to find what the player is looking at, and routes the request to the `InteractionOrchestrator` (e.g., to board a vehicle).
+
+### 5. ECS-Lite & Orchestrated Registries
+Instead of tight coupling and hardcoded subsystem checks, we utilize an ECS-lite compositional pattern based around Registries:
+- **Registries as Queries:** Subsystems operate on generic sets of interfaces (e.g., `IInteractorRegistry`, `IAbilityRegistry`, `IActorRegistry`).
+- **ActorOrchestrator:** Handles automatic registration. MonoBehaviours (Views/Mediators) DO NOT register themselves. When an object is spawned via the `NetworkPrefabInterceptor`, the `ActorOrchestrator` scans the prefab for relevant component interfaces (`IAbilityControllerBase`, `IInteractorView`, etc.) and registers them to the correct Domain registries.
+- **Decoupled UseCases:** A `UseCase` iterates over its specific Registry, processing data without knowing if the actor is a Humanoid, an Airship, or an AI.
 
 ## Extensibility Points
 

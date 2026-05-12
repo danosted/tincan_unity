@@ -19,14 +19,14 @@ namespace TinCan.Features.Abilities
     /// </summary>
     public class AbilitySystemUseCase : ITickable
     {
-        private readonly IActorRegistry _registry;
+        private readonly IAbilityRegistry _registry;
         private readonly ITimeService _timeService;
 
         // Internal tracking for specs and effects per actor
         private readonly Dictionary<Guid, List<AbilitySpec>> _actorAbilities = new();
         private readonly Dictionary<Guid, List<ActiveGameplayEffect>> _activeEffects = new();
 
-        public AbilitySystemUseCase(IActorRegistry registry, ITimeService timeService)
+        public AbilitySystemUseCase(IAbilityRegistry registry, ITimeService timeService)
         {
             _registry = registry;
             _timeService = timeService;
@@ -36,11 +36,13 @@ namespace TinCan.Features.Abilities
         {
             float currentTime = _timeService.Time;
 
-            foreach (var actor in _registry.GetActors<IAbilityControllerBase>())
+            foreach (var actor in _registry.AllControllers)
             {
-                // Global effects and non-predicted actors still tick here
+                // Only tick globally if this actor is NOT explicitly predicted by a movement loop
+                if (actor is ISimulatedActor) continue;
+
+                // Also, only tick global effects if the actor itself is considered "simulating" (locally owned or server authority)
                 if (!actor.IsSimulating) continue;
-                if (actor is IHumanoidCharacterView) continue; // Handled by ProcessAbilitySimulation
 
                 UpdateEffects(actor, currentTime);
                 UpdateAbilities(actor, currentTime);

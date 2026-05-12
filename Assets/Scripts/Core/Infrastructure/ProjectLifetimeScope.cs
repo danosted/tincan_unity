@@ -13,6 +13,7 @@ using TinCan.Network.Infrastructure;
 using UnityEngine;
 using Unity.Netcode;
 using TinCan.Core.Infrastructure.Extensions;
+using TinCan.Core.Domain.Abilities;
 namespace TinCan.Core.Infrastructure
 {
     /// <summary>
@@ -50,6 +51,7 @@ namespace TinCan.Core.Infrastructure
 
             builder.Register<ActorRegistry>(Lifetime.Singleton).As<IActorRegistry>();
             builder.Register<InteractorRegistry>(Lifetime.Singleton).As<IInteractorRegistry>();
+            builder.Register<Abilities.AbilityRegistry>(Lifetime.Singleton).As<IAbilityRegistry>();
             builder.Register<ActorOrchestrator>(Lifetime.Singleton).As<IActorOrchestrator>();
 
             // Register Possession Mediator Factory lazily

@@ -20,6 +20,7 @@ namespace TinCan.Network.Infrastructure.Abilities
     {
         private AbilitySystemUseCase _abilitySystem = null!; // Injected
         private GameplayTagContainer _activeTags = new GameplayTagContainer(null);
+        private readonly HashSet<string> _clientActiveTagNames = new();
         private readonly Dictionary<Type, IAttributeSet> _attributeSets = new();
         private NetworkList<NetworkedAttribute> _networkedAttributes = null!; // Initialized in Awake
 
@@ -59,6 +60,7 @@ namespace TinCan.Network.Infrastructure.Abilities
         public override void OnNetworkDespawn()
         {
             _networkedAttributes.OnListChanged -= OnNetworkedAttributesChanged;
+            _clientActiveTagNames.Clear();
             base.OnNetworkDespawn();
         }
 
@@ -79,7 +81,14 @@ namespace TinCan.Network.Infrastructure.Abilities
         // IAbilityController Implementation
         public GameplayTagContainer ActiveTags => _activeTags;
 
-        public bool HasTag(GameplayTag tag) => _activeTags.HasTag(tag);
+        public bool HasTag(GameplayTag tag)
+        {
+            if (tag == null) return false;
+            if (IsServer) return _activeTags.HasTag(tag);
+
+            // Client-side fallback check using synchronized strings
+            return _clientActiveTagNames.Contains(tag.name);
+        }
 
         public void AddTag(GameplayTag tag)
         {
@@ -210,7 +219,17 @@ namespace TinCan.Network.Infrastructure.Abilities
         [ClientRpc]
         private void SyncTagsClientRpc(string tagName, bool added)
         {
-            if (IsServer) return;
+            if (IsServer) return; // Server already has authoritative state in _activeTags
+
+            if (added)
+            {
+                _clientActiveTagNames.Add(tagName);
+            }
+            else
+            {
+                _clientActiveTagNames.Remove(tagName);
+            }
+
             Debug.Log($"[AbilitySystem] Tag {tagName} {(added ? "added" : "removed")} on client.");
         }
     }

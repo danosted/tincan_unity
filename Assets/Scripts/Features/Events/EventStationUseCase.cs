@@ -20,23 +20,25 @@ namespace TinCan.Features.Events
 
         public void HandleStationInteraction(IActor interactor, IEventStation station)
         {
-            if (interactor is not IAbilityControllerBase playerController || station.InteractionAbility == null) return;
+            if (station.InteractionAbility == null) return;
 
             // Resolve the target controller from the station (e.g., the Airship)
             var targetController = (station as MonoBehaviour)?.GetComponentInParent<IAbilityControllerBase>();
+            if (targetController == null) return;
 
-            // Toggle logic: If the player already has the tag associated with this ability, remove it.
-            // (Note: This assumes AbilityTag is a unique identifier for the station capability)
-            if (playerController.HasTag(station.InteractionAbility.AbilityTag))
+            // In a proper GAS architecture, the Ship should own the ability, not the player.
+            targetController.GrantAbility(station.InteractionAbility);
+
+            // Toggle logic natively using GAS
+            if (targetController.HasTag(station.InteractionAbility.AbilityTag))
             {
-                Debug.Log($"[EventStationUseCase] Toggling OFF station ability: {station.InteractionAbility.name}");
-                playerController.RemoveAbility(station.InteractionAbility);
+                Debug.Log($"[EventStationUseCase] Toggling OFF station ability on target: {station.InteractionAbility.name}");
+                _abilitySystem.CancelAbility(targetController, station.InteractionAbility);
             }
             else
             {
-                Debug.Log($"[EventStationUseCase] Toggling ON station ability: {station.InteractionAbility.name}");
-                playerController.GrantAbility(station.InteractionAbility);
-                playerController.TryActivateAbility(station.InteractionAbility, targetController);
+                Debug.Log($"[EventStationUseCase] Toggling ON station ability on target: {station.InteractionAbility.name}");
+                _abilitySystem.TryActivateAbility(targetController, station.InteractionAbility, targetController);
             }
         }
     }

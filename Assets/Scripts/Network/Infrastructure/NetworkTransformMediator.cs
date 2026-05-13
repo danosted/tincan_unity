@@ -19,6 +19,9 @@ namespace TinCan.Network.Infrastructure
         private readonly NetworkVariable<Vector3> _netLocalPosition = new NetworkVariable<Vector3>(
             writePerm: NetworkVariableWritePermission.Owner);
 
+        private readonly NetworkVariable<Quaternion> _netLocalRotation = new NetworkVariable<Quaternion>(
+            writePerm: NetworkVariableWritePermission.Owner);
+
         private Transform _currentPlatform;
 
         public void SetPlatform(Transform platform)
@@ -43,7 +46,7 @@ namespace TinCan.Network.Infrastructure
                 {
                     _netParentPlatform.Value = netObj;
                     _netLocalPosition.Value = netObj.transform.InverseTransformPoint(transform.position);
-                    _netRotation.Value = transform.rotation;
+                    _netLocalRotation.Value = Quaternion.Inverse(netObj.transform.rotation) * transform.rotation;
                     return;
                 }
             }
@@ -55,23 +58,26 @@ namespace TinCan.Network.Infrastructure
 
         private void UpdateFromNetwork()
         {
-            Vector3 targetWorldPos;
             if (_netParentPlatform.Value.TryGet(out NetworkObject netObj))
             {
-                targetWorldPos = netObj.transform.TransformPoint(_netLocalPosition.Value);
+                // Relative space: Glued tightly to the moving platform to prevent desync
+                Vector3 targetWorldPos = netObj.transform.TransformPoint(_netLocalPosition.Value);
+                Quaternion targetWorldRot = netObj.transform.rotation * _netLocalRotation.Value;
+
+                transform.position = Vector3.Lerp(transform.position, targetWorldPos, Time.deltaTime * 20f);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetWorldRot, Time.deltaTime * 20f);
             }
             else
             {
-                targetWorldPos = _netPosition.Value;
-            }
+                // World space
+                float drift = Vector3.Distance(transform.position, _netPosition.Value);
+                if (drift > 0.05f)
+                {
+                    transform.position = Vector3.Lerp(transform.position, _netPosition.Value, Time.deltaTime * 15f);
+                }
 
-            float drift = Vector3.Distance(transform.position, targetWorldPos);
-            if (drift > 0.1f)
-            {
-                transform.position = Vector3.Lerp(transform.position, targetWorldPos, Time.deltaTime * 10f);
+                transform.rotation = Quaternion.Slerp(transform.rotation, _netRotation.Value, Time.deltaTime * 15f);
             }
-
-            transform.rotation = Quaternion.Slerp(transform.rotation, _netRotation.Value, Time.deltaTime * 15f);
         }
     }
 }

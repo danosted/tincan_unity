@@ -18,13 +18,7 @@ namespace TinCan.Features.Abilities
         {
             if (target == null) return GameplayEffectResult.Failure("Target is null.");
 
-            var controller = target.GetComponentInChildren<IAbilityControllerBase>();
-            if (controller == null)
-            {
-                // Fallback: check the object itself if not in children
-                controller = target.GetComponent<IAbilityControllerBase>();
-            }
-
+            var controller = GetControllerFromGameObject(target);
             if (controller == null)
             {
                 return GameplayEffectResult.Failure($"Target {target.name} does not have an IAbilityControllerBase.");
@@ -44,6 +38,30 @@ namespace TinCan.Features.Abilities
             }
 
             return abilitySystem.ApplyGameplayEffect(controller, effect);
+        }
+
+        /// <summary>
+        /// Checks if the target GameObject has a specific GameplayTag active.
+        /// Useful for branching logic in Visual Scripting (e.g., checking if Boosters are active).
+        /// </summary>
+        public static bool HasTag(GameObject target, TinCan.Core.Domain.Abilities.Tags.GameplayTag tag)
+        {
+            if (target == null || tag == null) return false;
+
+            var controller = GetControllerFromGameObject(target);
+            if (controller == null) return false;
+
+            return controller.HasTag(tag);
+        }
+
+        private static IAbilityControllerBase GetControllerFromGameObject(GameObject target)
+        {
+            var controller = target.GetComponentInChildren<IAbilityControllerBase>();
+            if (controller == null)
+            {
+                controller = target.GetComponent<IAbilityControllerBase>();
+            }
+            return controller;
         }
     }
 }

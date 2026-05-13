@@ -1,7 +1,7 @@
 using UnityEngine;
 using TinCan.Features.Interaction;
 using TinCan.Features.Possession;
-using VContainer;
+using Unity.Netcode;
 
 namespace TinCan.Features.Airship
 {
@@ -9,7 +9,7 @@ namespace TinCan.Features.Airship
     /// Infrastructure Layer: Allows a boarded player to interact with an airship control panel to take control.
     /// Implements IVehicleBoardable so players can point and interact with it.
     /// </summary>
-    public class AirshipControlPanel : MonoBehaviour, IVehicleBoardable
+    public class AirshipControlPanel : NetworkBehaviour, IVehicleBoardable
     {
         private IPossessable _possessableAirship;
 

@@ -18,4 +18,5 @@ MonoBehaviour:
   - Attribute: {fileID: 11400000, guid: dfba58bddba97f844a531ebee046cadd, type: 2}
     Operation: 1
     Value: 2
-  GrantedTags: []
+  GrantedTags:
+  - {fileID: 11400000, guid: 525daa4b9da694d4398b7264e73a1586, type: 2}

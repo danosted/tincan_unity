@@ -193,12 +193,26 @@ namespace TinCan.Features.Abilities
             }
         }
 
+        public void CancelAbility(IAbilityControllerBase actor, AbilityDefinition definition)
+        {
+            if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
+
+            var spec = abilities.FirstOrDefault(a => a.Definition == definition);
+            if (spec != null && spec.IsActive)
+            {
+                EndAbility(actor, spec);
+            }
+        }
+
         public bool TryActivateAbility(IAbilityControllerBase actor, AbilityDefinition definition, IAbilityControllerBase target = null)
         {
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return false;
 
             var spec = abilities.FirstOrDefault(a => a.Definition == definition);
             if (spec == null) return false;
+
+            // Prevent re-activation of an already active ability
+            if (spec.IsActive) return false;
 
             // 1. Check Tags
             if (!CanActivateAbility(actor, spec)) return false;
@@ -326,6 +340,16 @@ namespace TinCan.Features.Abilities
             }
 
             UpdateAttributes(actor);
+
+            // If this effect was the primary active effect for an ability, end the ability automatically.
+            if (_actorAbilities.TryGetValue(actor.Id, out var abilities))
+            {
+                var parentSpec = abilities.FirstOrDefault(s => s.AppliedActiveEffect == effect);
+                if (parentSpec != null && parentSpec.IsActive)
+                {
+                    EndAbility(actor, parentSpec);
+                }
+            }
         }
 
         private void ExecuteInstantEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition)

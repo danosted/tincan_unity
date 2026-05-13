@@ -13,7 +13,7 @@ namespace TinCan.Network.Infrastructure
     /// Bridges the gap between Domain Use Cases and the Networking Library (NGO).
     /// Handles automatic registration with the IActorRegistry and provides default IPossessable behavior.
     /// </summary>
-    public abstract class NetworkMediator : NetworkBehaviour, IPossessable
+    public abstract class NetworkMediator : NetworkBehaviour, IPossessable, IInteractionRequester
     {
         public virtual Guid Id { get; } = Guid.NewGuid();
         public virtual bool IsSimulating => IsSpawned;
@@ -95,6 +95,29 @@ namespace TinCan.Network.Infrastructure
             else
             {
                 _possessorId.Value = new OptionalClientId { HasValue = false, Value = 0 };
+            }
+        }
+
+        public void RequestInteraction(IInteractable target)
+        {
+            if (target is not NetworkBehaviour targetNetBhv)
+            {
+                Debug.LogWarning($"[{GetType().Name}] Interaction target {target.GetType().Name} is not a NetworkBehaviour.");
+                return;
+            }
+            RequestInteractionServerRpc(targetNetBhv);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void RequestInteractionServerRpc(NetworkBehaviourReference targetRef)
+        {
+            if (targetRef.TryGet(out NetworkBehaviour targetNetBhv) && targetNetBhv is IInteractable interactable)
+            {
+                InteractionOrchestrator.HandleInteraction(this, interactable);
+            }
+            else
+            {
+                Debug.LogWarning($"[{GetType().Name}] Interaction target not found on server or missing IInteractable.");
             }
         }
     }

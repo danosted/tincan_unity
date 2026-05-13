@@ -46,7 +46,16 @@ namespace TinCan.Features.Interaction
             if (_possessionUseCase.CurrentPossession is not MonoBehaviour mono) return;
             var interactor = mono.GetComponent<IInteractorView>();
             if (interactor == null || interactor.CurrentTarget == null) return;
-            _orchestrator.HandleInteraction(interactor.Owner, interactor.CurrentTarget);
+
+            if (mono.TryGetComponent(out IInteractionRequester requester))
+            {
+                requester.RequestInteraction(interactor.CurrentTarget);
+            }
+            else
+            {
+                // Fallback for purely local/offline interactions
+                _orchestrator.HandleInteraction(interactor.Owner, interactor.CurrentTarget);
+            }
         }
     }
 }

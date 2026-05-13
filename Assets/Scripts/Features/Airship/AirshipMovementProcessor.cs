@@ -21,9 +21,18 @@ namespace TinCan.Features.Airship
                 ? input.Throttle * maxForward
                 : input.Throttle * maxBackward;
 
-            // Apply acceleration or deceleration
-            float rate = input.Throttle != 0 ? accel : decel;
-            return Mathf.MoveTowards(currentSpeed, targetSpeed, rate * deltaTime);
+            // If we are currently moving FASTER than the target speed (e.g. booster turned off),
+            // we must smoothly decelerate down to the new target speed, rather than accelerating to it.
+            if (Mathf.Abs(currentSpeed) > Mathf.Abs(targetSpeed))
+            {
+                return Mathf.MoveTowards(currentSpeed, targetSpeed, decel * deltaTime);
+            }
+            else
+            {
+                // Normal acceleration/deceleration
+                float rate = input.Throttle != 0 ? accel : decel;
+                return Mathf.MoveTowards(currentSpeed, targetSpeed, rate * deltaTime);
+            }
         }
 
         public Vector3 CalculateVelocityWithDrift(

@@ -40,6 +40,19 @@ namespace TinCan.Features.Abilities
             return abilitySystem.ApplyGameplayEffect(controller, effect);
         }
 
+        public static bool IsPlacementValid()
+        {
+            var scope = Object.FindAnyObjectByType<ProjectLifetimeScope>();
+            if (scope != null && scope.Container != null)
+            {
+                if (scope.Container.TryResolve(typeof(TinCan.Features.Airship.BuildModeUseCase), out var resolvedBuildMode) && resolvedBuildMode is TinCan.Features.Airship.BuildModeUseCase buildMode)
+                {
+                    return buildMode.IsPlacementValid;
+                }
+            }
+            return false;
+        }
+
         /// <summary>
         /// Checks if the target GameObject has a specific GameplayTag active.
         /// Useful for branching logic in Visual Scripting (e.g., checking if Boosters are active).

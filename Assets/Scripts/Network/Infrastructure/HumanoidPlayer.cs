@@ -25,8 +25,17 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(InteractorControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
-    public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView
+    public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView, TinCan.Features.Airship.IBuilder
     {
+        [Header("Building / Crafting (Temporary)")]
+        [SerializeField] private GameObject? _selectedModulePrefab;
+
+        public GameObject? SelectedModulePrefab
+        {
+            get => _selectedModulePrefab;
+            set => _selectedModulePrefab = value;
+        }
+
         private HumanoidControllerView _movement = null!;
         private ThirdPersonLookView _look = null!;
         private NetworkTransformMediator _transformSync = null!;

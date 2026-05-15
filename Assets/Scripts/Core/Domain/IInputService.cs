@@ -27,6 +27,7 @@ namespace TinCan.Core.Domain
         public const string Jump = "Jump";
         public const string Cancel = "Cancel";
         public const string Sprint = "Sprint";
+        public const string BuildMode = "BuildMode";
         public const string AbilityPrimary = "AbilityPrimary";
         public const string AbilitySecondary = "AbilitySecondary";
     }

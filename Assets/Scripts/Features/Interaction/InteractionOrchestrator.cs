@@ -13,13 +13,16 @@ namespace TinCan.Features.Interaction
     {
         private readonly IVehicleBoardingUseCase _vehicleBoardingUseCase;
         private readonly EventStationUseCase _eventStationUseCase;
+        private readonly IMaintenanceUseCase _maintenanceUseCase;
 
         public InteractionOrchestrator(
             IVehicleBoardingUseCase vehicleBoardingUseCase,
-            EventStationUseCase eventStationUseCase)
+            EventStationUseCase eventStationUseCase,
+            IMaintenanceUseCase maintenanceUseCase)
         {
             _vehicleBoardingUseCase = vehicleBoardingUseCase;
             _eventStationUseCase = eventStationUseCase;
+            _maintenanceUseCase = maintenanceUseCase;
         }
 
         public void HandleInteraction(IActor interactor, IInteractable target)
@@ -45,6 +48,13 @@ namespace TinCan.Features.Interaction
                 return;
             }
 
+            var repairable = targetMono.GetComponentInChildren<IRepairable>();
+            if (repairable != null)
+            {
+                Debug.Log($"[InteractionOrchestrator] Routing repair interaction");
+                _maintenanceUseCase.RepairModule(interactor, repairable);
+                return;
+            }
 
             // Future interactions (Doors, Items, etc.) would be added here as specialized Use Cases
             Debug.LogWarning($"[InteractionOrchestrator] No specialized handler found for interaction with {target.GetType().Name}");

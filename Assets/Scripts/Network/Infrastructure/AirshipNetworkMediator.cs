@@ -30,6 +30,7 @@ namespace TinCan.Network.Infrastructure
         [Header("GAS Attributes")]
         [SerializeField] private GameplayAttribute _flightSpeedAttribute;
         [SerializeField] private GameplayAttribute _turnSpeedAttribute;
+        [SerializeField] private GameplayAttribute _healthAttribute;
 
         // IShipState Implementation
         public IAbilityControllerBase Controller => _abilitySync;
@@ -79,8 +80,8 @@ namespace TinCan.Network.Infrastructure
             _abilitySync = GetComponent<AbilityNetworkMediator>();
 
             // Initialize and register attributes
-            _attributes = new AirshipAttributeSet(_abilitySync, _flightSpeedAttribute, _turnSpeedAttribute);
-            _attributes.InitializeBaseValues(_view.MaxForwardSpeed, _view.TurnSpeed);
+            _attributes = new AirshipAttributeSet(_abilitySync, _flightSpeedAttribute, _turnSpeedAttribute, _healthAttribute);
+            _attributes.InitializeBaseValues(_view.MaxForwardSpeed, _view.TurnSpeed, 1000f);
             _abilitySync.RegisterAttributeSet(_attributes);
 
             if (Registry != null)

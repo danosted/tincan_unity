@@ -354,8 +354,35 @@ namespace TinCan.Features.Abilities
 
         private void ExecuteInstantEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition)
         {
-            // Apply modifiers once and forget
-            // UpdateAttributes(actor); // Instant effects need special handling for non-permanent changes
+            foreach (var modifier in definition.Modifiers)
+            {
+                if (modifier.Attribute == null) continue;
+
+                if (actor.TryGetAttribute(modifier.Attribute, out var attrVal))
+                {
+                    float oldBase = attrVal.BaseValue;
+
+                    // Instant effects modify the BASE value permanently
+                    switch (modifier.Operation)
+                    {
+                        case ModifierOp.Add:
+                            attrVal.BaseValue += modifier.Value;
+                            break;
+                        case ModifierOp.Multiply:
+                            attrVal.BaseValue *= modifier.Value;
+                            break;
+                        case ModifierOp.Override:
+                            attrVal.BaseValue = modifier.Value;
+                            break;
+                    }
+
+                    actor.SetAttribute(modifier.Attribute, attrVal);
+                    Debug.Log($"[AbilitySystem] Instant Effect {definition.name} modified Base {modifier.Attribute.name}: {oldBase} -> {attrVal.BaseValue}");
+                }
+            }
+
+            // Recalculate current values based on the new base and existing duration effects
+            UpdateAttributes(actor);
         }
 
         private void UpdateAttributes(IAbilityControllerBase actor)

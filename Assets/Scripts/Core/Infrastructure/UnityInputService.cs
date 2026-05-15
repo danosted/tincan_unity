@@ -31,6 +31,7 @@ namespace TinCan.Core.Infrastructure
                 _keyMappings[ActionNames.Jump] = Keyboard.current.spaceKey;
                 _keyMappings[ActionNames.Cancel] = Keyboard.current.escapeKey;
                 _keyMappings[ActionNames.Sprint] = Keyboard.current.leftShiftKey;
+                _keyMappings[ActionNames.BuildMode] = Keyboard.current.bKey;
             }
 
             if (Mouse.current != null)

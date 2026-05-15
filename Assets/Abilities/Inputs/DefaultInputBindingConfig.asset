@@ -15,3 +15,5 @@ MonoBehaviour:
   Bindings:
   - InputType: {fileID: 11400000, guid: 426ccfbff63aa644eb62af51e7922718, type: 2}
     UnityActionName: Sprint
+  - InputType: {fileID: 11400000, guid: 95089513fd64b334bb86314ea4130092, type: 2}
+    UnityActionName: BuildMode

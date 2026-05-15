@@ -269,12 +269,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.HumanoidPlayer
   ShowTopMostFoldoutHeaderGroup: 1
+  _selectedModulePrefab: {fileID: 2084250224356171082, guid: fd433d6689aad314caa0c6811c337d1d, type: 3}
   _moveSpeedAttribute: {fileID: 11400000, guid: a3969ba58e30bf14991f1248364d7cf8, type: 2}
   _jumpForceAttribute: {fileID: 11400000, guid: dffb50361639b754e9c2c8497cf425f9, type: 2}
   _staminaAttribute: {fileID: 11400000, guid: 6076f295bb68c884bb94e8c0c73a1226, type: 2}
   _healthAttribute: {fileID: 11400000, guid: 8b14d6bb0c2e84b40a3ec90b5bbb15b2, type: 2}
   _startingAbilities:
   - {fileID: 11400000, guid: bea9a128da82acc45899384dfba0c566, type: 2}
+  - {fileID: 11400000, guid: 4612436d5493f7648a8e835455dbb5dd, type: 2}
 --- !u!114 &917994041440066554
 MonoBehaviour:
   m_ObjectHideFlags: 0

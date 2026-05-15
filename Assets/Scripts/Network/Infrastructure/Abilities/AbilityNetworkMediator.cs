@@ -92,16 +92,65 @@ namespace TinCan.Network.Infrastructure.Abilities
 
         public void AddTag(GameplayTag tag)
         {
-            if (!IsServer) return;
-            _activeTags.AddTag(tag);
-            SyncTagsClientRpc(tag.name, true);
+            if (IsServer)
+            {
+                _activeTags.AddTag(tag);
+                SyncTagsClientRpc(tag.name, true);
+            }
+            else if (IsOwner)
+            {
+                // Optimistically add locally
+                _clientActiveTagNames.Add(tag.name);
+                RequestTagChangeServerRpc(tag.name, true);
+            }
         }
 
         public void RemoveTag(GameplayTag tag)
         {
-            if (!IsServer) return;
-            _activeTags.RemoveTag(tag);
-            SyncTagsClientRpc(tag.name, false);
+            if (IsServer)
+            {
+                _activeTags.RemoveTag(tag);
+                SyncTagsClientRpc(tag.name, false);
+            }
+            else if (IsOwner)
+            {
+                // Optimistically remove locally
+                _clientActiveTagNames.Remove(tag.name);
+                RequestTagChangeServerRpc(tag.name, false);
+            }
+        }
+
+        [ServerRpc]
+        private void RequestTagChangeServerRpc(string tagName, bool add)
+        {
+            // To find the tag object on the server, we need a reference.
+            // For now, we'll search for it in the ProjectLifetimeScope's known tags.
+            // This is a temporary solution until we have a proper GameplayTagRegistry.
+            var scope = UnityEngine.Object.FindAnyObjectByType<TinCan.Core.Infrastructure.ProjectLifetimeScope>();
+            if (scope == null) return;
+
+            // We need to find the tag. We can't easily iterate all tags on the scope without reflection
+            // or if they are in a list. But we know _buildingTag is there.
+
+            // For now, let's just handle the build mode tag specifically if it matches.
+            // This is a bit hacky but works for the current requirement.
+
+            // A better way: Use Resources.FindObjectsOfTypeAll (only in editor or if tag is in Resources)
+            // Or just have a registry.
+
+            // Let's try to find it by name in all loaded GameplayTags
+            var allTags = Resources.FindObjectsOfTypeAll<GameplayTag>();
+            foreach (var tag in allTags)
+            {
+                if (tag.name == tagName)
+                {
+                    if (add) AddTag(tag);
+                    else RemoveTag(tag);
+                    return;
+                }
+            }
+
+            Debug.LogWarning($"[AbilityNetworkMediator] Server could not find tag with name: {tagName}");
         }
 
         public void GrantAbility(AbilityDefinition definition)

@@ -14,7 +14,7 @@ namespace TinCan.Features.HumanoidMovement
     {
         [Header("Camera Configuration")]
         [SerializeField] private Transform _cameraPivot;
-        private Camera _camera => _cameraPivot.GetComponent<Camera>();
+        public Camera Camera => _cameraPivot.GetComponent<Camera>();
         [SerializeField] private float _distance = 5f;
         [SerializeField] private float _height = 0f;
         [SerializeField] private float _sensitivity = 0.5f;
@@ -88,7 +88,7 @@ namespace TinCan.Features.HumanoidMovement
                 Debug.Log($"[ThirdPersonLookView] ACTIVATING camera for {gameObject.name} (Match found)");
                 IsActive = true;
                 _cameraPivot.gameObject.SetActive(true);
-                _camera.enabled = true;
+                Camera.enabled = true;
             }
         }
 

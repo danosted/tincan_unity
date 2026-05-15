@@ -14,6 +14,9 @@ namespace TinCan.Features.HumanoidMovement
         float Sensitivity { get; }
         float MaxPitch { get; }
 
+        Camera Camera { get; }
+
         void ApplyLook(float pitch, float yaw);
+
     }
 }

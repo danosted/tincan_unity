@@ -3,7 +3,7 @@ using UnityEngine;
 namespace TinCan.Features.Airship
 {
     [RequireComponent(typeof(BoxCollider))]
-    public class AirshipLocalSpaceVolume : MonoBehaviour
+    public class ParentLocalSpaceVolume : MonoBehaviour
     {
         private BoxCollider _volume = null!;
 

@@ -25,6 +25,7 @@ namespace TinCan.Features.HumanoidMovement
         private readonly Dictionary<Guid, Vector3> _horizontalVelocities = new();
         private readonly Dictionary<Guid, float> _verticalVelocities = new();
         private readonly Dictionary<Guid, ulong> _previousInputMasks = new();
+        private readonly Collider[] _platformOverlapResults = new Collider[16];
 
         private struct PlatformPose
         {
@@ -204,6 +205,7 @@ namespace TinCan.Features.HumanoidMovement
 
             // Reset dynamic platform data for this frame
             ground.GroundTransform = null;
+            ground.MovingGroundTransform = null;
             ground.GroundVelocity = Vector3.zero;
             ground.SurfaceDelta = Vector3.zero;
             ground.RotationDelta = Quaternion.identity;
@@ -217,25 +219,32 @@ namespace TinCan.Features.HumanoidMovement
             {
                 var hit = movement.LastGroundHit.Value;
                 ground.GroundNormal = hit.normal;
+                ground.GroundTransform = hit.collider.transform;
 
-                // Check for moving platforms
                 movingGround = hit.collider.GetComponentInParent<IMovingGround>();
                 if (movingGround != null)
                 {
                     platformTransform = ((Component)movingGround).transform;
-                    ground.GroundTransform = platformTransform;
                     ground.GroundVelocity = movingGround.Velocity;
                     ground.IsPlatformSupported = !isJumping;
                 }
             }
 
+            // Vehicle volume membership controls relative motion independently of foot contact.
+            if (TryResolveContainingParent(movement.Transform.position, out var volumePlatform, out var volumeMovingGround) &&
+                volumeMovingGround != null)
+            {
+                platformTransform = volumePlatform;
+                movingGround = volumeMovingGround;
+                ground.GroundVelocity = movingGround.Velocity;
+            }
+
             if (platformTransform == null && _lastPlatforms.TryGetValue(character.Id, out var lastPlat) && lastPlat != null)
             {
-                var localSpaceVolume = lastPlat.GetComponent<AirshipLocalSpaceVolume>();
+                var localSpaceVolume = lastPlat.GetComponent<ParentLocalSpaceVolume>();
                 if (localSpaceVolume != null && localSpaceVolume.Contains(movement.Transform.position))
                 {
                     platformTransform = lastPlat;
-                    ground.GroundTransform = platformTransform;
                     movingGround = platformTransform.GetComponent<IMovingGround>();
                     if (movingGround != null)
                     {
@@ -255,6 +264,8 @@ namespace TinCan.Features.HumanoidMovement
                 ClearPlatformState(character.Id);
                 return ground;
             }
+
+            ground.MovingGroundTransform = platformTransform;
 
             if (!_lastPlatforms.TryGetValue(character.Id, out var cachedPlatform) ||
                 cachedPlatform != platformTransform ||
@@ -283,6 +294,36 @@ namespace TinCan.Features.HumanoidMovement
             _lastPlatforms[character.Id] = platformTransform;
 
             return ground;
+        }
+
+        private bool TryResolveContainingParent(
+            Vector3 worldPosition,
+            out Transform? platformTransform,
+            out IMovingGround? movingGround)
+        {
+            platformTransform = null;
+            movingGround = null;
+
+            int overlapCount = Physics.OverlapSphereNonAlloc(
+                worldPosition,
+                0.01f,
+                _platformOverlapResults,
+                ~0,
+                QueryTriggerInteraction.Collide);
+
+            for (int index = 0; index < overlapCount; index++)
+            {
+                var localSpaceVolume = _platformOverlapResults[index].GetComponentInParent<ParentLocalSpaceVolume>();
+                if (localSpaceVolume == null || !localSpaceVolume.Contains(worldPosition)) continue;
+
+                movingGround = localSpaceVolume.GetComponent<IMovingGround>();
+                if (movingGround == null) continue;
+
+                platformTransform = ((Component)movingGround).transform;
+                return true;
+            }
+
+            return false;
         }
 
         private void DetachFromPlatform(Guid characterId, Transform platformTransform, Vector3 worldPosition)

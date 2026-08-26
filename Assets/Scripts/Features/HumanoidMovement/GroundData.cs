@@ -10,7 +10,8 @@ namespace TinCan.Features.HumanoidMovement
     {
         public bool IsGrounded;
         public bool IsPlatformSupported;
-        public Transform? GroundTransform; // The transform we are currently standing on
+        public Transform? GroundTransform;
+        public Transform? MovingGroundTransform;
         public Vector3 GroundNormal;
         public Vector3 GroundVelocity;
         public Vector3 SurfaceDelta; // The actual world-space movement of the ground since the last frame

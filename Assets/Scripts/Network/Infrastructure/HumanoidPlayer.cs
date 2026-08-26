@@ -126,14 +126,33 @@ namespace TinCan.Network.Infrastructure
 
         private void LateUpdate()
         {
-            if (!IsSpawned || !IsServer) return;
+            if (!IsSpawned) return;
 
-            PublishAttachmentState();
+            if (IsServer)
+            {
+                PublishAttachmentState();
+                return;
+            }
+
+            ApplyAttachmentPose();
+        }
+
+        private void ApplyAttachmentPose()
+        {
+            if (IsOwner) return;
+
+            var attachment = _attachmentState.Value;
+            if (!attachment.IsAttached || !attachment.Platform.TryGet(out NetworkObject platform)) return;
+
+            Transform platformTransform = platform.transform;
+            transform.SetPositionAndRotation(
+                platformTransform.TransformPoint(attachment.LocalPosition),
+                platformTransform.rotation * attachment.LocalRotation);
         }
 
         private void PublishAttachmentState()
         {
-            var platformTransform = _movement.CurrentGround.GroundTransform;
+            var platformTransform = _movement.CurrentGround.MovingGroundTransform;
             var platformObject = platformTransform != null
                 ? platformTransform.GetComponentInParent<NetworkObject>()
                 : null;

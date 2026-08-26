@@ -132,6 +132,7 @@ When discussing implementations, the AI should be mindful of potential Unity ver
 1.  **Check for Errors:** Immediately after any file edit, use `get_errors` on the modified files to check for compilation errors, syntax issues, or lint warnings.
 2.  **Verify API Usage:** Check for deprecated API usage (e.g., ensure `linearVelocity` is used instead of `velocity` if required by the Unity version).
 3.  **Validate Logic & Syntax:** Briefly review the resulting file to ensure no "end-of-file expected" or brace mismatch issues were introduced by the edit tool.
+4.  **Unity Recompilation:** After modifying C# code, request Unity script compilation with `unity command eval 'UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation(); return "scriptCompilationRequested";'`, then run `unity command recompile_status` and verify that it completes without compiler errors.
 
 ---
 

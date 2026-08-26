@@ -1,7 +1,5 @@
 using TinCan.Core.Domain;
 using UnityEngine;
-using System.Collections.Generic;
-using TinCan.Features.Events;
 
 namespace TinCan.Features.Interaction
 {
@@ -11,53 +9,40 @@ namespace TinCan.Features.Interaction
     /// </summary>
     public class InteractionOrchestrator : IInteractionOrchestrator
     {
+        private readonly IActorRegistry _actorRegistry;
+        private readonly IInteractionTargetResolver _targetResolver;
+        private readonly IInteractionHandlerRegistry _handlerRegistry;
         private readonly IVehicleBoardingUseCase _vehicleBoardingUseCase;
-        private readonly EventStationUseCase _eventStationUseCase;
-        private readonly IMaintenanceUseCase _maintenanceUseCase;
 
         public InteractionOrchestrator(
-            IVehicleBoardingUseCase vehicleBoardingUseCase,
-            EventStationUseCase eventStationUseCase,
-            IMaintenanceUseCase maintenanceUseCase)
+            IActorRegistry actorRegistry,
+            IInteractionTargetResolver targetResolver,
+            IInteractionHandlerRegistry handlerRegistry,
+            IVehicleBoardingUseCase vehicleBoardingUseCase)
         {
+            _actorRegistry = actorRegistry;
+            _targetResolver = targetResolver;
+            _handlerRegistry = handlerRegistry;
             _vehicleBoardingUseCase = vehicleBoardingUseCase;
-            _eventStationUseCase = eventStationUseCase;
-            _maintenanceUseCase = maintenanceUseCase;
         }
 
-        public void HandleInteraction(IActor interactor, IInteractable target)
+        public void HandleInteraction(InteractionRequest request)
         {
-            if (target == null) return;
-
-            // Check for specific specialized interaction logic (e.g. Boarding)
-            if (target is not MonoBehaviour targetMono) return;
-
-            var boardable = targetMono.GetComponentInChildren<IVehicleBoardable>();
-            if (boardable != null)
+            if (!_actorRegistry.TryGetActor(request.RequesterActorId, out var requester) ||
+                !_targetResolver.TryResolve(request.TargetId, out var target) ||
+                target is not IInteractionTarget interactionTarget ||
+                interactionTarget.Definition == null ||
+                !_handlerRegistry.TryGetHandler(
+                    interactionTarget.Definition.HandlerTag,
+                    out var handler))
             {
-                Debug.Log($"[InteractionOrchestrator] Routing vehicle boarding interaction");
-                _vehicleBoardingUseCase.BoardVehicle(boardable);
                 return;
             }
 
-            var eventStation = targetMono.GetComponentInChildren<IEventStation>();
-            if (eventStation != null)
-            {
-                Debug.Log($"[InteractionOrchestrator] Routing event station interaction");
-                _eventStationUseCase.HandleStationInteraction(interactor, eventStation);
-                return;
-            }
-
-            var repairable = targetMono.GetComponentInChildren<IRepairable>();
-            if (repairable != null)
-            {
-                Debug.Log($"[InteractionOrchestrator] Routing repair interaction");
-                _maintenanceUseCase.RepairModule(interactor, repairable);
-                return;
-            }
-
-            // Future interactions (Doors, Items, etc.) would be added here as specialized Use Cases
-            Debug.LogWarning($"[InteractionOrchestrator] No specialized handler found for interaction with {target.GetType().Name}");
+            handler.Handle(new InteractionContext(
+                requester,
+                target,
+                interactionTarget.Definition));
         }
 
         public void HandleExit()

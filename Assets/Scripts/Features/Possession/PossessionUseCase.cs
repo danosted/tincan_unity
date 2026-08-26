@@ -11,12 +11,13 @@ namespace TinCan.Features.Possession
     /// Application Layer: Manages the possession of different IPossessable actors.
     /// Handles switching between characters, vehicles, or cameras using the ActorRegistry.
     /// </summary>
-    public class PossessionUseCase : IInitializable, System.IDisposable
+    public class PossessionUseCase : IInitializable, ITickable, System.IDisposable
     {
         private readonly INetworkService _networkService;
         private readonly INetworkPlayerSpawner _spawner;
         private readonly IActorRegistry _registry;
         private readonly System.Func<IPossessionNetworkMediator> _mediatorFactory;
+        private IPossessionNetworkMediator? _mediator;
         private IPossessable? _playerActor;
         private IPossessable? _currentPossession;
 
@@ -41,12 +42,12 @@ namespace TinCan.Features.Possession
             _registry.OnActorUnregistered += HandleActorUnregistered;
             _spawner.OnPlayerSpawned += HandlePlayerSpawned;
 
-            var mediator = _mediatorFactory();
-            if (mediator == null) return;
+            TrySubscribeMediator();
+        }
 
-            mediator.OnPossessionReceived += HandlePossessionReceived;
-            mediator.OnPossessionLost += HandlePossessionLost;
-            mediator.OnPossessionDenied += HandlePossessionDenied;
+        public void Tick()
+        {
+            TrySubscribeMediator();
         }
 
         public void Dispose()
@@ -54,12 +55,25 @@ namespace TinCan.Features.Possession
             _registry.OnActorUnregistered -= HandleActorUnregistered;
             _spawner.OnPlayerSpawned -= HandlePlayerSpawned;
 
-            var mediator = _mediatorFactory();
-            if (mediator == null) return;
+            if (_mediator == null) return;
 
-            mediator.OnPossessionReceived -= HandlePossessionReceived;
-            mediator.OnPossessionLost -= HandlePossessionLost;
-            mediator.OnPossessionDenied -= HandlePossessionDenied;
+            _mediator.OnPossessionReceived -= HandlePossessionReceived;
+            _mediator.OnPossessionLost -= HandlePossessionLost;
+            _mediator.OnPossessionDenied -= HandlePossessionDenied;
+            _mediator = null;
+        }
+
+        private void TrySubscribeMediator()
+        {
+            if (_mediator != null) return;
+
+            _mediator = _mediatorFactory();
+            if (_mediator == null) return;
+
+            _mediator.OnPossessionReceived += HandlePossessionReceived;
+            _mediator.OnPossessionLost += HandlePossessionLost;
+            _mediator.OnPossessionDenied += HandlePossessionDenied;
+            Debug.Log("[PossessionUseCase] Subscribed to possession mediator.");
         }
 
         private void HandlePlayerSpawned(GameObject instance, ulong clientId, bool isLocal)
@@ -121,6 +135,7 @@ namespace TinCan.Features.Possession
             if (ownerId != _networkService.LocalClientId) return; // Not our possession that was lost, ignore
 
             Debug.Log($"[PossessionUseCase] Possession of {_currentPossession} was lost (ownership changed to another player or revoked). Returning to body.");
+            NotifyReceivers(lostPossession, false, 0);
             _currentPossession = null;
 
             if (_playerActor != null)
@@ -160,6 +175,7 @@ namespace TinCan.Features.Possession
 
             // We lost possession of our current actor to someone else (or it was revoked)
             Debug.Log($"[PossessionUseCase] Possession of {_currentPossession} lost to Player {newOwnerId}. Falling back to player actor.");
+            NotifyReceivers(target, false, 0);
             _currentPossession = null;
 
             // Fallback to body if we have one
@@ -216,11 +232,17 @@ namespace TinCan.Features.Possession
                 });
             }
 
-            // 2. Local Prediction
-            if (target.CanPossess(_networkService.LocalClientId))
+            // Local presentation changes only after the server confirms possession.
+        }
+
+        public void ReleaseCurrentPossession()
+        {
+            if (_currentPossession == null || _currentPossession == _playerActor)
             {
-                PerformLocalPossession(target);
+                return;
             }
+
+            _mediatorFactory()?.RequestPossessionRelease();
         }
 
         private void PerformLocalPossession(IPossessable target)

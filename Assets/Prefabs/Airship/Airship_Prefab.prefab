@@ -26,12 +26,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3712927881756365506}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.000000021855694, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 2.027, y: 9.02, z: -29.35}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 1.100523, y: 2.1527586, z: -7.8172817}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
-  m_Father: {fileID: 6352674551658475850}
+  m_Father: {fileID: 1664714398448823971}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!135 &6391721554318614017
 SphereCollider:
@@ -67,6 +67,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Airship.AirshipControlPanel
   ShowTopMostFoldoutHeaderGroup: 1
+  _interactionDefinition: {fileID: 11400000, guid: 060282e2f7c15bd42827c8c7a44f1803, type: 2}
 --- !u!1 &4741218207008056854
 GameObject:
   m_ObjectHideFlags: 0
@@ -109,6 +110,7 @@ Transform:
   - {fileID: 4295072262532451526}
   - {fileID: 8838695524504686579}
   - {fileID: 1409050726415755443}
+  - {fileID: 670682824750992585}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8441850146422661578
@@ -123,7 +125,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name:
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2551848856
+  GlobalObjectIdHash: 1498952331
   InScenePlacedSourceGlobalObjectIdHash: 2551848856
   DeferredDespawnTick: 0
   Ownership: 1
@@ -160,8 +162,6 @@ MonoBehaviour:
   _maxBankAngle: 15
   _bankSpeed: 2
   _visualRoot: {fileID: 8838695524504686579}
-  _visualPositionSmoothSpeed: 15
-  _visualRotationSmoothSpeed: 15
 --- !u!114 &544907830611805058
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -191,6 +191,39 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.NetworkTransformMediator
   ShowTopMostFoldoutHeaderGroup: 1
+  NetworkTransformExpanded: 0
+  AutoOwnerAuthorityTickOffset: 1
+  PositionInterpolationType: 0
+  RotationInterpolationType: 0
+  ScaleInterpolationType: 0
+  PositionLerpSmoothing: 1
+  PositionMaxInterpolationTime: 0.1
+  RotationLerpSmoothing: 1
+  RotationMaxInterpolationTime: 0.1
+  ScaleLerpSmoothing: 1
+  ScaleMaxInterpolationTime: 0.1
+  AuthorityMode: 0
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
+  SyncPositionX: 1
+  SyncPositionY: 1
+  SyncPositionZ: 1
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
+  SyncScaleX: 1
+  SyncScaleY: 1
+  SyncScaleZ: 1
+  PositionThreshold: 0.001
+  RotAngleThreshold: 0.01
+  ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 0
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 0
+  InLocalSpace: 0
+  SwitchTransformSpaceWhenParented: 0
+  Interpolate: 1
+  SlerpPosition: 0
 --- !u!54 &1818681803730455493
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -551,7 +584,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Events.ToggleShipTagStation
   ShowTopMostFoldoutHeaderGroup: 1
-  _interactionAbility: {fileID: 11400000, guid: a3a229ddf05fa034381a35fc2fb1bc2e, type: 2}
+  _interactionDefinition: {fileID: 11400000, guid: 3c1bb46d63f580c4686d6896541f2e1b, type: 2}
 --- !u!114 &1236587825717468461
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -813,17 +846,9 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 6910414082193462227, guid: a1dcd447bfbb3bc45821f8b436c031d2, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 670682824750992585}
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a1dcd447bfbb3bc45821f8b436c031d2, type: 3}
---- !u!4 &6352674551658475850 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6910414082193462227, guid: a1dcd447bfbb3bc45821f8b436c031d2, type: 3}
-  m_PrefabInstance: {fileID: 562812679333077657}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &8838695524504686579 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 9036149285931199850, guid: a1dcd447bfbb3bc45821f8b436c031d2, type: 3}

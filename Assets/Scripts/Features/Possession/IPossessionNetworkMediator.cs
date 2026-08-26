@@ -10,8 +10,10 @@ namespace TinCan.Features.Possession
 
         // Server side event
         event Action<ulong, Unity.Netcode.NetworkObjectReference, Unity.Netcode.NetworkObjectReference[]> OnServerPossessionRequested;
+        event Action<ulong> OnServerPossessionReleaseRequested;
 
         void RequestPossession(PossessionRequest.Request request);
+        void RequestPossessionRelease();
 
         // Server side callbacks to trigger RPCs
         void NotifyPossessionReceived(Unity.Netcode.NetworkObjectReference targetRef, ulong newOwnerClientId);

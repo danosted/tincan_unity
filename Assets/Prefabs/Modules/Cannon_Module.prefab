@@ -84,7 +84,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
   GlobalObjectIdHash: 2609496315
   InScenePlacedSourceGlobalObjectIdHash: 0
@@ -109,7 +109,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d6331163e1c0ffc4998a3ec00ff00dc3, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &5443035925040800629
@@ -122,12 +122,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ac04a3d8396ce174ebdd66b770de252c, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.ShipModuleNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
   _moduleName: Cannon
   _healthAttribute: {fileID: 11400000, guid: 8b14d6bb0c2e84b40a3ec90b5bbb15b2, type: 2}
   _maxHealth: 150
+  _interactionDefinition: {fileID: 11400000, guid: de849c71415cb8b41962b9c79d2a168a, type: 2}
 --- !u!114 &8201972043345249062
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -138,7 +139,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 75021392c9bdc004697cbcaa3fd1f513, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Airship.GhostMaterialFeedback
   _validMaterial: {fileID: 2100000, guid: 5241bdb170086e740a3e2263aff68c84, type: 2}
   _invalidMaterial: {fileID: 2100000, guid: 1f7bff66c824e334298bcdc354a4d178, type: 2}

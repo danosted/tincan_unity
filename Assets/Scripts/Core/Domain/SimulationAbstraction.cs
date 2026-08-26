@@ -53,33 +53,30 @@ namespace TinCan.Core.Domain
 
             foreach (var actor in actors)
             {
+                bool isCaptured = IsCapturedByLocalClient(actor);
+
+                if (isCaptured)
+                {
+                    actor.InputState = GatherLocalInput(actor);
+                }
+
                 if (!actor.IsSimulating)
                 {
                     continue;
                 }
 
-                HandleGenericSimulation(actor);
+                ProcessSimulation(actor, actor.InputState, isCaptured);
             }
         }
 
-        protected void HandleGenericSimulation(TView actor)
+        private bool IsCapturedByLocalClient(TView actor)
         {
-            bool isCaptured = false;
             if (actor is IPossessable possessable)
             {
-                isCaptured = possessable.IsCapturedBy(NetworkService.LocalClientId);
+                return possessable.IsCapturedBy(NetworkService.LocalClientId);
             }
 
-            if (isCaptured)
-            {
-                // 1. Gather local input
-                actor.InputState = GatherLocalInput(actor);
-            }
-
-            // 2. If not captured, InputState is assumed to be synced via the Network Mediator
-
-            // 3. Process Domain Logic (Simulate)
-            ProcessSimulation(actor, actor.InputState, isCaptured);
+            return false;
         }
 
         /// <summary>

@@ -34,7 +34,9 @@ namespace TinCan.Core.Infrastructure
 
         [Header("Abilities")]
         [SerializeField] private TinCan.Core.Domain.Abilities.Tags.GameplayTag _buildingTag;
-        [SerializeField] private AbilityDefinition _repairAbilityDef;
+        [SerializeField] private TinCan.Core.Domain.Abilities.Tags.GameplayTag _possessionInteractionTag;
+        [SerializeField] private TinCan.Core.Domain.Abilities.Tags.GameplayTag _toggleAbilityInteractionTag;
+        [SerializeField] private TinCan.Core.Domain.Abilities.Tags.GameplayTag _repairAbilityInteractionTag;
 
         [Header("Building Modules")]
         [SerializeField] private List<GameObject> _buildablePrefabs = new();
@@ -62,12 +64,23 @@ namespace TinCan.Core.Infrastructure
             builder.Register<InteractorRegistry>(Lifetime.Singleton).As<IInteractorRegistry>();
             builder.Register<Abilities.AbilityRegistry>(Lifetime.Singleton).As<IAbilityRegistry>();
             builder.Register<ActorOrchestrator>(Lifetime.Singleton).As<IActorOrchestrator>();
+            builder.Register<NgoInteractionTargetResolver>(Lifetime.Singleton).As<IInteractionTargetResolver>();
+            builder.Register<PossessionInteractionHandler>(Lifetime.Singleton)
+                .WithParameter("handlerTag", _possessionInteractionTag)
+                .As<IInteractionHandler>();
+            builder.Register<ToggleAbilityInteractionHandler>(Lifetime.Singleton)
+                .WithParameter("handlerTag", _toggleAbilityInteractionTag)
+                .As<IInteractionHandler>();
+            builder.Register<RepairAbilityInteractionHandler>(Lifetime.Singleton)
+                .WithParameter("handlerTag", _repairAbilityInteractionTag)
+                .As<IInteractionHandler>();
+            builder.Register<InteractionHandlerRegistry>(Lifetime.Singleton).As<IInteractionHandlerRegistry>();
 
             // Register Possession Mediator Factory lazily
             builder.RegisterFactory<IPossessionNetworkMediator>((c) => () => FindAnyObjectByType<Features.Possession.Infrastructure.PossessionNetworkMediator>(), Lifetime.Singleton);
 
             // Register Server Possession Manager
-            builder.Register<ServerPossessionManager>(Lifetime.Singleton).AsImplementedInterfaces().AsSelf();
+            builder.Register<ServerPossessionManager>(Lifetime.Singleton).AsImplementedInterfaces().AsSelf().As<IPossessionAuthority>();
 
             // builder.Register<VehicleBoardingUseCase>(Lifetime.Singleton).As<IVehicleBoardingUseCase>();
             builder.Register<InteractionOrchestrator>(Lifetime.Singleton).As<IInteractionOrchestrator>();
@@ -78,14 +91,12 @@ namespace TinCan.Core.Infrastructure
             // For BuildModeUseCase, we register it as an EntryPoint and pass the parameter directly to the EntryPoint builder.
             // Registration is handled inside UseEntryPoints below.
 
-            builder.Register<MaintenanceUseCase>(Lifetime.Singleton)
-                .WithParameter("repairAbilityDef", _repairAbilityDef)
-                .As<IMaintenanceUseCase>();
-
-            builder.Register<PossessionUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>();
+            builder.Register<PossessionUseCase>(Lifetime.Singleton)
+                .AsSelf()
+                .As<IInitializable>()
+                .As<ITickable>();
             builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
             builder.Register<ShipStateProvider>(Lifetime.Singleton).As<IShipState>();
-            builder.Register<EventStationUseCase>(Lifetime.Singleton);
             builder.Register<AirshipMovementUseCase>(Lifetime.Singleton);
             builder.Register<HumanoidMovementUseCase>(Lifetime.Singleton);
             builder.Register<NetworkSimulationScheduler>(Lifetime.Singleton).As<IInitializable>();

@@ -1,3 +1,4 @@
+using System;
 using TinCan.Core.Domain;
 using TinCan.Features.Airship;
 using TinCan.Features.Possession;
@@ -13,22 +14,25 @@ namespace TinCan.Features.Interaction
     public class VehicleBoardingUseCase : IVehicleBoardingUseCase, ITickable
     {
         private readonly PossessionUseCase _possessionUseCase;
+        private readonly IPossessionAuthority _possessionAuthority;
         private readonly IInputService _inputService;
 
         public VehicleBoardingUseCase(
             PossessionUseCase possessionUseCase,
+            IPossessionAuthority possessionAuthority,
             IInputService inputService)
         {
             _possessionUseCase = possessionUseCase;
+            _possessionAuthority = possessionAuthority;
             _inputService = inputService;
         }
 
-        public void BoardVehicle(IVehicleBoardable boardable)
+        public void BoardVehicle(Guid requesterActorId, IVehicleBoardable boardable)
         {
-            // Request possession for the interactor (identity handled by API)
-            _possessionUseCase.Possess(boardable.TargetVehicle);
-
-            Debug.Log($"[VehicleBoardingUseCase] Boarding vehicle.");
+            if (_possessionAuthority.TryAcquirePossession(requesterActorId, boardable.TargetVehicle))
+            {
+                Debug.Log($"[VehicleBoardingUseCase] Actor {requesterActorId} boarded vehicle.");
+            }
         }
 
         public void ExitVehicle()
@@ -39,8 +43,8 @@ namespace TinCan.Features.Interaction
                 return;
             }
 
-            _possessionUseCase.Possess(null);
-            Debug.Log($"[VehicleBoardingUseCase] Exited vehicle and returned to character.");
+            _possessionUseCase.ReleaseCurrentPossession();
+            Debug.Log($"[VehicleBoardingUseCase] Requested vehicle exit.");
         }
 
         public void Tick()

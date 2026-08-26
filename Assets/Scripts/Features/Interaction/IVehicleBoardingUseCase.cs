@@ -1,5 +1,7 @@
 using TinCan.Features.Interaction;
 
+using System;
+
 namespace TinCan.Features.Interaction
 {
     /// <summary>
@@ -8,7 +10,7 @@ namespace TinCan.Features.Interaction
     /// </summary>
     public interface IVehicleBoardingUseCase
     {
-        void BoardVehicle(IVehicleBoardable boardable);
+        void BoardVehicle(Guid requesterActorId, IVehicleBoardable boardable);
         void ExitVehicle();
     }
 }

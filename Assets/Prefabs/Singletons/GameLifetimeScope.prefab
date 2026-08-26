@@ -42,10 +42,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9a9dedbc699935443839b5ef5b3d54d1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Core.Infrastructure.ProjectLifetimeScope
   parentReference:
-    TypeName: 
+    TypeName:
   autoRun: 1
   autoInjectGameObjects: []
   _playerPrefab: {fileID: 925472637626500556, guid: fc298da6d560fb04fba62a7e6f38f196, type: 3}
@@ -54,6 +54,8 @@ MonoBehaviour:
   _buildPlacementMediatorPrefab: {fileID: 6087914418897988617, guid: 535cfccc380ba564798456e50501f552, type: 3}
   _inputBindingConfig: {fileID: 11400000, guid: aee68fefa381a6847b1b923c5ba0df4c, type: 2}
   _buildingTag: {fileID: 11400000, guid: 2804153ad74f5a943ac83979c92b845a, type: 2}
-  _repairAbilityDef: {fileID: 11400000, guid: 7ad3bd62fdedf794b87a380844716e24, type: 2}
+  _possessionInteractionTag: {fileID: 11400000, guid: 1588b135530f1494687fbebc57591f58, type: 2}
+  _toggleAbilityInteractionTag: {fileID: 11400000, guid: 4657d8abfc7f9da4cbe51218041e09f6, type: 2}
+  _repairAbilityInteractionTag: {fileID: 11400000, guid: cbecd9f93668a4443b6ef35e85f4d722, type: 2}
   _buildablePrefabs:
   - {fileID: 2084250224356171082, guid: fd433d6689aad314caa0c6811c337d1d, type: 3}

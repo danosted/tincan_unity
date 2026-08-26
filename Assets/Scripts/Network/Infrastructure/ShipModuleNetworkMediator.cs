@@ -2,6 +2,7 @@ using System;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Features.Abilities;
+using TinCan.Features.Interaction;
 using TinCan.Network.Infrastructure.Abilities;
 using Unity.Netcode;
 using UnityEngine;
@@ -14,11 +15,12 @@ namespace TinCan.Network.Infrastructure
     /// Handles parenting to the ship and registration with the ship's module registry.
     /// </summary>
     [RequireComponent(typeof(AbilityNetworkMediator))]
-    public class ShipModuleNetworkMediator : NetworkMediator, IShipModule, IRepairable
+    public class ShipModuleNetworkMediator : NetworkMediator, IShipModule, IRepairable, IInteractionTarget
     {
         [SerializeField] private string _moduleName = "Unnamed Module";
         [SerializeField] private GameplayAttribute _healthAttribute;
         [SerializeField] private float _maxHealth = 100f;
+        [SerializeField] private InteractionDefinition _interactionDefinition;
 
         public string ModuleName => _moduleName;
 
@@ -31,6 +33,7 @@ namespace TinCan.Network.Infrastructure
 
         public float HealthPercentage => _attributes != null ? _attributes.Health / _maxHealth : 1f;
         public bool IsBroken => HealthPercentage <= 0.1f; // Broken at 10% health
+        public InteractionDefinition Definition => _interactionDefinition;
 
         public virtual void OnAttachedToShip(IActor ship)
         {

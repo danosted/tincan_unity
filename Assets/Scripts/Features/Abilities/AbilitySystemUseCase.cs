@@ -312,8 +312,6 @@ namespace TinCan.Features.Abilities
         {
             if (eventData.Target == null) return;
 
-            eventData.Target.HandleGameplayEvent(eventData);
-
             // Check if any ability triggers on this event
             if (_actorAbilities.TryGetValue(eventData.Target.Id, out var abilities))
             {

@@ -1,7 +1,3 @@
-using Unity.Netcode;
-using TinCan.Core.Domain;
-using UnityEngine;
-
 namespace TinCan.Features.Interaction
 {
     /// <summary>
@@ -9,7 +5,7 @@ namespace TinCan.Features.Interaction
     /// </summary>
     public interface IInteractionOrchestrator
     {
-        void HandleInteraction(IActor interactor, IInteractable target);
+        void HandleInteraction(InteractionRequest request);
         void HandleExit();
     }
 }

@@ -109,16 +109,37 @@ namespace TinCan.Network.Infrastructure
         }
 
         [Rpc(SendTo.Server)]
-        private void RequestInteractionServerRpc(NetworkBehaviourReference targetRef)
+        private void RequestInteractionServerRpc(NetworkBehaviourReference targetRef, RpcParams rpcParams = default)
         {
-            if (targetRef.TryGet(out NetworkBehaviour targetNetBhv) && targetNetBhv is IInteractable interactable)
+            if (targetRef.TryGet(out NetworkBehaviour targetNetBhv) &&
+                targetNetBhv is IInteractionTarget target &&
+                targetNetBhv.GetComponentInParent<NetworkObject>() is { } targetObject &&
+                TryGetRequesterActorId(rpcParams.Receive.SenderClientId, out var requesterActorId))
             {
-                InteractionOrchestrator.HandleInteraction(this, interactable);
+                InteractionOrchestrator.HandleInteraction(new InteractionRequest(
+                    requesterActorId,
+                    new InteractionTargetId(
+                        targetObject.NetworkObjectId,
+                        targetNetBhv.NetworkBehaviourId)));
             }
             else
             {
-                Debug.LogWarning($"[{GetType().Name}] Interaction target not found on server or missing IInteractable.");
+                Debug.LogWarning($"[{GetType().Name}] Interaction target not found or unsupported.");
             }
+        }
+
+        private bool TryGetRequesterActorId(ulong clientId, out Guid actorId)
+        {
+            actorId = Guid.Empty;
+            if (!NetworkManager.ConnectedClients.TryGetValue(clientId, out var client) ||
+                client.PlayerObject == null ||
+                !client.PlayerObject.TryGetComponent(out IActor actor))
+            {
+                return false;
+            }
+
+            actorId = actor.Id;
+            return true;
         }
     }
 }

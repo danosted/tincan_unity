@@ -19,6 +19,12 @@ namespace TinCan.Core.Infrastructure
             return _actors.OfType<T>();
         }
 
+        public bool TryGetActor(System.Guid id, out IActor actor)
+        {
+            actor = _actors.FirstOrDefault(candidate => candidate.Id == id)!;
+            return actor != null;
+        }
+
         public void Register(IActor actor)
         {
             if (!_actors.Contains(actor))

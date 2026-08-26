@@ -56,9 +56,9 @@ namespace TinCan.Features.Airship
 
         protected override void ProcessSimulation(IAirshipView airship, AirshipInputState input, bool isCaptured)
         {
-            // If controls are disabled (unpossessed), we treat input as zeroed
-            // but we do NOT return early so that momentum/drift can continue to simulate.
-            if (airship.IsControlsEnabled == false)
+            // Presentation control state is local-only. The server accepts steering
+            // solely while an authoritative possessor is assigned.
+            if (!airship.PossessorId.HasValue)
             {
                 input = new AirshipInputState();
             }

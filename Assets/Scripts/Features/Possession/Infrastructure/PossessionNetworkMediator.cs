@@ -15,6 +15,7 @@ namespace TinCan.Features.Possession.Infrastructure
         public event Action<IPossessable> OnPossessionDenied;
 
         public event Action<ulong, NetworkObjectReference, NetworkObjectReference[]> OnServerPossessionRequested;
+        public event Action<ulong> OnServerPossessionReleaseRequested;
 
         public void RequestPossession(PossessionRequest.Request request)
         {
@@ -35,12 +36,23 @@ namespace TinCan.Features.Possession.Infrastructure
             RequestPossessionServerRpc(targetNetObj, currentPossessionRef);
         }
 
+        public void RequestPossessionRelease()
+        {
+            RequestPossessionReleaseServerRpc();
+        }
+
         [Rpc(SendTo.Server)]
         private void RequestPossessionServerRpc(NetworkObjectReference targetRef, NetworkObjectReference[] currentPossessionsRefArray, RpcParams rpcParams = default)
         {
             ulong senderId = rpcParams.Receive.SenderClientId;
             Debug.Log($"[PossessionNetworkMediator] Server request received from client {senderId}.");
             OnServerPossessionRequested?.Invoke(senderId, targetRef, currentPossessionsRefArray);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void RequestPossessionReleaseServerRpc(RpcParams rpcParams = default)
+        {
+            OnServerPossessionReleaseRequested?.Invoke(rpcParams.Receive.SenderClientId);
         }
 
         public void NotifyPossessionReceived(NetworkObjectReference targetRef, ulong newOwnerClientId)

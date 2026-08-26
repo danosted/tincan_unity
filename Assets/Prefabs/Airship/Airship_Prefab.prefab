@@ -64,7 +64,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0a5544fdc7c2ac74b86d6f0691d5ab8b, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Airship.AirshipControlPanel
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &4741218207008056854
@@ -81,6 +81,8 @@ GameObject:
   - component: {fileID: 544907830611805058}
   - component: {fileID: 8128722450371628807}
   - component: {fileID: 1818681803730455493}
+  - component: {fileID: 7249237482739847254}
+  - component: {fileID: 7249237482739847255}
   - component: {fileID: 3039570436626715388}
   - component: {fileID: 791799737029972295}
   - component: {fileID: -6495699133958506105}
@@ -119,7 +121,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
   GlobalObjectIdHash: 2551848856
   InScenePlacedSourceGlobalObjectIdHash: 2551848856
@@ -131,8 +133,8 @@ MonoBehaviour:
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
+  AutoObjectParentSync: 0
+  SyncOwnerTransformWhenParented: 0
   AllowOwnerToParent: 0
 --- !u!114 &255960795591587495
 MonoBehaviour:
@@ -144,7 +146,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3bb3ef3023bf474459cc27bda84fbc73, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Airship.AirshipControllerView
   _maxForwardSpeed: 15
   _maxBackwardSpeed: 8
@@ -170,7 +172,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ee33da0ab420e5047abd0a208ba2ccb8, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.AirshipNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
   _flightSpeedAttribute: {fileID: 11400000, guid: dfba58bddba97f844a531ebee046cadd, type: 2}
@@ -186,7 +188,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f12fe60a2b46c464f8f28d0f9a1e7944, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.NetworkTransformMediator
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!54 &1818681803730455493
@@ -216,6 +218,39 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 3
+--- !u!65 &7249237482739847254
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4741218207008056854}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 11, y: 12, z: 50}
+  m_Center: {x: 1, y: -1, z: 5}
+--- !u!114 &7249237482739847255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4741218207008056854}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42bf52e4899be074dbfb0fa89c1ad342, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Airship.AirshipLocalSpaceVolume
 --- !u!114 &3039570436626715388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -226,7 +261,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eba76c897c4becb438a96965b4b8fe3b, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.HumanoidMovement.ThirdPersonLookView
   _cameraPivot: {fileID: 4295072262532451526}
   _distance: 20
@@ -244,7 +279,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d6331163e1c0ffc4998a3ec00ff00dc3, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &-6495699133958506105
@@ -257,7 +292,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 60eb23af2fff20842853f12be21e510d, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.ShipModuleRegistryNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &5392219454942549380
@@ -354,7 +389,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
@@ -513,7 +548,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e58e12cab230f284ea74a0dcfaf74af0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Events.ToggleShipTagStation
   ShowTopMostFoldoutHeaderGroup: 1
   _interactionAbility: {fileID: 11400000, guid: a3a229ddf05fa034381a35fc2fb1bc2e, type: 2}
@@ -527,7 +562,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e741851cba3ad425c91ecf922cc6b379, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.VisualScripting.Core::Unity.VisualScripting.Variables
   _data:
     _json: '{"declarations":{"Kind":"Object","collection":{"$content":[],"$version":"A"},"$version":"A"}}'
@@ -542,7 +577,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d2fe5546f775c47d2820aa5e8a715f53, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.VisualScripting.Flow::Unity.VisualScripting.ScriptMachine
   _data:
     _json: '{"nest":{"source":"Macro","macro":0,"embed":null}}'

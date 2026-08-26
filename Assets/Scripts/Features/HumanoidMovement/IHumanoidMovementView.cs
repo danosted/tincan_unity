@@ -27,11 +27,21 @@ namespace TinCan.Features.HumanoidMovement
         /// </summary>
         RaycastHit? LastGroundHit { get; }
 
+        /// <summary>
+        /// Samples the physical world before one movement simulation tick.
+        /// </summary>
+        void RefreshSensing();
+
         void Move(Vector3 motion);
 
         /// <summary>
         /// Sets the physical rotation of the character body.
         /// </summary>
         void SetRotation(Quaternion rotation);
+
+        /// <summary>
+        /// Applies an authoritative pose before replaying predicted inputs.
+        /// </summary>
+        void SetPose(Vector3 position, Quaternion rotation);
     }
 }

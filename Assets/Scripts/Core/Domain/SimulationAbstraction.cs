@@ -75,6 +75,7 @@ namespace TinCan.Core.Domain
                 // 1. Gather local input
                 actor.InputState = GatherLocalInput(actor);
             }
+
             // 2. If not captured, InputState is assumed to be synced via the Network Mediator
 
             // 3. Process Domain Logic (Simulate)

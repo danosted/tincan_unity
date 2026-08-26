@@ -57,16 +57,12 @@ namespace TinCan.Features.HumanoidMovement
             _controller = GetComponent<CharacterController>();
         }
 
-        private void Update()
+        public void RefreshSensing()
         {
-            UpdateSensing();
-        }
-
-        private void UpdateSensing()
-        {
-            // Raw sensing: Perform a raycast regardless of isGrounded state to detect platforms
-            // Increased range to 2.0m to maintain stickiness during jumps
-            if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out var hit, _controller.height, _interactableMask))
+            // Probe only around the feet. A probe spanning the full controller height
+            // treats nearby decks as ground while the player is jumping.
+            float groundProbeDistance = _controller.height * 0.5f + _controller.skinWidth + 0.1f;
+            if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out var hit, groundProbeDistance, _interactableMask, QueryTriggerInteraction.Ignore))
             {
                 _lastGroundHit = hit;
                 Debug.DrawLine(transform.position, hit.point, Color.green);
@@ -76,9 +72,7 @@ namespace TinCan.Features.HumanoidMovement
                 _lastGroundHit = null;
             }
 
-            // Infrastructure state
             _currentGround.IsGrounded = _controller.isGrounded;
-
         }
 
         private void OnControllerColliderHit(ControllerColliderHit hit)
@@ -98,6 +92,13 @@ namespace TinCan.Features.HumanoidMovement
         public void SetRotation(Quaternion rotation)
         {
             transform.rotation = rotation;
+        }
+
+        public void SetPose(Vector3 position, Quaternion rotation)
+        {
+            _controller.enabled = false;
+            transform.SetPositionAndRotation(position, rotation);
+            _controller.enabled = true;
         }
 
         public void UpdateGroundData(GroundData data)

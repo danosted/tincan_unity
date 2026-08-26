@@ -56,7 +56,7 @@ namespace TinCan.Core.Infrastructure
             builder.RegisterComponentInHierarchy<NetworkManager>().AsSelf();
             builder.Register<NetworkPlayerSpawner>(Lifetime.Singleton).As<INetworkPlayerSpawner>();
             builder.Register<NGONetworkService>(Lifetime.Singleton).As<INetworkService, IInitializable>();
-            builder.Register<ProjectTimeService>(Lifetime.Singleton).As<ITimeService>();
+            builder.Register<ProjectTimeService>(Lifetime.Singleton).AsSelf().As<ITimeService>();
 
             builder.Register<ActorRegistry>(Lifetime.Singleton).As<IActorRegistry>();
             builder.Register<InteractorRegistry>(Lifetime.Singleton).As<IInteractorRegistry>();
@@ -86,14 +86,15 @@ namespace TinCan.Core.Infrastructure
             builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
             builder.Register<ShipStateProvider>(Lifetime.Singleton).As<IShipState>();
             builder.Register<EventStationUseCase>(Lifetime.Singleton);
+            builder.Register<AirshipMovementUseCase>(Lifetime.Singleton);
+            builder.Register<HumanoidMovementUseCase>(Lifetime.Singleton);
+            builder.Register<NetworkSimulationScheduler>(Lifetime.Singleton).As<IInitializable>();
 
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
                 entryPoints.Add<FreeCameraMovementUseCase>();
-                entryPoints.Add<HumanoidMovementUseCase>();
                 entryPoints.Add<PlayerLookUseCase>();
                 entryPoints.Add<VehicleBoardingUseCase>().As<IVehicleBoardingUseCase>();
-                entryPoints.Add<AirshipMovementUseCase>();
                 entryPoints.Add<PossessionInputController>();
                 entryPoints.Add<InteractivityUseCase>();
                 entryPoints.Add<UnityInputService>().As<IInputService>();
@@ -122,13 +123,6 @@ namespace TinCan.Core.Infrastructure
                         // Ensure consistent naming across network
                         instance.name = $"{_playerPrefab.name}_Client{ownerClientId}";
 
-                        // On clients (and host), notify if this is our local player
-                        // This triggers possession logic for the networked object
-                        if (ownerClientId == networkManager.LocalClientId)
-                        {
-                            Debug.Log($"[ProjectLifetimeScope] Local player object {instance.name} detected. Notifying spawner.");
-                            spawner.NotifyPlayerSpawned(instance, ownerClientId, true);
-                        }
                     },
                     configureDestroy: null
                 );

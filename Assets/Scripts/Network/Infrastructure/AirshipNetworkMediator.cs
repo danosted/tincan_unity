@@ -23,9 +23,12 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(AbilityNetworkMediator))]
     public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Features.FreeCamera.IHasOrbitalCamera, IShipState
     {
+        public override bool IsSimulating => IsSpawned && IsServer;
+
         private AirshipControllerView _view;
         private AbilityNetworkMediator _abilitySync;
         private AirshipAttributeSet _attributes;
+        private uint _nextInputSequence;
 
         [Header("GAS Attributes")]
         [SerializeField] private GameplayAttribute _flightSpeedAttribute;
@@ -60,7 +63,10 @@ namespace TinCan.Network.Infrastructure
             get => _netInputState.Value;
             set
             {
-                if (IsOwner) _netInputState.Value = value;
+                if (!IsOwner) return;
+
+                value.Sequence = ++_nextInputSequence;
+                _netInputState.Value = value;
             }
         }
 
@@ -68,10 +74,12 @@ namespace TinCan.Network.Infrastructure
         public Vector3 Velocity => _view.Velocity;
         public Vector3 PositionDelta => _view.PositionDelta;
         public Quaternion RotationDelta => _view.RotationDelta;
+        public Vector3 GetPointVelocity(Vector3 worldPoint) => _view.GetPointVelocity(worldPoint);
 
         public bool IsControlsEnabled => _view.IsControlsEnabled;
 
         public void ApplyMovement(Vector3 velocity, Vector3 angularVelocity) => _view.ApplyMovement(velocity, angularVelocity);
+        public void Simulate(float deltaTime) => _view.Simulate(deltaTime);
 
         public override void OnNetworkSpawn()
         {

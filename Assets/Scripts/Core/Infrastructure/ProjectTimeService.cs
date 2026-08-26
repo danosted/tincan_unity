@@ -10,6 +10,8 @@ namespace TinCan.Core.Infrastructure
     /// </summary>
     public class ProjectTimeService : ITimeService
     {
+        private float? _simulationDeltaTime;
+
         public float Time
         {
             get
@@ -22,7 +24,17 @@ namespace TinCan.Core.Infrastructure
             }
         }
 
-        public float DeltaTime => UnityEngine.Time.deltaTime;
+        public float DeltaTime => _simulationDeltaTime ?? UnityEngine.Time.deltaTime;
         public float FixedDeltaTime => UnityEngine.Time.fixedDeltaTime;
+
+        public void BeginSimulationTick(uint tickRate)
+        {
+            _simulationDeltaTime = 1f / tickRate;
+        }
+
+        public void EndSimulationTick()
+        {
+            _simulationDeltaTime = null;
+        }
     }
 }

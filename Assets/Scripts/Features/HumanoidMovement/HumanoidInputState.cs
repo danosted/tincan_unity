@@ -9,6 +9,7 @@ namespace TinCan.Features.HumanoidMovement
     /// </summary>
     public struct HumanoidInputState : INetworkSerializable
     {
+        public uint Sequence;
         public Vector3 MovementDirection;
         public bool IsJumping;
         public bool IsSprinting;
@@ -21,6 +22,7 @@ namespace TinCan.Features.HumanoidMovement
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
+            serializer.SerializeValue(ref Sequence);
             serializer.SerializeValue(ref MovementDirection);
             serializer.SerializeValue(ref IsJumping);
             serializer.SerializeValue(ref IsSprinting);

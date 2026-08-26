@@ -7,12 +7,14 @@ namespace TinCan.Features.Airship
     /// </summary>
     public struct AirshipInputState : INetworkSerializable
     {
+        public uint Sequence;
         public float Throttle; // -1 to 1 (Forward/Backward)
         public float Yaw;      // -1 to 1 (Left/Right)
         public float Pitch;    // -1 to 1 (Up/Down)
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
+            serializer.SerializeValue(ref Sequence);
             serializer.SerializeValue(ref Throttle);
             serializer.SerializeValue(ref Yaw);
             serializer.SerializeValue(ref Pitch);

@@ -11,4 +11,9 @@ namespace TinCan.Core.Domain
         Vector3 PositionDelta { get; }
         Quaternion RotationDelta { get; }
     }
+
+    public interface IPointVelocityMovingGround : IMovingGround
+    {
+        Vector3 GetPointVelocity(Vector3 worldPoint);
+    }
 }

@@ -9,6 +9,7 @@ using System;
 using System.Linq;
 
 using TinCan.Features.Abilities;
+using TinCan.Features.Airship;
 using TinCan.Features.FreeCamera;
 
 namespace TinCan.Features.HumanoidMovement
@@ -19,21 +20,20 @@ namespace TinCan.Features.HumanoidMovement
     /// </summary>
     public class HumanoidMovementUseCase : SimulationUseCase<IHumanoidCharacterView, HumanoidInputState>
     {
-        // Toggle to easily switch between the new Local-to-World matrix math and the legacy vector math
-        public bool UseLocalToWorldCalculation = true;
-
         private readonly HumanoidMovementProcessor _processor;
         private readonly AbilitySystemUseCase _abilitySystem;
         private readonly Dictionary<Guid, Vector3> _horizontalVelocities = new();
         private readonly Dictionary<Guid, float> _verticalVelocities = new();
         private readonly Dictionary<Guid, ulong> _previousInputMasks = new();
 
-        // Platform tracking to avoid execution order bugs with deltas
+        private struct PlatformPose
+        {
+            public Vector3 Position;
+            public Quaternion Rotation;
+        }
+
         private readonly Dictionary<Guid, Transform> _lastPlatforms = new();
-        private readonly Dictionary<Guid, Vector3> _lastPlatformPositions = new();
-        private readonly Dictionary<Guid, Quaternion> _lastPlatformRotations = new();
-        private readonly Dictionary<Guid, float> _platformRetentionTimers = new();
-        private const float PLATFORM_RETENTION_TIME = 0.5f;
+        private readonly Dictionary<Guid, PlatformPose> _platformPoses = new();
 
         public HumanoidMovementUseCase(
             IInputService inputService,
@@ -82,10 +82,44 @@ namespace TinCan.Features.HumanoidMovement
             // Store the mask for the next tick
             _previousInputMasks[character.Id] = input.ActiveInputMask;
 
+            SimulateMovement(character, input, isCaptured);
+        }
+
+        public HumanoidMovementSnapshot CaptureSnapshot(IHumanoidCharacterView character, uint lastProcessedInputSequence)
+        {
+            return new HumanoidMovementSnapshot
+            {
+                LastProcessedInputSequence = lastProcessedInputSequence,
+                Position = character.Movement.Transform.position,
+                Rotation = character.Movement.Transform.rotation,
+                HorizontalVelocity = _horizontalVelocities.GetValueOrDefault(character.Id),
+                VerticalVelocity = _verticalVelocities.GetValueOrDefault(character.Id),
+                PreviousInputMask = _previousInputMasks.GetValueOrDefault(character.Id)
+            };
+        }
+
+        public void Reconcile(IHumanoidCharacterView character, HumanoidMovementSnapshot snapshot, IReadOnlyList<HumanoidInputState> pendingInputs)
+        {
+            character.Movement.SetPose(snapshot.Position, snapshot.Rotation);
+            _horizontalVelocities[character.Id] = snapshot.HorizontalVelocity;
+            _verticalVelocities[character.Id] = snapshot.VerticalVelocity;
+            _previousInputMasks[character.Id] = snapshot.PreviousInputMask;
+            ClearPlatformState(character.Id);
+
+            foreach (var input in pendingInputs)
+            {
+                SimulateMovement(character, input, false);
+            }
+        }
+
+        private void SimulateMovement(IHumanoidCharacterView character, HumanoidInputState input, bool isCaptured)
+        {
+
             var movement = character.Movement;
 
             // 2. Resolve grounding and platforms
-            var ground = ResolveGrounding(character);
+            movement.RefreshSensing();
+            var ground = ResolveGrounding(character, input.IsJumping);
             movement.UpdateGroundData(ground);
 
             float deltaTime = TimeService.DeltaTime;
@@ -130,6 +164,7 @@ namespace TinCan.Features.HumanoidMovement
                 _verticalVelocities[character.Id],
                 movement.Gravity,
                 ground.IsGrounded,
+                ground.IsPlatformSupported,
                 input.IsJumping,
                 jumpForce,
                 deltaTime);
@@ -162,7 +197,7 @@ namespace TinCan.Features.HumanoidMovement
             }
         }
 
-        private GroundData ResolveGrounding(IHumanoidCharacterView character)
+        private GroundData ResolveGrounding(IHumanoidCharacterView character, bool isJumping)
         {
             var movement = character.Movement;
             var ground = movement.CurrentGround;
@@ -172,6 +207,7 @@ namespace TinCan.Features.HumanoidMovement
             ground.GroundVelocity = Vector3.zero;
             ground.SurfaceDelta = Vector3.zero;
             ground.RotationDelta = Quaternion.identity;
+            ground.IsPlatformSupported = false;
 
             Transform? platformTransform = null;
             IMovingGround? movingGround = null;
@@ -186,28 +222,20 @@ namespace TinCan.Features.HumanoidMovement
                 movingGround = hit.collider.GetComponentInParent<IMovingGround>();
                 if (movingGround != null)
                 {
-                    // FIX: Track the ROOT of the moving ground (the component itself)
-                    // instead of the specific child collider hit. This prevents resets when
-                    // walking across different colliders (stairs, floors) on the same ship.
                     platformTransform = ((Component)movingGround).transform;
                     ground.GroundTransform = platformTransform;
                     ground.GroundVelocity = movingGround.Velocity;
-
-                    // Reset retention timer while grounded
-                    _platformRetentionTimers[character.Id] = PLATFORM_RETENTION_TIME;
+                    ground.IsPlatformSupported = !isJumping;
                 }
             }
 
-            // 2. Check for Airborne Retention (Coyote Time for platforms)
-            // If we aren't hitting the ground, but we were recently on a platform, keep tracking it.
             if (platformTransform == null && _lastPlatforms.TryGetValue(character.Id, out var lastPlat) && lastPlat != null)
             {
-                if (_platformRetentionTimers.TryGetValue(character.Id, out float timer) && timer > 0)
+                var localSpaceVolume = lastPlat.GetComponent<AirshipLocalSpaceVolume>();
+                if (localSpaceVolume != null && localSpaceVolume.Contains(movement.Transform.position))
                 {
                     platformTransform = lastPlat;
-                    _platformRetentionTimers[character.Id] -= TimeService.DeltaTime;
-
-                    // If it's the airship, we might still want its velocity
+                    ground.GroundTransform = platformTransform;
                     movingGround = platformTransform.GetComponent<IMovingGround>();
                     if (movingGround != null)
                     {
@@ -216,69 +244,64 @@ namespace TinCan.Features.HumanoidMovement
                 }
                 else
                 {
-                    // Retention expired! This is the moment of true detachment.
-                    // Transfer the platform's velocity to the player's internal momentum.
-                    if (movingGround == null) movingGround = lastPlat.GetComponent<IMovingGround>();
-                    if (movingGround != null)
-                    {
-                        Vector3 vel = movingGround.Velocity;
-                        _horizontalVelocities[character.Id] += new Vector3(vel.x, 0, vel.z);
-                        _verticalVelocities[character.Id] += vel.y;
-                    }
-
-                    _lastPlatforms.Remove(character.Id);
-                    _lastPlatformPositions.Remove(character.Id);
-                    _lastPlatformRotations.Remove(character.Id);
-                    _platformRetentionTimers.Remove(character.Id);
+                    DetachFromPlatform(character.Id, lastPlat, movement.Transform.position);
+                    ClearPlatformState(character.Id);
                     return ground;
                 }
             }
 
             if (platformTransform == null)
             {
-                _lastPlatforms.Remove(character.Id);
+                ClearPlatformState(character.Id);
                 return ground;
             }
 
-            // 3. Calculate Deltas
-            Vector3 currentPos = platformTransform.position;
-            Quaternion currentRot = platformTransform.rotation;
-
-            Vector3 oldPlatformPos = currentPos;
-            Quaternion oldPlatformRot = currentRot;
-
-            if (_lastPlatforms.TryGetValue(character.Id, out var cachedPlat) && cachedPlat == platformTransform)
+            if (!_lastPlatforms.TryGetValue(character.Id, out var cachedPlatform) ||
+                cachedPlatform != platformTransform ||
+                !_platformPoses.TryGetValue(character.Id, out var previousPose))
             {
-                oldPlatformPos = _lastPlatformPositions[character.Id];
-                oldPlatformRot = _lastPlatformRotations[character.Id];
-
-                ground.RotationDelta = currentRot * Quaternion.Inverse(oldPlatformRot);
-            }
-
-            // Update cache
-            _lastPlatforms[character.Id] = platformTransform;
-            _lastPlatformPositions[character.Id] = currentPos;
-            _lastPlatformRotations[character.Id] = currentRot;
-
-            // Compute Surface Displacement
-            if (UseLocalToWorldCalculation)
-            {
-                // Character-Anchor Matrix Transformation
-                Matrix4x4 oldMatrix = Matrix4x4.TRS(oldPlatformPos, oldPlatformRot, platformTransform.lossyScale);
-                Vector3 charLocalPos = oldMatrix.inverse.MultiplyPoint3x4(movement.Transform.position);
-                Vector3 expectedWorldPos = platformTransform.TransformPoint(charLocalPos);
-                ground.SurfaceDelta = expectedWorldPos - movement.Transform.position;
+                _platformPoses[character.Id] = new PlatformPose
+                {
+                    Position = platformTransform.position,
+                    Rotation = platformTransform.rotation
+                };
             }
             else
             {
-                // Vector Offset Rotation (Legacy)
-                Vector3 offsetFromOldPivot = movement.Transform.position - oldPlatformPos;
-                Vector3 rotatedOffset = ground.RotationDelta * offsetFromOldPivot;
-                Vector3 expectedWorldPos = currentPos + rotatedOffset;
-                ground.SurfaceDelta = expectedWorldPos - movement.Transform.position;
+                Vector3 localPosition = Quaternion.Inverse(previousPose.Rotation) * (movement.Transform.position - previousPose.Position);
+                Vector3 carriedWorldPosition = platformTransform.rotation * localPosition + platformTransform.position;
+                ground.SurfaceDelta = carriedWorldPosition - movement.Transform.position;
+                ground.RotationDelta = platformTransform.rotation * Quaternion.Inverse(previousPose.Rotation);
+
+                _platformPoses[character.Id] = new PlatformPose
+                {
+                    Position = platformTransform.position,
+                    Rotation = platformTransform.rotation
+                };
             }
 
+            _lastPlatforms[character.Id] = platformTransform;
+
             return ground;
+        }
+
+        private void DetachFromPlatform(Guid characterId, Transform platformTransform, Vector3 worldPosition)
+        {
+            var movingGround = platformTransform.GetComponent<IMovingGround>();
+            if (movingGround == null) return;
+
+            Vector3 velocity = movingGround is IPointVelocityMovingGround pointVelocityGround
+                ? pointVelocityGround.GetPointVelocity(worldPosition)
+                : movingGround.Velocity;
+
+            _horizontalVelocities[characterId] += new Vector3(velocity.x, 0, velocity.z);
+            _verticalVelocities[characterId] += velocity.y;
+        }
+
+        private void ClearPlatformState(Guid characterId)
+        {
+            _lastPlatforms.Remove(characterId);
+            _platformPoses.Remove(characterId);
         }
     }
 }

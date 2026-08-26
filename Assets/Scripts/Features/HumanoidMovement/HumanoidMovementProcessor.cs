@@ -15,9 +15,9 @@ namespace TinCan.Features.HumanoidMovement
             return Vector3.MoveTowards(currentVelocity, targetVelocity, rate * deltaTime);
         }
 
-        public float CalculateVerticalVelocity(float currentVertical, float gravity, bool isGrounded, bool isJumping, float jumpForce, float deltaTime)
+        public float CalculateVerticalVelocity(float currentVertical, float gravity, bool isGrounded, bool isPlatformSupported, bool isJumping, float jumpForce, float deltaTime)
         {
-            if (isGrounded)
+            if (isGrounded || isPlatformSupported)
             {
                 if (isJumping) return jumpForce;
                 if (currentVertical < 0) return -2f; // Ground stickiness

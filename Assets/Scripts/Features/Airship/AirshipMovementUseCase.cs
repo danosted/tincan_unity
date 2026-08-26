@@ -104,6 +104,7 @@ namespace TinCan.Features.Airship
 
             // 4. Apply to view
             airship.ApplyMovement(state.CurrentVelocity, state.CurrentAngularVelocity);
+            airship.Simulate(deltaTime);
         }
     }
 }

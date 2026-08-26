@@ -159,7 +159,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4b49bd82d5435d94a970289a04079bc6, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.HumanoidMovement.HumanoidControllerView
   _walkSpeed: 7
   _sprintMultiplier: 1.8
@@ -178,7 +178,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eba76c897c4becb438a96965b4b8fe3b, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.HumanoidMovement.ThirdPersonLookView
   _cameraPivot: {fileID: 526800738218255295}
   _distance: 5
@@ -196,7 +196,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
   GlobalObjectIdHash: 2550321072
   InScenePlacedSourceGlobalObjectIdHash: 0
@@ -208,8 +208,8 @@ MonoBehaviour:
   SceneMigrationSynchronization: 1
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
+  AutoObjectParentSync: 0
+  SyncOwnerTransformWhenParented: 0
   AllowOwnerToParent: 0
 --- !u!114 &1432328464721159207
 MonoBehaviour:
@@ -221,7 +221,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1fcbc9b5762199b41ac83954557150f1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Interaction.InteractorControllerView
   _interactionRange: 3
   _interactableMask:
@@ -237,7 +237,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1fcbc9b5762199b41ac83954557150f1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Interaction.InteractorControllerView
   _interactionRange: 3
   _interactableMask:
@@ -253,7 +253,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f12fe60a2b46c464f8f28d0f9a1e7944, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.NetworkTransformMediator
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &4549251832716770165
@@ -266,7 +266,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 517f96d45600e3c4d963f811fac4b577, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.HumanoidPlayer
   ShowTopMostFoldoutHeaderGroup: 1
   _selectedModulePrefab: {fileID: 2084250224356171082, guid: fd433d6689aad314caa0c6811c337d1d, type: 3}
@@ -287,7 +287,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d6331163e1c0ffc4998a3ec00ff00dc3, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &5585002282877400610
@@ -384,7 +384,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2

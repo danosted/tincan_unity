@@ -3,6 +3,7 @@ using Unity.Netcode;
 using UnityEngine;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Networking;
 using TinCan.Features.Possession;
 using TinCan.Features.Interaction;
 using System;
@@ -20,6 +21,7 @@ namespace TinCan.Network.Infrastructure
     /// Mediator that wraps a complete Humanoid character to provide networking capabilities.
     /// Bridges the local domain logic with the network state at the "Face" level.
     /// </summary>
+    [DefaultExecutionOrder(-100)]
     [RequireComponent(typeof(HumanoidControllerView))]
     [RequireComponent(typeof(ThirdPersonLookView))]
     [RequireComponent(typeof(InteractorControllerView))]
@@ -27,6 +29,8 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(AbilityNetworkMediator))]
     public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView, TinCan.Features.Airship.IBuilder
     {
+        public override bool IsSimulating => IsSpawned && (IsServer || IsOwner);
+
         [Header("Building / Crafting (Temporary)")]
         [SerializeField] private GameObject? _selectedModulePrefab;
 
@@ -38,8 +42,9 @@ namespace TinCan.Network.Infrastructure
 
         private HumanoidControllerView _movement = null!;
         private ThirdPersonLookView _look = null!;
-        private NetworkTransformMediator _transformSync = null!;
         private AbilityNetworkMediator _abilitySync = null!;
+        private INetworkPlayerSpawner _spawner = null!;
+        private uint _nextInputSequence;
 
         [Header("Attributes (GAS)")]
         [SerializeField] private GameplayAttribute? _moveSpeedAttribute;
@@ -50,18 +55,30 @@ namespace TinCan.Network.Infrastructure
 
         private readonly NetworkVariable<HumanoidInputState> _netInputState = new NetworkVariable<HumanoidInputState>(
             writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<PlayerAttachmentState> _attachmentState = new NetworkVariable<PlayerAttachmentState>(
+            writePerm: NetworkVariableWritePermission.Server);
 
         // IHumanoidCharacterView Implementation
         public IHumanoidMovementView Movement => _movement;
         public IOrbitalLookView Look => _look;
+        public PlayerAttachmentState AttachmentState => _attachmentState.Value;
 
         public HumanoidInputState InputState
         {
             get => _netInputState.Value;
             set
             {
-                if (IsOwner) _netInputState.Value = value;
+                if (!IsOwner) return;
+
+                value.Sequence = ++_nextInputSequence;
+                _netInputState.Value = value;
             }
+        }
+
+        [Inject]
+        public void InjectPlayerSpawner(INetworkPlayerSpawner spawner)
+        {
+            _spawner = spawner;
         }
 
         public GameplayTagContainer ActiveTags => _abilitySync.ActiveTags;
@@ -73,7 +90,6 @@ namespace TinCan.Network.Infrastructure
 
             _movement = GetComponent<HumanoidControllerView>();
             _look = GetComponent<ThirdPersonLookView>();
-            _transformSync = GetComponent<NetworkTransformMediator>();
             _abilitySync = GetComponent<AbilityNetworkMediator>();
 
             // Register default attribute set wrapper for humanoids
@@ -91,6 +107,7 @@ namespace TinCan.Network.Infrastructure
             }
 
             _netInputState.OnValueChanged += OnInputStateChanged;
+            _spawner.NotifyPlayerSpawned(gameObject, OwnerClientId, IsOwner);
         }
 
         public override void OnNetworkDespawn()
@@ -107,18 +124,34 @@ namespace TinCan.Network.Infrastructure
             }
         }
 
-        private void Update()
+        private void LateUpdate()
         {
-            if (!IsSpawned) return;
+            if (!IsSpawned || !IsServer) return;
 
-            if (IsOwner)
-            {
-                // Sync Input State for remote simulation
-                _netInputState.Value = InputState;
+            PublishAttachmentState();
+        }
 
-                // Update platform for transform sync
-                _transformSync.SetPlatform(_movement.CurrentGround.GroundTransform);
-            }
+        private void PublishAttachmentState()
+        {
+            var platformTransform = _movement.CurrentGround.GroundTransform;
+            var platformObject = platformTransform != null
+                ? platformTransform.GetComponentInParent<NetworkObject>()
+                : null;
+
+            _attachmentState.Value = platformObject != null && platformObject.IsSpawned
+                ? new PlayerAttachmentState
+                {
+                    IsAttached = true,
+                    Platform = new NetworkObjectReference(platformObject),
+                    LocalPosition = platformObject.transform.InverseTransformPoint(transform.position),
+                    LocalRotation = Quaternion.Inverse(platformObject.transform.rotation) * transform.rotation,
+                    LastProcessedInputSequence = _netInputState.Value.Sequence
+                }
+                : new PlayerAttachmentState
+                {
+                    IsAttached = false,
+                    LastProcessedInputSequence = _netInputState.Value.Sequence
+                };
         }
 
         public bool HasTag(GameplayTag tag) => _abilitySync.HasTag(tag);

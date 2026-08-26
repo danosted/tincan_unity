@@ -44,8 +44,7 @@ namespace TinCan.Network.Infrastructure
                 Debug.Log($"[NetworkPlayerSpawner] SERVER Successfully spawned player for client {clientId}");
             }
 
-            // 3. Notify listeners (breaks circular dependency with PossessionUseCase)
-            NotifyPlayerSpawned(instance, clientId, isLocalPlayer);
+            // Local-player readiness is signaled by HumanoidPlayer after OnNetworkSpawn completes.
         }
 
         public void NotifyPlayerSpawned(GameObject instance, ulong clientId, bool isLocalPlayer)

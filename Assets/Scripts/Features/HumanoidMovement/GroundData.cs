@@ -9,6 +9,7 @@ namespace TinCan.Features.HumanoidMovement
     public struct GroundData
     {
         public bool IsGrounded;
+        public bool IsPlatformSupported;
         public Transform? GroundTransform; // The transform we are currently standing on
         public Vector3 GroundNormal;
         public Vector3 GroundVelocity;

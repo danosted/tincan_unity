@@ -14,6 +14,8 @@ namespace TinCan.Features.Airship
 
         public bool Contains(Vector3 worldPosition)
         {
+            if (_volume == null) _volume = GetComponent<BoxCollider>(); // Awake doesn't run outside Play Mode (e.g. EditMode tests)
+
             Vector3 localPosition = transform.InverseTransformPoint(worldPosition) - _volume.center;
             Vector3 halfSize = _volume.size * 0.5f;
 

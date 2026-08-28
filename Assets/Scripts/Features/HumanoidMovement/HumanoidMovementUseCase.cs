@@ -285,7 +285,7 @@ namespace TinCan.Features.HumanoidMovement
                 var localSpaceVolume = _platformOverlapResults[index].GetComponentInParent<ParentLocalSpaceVolume>();
                 if (localSpaceVolume == null || !localSpaceVolume.Contains(worldPosition)) continue;
 
-                movingGround = localSpaceVolume.GetComponent<IMovingGround>();
+                movingGround = localSpaceVolume.GetComponentInParent<IMovingGround>();
                 if (movingGround == null) continue;
 
                 platformTransform = ((Component)movingGround).transform;

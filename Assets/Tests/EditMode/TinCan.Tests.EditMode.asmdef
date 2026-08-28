@@ -4,6 +4,7 @@
     "references": [
         "TinCan.Core.Domain",
         "TinCan.Features",
+        "TinCan.Tests.Shared",
         "Unity.Netcode.Runtime",
         "VContainer",
         "UnityEngine.TestRunner",

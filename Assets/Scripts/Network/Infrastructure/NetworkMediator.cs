@@ -2,7 +2,6 @@ using Unity.Netcode;
 using UnityEngine;
 using TinCan.Core.Domain;
 using TinCan.Features.Interaction;
-using TinCan.Features.Possession;
 using VContainer;
 using System;
 

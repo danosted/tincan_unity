@@ -4,7 +4,6 @@ using UnityEngine;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Possession;
 using TinCan.Features.Interaction;
 using System;
 using VContainer;
@@ -184,14 +183,14 @@ namespace TinCan.Network.Infrastructure
         public void SetAttribute(GameplayAttribute attribute, AttributeValue value) => _abilitySync.SetAttribute(attribute, value);
         public void ResetAttributesToBase() => _abilitySync.ResetAttributesToBase();
 
-        public void GrantAbility(AbilityDefinition definition) => _abilitySync.GrantAbility(definition);
+        public void GrantAbility(IAbilityDefinition definition) => _abilitySync.GrantAbility(definition);
 
-        public void RemoveAbility(AbilityDefinition definition) => _abilitySync.RemoveAbility(definition);
+        public void RemoveAbility(IAbilityDefinition definition) => _abilitySync.RemoveAbility(definition);
 
-        public bool TryActivateAbility(AbilityDefinition definition) => _abilitySync.TryActivateAbility(definition);
+        public bool TryActivateAbility(IAbilityDefinition definition) => _abilitySync.TryActivateAbility(definition);
 
         public void HandleGameplayEvent(GameplayEventData eventData) => _abilitySync.HandleGameplayEvent(eventData);
 
-        public bool TryActivateAbility(AbilityDefinition definition, IAbilityControllerBase? target = null) => _abilitySync.TryActivateAbility(definition, target);
+        public bool TryActivateAbility(IAbilityDefinition definition, IAbilityControllerBase? target = null) => _abilitySync.TryActivateAbility(definition, target);
     }
 }

@@ -1,7 +1,6 @@
 using System;
 using VContainer.Unity;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Possession;
 
 namespace TinCan.Core.Domain
 {

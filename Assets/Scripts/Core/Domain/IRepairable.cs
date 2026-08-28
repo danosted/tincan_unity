@@ -1,4 +1,3 @@
-using TinCan.Features.Interaction;
 using TinCan.Core.Domain.Abilities;
 
 namespace TinCan.Core.Domain

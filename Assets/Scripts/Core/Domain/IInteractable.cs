@@ -1,7 +1,7 @@
 #nullable enable
 using System;
 
-namespace TinCan.Features.Interaction
+namespace TinCan.Core.Domain
 {
     /// <summary>
     /// Domain Layer: Interface for any object in the world that can be interacted with by a player.

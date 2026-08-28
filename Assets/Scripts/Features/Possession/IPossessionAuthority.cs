@@ -1,4 +1,5 @@
 using System;
+using TinCan.Core.Domain;
 
 namespace TinCan.Features.Possession
 {

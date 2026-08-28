@@ -1,6 +1,7 @@
 using System;
 using Unity.Netcode;
 using UnityEngine;
+using TinCan.Core.Domain;
 
 namespace TinCan.Features.Possession.Infrastructure
 {

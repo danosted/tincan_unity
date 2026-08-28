@@ -1,4 +1,4 @@
-using TinCan.Features.Interaction;
+using TinCan.Core.Domain;
 using TinCan.Features.Abilities;
 
 namespace TinCan.Features.Events

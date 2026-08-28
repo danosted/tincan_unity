@@ -1,4 +1,3 @@
-using TinCan.Features.Possession;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Features.FreeCamera;

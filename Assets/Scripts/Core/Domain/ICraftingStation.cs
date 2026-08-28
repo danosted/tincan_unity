@@ -1,5 +1,3 @@
-using TinCan.Features.Interaction;
-
 namespace TinCan.Core.Domain
 {
     /// <summary>

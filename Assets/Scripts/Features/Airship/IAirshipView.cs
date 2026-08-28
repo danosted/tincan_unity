@@ -1,5 +1,4 @@
 using TinCan.Core.Domain;
-using TinCan.Features.Possession;
 using UnityEngine;
 
 namespace TinCan.Features.Airship

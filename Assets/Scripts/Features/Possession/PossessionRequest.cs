@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using TinCan.Core.Domain;
 
 namespace TinCan.Features.Possession
 {

@@ -3,9 +3,9 @@ using System;
 using Unity.Netcode;
 using UnityEngine;
 using TinCan.Core.Domain;
-using TinCan.Core.Infrastructure;
 using TinCan.Features.Airship;
 using TinCan.Network.Infrastructure;
+using VContainer;
 
 namespace TinCan.Features.Airship.Infrastructure
 {
@@ -16,6 +16,14 @@ namespace TinCan.Features.Airship.Infrastructure
     [RequireComponent(typeof(NetworkBehaviour))]
     public class BuildPlacementNetworkMediator : NetworkMediator, IBuildPlacementRequestor
     {
+        private IModulePlacementUseCase? _placementUseCase;
+
+        [Inject]
+        public void Construct(IModulePlacementUseCase placementUseCase)
+        {
+            _placementUseCase = placementUseCase;
+        }
+
         public void RequestPlacement(GameObject prefab, Vector3 worldPosition, Quaternion worldRotation, IActor parentShip)
         {
             if (prefab == null)
@@ -80,26 +88,13 @@ namespace TinCan.Features.Airship.Infrastructure
 
         private void PlaceModuleOnServer(GameObject prefab, Vector3 worldPosition, Quaternion worldRotation, IActor parentShip)
         {
-            var scope = UnityEngine.Object.FindAnyObjectByType<ProjectLifetimeScope>();
-            if (scope == null || scope.Container == null)
+            if (_placementUseCase == null)
             {
-                Debug.LogWarning("[BuildPlacementNetworkMediator] ProjectLifetimeScope not found on server.");
+                Debug.LogWarning("[BuildPlacementNetworkMediator] IModulePlacementUseCase was not injected.");
                 return;
             }
 
-            if (!scope.Container.TryResolve(typeof(IModulePlacementUseCase), out var resolvedPlacementUseCase))
-            {
-                Debug.LogWarning("[BuildPlacementNetworkMediator] IModulePlacementUseCase not registered in container.");
-                return;
-            }
-
-            if (resolvedPlacementUseCase is not IModulePlacementUseCase placementUseCase)
-            {
-                Debug.LogWarning("[BuildPlacementNetworkMediator] Resolved placement use case is not the expected type.");
-                return;
-            }
-
-            placementUseCase.RequestPlacement(prefab, worldPosition, worldRotation, parentShip);
+            _placementUseCase.RequestPlacement(prefab, worldPosition, worldRotation, parentShip);
         }
 
         private GameObject? FindBuildPrefab(string prefabName)

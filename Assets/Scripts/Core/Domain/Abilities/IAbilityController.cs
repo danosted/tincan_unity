@@ -1,7 +1,6 @@
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Abilities.Attributes;
 using System.Collections.Generic;
-using TinCan.Features.Abilities;
 
 namespace TinCan.Core.Domain.Abilities
 {
@@ -20,9 +19,9 @@ namespace TinCan.Core.Domain.Abilities
         void SetAttribute(GameplayAttribute attribute, AttributeValue value);
         void ResetAttributesToBase();
 
-        void GrantAbility(AbilityDefinition definition);
-        void RemoveAbility(AbilityDefinition definition);
-        bool TryActivateAbility(AbilityDefinition definition, IAbilityControllerBase target = null);
+        void GrantAbility(IAbilityDefinition definition);
+        void RemoveAbility(IAbilityDefinition definition);
+        bool TryActivateAbility(IAbilityDefinition definition, IAbilityControllerBase target = null);
 
         void HandleGameplayEvent(GameplayEventData eventData);
     }

@@ -1,4 +1,4 @@
-using TinCan.Features.Possession;
+using TinCan.Core.Domain;
 using UnityEngine;
 
 namespace TinCan.Features.FreeCamera

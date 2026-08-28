@@ -1,6 +1,6 @@
 using UnityEngine;
 using TinCan.Features.Interaction;
-using TinCan.Features.Possession;
+using TinCan.Core.Domain;
 using Unity.Netcode;
 
 namespace TinCan.Features.Airship

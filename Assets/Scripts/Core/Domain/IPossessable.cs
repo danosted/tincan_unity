@@ -1,8 +1,7 @@
-using TinCan.Core.Domain;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace TinCan.Features.Possession
+namespace TinCan.Core.Domain
 {
     /// <summary>
     /// An actor that can be possessed or owned by a player.

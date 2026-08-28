@@ -5,7 +5,6 @@ using TinCan.Core.Domain.Networking;
 using System.Collections.Generic;
 using System.Linq;
 using TinCan.Features.FreeCamera;
-using TinCan.Features.Possession;
 
 namespace TinCan.Features.HumanoidMovement
 {

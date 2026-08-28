@@ -1,4 +1,5 @@
 using UnityEngine;
+using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
 using System.Collections.Generic;
 
@@ -19,7 +20,7 @@ namespace TinCan.Features.Abilities
     /// ScriptableObject defining a gameplay ability's static properties.
     /// </summary>
     [CreateAssetMenu(fileName = "New Ability", menuName = "TinCan/Abilities/Ability Definition")]
-    public class AbilityDefinition : ScriptableObject
+    public class AbilityDefinition : ScriptableObject, IAbilityDefinition
     {
         [Header("Tags")]
         public GameplayTag AbilityTag; // Unique tag for this ability

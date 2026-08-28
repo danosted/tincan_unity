@@ -1,4 +1,5 @@
 using TinCan.Features.Interaction;
+using TinCan.Core.Domain;
 using Unity.Netcode;
 
 namespace TinCan.Network.Infrastructure

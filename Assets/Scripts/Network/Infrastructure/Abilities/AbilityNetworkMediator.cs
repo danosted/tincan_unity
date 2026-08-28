@@ -153,19 +153,19 @@ namespace TinCan.Network.Infrastructure.Abilities
             Debug.LogWarning($"[AbilityNetworkMediator] Server could not find tag with name: {tagName}");
         }
 
-        public void GrantAbility(AbilityDefinition definition)
+        public void GrantAbility(IAbilityDefinition definition)
         {
-            _abilitySystem.GrantAbility(this, definition);
+            _abilitySystem.GrantAbility(this, (AbilityDefinition)definition);
         }
 
-        public void RemoveAbility(AbilityDefinition definition)
+        public void RemoveAbility(IAbilityDefinition definition)
         {
-            _abilitySystem.RemoveAbility(this, definition);
+            _abilitySystem.RemoveAbility(this, (AbilityDefinition)definition);
         }
 
-        public bool TryActivateAbility(AbilityDefinition definition, IAbilityControllerBase? target = null)
+        public bool TryActivateAbility(IAbilityDefinition definition, IAbilityControllerBase? target = null)
         {
-            return _abilitySystem.TryActivateAbility(this, definition, target);
+            return _abilitySystem.TryActivateAbility(this, (AbilityDefinition)definition, target);
         }
 
         public T? GetAttributeSet<T>() where T : class, IAttributeSet

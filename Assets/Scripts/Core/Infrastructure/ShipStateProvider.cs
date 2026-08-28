@@ -1,13 +1,12 @@
+using System;
+using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
-using TinCan.Core.Domain.Abilities.Tags;
-using System.Linq;
-using System;
 
-namespace TinCan.Features.Events
+namespace TinCan.Core.Infrastructure
 {
     /// <summary>
-    /// Application Layer: A provider that resolves the ship's state from the Actor Registry.
+    /// Infrastructure-layer provider that resolves the ship's state from the actor registry.
     /// </summary>
     public class ShipStateProvider : IShipState
     {

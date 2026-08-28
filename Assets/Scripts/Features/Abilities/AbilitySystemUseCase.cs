@@ -5,6 +5,7 @@ using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Abilities.Attributes;
+using TinCan.Core.Domain.Events;
 using VContainer.Unity;
 using UnityEngine;
 
@@ -21,15 +22,17 @@ namespace TinCan.Features.Abilities
     {
         private readonly IAbilityRegistry _registry;
         private readonly ITimeService _timeService;
+        private readonly IEventPublisher _eventPublisher;
 
         // Internal tracking for specs and effects per actor
         private readonly Dictionary<Guid, List<AbilitySpec>> _actorAbilities = new();
         private readonly Dictionary<Guid, List<ActiveGameplayEffect>> _activeEffects = new();
 
-        public AbilitySystemUseCase(IAbilityRegistry registry, ITimeService timeService)
+        public AbilitySystemUseCase(IAbilityRegistry registry, ITimeService timeService, IEventPublisher eventPublisher)
         {
             _registry = registry;
             _timeService = timeService;
+            _eventPublisher = eventPublisher;
         }
 
         public void Tick()
@@ -114,7 +117,7 @@ namespace TinCan.Features.Abilities
             }
             spec.ActiveWindowTags.Clear();
 
-            Debug.Log($"[AbilitySystem] Actor {actor.Id} ended {spec.Definition.name}");
+            _eventPublisher.Publish(new AbilityEndedEvent(actor.Id, spec.Definition.name));
         }
 
         private void UpdateAbilities(IAbilityControllerBase actor, float currentTime)
@@ -257,7 +260,7 @@ namespace TinCan.Features.Abilities
         private void ExecuteAbility(IAbilityControllerBase actor, AbilitySpec spec, IAbilityControllerBase target = null)
         {
             spec.Activate(_timeService.Time);
-            Debug.Log($"[AbilitySystem] Actor {actor.Id} activated {spec.Definition.name}");
+            _eventPublisher.Publish(new AbilityActivatedEvent(actor.Id, spec.Definition.name));
 
             // Apply the active buff to the correct target
             if (spec.Definition.ActiveEffect != null)
@@ -375,7 +378,7 @@ namespace TinCan.Features.Abilities
                     }
 
                     actor.SetAttribute(modifier.Attribute, attrVal);
-                    Debug.Log($"[AbilitySystem] Instant Effect {definition.name} modified Base {modifier.Attribute.name}: {oldBase} -> {attrVal.BaseValue}");
+                    _eventPublisher.LogInfo("AbilitySystem", $"Instant Effect {definition.name} modified Base {modifier.Attribute.name}: {oldBase} -> {attrVal.BaseValue}");
                 }
             }
 
@@ -396,7 +399,7 @@ namespace TinCan.Features.Abilities
                 {
                     if (modifier.Attribute == null)
                     {
-                        Debug.LogWarning($"[AbilitySystem] Modifier on {effect.Definition.name} has a null Attribute reference!");
+                        _eventPublisher.LogWarning("AbilitySystem", $"Modifier on {effect.Definition.name} has a null Attribute reference!");
                         continue;
                     }
 
@@ -405,11 +408,11 @@ namespace TinCan.Features.Abilities
                         float oldVal = attrVal.CurrentValue;
                         ApplyModifier(ref attrVal, modifier);
                         actor.SetAttribute(modifier.Attribute, attrVal);
-                        Debug.Log($"[AbilitySystem] Modified {modifier.Attribute.name}: {oldVal} -> {attrVal.CurrentValue}");
+                        _eventPublisher.LogInfo("AbilitySystem", $"Modified {modifier.Attribute.name}: {oldVal} -> {attrVal.CurrentValue}");
                     }
                     else
                     {
-                        Debug.LogWarning($"[AbilitySystem] Actor {actor.Id} missing attribute {modifier.Attribute.name}!");
+                        _eventPublisher.LogWarning("AbilitySystem", $"Actor {actor.Id} missing attribute {modifier.Attribute.name}!");
                     }
                 }
             }

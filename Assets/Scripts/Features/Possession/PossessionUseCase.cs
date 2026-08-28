@@ -1,6 +1,7 @@
 #nullable enable
 using System.Linq;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
 using UnityEngine;
 using VContainer.Unity;
@@ -16,6 +17,7 @@ namespace TinCan.Features.Possession
         private readonly INetworkService _networkService;
         private readonly INetworkPlayerSpawner _spawner;
         private readonly IActorRegistry _registry;
+        private readonly IEventPublisher _eventPublisher;
         private readonly System.Func<IPossessionNetworkMediator> _mediatorFactory;
         private IPossessionNetworkMediator? _mediator;
         private IPossessable? _playerActor;
@@ -28,17 +30,19 @@ namespace TinCan.Features.Possession
             INetworkService networkService,
             INetworkPlayerSpawner spawner,
             IActorRegistry registry,
+            IEventPublisher eventPublisher,
             System.Func<IPossessionNetworkMediator> mediatorFactory)
         {
             _networkService = networkService;
             _spawner = spawner;
             _registry = registry;
+            _eventPublisher = eventPublisher;
             _mediatorFactory = mediatorFactory;
         }
 
         public void Initialize()
         {
-            Debug.Log("[PossessionUseCase] Initializing...");
+            _eventPublisher.LogInfo("PossessionUseCase", "Initializing...");
             _registry.OnActorUnregistered += HandleActorUnregistered;
             _spawner.OnPlayerSpawned += HandlePlayerSpawned;
 
@@ -73,7 +77,7 @@ namespace TinCan.Features.Possession
             _mediator.OnPossessionReceived += HandlePossessionReceived;
             _mediator.OnPossessionLost += HandlePossessionLost;
             _mediator.OnPossessionDenied += HandlePossessionDenied;
-            Debug.Log("[PossessionUseCase] Subscribed to possession mediator.");
+            _eventPublisher.LogInfo("PossessionUseCase", "Subscribed to possession mediator.");
         }
 
         private void HandlePlayerSpawned(GameObject instance, ulong clientId, bool isLocal)
@@ -91,12 +95,12 @@ namespace TinCan.Features.Possession
             if (_playerActor == possessable)
             {
                 _playerActor = null;
-                Debug.Log($"[PossessionUseCase] Player actor was unregistered.");
+                _eventPublisher.LogInfo("PossessionUseCase", "Player actor was unregistered.");
             }
 
             if (_currentPossession == possessable)
             {
-                Debug.Log($"[PossessionUseCase] Current possession {possessable} was unregistered/destroyed. Returning to body.");
+                _eventPublisher.LogInfo("PossessionUseCase", $"Current possession {possessable} was unregistered/destroyed. Returning to body.");
 
                 // We don't call OnUnpossessed because the object is already gone/going
                 _currentPossession = null;
@@ -112,16 +116,16 @@ namespace TinCan.Features.Possession
         {
             if (_playerActor != null)
             {
-                Debug.LogWarning($"[PossessionUseCase] Player actor is already set to {_playerActor}. Updating assignment to {actorGameObject}.");
+                _eventPublisher.LogWarning("PossessionUseCase", $"Player actor is already set to {_playerActor}. Updating assignment to {actorGameObject}.");
             }
             var actor = actorGameObject.GetComponent<IPossessable>();
             if (actor == null)
             {
-                Debug.LogError($"[PossessionUseCase] Attempted to initialize player actor with {actorGameObject}, but it does not implement IPossessable!");
+                _eventPublisher.LogError("PossessionUseCase", $"Attempted to initialize player actor with {actorGameObject}, but it does not implement IPossessable!");
                 return;
             }
             _playerActor = actor;
-            Debug.Log($"[PossessionUseCase] Player actor set to: {(_playerActor as MonoBehaviour)?.name ?? "Unknown"}");
+            _eventPublisher.LogInfo("PossessionUseCase", $"Player actor set to: {(_playerActor as MonoBehaviour)?.name ?? "Unknown"}");
 
             // If we aren't possessing anything, or if we were waiting for our body to spawn
             if (_currentPossession == null)
@@ -134,7 +138,7 @@ namespace TinCan.Features.Possession
         {
             if (ownerId != _networkService.LocalClientId) return; // Not our possession that was lost, ignore
 
-            Debug.Log($"[PossessionUseCase] Possession of {_currentPossession} was lost (ownership changed to another player or revoked). Returning to body.");
+            _eventPublisher.LogInfo("PossessionUseCase", $"Possession of {_currentPossession} was lost (ownership changed to another player or revoked). Returning to body.");
             NotifyReceivers(lostPossession, false, 0);
             _currentPossession = null;
 
@@ -149,7 +153,7 @@ namespace TinCan.Features.Possession
             // we must roll back to our player actor.
             if (_currentPossession == target)
             {
-                Debug.LogWarning($"[PossessionUseCase] Possession request for {target} was denied by the server. Rolling back to body.");
+                _eventPublisher.LogWarning("PossessionUseCase", $"Possession request for {target} was denied by the server. Rolling back to body.");
                 _currentPossession = null;
 
                 if (_playerActor != null)
@@ -166,7 +170,7 @@ namespace TinCan.Features.Possession
                 // Filter: If we already predicted this, don't do it again
                 if (_currentPossession == target) return;
 
-                Debug.Log($"[PossessionUseCase] Server confirmed possession of {target}");
+                _eventPublisher.LogInfo("PossessionUseCase", $"Server confirmed possession of {target}");
                 PerformLocalPossession(target);
                 return;
             }
@@ -174,7 +178,7 @@ namespace TinCan.Features.Possession
             if (_currentPossession != target) return;
 
             // We lost possession of our current actor to someone else (or it was revoked)
-            Debug.Log($"[PossessionUseCase] Possession of {_currentPossession} lost to Player {newOwnerId}. Falling back to player actor.");
+            _eventPublisher.LogInfo("PossessionUseCase", $"Possession of {_currentPossession} lost to Player {newOwnerId}. Falling back to player actor.");
             NotifyReceivers(target, false, 0);
             _currentPossession = null;
 
@@ -202,7 +206,7 @@ namespace TinCan.Features.Possession
 
             if (possessables.Count <= 1 && _currentPossession == _playerActor)
             {
-                Debug.Log("[PossessionUseCase] No other allowed possessable actors to switch to.");
+                _eventPublisher.LogInfo("PossessionUseCase", "No other allowed possessable actors to switch to.");
                 return;
             }
 
@@ -247,6 +251,8 @@ namespace TinCan.Features.Possession
 
         private void PerformLocalPossession(IPossessable target)
         {
+            var previousActorId = _currentPossession?.Id;
+
             if (_currentPossession != null && _currentPossession != target)
             {
                 NotifyReceivers(_currentPossession, false, 0);
@@ -257,6 +263,8 @@ namespace TinCan.Features.Possession
             {
                 NotifyReceivers(_currentPossession, true, _networkService.LocalClientId);
             }
+
+            _eventPublisher.Publish(new PossessionChangedEvent(_networkService.LocalClientId, previousActorId, _currentPossession?.Id));
         }
 
         private void NotifyReceivers(IPossessable target, bool possessed, ulong playerId)
@@ -265,8 +273,8 @@ namespace TinCan.Features.Possession
 
             // Automatically find and notify all receivers in the hierarchy
             var receivers = mono.GetComponentsInChildren<IPossessionReceiver>(true);
-            Debug.Log($"[PossessionUseCase] Notifying {receivers.Length} receivers of {(possessed ? "possession" : "unpossession")} of {target} by Player {playerId}.");
-            Debug.Log($"[PossessionUseCase] Receivers: {string.Join(", ", receivers.Select(r => r.GetType().Name))}");
+            _eventPublisher.LogInfo("PossessionUseCase", $"Notifying {receivers.Length} receivers of {(possessed ? "possession" : "unpossession")} of {target} by Player {playerId}.");
+            _eventPublisher.LogInfo("PossessionUseCase", $"Receivers: {string.Join(", ", receivers.Select(r => r.GetType().Name))}");
             foreach (var receiver in receivers)
             {
                 if (possessed) receiver.OnPossessed(playerId);

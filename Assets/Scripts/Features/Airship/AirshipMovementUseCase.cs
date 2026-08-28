@@ -46,11 +46,6 @@ namespace TinCan.Features.Airship
                 Pitch = pitch
             };
 
-            if (input.Throttle != 0 || input.Yaw != 0 || input.Pitch != 0)
-            {
-                Debug.Log($"[AirshipMovementUseCase] Gathered Input for {airship.Id}: T:{input.Throttle}, Y:{input.Yaw}, P:{input.Pitch}");
-            }
-
             return input;
         }
 

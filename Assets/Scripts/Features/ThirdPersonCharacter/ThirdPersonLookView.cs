@@ -81,11 +81,9 @@ namespace TinCan.Features.HumanoidMovement
         public void OnPossessed(ulong playerId)
         {
             ulong localId = NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClientId : 0;
-            Debug.Log($"[ThirdPersonLookView] OnPossessed event for {gameObject.name}. EventPlayerId: {playerId}, LocalPlayerId: {localId}");
 
             if (localId == playerId)
             {
-                Debug.Log($"[ThirdPersonLookView] ACTIVATING camera for {gameObject.name} (Match found)");
                 IsActive = true;
                 _cameraPivot.gameObject.SetActive(true);
                 Camera.enabled = true;
@@ -94,7 +92,6 @@ namespace TinCan.Features.HumanoidMovement
 
         public void OnUnpossessed()
         {
-            Debug.Log($"[ThirdPersonLookView] OnUnpossessed for {gameObject.name}");
             IsActive = false;
             _cameraPivot.gameObject.SetActive(false);
         }

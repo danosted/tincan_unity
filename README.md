@@ -10,7 +10,6 @@ This project is developed using **Human + AI Collaboration**. We heavily rely on
    Run the setup script to validate your environment and install required packages.
    ```powershell
    .\.tools\setup.ps1  # Windows
-   ./.tools/setup.sh   # macOS/Linux
    ```
 2. **Open in Unity:** Open this folder as a Unity Project.
 3. **Read the AI Rules:** Since you'll be working with AI, please review the AI Guidelines below.

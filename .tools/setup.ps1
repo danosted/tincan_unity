@@ -3,8 +3,8 @@
 Initialize TinCan project with required folders, packages, and configuration
 
 .DESCRIPTION
-One-command setup for new developers. Detects OS, installs dependencies,
-validates Unity version, and prepares the project for development.
+One-command setup for new developers. Installs the Unity CLI via winget if missing,
+detects Unity Hub, validates Unity version, and prepares the project for development.
 
 .PARAMETER UnityPath
 Optional: Direct path to Unity executable. If not provided, searches Unity Hub.
@@ -80,7 +80,19 @@ function Find-UnityEditor {
         return $UnityPath
     }
 
-    # Default Unity Hub installation paths
+    # Prefer the Unity CLI (https://docs.unity.com/en-us/unity-cli) when available
+    if (Get-Command unity -ErrorAction SilentlyContinue) {
+        Write-Log "Unity CLI detected, checking installed editors..."
+        $Installed = unity editors -i --format json 2>$null | ConvertFrom-Json
+        $Match = $Installed.data | Where-Object { $_.version -eq $TargetVersion } | Select-Object -First 1
+        if ($Match) {
+            Write-Log "Found Unity via CLI at: $($Match.path)"
+            return $Match.path
+        }
+        Write-Log "Unity CLI installed, but version $TargetVersion is not installed" "WARN"
+    }
+
+    # Fallback: default Unity Hub installation paths
     $UnityHubPaths = @(
         "C:\Program Files\Unity\Hub\Editor\$TargetVersion\Editor\Unity.exe",
         "C:\Program Files (x86)\Unity\Hub\Editor\$TargetVersion\Editor\Unity.exe"
@@ -94,8 +106,34 @@ function Find-UnityEditor {
     }
 
     Write-Log "Could not find Unity Editor for version $TargetVersion" "WARN"
-    Write-Log "Please install via Unity Hub: https://unity.com/download" "WARN"
+    if (Get-Command unity -ErrorAction SilentlyContinue) {
+        Write-Log "Install it with: unity install $TargetVersion" "WARN"
+    } else {
+        Write-Log "Install the Unity CLI (https://docs.unity.com/en-us/unity-cli) or Unity Hub: https://unity.com/download" "WARN"
+    }
     return $null
+}
+
+function Install-UnityCli {
+    if (Get-Command unity -ErrorAction SilentlyContinue) {
+        Write-Log "Unity CLI already installed"
+        return $true
+    }
+
+    Write-Log "Unity CLI not found, installing via winget..."
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Log "winget not available. Install the Unity CLI manually: https://docs.unity.com/en-us/unity-cli" "ERROR"
+        return $false
+    }
+
+    winget install Unity.CLI --accept-source-agreements --accept-package-agreements
+    if (Get-Command unity -ErrorAction SilentlyContinue) {
+        Write-Log "✓ Unity CLI installed"
+        return $true
+    }
+
+    Write-Log "Unity CLI install did not complete. Restart your terminal for PATH changes to take effect, then run setup again." "WARN"
+    return $false
 }
 
 function Test-RequiredFolders {
@@ -192,6 +230,7 @@ if (-not (Test-RequiredFolders)) {
 
 # Step 2: Check Unity version
 Write-Section "Step 2: Checking Unity Version"
+Install-UnityCli | Out-Null
 $VersionFile = Join-Path $ProjectRoot ".unity-version"
 $UnityVersion = Get-Content $VersionFile -Raw | ForEach-Object { $_.Trim() }
 Write-Log "Target Unity version: $UnityVersion"
@@ -201,7 +240,11 @@ $UnityEditorPath = Find-UnityEditor -TargetVersion $UnityVersion
 if ($null -eq $UnityEditorPath) {
     Write-Host "`n" -NoNewline
     Write-Host "⚠️  Unity Editor not found!" -ForegroundColor Yellow
-    Write-Host "Install from: https://unity.com/download" -ForegroundColor Yellow
+    if (Get-Command unity -ErrorAction SilentlyContinue) {
+        Write-Host "Install it with: unity install $UnityVersion" -ForegroundColor Yellow
+    } else {
+        Write-Host "Install the Unity CLI (https://docs.unity.com/en-us/unity-cli) or Unity Hub: https://unity.com/download" -ForegroundColor Yellow
+    }
     Write-Host "Then run setup again." -ForegroundColor Yellow
     Write-Log "Setup partially complete (Unity not found)" "WARN"
     exit 1

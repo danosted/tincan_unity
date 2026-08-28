@@ -4,6 +4,7 @@ using Unity.Netcode;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
+using TinCan.Core.Domain.Events;
 using VContainer.Unity;
 using TinCan.Features.FreeCamera;
 
@@ -14,6 +15,7 @@ namespace TinCan.Features.Airship
         private readonly IModulePlacementUseCase _placementUseCase;
         private readonly IActorRegistry _actorRegistry;
         private readonly IInputService _inputService; // Add this field
+        private readonly IEventPublisher _eventPublisher;
         private readonly GameplayTag? _buildingTag;
 
         private GameObject? _ghostInstance;
@@ -27,19 +29,21 @@ namespace TinCan.Features.Airship
             IModulePlacementUseCase placementUseCase,
             IActorRegistry actorRegistry,
             IInputService inputService,
+            IEventPublisher eventPublisher,
             GameplayTag? buildingTag)
         {
             _placementUseCase = placementUseCase;
             _actorRegistry = actorRegistry;
             _inputService = inputService;
+            _eventPublisher = eventPublisher;
             _buildingTag = buildingTag;
             if (_buildingTag != null)
             {
-                Debug.Log($"[BuildModeUseCase] Initialized. Building Tag Name: {_buildingTag.name}");
+                _eventPublisher.LogInfo("BuildModeUseCase", $"Initialized. Building Tag Name: {_buildingTag.name}");
             }
             else
             {
-                Debug.LogError("[BuildModeUseCase] Initialization Error: Building Tag is null!");
+                _eventPublisher.LogError("BuildModeUseCase", "Initialization Error: Building Tag is null!");
             }
         }
 
@@ -56,12 +60,12 @@ namespace TinCan.Features.Airship
                     if (localPlayer.HasTag(_buildingTag))
                     {
                         localPlayer.RemoveTag(_buildingTag);
-                        Debug.Log("[BuildModeUseCase] Exiting Build Mode (Key: B)");
+                        _eventPublisher.Publish(new BuildModeToggledEvent(localPlayer.Id, false));
                     }
                     else
                     {
                         localPlayer.AddTag(_buildingTag);
-                        Debug.Log("[BuildModeUseCase] Entering Build Mode (Key: B)");
+                        _eventPublisher.Publish(new BuildModeToggledEvent(localPlayer.Id, true));
                     }
                 }
             }
@@ -69,7 +73,7 @@ namespace TinCan.Features.Airship
             else if (_inputService.WasActionTriggered(ActionNames.Cancel) && _buildingTag != null && localPlayer.HasTag(_buildingTag))
             {
                 localPlayer.RemoveTag(_buildingTag);
-                Debug.Log("[BuildModeUseCase] Exiting Build Mode (Key: Cancel)");
+                _eventPublisher.Publish(new BuildModeToggledEvent(localPlayer.Id, false));
             }
 
             bool isBuilding = localPlayer.HasTag(_buildingTag);

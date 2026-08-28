@@ -15,6 +15,8 @@ using UnityEngine;
 using Unity.Netcode;
 using TinCan.Core.Infrastructure.Extensions;
 using TinCan.Core.Domain.Abilities;
+using TinCan.Core.Domain.Events;
+using TinCan.Core.Infrastructure.Events;
 namespace TinCan.Core.Infrastructure
 {
     /// <summary>
@@ -45,6 +47,10 @@ namespace TinCan.Core.Infrastructure
         {
             // Register Configs
             builder.RegisterInstance(_inputBindingConfig);
+
+            // Register Events
+            builder.Register<DebugLogEventObserver>(Lifetime.Singleton).As<IEventObserver>();
+            builder.Register<EventPublisher>(Lifetime.Singleton).As<IEventPublisher>();
 
             // Register Domain logic (Plain C# classes)
             builder.Register<AirshipMovementProcessor>(Lifetime.Transient);

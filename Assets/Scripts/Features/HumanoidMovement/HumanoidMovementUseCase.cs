@@ -1,13 +1,9 @@
 #nullable enable
 using UnityEngine;
-using VContainer.Unity;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Possession;
 using System.Collections.Generic;
 using System;
-using System.Linq;
-
 using TinCan.Features.Abilities;
 using TinCan.Features.Airship;
 using TinCan.Features.FreeCamera;
@@ -84,33 +80,6 @@ namespace TinCan.Features.HumanoidMovement
             _previousInputMasks[character.Id] = input.ActiveInputMask;
 
             SimulateMovement(character, input, isCaptured);
-        }
-
-        public HumanoidMovementSnapshot CaptureSnapshot(IHumanoidCharacterView character, uint lastProcessedInputSequence)
-        {
-            return new HumanoidMovementSnapshot
-            {
-                LastProcessedInputSequence = lastProcessedInputSequence,
-                Position = character.Movement.Transform.position,
-                Rotation = character.Movement.Transform.rotation,
-                HorizontalVelocity = _horizontalVelocities.GetValueOrDefault(character.Id),
-                VerticalVelocity = _verticalVelocities.GetValueOrDefault(character.Id),
-                PreviousInputMask = _previousInputMasks.GetValueOrDefault(character.Id)
-            };
-        }
-
-        public void Reconcile(IHumanoidCharacterView character, HumanoidMovementSnapshot snapshot, IReadOnlyList<HumanoidInputState> pendingInputs)
-        {
-            character.Movement.SetPose(snapshot.Position, snapshot.Rotation);
-            _horizontalVelocities[character.Id] = snapshot.HorizontalVelocity;
-            _verticalVelocities[character.Id] = snapshot.VerticalVelocity;
-            _previousInputMasks[character.Id] = snapshot.PreviousInputMask;
-            ClearPlatformState(character.Id);
-
-            foreach (var input in pendingInputs)
-            {
-                SimulateMovement(character, input, false);
-            }
         }
 
         private void SimulateMovement(IHumanoidCharacterView character, HumanoidInputState input, bool isCaptured)

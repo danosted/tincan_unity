@@ -4,22 +4,24 @@ Upgrade TinCan project to a new Unity version
 
 .DESCRIPTION
 Safely upgrades the project to a specified Unity version with backup,
-compatibility checking, and validation.
+compatibility checking, and validation. Defaults to the latest Unity release,
+resolved and installed via the Unity CLI, since this is a greenfield project
+that tracks the newest Unity version.
 
 .PARAMETER TargetVersion
-The Unity version to upgrade to (e.g., "6000.4.2f1")
+The Unity version to upgrade to (e.g., "6000.4.2f1"). Defaults to "latest".
 
 .PARAMETER CreateBackup
 Create a backup before upgrading (default: true)
 
 .EXAMPLE
+.\upgrade-unity.ps1
 .\upgrade-unity.ps1 -TargetVersion "6000.4.5f1"
 .\upgrade-unity.ps1 -TargetVersion "6000.4.5f1" -CreateBackup $false
 #>
 
 param(
-    [Parameter(Mandatory=$true)]
-    [string]$TargetVersion,
+    [string]$TargetVersion = "latest",
 
     [bool]$CreateBackup = $true
 )
@@ -63,11 +65,26 @@ Write-Section "TinCan Unity - Version Upgrade"
 
 $CurrentVersion = Get-Content $VersionFile -Raw | ForEach-Object { $_.Trim() }
 Write-Log "Current version: $CurrentVersion"
-Write-Log "Target version: $TargetVersion"
+Write-Log "Requested version: $TargetVersion"
+
+# Resolve (and install) the requested version/alias via the Unity CLI, e.g. "latest"
+if (-not (Get-Command unity -ErrorAction SilentlyContinue)) {
+    Write-Log "ERROR: Unity CLI is required to resolve '$TargetVersion'. Install it with: winget install Unity.CLI (or run setup.ps1)" "ERROR"
+    exit 1
+}
+
+Write-Log "Resolving and installing Unity version via CLI: unity install $TargetVersion"
+$InstallResult = unity install $TargetVersion --format json 2>$null | ConvertFrom-Json
+$TargetVersion = $InstallResult.data.version
+if (-not $TargetVersion) {
+    Write-Log "ERROR: Unity CLI did not return a resolved version" "ERROR"
+    exit 1
+}
+Write-Log "Resolved Unity version: $TargetVersion"
 
 # Validate version format
 if ($TargetVersion -notmatch '^\d{4}\.\d{1,2}\.\d{1,2}(f|b|a|rc)\d+$') {
-    Write-Log "ERROR: Invalid version format. Expected format: 6000.4.2f1" "ERROR"
+    Write-Log "ERROR: Invalid version format resolved from CLI: $TargetVersion" "ERROR"
     exit 1
 }
 
@@ -90,20 +107,16 @@ Write-Log "Updating .unity-version to: $TargetVersion"
 Set-Content -Path $VersionFile -Value $TargetVersion
 Write-Log "✓ .unity-version updated"
 
-# Update ProjectSettings/ProjectVersion.txt if it exists
-$ProjectVersionFile = Join-Path $ProjectRoot "ProjectSettings\ProjectVersion.txt"
-if (Test-Path $ProjectVersionFile) {
-    Write-Log "Updating ProjectSettings/ProjectVersion.txt"
-    Set-Content -Path $ProjectVersionFile -Value "m_EditorVersion: $TargetVersion"
-    Write-Log "✓ ProjectSettings/ProjectVersion.txt updated"
-}
+# Note: ProjectSettings/ProjectVersion.txt is owned by the Unity Editor and is
+# rewritten automatically the next time the project is opened with the new
+# Editor version - this script does not touch it.
 
 # Log changelog entry
 Write-Section "Upgrade Summary"
 Write-Host "`n✅ Version upgraded to: $TargetVersion`n" -ForegroundColor Green
 
 Write-Host "Next steps:" -ForegroundColor Yellow
-Write-Host "1. Open the project in Unity $TargetVersion"
+Write-Host "1. Open the project: unity open ."
 Write-Host "2. Wait for Unity to import and upgrade assets"
 Write-Host "3. Check the Console for any upgrade errors"
 Write-Host "4. Validate all scripts compile correctly"

@@ -99,9 +99,9 @@ function Find-UnityEditor {
         Write-Log "Unity CLI detected, checking installed editors..."
         $Installed = unity editors -i --format json 2>$null | ConvertFrom-Json
         $Match = $Installed.data | Where-Object { $_.version -eq $TargetVersion } | Select-Object -First 1
-        if ($Match) {
-            Write-Log "Found Unity via CLI at: $($Match.path)"
-            return $Match.path
+        if ($Match -and $Match.location) {
+            Write-Log "Found Unity via CLI at: $($Match.location)"
+            return $Match.location
         }
         Write-Log "Unity CLI installed, but version $TargetVersion is not installed" "WARN"
     }

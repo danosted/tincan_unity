@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 where winget >nul 2>nul
 if errorlevel 1 (
@@ -18,7 +18,8 @@ if errorlevel 1 (
     )
 
     set "PWSH=%ProgramFiles%\PowerShell\7\pwsh.exe"
-    if not exist "%PWSH%" (
+    if not exist "!PWSH!" set "PWSH=%LocalAppData%\Microsoft\WindowsApps\pwsh.exe"
+    if not exist "!PWSH!" (
         echo ERROR: PowerShell 7 was installed but pwsh.exe could not be found.
         exit /b 1
     )

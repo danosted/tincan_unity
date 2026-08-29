@@ -35,7 +35,8 @@
 
 # Visual Studio
 .vs/
-.vscode/
+.vscode/*
+!.vscode/mcp.json
 *.csproj
 *.sln
 *.DotSettings

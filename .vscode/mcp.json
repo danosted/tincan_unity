@@ -1,0 +1,14 @@
+{
+    "servers": {
+        "unity": {
+            "type": "stdio",
+            "command": "unity",
+            "args": [
+                "mcp",
+                "--project-path",
+                "${workspaceFolder}"
+            ],
+            "cwd": "${workspaceFolder}"
+        }
+    }
+}

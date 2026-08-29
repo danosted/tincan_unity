@@ -4,18 +4,26 @@ Initialize TinCan project with required folders, packages, and configuration
 
 .DESCRIPTION
 One-command setup for new developers. Installs the Unity CLI via winget if missing,
-detects Unity Hub, validates Unity version, and prepares the project for development.
+configures telemetry consent, installs the required Unity Editor, and prepares the
+project for development.
 
 .PARAMETER UnityPath
 Optional: Direct path to Unity executable. If not provided, searches Unity Hub.
+
+.PARAMETER EnableUnityTelemetry
+Opt in to Unity CLI analytics. Setup opts out by default so fresh installs never
+stop at the first-run telemetry prompt.
 
 .EXAMPLE
 .\setup.ps1
 .\setup.ps1 -UnityPath "C:\Program Files\Unity\Hub\Editor\6000.4.5f1"
 #>
 
+#Requires -Version 7.0
+
 param(
-    [string]$UnityPath
+    [string]$UnityPath,
+    [switch]$EnableUnityTelemetry
 )
 
 # ============================================================================
@@ -46,6 +54,12 @@ function Write-Section {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host $Title -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
+}
+
+function Update-ProcessPath {
+    $MachinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+    $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    $env:Path = "$MachinePath;$UserPath"
 }
 
 # ============================================================================
@@ -126,14 +140,47 @@ function Install-UnityCli {
         return $false
     }
 
-    winget install Unity.CLI --accept-source-agreements --accept-package-agreements
+    winget install --id Unity.CLI --exact --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "Unity CLI installation failed with exit code $LASTEXITCODE" "ERROR"
+        return $false
+    }
+
+    Update-ProcessPath
     if (Get-Command unity -ErrorAction SilentlyContinue) {
-        Write-Log "✓ Unity CLI installed"
+        Write-Log "Unity CLI installed"
         return $true
     }
 
-    Write-Log "Unity CLI install did not complete. Restart your terminal for PATH changes to take effect, then run setup again." "WARN"
+    Write-Log "Unity CLI installed, but its executable was not found after refreshing PATH." "ERROR"
     return $false
+}
+
+function Set-UnityCliTelemetry {
+    $ConsentAction = if ($EnableUnityTelemetry) { "opt-in" } else { "opt-out" }
+    Write-Log "Setting Unity CLI analytics consent to: $ConsentAction"
+
+    & unity --non-interactive --no-banner analytics $ConsentAction
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "Could not set Unity CLI analytics consent (exit code $LASTEXITCODE)" "ERROR"
+        return $false
+    }
+
+    return $true
+}
+
+function Install-UnityEditor {
+    param([string]$TargetVersion)
+
+    Write-Log "Installing Unity Editor $TargetVersion. This download may take a while..."
+    & unity --non-interactive --no-banner install $TargetVersion --yes --accept-eula
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "Unity Editor installation failed with exit code $LASTEXITCODE" "ERROR"
+        return $false
+    }
+
+    Write-Log "Unity Editor $TargetVersion installed"
+    return $true
 }
 
 function Test-RequiredFolders {
@@ -230,7 +277,15 @@ if (-not (Test-RequiredFolders)) {
 
 # Step 2: Check Unity version
 Write-Section "Step 2: Checking Unity Version"
-Install-UnityCli | Out-Null
+if (-not (Install-UnityCli)) {
+    Write-Log "Setup cannot continue without the Unity CLI." "ERROR"
+    exit 1
+}
+
+if (-not (Set-UnityCliTelemetry)) {
+    exit 1
+}
+
 $VersionFile = Join-Path $ProjectRoot ".unity-version"
 $UnityVersion = Get-Content $VersionFile -Raw | ForEach-Object { $_.Trim() }
 Write-Log "Target Unity version: $UnityVersion"
@@ -238,16 +293,16 @@ Write-Log "Target Unity version: $UnityVersion"
 # Try to find Unity
 $UnityEditorPath = Find-UnityEditor -TargetVersion $UnityVersion
 if ($null -eq $UnityEditorPath) {
-    Write-Host "`n" -NoNewline
-    Write-Host "⚠️  Unity Editor not found!" -ForegroundColor Yellow
-    if (Get-Command unity -ErrorAction SilentlyContinue) {
-        Write-Host "Install it with: unity install $UnityVersion" -ForegroundColor Yellow
-    } else {
-        Write-Host "Install the Unity CLI (https://docs.unity.com/en-us/unity-cli) or Unity Hub: https://unity.com/download" -ForegroundColor Yellow
+    if (-not (Install-UnityEditor -TargetVersion $UnityVersion)) {
+        Write-Log "Setup could not install the required Unity Editor." "ERROR"
+        exit 1
     }
-    Write-Host "Then run setup again." -ForegroundColor Yellow
-    Write-Log "Setup partially complete (Unity not found)" "WARN"
-    exit 1
+
+    $UnityEditorPath = Find-UnityEditor -TargetVersion $UnityVersion
+    if ($null -eq $UnityEditorPath) {
+        Write-Log "Unity Editor installation completed, but version $UnityVersion still could not be found." "ERROR"
+        exit 1
+    }
 }
 
 # Step 3: Create configuration files

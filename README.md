@@ -7,10 +7,11 @@ This project is developed using **Human + AI Collaboration**. We heavily rely on
 ## 🚀 Quick Start
 
 1. **Clone the Repo & Setup:**
-   Run the setup script to validate your environment and install required packages.
+   On Windows, run the bootstrap command from the repository root:
    ```powershell
-   .\.tools\setup.ps1  # Windows
+   .\.tools\setup.cmd
    ```
+   It installs PowerShell 7, the Unity CLI, and the required Unity Editor version when missing. Unity CLI telemetry is disabled by default; pass `-EnableUnityTelemetry` to opt in.
 2. **Open in Unity:** Open this folder as a Unity Project.
 3. **Read the AI Rules:** Since you'll be working with AI, please review the AI Guidelines below.
 

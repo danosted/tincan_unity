@@ -54,18 +54,9 @@ When discussing specific APIs or features, the AI should be ready to consult and
 - [GitHub Release Pages](https://github.com) for relevant packages (e.g., Netcode for GameObjects)
 - [Package Manager Documentation](https://docs.unity.com/upm/manual/)
 
-### Rule 4: Knowledge Cutoff Declaration & Verification
+### Rule 4: Verify Evolving Tooling and APIs
 
-**AI Knowledge Cutoff:** April 2024
-
-When discussing concepts, APIs, or best practices that might have changed significantly since April 2024, the AI **MUST** state its knowledge cutoff and offer to search for updated information if the user deems it necessary.
-
-**In Practice:**
-```
-"Based on my knowledge (April 2024), [concept/API] is handled this way.
-However, Unity development evolves rapidly.
-Should I search for updated documentation on this topic, or do you have more current information?"
-```
+When discussing Unity, NGO, package, or CLI behavior that may have changed, inspect the installed version and current official documentation before reaching a conclusion. State any remaining version uncertainty rather than relying on a fixed model knowledge cutoff.
 
 ### Rule 5: Version Management & Compatibility
 
@@ -132,7 +123,8 @@ When discussing implementations, the AI should be mindful of potential Unity ver
 1.  **Check for Errors:** Immediately after any file edit, use `get_errors` on the modified files to check for compilation errors, syntax issues, or lint warnings.
 2.  **Verify API Usage:** Check for deprecated API usage (e.g., ensure `linearVelocity` is used instead of `velocity` if required by the Unity version).
 3.  **Validate Logic & Syntax:** Briefly review the resulting file to ensure no "end-of-file expected" or brace mismatch issues were introduced by the edit tool.
-4.  **Unity Recompilation:** After modifying C# code, request Unity script compilation with `unity command eval 'UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation(); return "scriptCompilationRequested";'`, then run `unity command recompile_status` and verify that it completes without compiler errors.
+4.  **Unity Recompilation:** After modifying C# code, prefer dedicated Unity MCP compilation and status tools when exposed. If MCP is unavailable or disconnects during domain reload, request compilation with `unity command eval 'UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation(); return "scriptCompilationRequested";'`, then run `unity command recompile_status`. In either path, verify completion without compiler errors.
+5.  **Editor Objects:** Use Unity MCP tools for live Editor state and serialized object changes. Preserve Undo, explicitly save affected scenes or assets, and verify the result through Console logs or Scene captures as appropriate.
 
 ---
 
@@ -141,7 +133,7 @@ When discussing implementations, the AI should be mindful of potential Unity ver
 1.  **Conceptualize & Discuss:** Focus on *how* to write C# Unity code, not writing it directly.
 2.  **Contextualize:** Always frame discussions within Unity3D, C#, and the Unity3D SDK.
 3.  **Reference (if asked):** Be ready to consult official Unity documentation for specifics.
-4.  **Declare Knowledge Age:** State "April 2024 knowledge" and offer to verify for evolving topics.
+4.  **Verify Current Behavior:** Check installed tooling and current official documentation for evolving Unity APIs.
 5.  **Ask for Clarification:** Proactively ask the user when details are unclear, or decisions are needed.
 6.  **Verify Changes:** Always run a second pass with `get_errors` after any modification to ensure syntactical and API correctness.
 

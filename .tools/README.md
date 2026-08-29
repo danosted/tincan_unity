@@ -4,11 +4,7 @@ This folder contains automation scripts for project setup, maintenance, and CI/C
 
 ## Prerequisites
 
-Install the [Unity CLI](https://docs.unity.com/en-us/unity-cli/unity-cli-reference) — this is required, not optional:
-```powershell
-winget install Unity.CLI
-```
-`setup.ps1` and `upgrade-unity.ps1` depend on it (`unity editors -i`, `unity install <version>`) to detect and install Unity Editor versions.
+Windows App Installer, which provides `winget`, is the only manual prerequisite. The `setup.cmd` bootstrap installs PowerShell 7 and the [Unity CLI](https://docs.unity.com/en-us/unity-cli/unity-cli-reference) when needed, then installs the Editor version pinned in `.unity-version`.
 
 ## Scripts
 
@@ -18,14 +14,18 @@ winget install Unity.CLI
 **When to use:** Running on a fresh clone or setting up a new developer machine
 **Usage:**
 ```powershell
-.\.tools\setup.ps1
+.\.tools\setup.cmd                         # fresh Windows machine
+.\.tools\setup.cmd -EnableUnityTelemetry   # explicitly opt in to Unity CLI analytics
+.\.tools\setup.ps1                         # direct use when PowerShell 7 is already installed
 ```
 
 **What it does:**
+- Installs PowerShell 7 via `winget` when launched through `setup.cmd`
 - Validates folder structure
 - Installs the Unity CLI via `winget` if it isn't already present
+- Records Unity CLI telemetry consent without an interactive prompt (opt out by default)
 - Checks Unity version from `.unity-version`
-- Detects an installed matching Editor via the Unity CLI, falling back to Unity Hub paths
+- Detects or installs the matching Editor via the Unity CLI, falling back to Unity Hub paths for detection
 - Creates `.env` configuration file
 - Sets up Packages/manifest.json if needed
 - Validates installation
@@ -48,6 +48,19 @@ winget install Unity.CLI
 - Logs all changes
 
 Note: `ProjectSettings/ProjectVersion.txt` is owned by the Unity Editor and is left untouched — it updates itself the next time the project is opened with the new Editor version.
+
+## Unity MCP
+
+The workspace MCP configuration launches `unity mcp` through the Unity CLI. The required `com.unity.pipeline` package is pinned in `Packages/manifest.json`.
+
+After initial setup:
+
+1. Restart VS Code if setup installed the Unity CLI while VS Code was already open.
+2. Open the project in Unity and wait for package import and script compilation to finish.
+3. Trust and start the `unity` server when VS Code prompts.
+4. Run `unity status` to diagnose Editor connectivity. If Pipeline is not installed, run `unity pipeline install --project-path .` while signed in to Unity.
+
+Use MCP for live Editor inspection and serialized object changes. Continue using workspace tools for source files and use CLI Pipeline commands as the fallback when MCP is unavailable during a domain reload.
 
 ## Logs
 
@@ -79,9 +92,9 @@ Additional scripts planned:
 
 ### Script not executing (PowerShell)
 
-You may need to allow script execution:
+Use the bootstrap launcher. It applies an execution-policy bypass only to the new setup process and does not change your user or machine policy:
 ```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+.\.tools\setup.cmd
 ```
 
 ### Permission errors on Windows

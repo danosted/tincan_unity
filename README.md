@@ -26,4 +26,4 @@ To ensure AI assistants generate high-quality code that matches our project's ar
 3. **[Code Standards](.docs/CODE_STANDARDS.md)**
    Specific rules on C# styling, using `UniTask` instead of coroutines, and avoiding heavy `[SerializeField]` usage in favor of dynamic resolution.
 
-*Note: AI assistants are explicitly instructed via `.github/copilot-instructions.md` to reference the `.docs` folder before writing any code.*
+*Note: AI assistants are instructed via the vendor-agnostic [`AGENTS.md`](AGENTS.md) (which `CLAUDE.md` and `.github/copilot-instructions.md` point to) to reference the `.docs` folder before writing any code.*

@@ -35,6 +35,11 @@ $ProjectRoot = Split-Path -Parent $ScriptDir
 $LogDir = Join-Path $ScriptDir "logs"
 $LogFile = Join-Path $LogDir "setup-$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').log"
 
+# Folders git cannot guarantee (tracked project folders carry .gitkeep files instead)
+$RequiredFolders = @(
+    ".tools\logs"
+)
+
 # Create log directory if it doesn't exist
 if (-not (Test-Path $LogDir)) {
     New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
@@ -186,19 +191,6 @@ function Install-UnityEditor {
 function Test-RequiredFolders {
     Write-Log "Validating required folders..."
 
-    $RequiredFolders = @(
-        "Assets\Scripts\Core",
-        "Assets\Scripts\Network",
-        "Assets\Scripts\Player",
-        "Assets\Scripts\UI",
-        "Assets\Scripts\Utils",
-        "Assets\Prefabs",
-        "Assets\Scenes",
-        "Assets\Resources",
-        ".docs",
-        ".tools\logs"
-    )
-
     $AllExist = $true
     foreach ($Folder in $RequiredFolders) {
         $FullPath = Join-Path $ProjectRoot $Folder
@@ -250,19 +242,6 @@ Write-Section "Step 1: Validating Folder Structure"
 if (-not (Test-RequiredFolders)) {
     Write-Log "Creating missing folders..." "INFO"
     $FoldersCreated = 0
-
-    $RequiredFolders = @(
-        "Assets\Scripts\Core",
-        "Assets\Scripts\Network",
-        "Assets\Scripts\Player",
-        "Assets\Scripts\UI",
-        "Assets\Scripts\Utils",
-        "Assets\Prefabs",
-        "Assets\Scenes",
-        "Assets\Resources",
-        ".docs",
-        ".tools\logs"
-    )
 
     foreach ($Folder in $RequiredFolders) {
         $FullPath = Join-Path $ProjectRoot $Folder

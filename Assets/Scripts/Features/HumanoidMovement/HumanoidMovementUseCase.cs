@@ -14,7 +14,7 @@ namespace TinCan.Features.HumanoidMovement
     /// Application Layer: Coordinates input and domain logic to move the humanoid character.
     /// Inherits from SimulationUseCase for unified actor simulation.
     /// </summary>
-    public class HumanoidMovementUseCase : SimulationUseCase<IHumanoidCharacterView, HumanoidInputState>
+    public class HumanoidMovementUseCase : SimulationUseCase<IHumanoidCharacterView, HumanoidInputState>, IHumanoidRespawnService
     {
         private readonly HumanoidMovementProcessor _processor;
         private readonly AbilitySystemUseCase _abilitySystem;
@@ -80,6 +80,16 @@ namespace TinCan.Features.HumanoidMovement
             _previousInputMasks[character.Id] = input.ActiveInputMask;
 
             SimulateMovement(character, input, isCaptured);
+        }
+
+        public void ResetCharacter(IHumanoidCharacterView character, Vector3 position, Quaternion rotation)
+        {
+            character.Movement.SetPose(position, rotation);
+            character.InputState = default;
+            _horizontalVelocities.Remove(character.Id);
+            _verticalVelocities.Remove(character.Id);
+            _previousInputMasks.Remove(character.Id);
+            ClearPlatformState(character.Id);
         }
 
         private void SimulateMovement(IHumanoidCharacterView character, HumanoidInputState input, bool isCaptured)

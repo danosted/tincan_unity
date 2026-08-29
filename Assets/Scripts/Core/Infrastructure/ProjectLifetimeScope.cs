@@ -7,6 +7,7 @@ using TinCan.Features.FreeCamera;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Features.Possession;
 using TinCan.Features.Airship;
+using TinCan.Features.CloudBoundary;
 using TinCan.Features.Interaction;
 using TinCan.Features.Abilities;
 using TinCan.Features.Events;
@@ -33,6 +34,8 @@ namespace TinCan.Core.Infrastructure
         [SerializeField] private GameObject _possessionMediatorPrefab;
         [SerializeField] private GameObject _buildPlacementMediatorPrefab;
         [SerializeField] private TinCan.Core.Domain.Abilities.InputBindingConfig _inputBindingConfig;
+        [SerializeField] private CloudBoundaryConfig _cloudBoundaryConfig;
+        [SerializeField] private CloudVisualProfile _cloudVisualProfile;
 
         [Header("Abilities")]
         [SerializeField] private TinCan.Core.Domain.Abilities.Tags.GameplayTag _buildingTag;
@@ -47,6 +50,8 @@ namespace TinCan.Core.Infrastructure
         {
             // Register Configs
             builder.RegisterInstance(_inputBindingConfig);
+            builder.RegisterInstance(_cloudBoundaryConfig);
+            builder.RegisterInstance(_cloudVisualProfile);
 
             // Register Events
             builder.Register<DebugLogEventObserver>(Lifetime.Singleton).As<IEventObserver>();
@@ -54,6 +59,9 @@ namespace TinCan.Core.Infrastructure
 
             // Register Domain logic (Plain C# classes)
             builder.Register<AirshipMovementProcessor>(Lifetime.Transient);
+            builder.Register<CloudBoundaryProcessor>(Lifetime.Singleton);
+            builder.Register<CloudSurfaceQuery>(Lifetime.Singleton).As<ICloudSurfaceQuery>();
+            builder.Register<NoOpCloudBoundaryExpiryHandler>(Lifetime.Singleton).As<ICloudBoundaryExpiryHandler>();
             builder.Register<FreeCameraMovementProcessor>(Lifetime.Transient);
             builder.Register<FreeCameraRotationProcessor>(Lifetime.Transient);
             builder.Register<HumanoidMovementProcessor>(Lifetime.Transient);
@@ -104,8 +112,10 @@ namespace TinCan.Core.Infrastructure
             builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
             builder.Register<ShipStateProvider>(Lifetime.Singleton).As<IShipState>();
             builder.Register<AirshipMovementUseCase>(Lifetime.Singleton);
-            builder.Register<HumanoidMovementUseCase>(Lifetime.Singleton);
+            builder.Register<CloudBoundaryUseCase>(Lifetime.Singleton);
+            builder.Register<HumanoidMovementUseCase>(Lifetime.Singleton).AsSelf().As<IHumanoidRespawnService>();
             builder.Register<NetworkSimulationScheduler>(Lifetime.Singleton).As<IInitializable>();
+            builder.RegisterComponentInHierarchy<CloudEnvironmentView>();
 
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {

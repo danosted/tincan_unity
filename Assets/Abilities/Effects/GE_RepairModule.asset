@@ -16,6 +16,6 @@ MonoBehaviour:
   DurationSeconds: 0
   Modifiers:
   - Attribute: {fileID: 11400000, guid: 8b14d6bb0c2e84b40a3ec90b5bbb15b2, type: 2}
-    Operation: 0
+    Operation: 3
     Value: 15
   GrantedTags: []

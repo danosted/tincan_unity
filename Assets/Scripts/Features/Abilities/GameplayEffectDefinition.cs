@@ -15,7 +15,9 @@ namespace TinCan.Features.Abilities
     {
         Add,
         Multiply,
-        Override
+        Override,
+        CurrentAdd,
+        CurrentSubtract
     }
 
     [System.Serializable]

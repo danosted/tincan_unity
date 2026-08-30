@@ -21,7 +21,7 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(AirshipControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
-    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Features.FreeCamera.IHasOrbitalCamera, IShipState
+    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Features.FreeCamera.IHasOrbitalCamera, IShipState, IHealth
     {
         public override bool IsSimulating => IsSpawned && IsServer;
 
@@ -35,9 +35,30 @@ namespace TinCan.Network.Infrastructure
         [SerializeField] private GameplayAttribute _turnSpeedAttribute;
         [SerializeField] private GameplayAttribute _healthAttribute;
         [SerializeField] private System.Collections.Generic.List<AbilityDefinition> _startingAbilities;
+        [SerializeField] private float _maxHealth = 1000f;
 
         // IShipState Implementation
         public IAbilityControllerBase Controller => _abilitySync;
+        public float CurrentHealth => _attributes?.Health ?? 0f;
+        public float MaxHealth => _maxHealth;
+        public float HealthPercentage => MaxHealth <= 0f ? 0f : CurrentHealth / MaxHealth;
+        public bool IsBroken => CurrentHealth <= 0f;
+
+        public void ApplyDamage(float amount)
+        {
+            if (!IsServer || _healthAttribute == null || !_abilitySync.TryGetAttribute(_healthAttribute, out var value)) return;
+
+            value.CurrentValue = HealthValueProcessor.ApplyDamage(value.CurrentValue, _maxHealth, amount);
+            _abilitySync.SetAttribute(_healthAttribute, value);
+        }
+
+        public void Repair(float amount)
+        {
+            if (!IsServer || _healthAttribute == null || !_abilitySync.TryGetAttribute(_healthAttribute, out var value)) return;
+
+            value.CurrentValue = HealthValueProcessor.Repair(value.CurrentValue, _maxHealth, amount);
+            _abilitySync.SetAttribute(_healthAttribute, value);
+        }
 
         private readonly NetworkVariable<AirshipInputState> _netInputState = new NetworkVariable<AirshipInputState>(
             writePerm: NetworkVariableWritePermission.Owner);
@@ -90,7 +111,7 @@ namespace TinCan.Network.Infrastructure
 
             // Initialize and register attributes
             _attributes = new AirshipAttributeSet(_abilitySync, _flightSpeedAttribute, _turnSpeedAttribute, _healthAttribute);
-            _attributes.InitializeBaseValues(_view.MaxForwardSpeed, _view.TurnSpeed, 1000f);
+            _attributes.InitializeBaseValues(_view.MaxForwardSpeed, _view.TurnSpeed, _maxHealth);
             _abilitySync.RegisterAttributeSet(_attributes);
 
             // TODO: temporary bridge until abilities are granted via equipment/skill tree instead of starting lists.

@@ -18,6 +18,8 @@ using TinCan.Core.Infrastructure.Extensions;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Infrastructure.Events;
+using TinCan.Core.Domain.Abilities.Tags;
+using Assets.Scripts.Features.Airship;
 namespace TinCan.Core.Infrastructure
 {
     /// <summary>
@@ -46,6 +48,8 @@ namespace TinCan.Core.Infrastructure
         [Header("Building Modules")]
         [SerializeField] private List<GameObject> _buildablePrefabs = new();
 
+        [Header("Airship Components")]
+        [SerializeField] private GameplayTag _doorInteractionTag;
         protected override void Configure(IContainerBuilder builder)
         {
             // Register Configs
@@ -211,6 +215,9 @@ namespace TinCan.Core.Infrastructure
 
             });
 
+
+            // Airship components (Consider moving this to a separate LifetimeScope for the Airship feature)
+            builder.Register<DoorInteractionHandler>(Lifetime.Singleton).WithParameter("handlerTag", _doorInteractionTag).As<IInteractionHandler>();
         }
 
     }

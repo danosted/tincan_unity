@@ -458,7 +458,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 589101880818927000}
-  - component: {fileID: 5894378921659840943}
   m_Layer: 0
   m_Name: Door2_Hinge
   m_TagString: Untagged
@@ -482,23 +481,6 @@ Transform:
   - {fileID: 7004620429888358522}
   m_Father: {fileID: 9036149285931199850}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5894378921659840943
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 461679949042821147}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fbb8b77d13527fd458ecf1738ec37b25, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TinCan.Features::Assets.Scripts.Features.Airship.AirshipDoor
-  ShowTopMostFoldoutHeaderGroup: 1
-  _interactionDefinition: {fileID: 11400000, guid: fa3390c416c94da44a0a89b09002d6de, type: 2}
-  _hinge: {fileID: 589101880818927000}
-  _openAngle: -110
-  _speed: 4
 --- !u!1 &503086203627651977
 GameObject:
   m_ObjectHideFlags: 0
@@ -2201,7 +2183,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2202876379349349226}
-  - component: {fileID: 2445191702949938608}
   m_Layer: 0
   m_Name: Door1_Hinge
   m_TagString: Untagged
@@ -2225,23 +2206,6 @@ Transform:
   - {fileID: 7182094679537196420}
   m_Father: {fileID: 9036149285931199850}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2445191702949938608
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3822177915723660221}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fbb8b77d13527fd458ecf1738ec37b25, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TinCan.Features::Assets.Scripts.Features.Airship.AirshipDoor
-  ShowTopMostFoldoutHeaderGroup: 1
-  _interactionDefinition: {fileID: 11400000, guid: fa3390c416c94da44a0a89b09002d6de, type: 2}
-  _hinge: {fileID: 2202876379349349226}
-  _openAngle: 110
-  _speed: 4
 --- !u!1 &3878862094043865695
 GameObject:
   m_ObjectHideFlags: 0

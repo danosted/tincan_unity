@@ -125,7 +125,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1498952331
+  GlobalObjectIdHash: 2551848856
   InScenePlacedSourceGlobalObjectIdHash: 2551848856
   DeferredDespawnTick: 0
   Ownership: 1
@@ -847,8 +847,68 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3822177915723660221, guid: a1dcd447bfbb3bc45821f8b436c031d2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3701165100457531626}
+    - targetCorrespondingSourceObject: {fileID: 461679949042821147, guid: a1dcd447bfbb3bc45821f8b436c031d2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7095511804691854711}
   m_SourcePrefab: {fileID: 100100000, guid: a1dcd447bfbb3bc45821f8b436c031d2, type: 3}
+--- !u!1 &119262178626095746 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 461679949042821147, guid: a1dcd447bfbb3bc45821f8b436c031d2, type: 3}
+  m_PrefabInstance: {fileID: 562812679333077657}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7095511804691854711
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 119262178626095746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbb8b77d13527fd458ecf1738ec37b25, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::Assets.Scripts.Features.Airship.AirshipDoor
+  ShowTopMostFoldoutHeaderGroup: 1
+  _interactionDefinition: {fileID: 11400000, guid: fa3390c416c94da44a0a89b09002d6de, type: 2}
+  _hinge: {fileID: 1144875469439624961}
+  _openAngle: -110
+  _speed: 4
+--- !u!4 &1144875469439624961 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 589101880818927000, guid: a1dcd447bfbb3bc45821f8b436c031d2, type: 3}
+  m_PrefabInstance: {fileID: 562812679333077657}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1827814124823548403 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2202876379349349226, guid: a1dcd447bfbb3bc45821f8b436c031d2, type: 3}
+  m_PrefabInstance: {fileID: 562812679333077657}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &3658217804927523108 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3822177915723660221, guid: a1dcd447bfbb3bc45821f8b436c031d2, type: 3}
+  m_PrefabInstance: {fileID: 562812679333077657}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3701165100457531626
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3658217804927523108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbb8b77d13527fd458ecf1738ec37b25, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::Assets.Scripts.Features.Airship.AirshipDoor
+  ShowTopMostFoldoutHeaderGroup: 1
+  _interactionDefinition: {fileID: 11400000, guid: fa3390c416c94da44a0a89b09002d6de, type: 2}
+  _hinge: {fileID: 1827814124823548403}
+  _openAngle: 110
+  _speed: 4
 --- !u!4 &8838695524504686579 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 9036149285931199850, guid: a1dcd447bfbb3bc45821f8b436c031d2, type: 3}

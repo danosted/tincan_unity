@@ -8,6 +8,7 @@ using TinCan.Features.HumanoidMovement;
 using TinCan.Features.Possession;
 using TinCan.Features.Airship;
 using TinCan.Features.CloudBoundary;
+using TinCan.Features.GasChallenge;
 using TinCan.Features.Interaction;
 using TinCan.Features.Abilities;
 using TinCan.Features.Events;
@@ -113,6 +114,7 @@ namespace TinCan.Core.Infrastructure
             builder.Register<ShipStateProvider>(Lifetime.Singleton).As<IShipState>();
             builder.Register<AirshipMovementUseCase>(Lifetime.Singleton);
             builder.Register<CloudBoundaryUseCase>(Lifetime.Singleton);
+            builder.Register<GasChallengeUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
             builder.Register<HumanoidMovementUseCase>(Lifetime.Singleton).AsSelf().As<IHumanoidRespawnService>();
             builder.Register<NetworkSimulationScheduler>(Lifetime.Singleton).As<IInitializable>();
             builder.RegisterComponentInHierarchy<CloudEnvironmentView>();

@@ -375,6 +375,18 @@ namespace TinCan.Features.Abilities
                         case ModifierOp.Override:
                             attrVal.BaseValue = modifier.Value;
                             break;
+                        case ModifierOp.CurrentAdd:
+                            attrVal.CurrentValue = HealthValueProcessor.Repair(
+                                attrVal.CurrentValue,
+                                attrVal.BaseValue,
+                                modifier.Value);
+                            break;
+                        case ModifierOp.CurrentSubtract:
+                            attrVal.CurrentValue = HealthValueProcessor.ApplyDamage(
+                                attrVal.CurrentValue,
+                                attrVal.BaseValue,
+                                modifier.Value);
+                            break;
                     }
 
                     actor.SetAttribute(modifier.Attribute, attrVal);

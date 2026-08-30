@@ -25,7 +25,7 @@ namespace Assets.Scripts.Features.Airship
             _isOpen.Value = !_isOpen.Value;
         }
 
-        public InteractionDefinition Definition => throw new System.NotImplementedException();
+        public InteractionDefinition Definition => _interactionDefinition;
 
         // Use this for initialization
         void Start()

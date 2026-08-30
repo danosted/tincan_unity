@@ -48,16 +48,28 @@ namespace TinCan.Network.Infrastructure
         {
             if (!IsServer || _healthAttribute == null || !_abilitySync.TryGetAttribute(_healthAttribute, out var value)) return;
 
+            var previousValue = value.CurrentValue;
             value.CurrentValue = HealthValueProcessor.ApplyDamage(value.CurrentValue, _maxHealth, amount);
-            _abilitySync.SetAttribute(_healthAttribute, value);
+
+            if (!Mathf.Approximately(previousValue, value.CurrentValue))
+            {
+                _abilitySync.SetAttribute(_healthAttribute, value);
+                Debug.Log($"health changed to {value.CurrentValue}");
+            }
         }
 
         public void Repair(float amount)
         {
             if (!IsServer || _healthAttribute == null || !_abilitySync.TryGetAttribute(_healthAttribute, out var value)) return;
 
+            var previousValue = value.CurrentValue;
             value.CurrentValue = HealthValueProcessor.Repair(value.CurrentValue, _maxHealth, amount);
-            _abilitySync.SetAttribute(_healthAttribute, value);
+
+            if (!Mathf.Approximately(previousValue, value.CurrentValue))
+            {
+                _abilitySync.SetAttribute(_healthAttribute, value);
+                Debug.Log($"health changed to {value.CurrentValue}");
+            }
         }
 
         private readonly NetworkVariable<AirshipInputState> _netInputState = new NetworkVariable<AirshipInputState>(

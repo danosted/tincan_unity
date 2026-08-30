@@ -39,6 +39,7 @@
 !.vscode/mcp.json
 *.csproj
 *.sln
+*.user
 *.DotSettings
 *.sln.iml
 

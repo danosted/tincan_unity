@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Features.Interaction;
 using Unity.Netcode;
 using UnityEngine;
@@ -37,6 +38,26 @@ namespace Assets.Scripts.Features.Airship
         {
             var target = Quaternion.Euler(0, _isOpen.Value ? _openAngle : 0, 0);
             _hinge.localRotation = Quaternion.Slerp(_hinge.localRotation, target, Time.deltaTime * _speed);
+        }
+    }
+
+
+    // The Handle method is only invokes from inside the RequestInteractionServerRpc method, which is only called on the server. So this code will only run on the server.
+    public class DoorInteractionHandler : IInteractionHandler
+    {
+        private readonly GameplayTag _handlerTag;
+        public DoorInteractionHandler(GameplayTag handlerTag)
+        {
+            _handlerTag = handlerTag;
+        }
+        public GameplayTag Tag => _handlerTag;
+
+        public void Handle(InteractionContext context)
+        {
+            if(context.Target is AirshipDoor door)
+            {
+                door.ServerToggle();
+            }
         }
     }
 }

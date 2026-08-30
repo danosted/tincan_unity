@@ -24,13 +24,16 @@ TinCan is a Unity co-op multiplayer FPS (version pinned in `.unity-version`) bui
 - Before modifying a file, read its current target area; re-evaluate if it has materially changed.
 - Any new `NetworkBehaviour` MUST be suffixed with `NetworkMediator` — never `Controller` or `Manager` for networked components.
 - After a C# edit, check diagnostics and request Unity script compilation; confirm it finishes without compiler errors.
+- Before declaring any body of work involving project source or assets complete, run the applicable Unity test suites using the commands under **Unity Editor Operations** and confirm they pass. EditMode tests are mandatory for code changes; PlayMode tests are additionally mandatory when runtime behavior is affected. If tests cannot be run, report the blocker and do not describe the work as fully verified.
 
-## Unity Editor operations
+## Unity Editor Operations
 
-- Use workspace file tools for source code and text files; never rewrite C# through an Editor command.
-- Use the `unity` MCP server (or the `unity` CLI Pipeline commands — `unity status`, `unity cmd <tool>` — when MCP is unavailable) for live Editor state: Console logs, play mode, tests, scene inspection, and changes to GameObjects, components, prefabs, scenes, ScriptableObjects, materials, or project settings.
-- Do not hand-edit serialized scene or prefab YAML when an Editor-aware operation is available.
-- Before an object change, inspect current state; register changes for Undo, save affected scenes/assets explicitly, then verify via Console output or a scene capture.
+- Use workspace file tools for source code and text files. Do not use an Editor command to rewrite C# source.
+- Prefer the `unity` MCP server for live Editor state, Console logs, tests, Scene inspection, and changes to GameObjects, components, prefabs, scenes, ScriptableObjects, materials, or project settings.
+- When the interactive Editor is open, run EditMode tests with `unity command run_tests`. Run PlayMode tests with `unity command run_tests --mode playmode --async_tests`, then poll completion with `unity command test_status`. Use the standalone `unity test` command only for CI or when the project is not already open.
+- Before an MCP object change, inspect the current state. Register creations, modifications, and deletions with the command result for Undo; explicitly save affected scenes or assets; then verify Console output and capture the Scene view when visual placement matters.
+- Do not hand-edit serialized scene or prefab YAML when an Editor-aware MCP operation is available.
+- Prefer dedicated MCP compilation and status tools when exposed. If MCP is unavailable or disconnects during domain reload, use the `unity` CLI Pipeline commands and report when no Editor is reachable.
 
 ## Project quick facts
 

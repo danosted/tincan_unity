@@ -3,5 +3,6 @@
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="TinCan.Tests.EditMode.csproj" />
   <Project Path="TinCan.Core.Domain.csproj" />
+  <Project Path="TinCan.Tests.PlayMode.csproj" />
   <Project Path="TinCan.Tests.Shared.csproj" />
 </Solution>

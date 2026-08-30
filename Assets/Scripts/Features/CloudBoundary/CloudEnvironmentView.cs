@@ -1,8 +1,5 @@
 #nullable enable
-using System;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 using VContainer;
 
 namespace TinCan.Features.CloudBoundary
@@ -10,22 +7,33 @@ namespace TinCan.Features.CloudBoundary
     public class CloudEnvironmentView : MonoBehaviour
     {
         private const float CameraSearchInterval = 0.5f;
+        private static readonly int CloudEnabledId = Shader.PropertyToID("_CloudEnabled");
+        private static readonly int CloudHeightMapId = Shader.PropertyToID("_CloudHeightMap");
+        private static readonly int CloudHeightMapCenterId = Shader.PropertyToID("_CloudHeightMapCenter");
+        private static readonly int CloudLayerParamsId = Shader.PropertyToID("_CloudLayerParams");
+        private static readonly int CloudShapeParamsId = Shader.PropertyToID("_CloudShapeParams");
+        private static readonly int CloudLightParamsId = Shader.PropertyToID("_CloudLightParams");
+        private static readonly int CloudAmbientSkyId = Shader.PropertyToID("_CloudAmbientSky");
+        private static readonly int CloudAmbientGroundId = Shader.PropertyToID("_CloudAmbientGround");
+        private static readonly int CloudFadeStartId = Shader.PropertyToID("_CloudFadeStart");
+        private static readonly int CloudWindId = Shader.PropertyToID("_CloudWind");
+        private static readonly int CloudBaseColorId = Shader.PropertyToID("_CloudBaseColor");
+        private static readonly int CloudSunColorId = Shader.PropertyToID("_CloudSunColor");
+        private static readonly int CloudStepCountId = Shader.PropertyToID("_CloudStepCount");
 
-        private readonly List<Matrix4x4> _puffMatrices = new();
-        private readonly List<GameObject> _puffPool = new();
         private ICloudSurfaceQuery? _surfaceQuery;
         private CloudBoundaryConfig? _boundaryConfig;
         private CloudVisualProfile? _visualProfile;
-        private GameObject? _surfaceObject;
-        private Transform? _puffRoot;
-        private ParticleSystem? _bankParticles;
-        private Mesh? _surfaceMesh;
-        private Mesh? _puffMesh;
+        private readonly Vector3[] _ambientDirections = { Vector3.up, Vector3.down };
+        private readonly Color[] _ambientColors = new Color[2];
+        private Texture2D? _heightMap;
+        private float[]? _heightSamples;
         private Camera? _renderCamera;
         private float _nextCameraSearchTime;
-        private Vector2 _surfaceCenter = new(float.PositiveInfinity, float.PositiveInfinity);
-        private Vector2Int _bankCell = new(int.MinValue, int.MinValue);
-        private Vector2Int _cloudCell = new(int.MinValue, int.MinValue);
+        private Vector2 _heightMapCenter = new(float.PositiveInfinity, float.PositiveInfinity);
+
+        public bool IsReady => _heightMap != null;
+        public Texture2D? HeightMap => _heightMap;
 
         [Inject]
         public void Construct(
@@ -47,17 +55,22 @@ namespace TinCan.Features.CloudBoundary
                 return;
             }
 
-            CreateSurface();
-            _puffMesh = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
-            CreateBankParticles();
-            var puffRootObject = new GameObject("Cloud Puffs");
-            puffRootObject.transform.SetParent(transform, false);
-            _puffRoot = puffRootObject.transform;
+            int resolution = _visualProfile.HeightMapResolution;
+            _heightSamples = new float[resolution * resolution];
+            _heightMap = new Texture2D(resolution, resolution, TextureFormat.RFloat, false, true)
+            {
+                name = "Cloud Surface Height Map",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            Shader.SetGlobalTexture(CloudHeightMapId, _heightMap);
+            Shader.SetGlobalFloat(CloudEnabledId, 1f);
+            ApplyGlobalSettings();
         }
 
         private void Update()
         {
-            if (_surfaceQuery == null || _boundaryConfig == null || _visualProfile == null)
+            if (_surfaceQuery == null || _visualProfile == null || _heightMap == null || _heightSamples == null)
             {
                 return;
             }
@@ -68,9 +81,17 @@ namespace TinCan.Features.CloudBoundary
                 return;
             }
 
-            UpdateSurface(camera.transform.position);
-            UpdateBankParticles(camera.transform.position);
-            UpdateCloudCells(camera.transform.position);
+            UpdateHeightMap(camera.transform.position);
+            ApplyGlobalSettings();
+        }
+
+        private void OnDestroy()
+        {
+            Shader.SetGlobalFloat(CloudEnabledId, 0f);
+            if (_heightMap != null)
+            {
+                Destroy(_heightMap);
+            }
         }
 
         private Camera? ResolveRenderCamera()
@@ -95,9 +116,7 @@ namespace TinCan.Features.CloudBoundary
             _nextCameraSearchTime = Time.unscaledTime + CameraSearchInterval;
             foreach (Camera candidate in Camera.allCameras)
             {
-                if (!candidate.isActiveAndEnabled ||
-                    candidate.cameraType != CameraType.Game ||
-                    candidate.targetTexture != null)
+                if (!candidate.isActiveAndEnabled || candidate.cameraType != CameraType.Game)
                 {
                     continue;
                 }
@@ -109,335 +128,89 @@ namespace TinCan.Features.CloudBoundary
             return null;
         }
 
-        private void OnDestroy()
+        private void UpdateHeightMap(Vector3 cameraPosition)
         {
-            if (_surfaceMesh != null)
-            {
-                Destroy(_surfaceMesh);
-            }
-        }
-
-        private void CreateSurface()
-        {
-            if (_visualProfile?.SurfaceMaterial == null)
-            {
-                Debug.LogWarning("[CloudEnvironmentView] No cloud surface material is configured.");
-                return;
-            }
-
-            _surfaceObject = new GameObject("Cloud Sea");
-            _surfaceObject.transform.SetParent(transform, false);
-            var meshFilter = _surfaceObject.AddComponent<MeshFilter>();
-            var meshRenderer = _surfaceObject.AddComponent<MeshRenderer>();
-            meshRenderer.sharedMaterial = _visualProfile.SurfaceMaterial;
-            meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
-            meshRenderer.receiveShadows = false;
-
-            _surfaceMesh = new Mesh { name = "Procedural Cloud Sea" };
-            _surfaceMesh.MarkDynamic();
-            meshFilter.sharedMesh = _surfaceMesh;
-        }
-
-        private void CreateBankParticles()
-        {
-            if (_visualProfile?.PuffMaterial == null || _puffMesh == null)
-            {
-                Debug.LogWarning("[CloudEnvironmentView] No material or mesh is configured for lower cloud particles.");
-                return;
-            }
-
-            var bankObject = new GameObject("Lower Cloud Bank Particles");
-            bankObject.transform.SetParent(transform, false);
-            _bankParticles = bankObject.AddComponent<ParticleSystem>();
-
-            ParticleSystem.MainModule main = _bankParticles.main;
-            main.loop = false;
-            main.playOnAwake = false;
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.maxParticles = GetBankParticleCapacity();
-            main.startSize3D = true;
-
-            ParticleSystem.EmissionModule emission = _bankParticles.emission;
-            emission.enabled = false;
-            ParticleSystem.CollisionModule collision = _bankParticles.collision;
-            collision.enabled = false;
-
-            var particleRenderer = bankObject.GetComponent<ParticleSystemRenderer>();
-            particleRenderer.renderMode = ParticleSystemRenderMode.Mesh;
-            particleRenderer.mesh = _puffMesh;
-            particleRenderer.sharedMaterial = _visualProfile.PuffMaterial;
-            particleRenderer.shadowCastingMode = ShadowCastingMode.Off;
-            particleRenderer.receiveShadows = false;
-        }
-
-        private void UpdateSurface(Vector3 cameraPosition)
-        {
-            if (_surfaceObject == null || _surfaceMesh == null || _surfaceQuery == null || _visualProfile == null)
+            if (_surfaceQuery == null || _visualProfile == null || _heightMap == null || _heightSamples == null)
             {
                 return;
             }
 
-            var nextCenter = new Vector2(cameraPosition.x, cameraPosition.z);
-            if (Vector2.Distance(_surfaceCenter, nextCenter) < _visualProfile.SurfaceRecenterDistance)
+            float snap = _visualProfile.HeightMapRecenterDistance;
+            var nextCenter = new Vector2(
+                Mathf.Round(cameraPosition.x / snap) * snap,
+                Mathf.Round(cameraPosition.z / snap) * snap);
+            if (nextCenter == _heightMapCenter)
             {
                 return;
             }
 
-            float snap = _visualProfile.SurfaceRecenterDistance;
-            _surfaceCenter = new Vector2(
-                Mathf.Round(nextCenter.x / snap) * snap,
-                Mathf.Round(nextCenter.y / snap) * snap);
-            _surfaceObject.transform.position = new Vector3(_surfaceCenter.x, 0f, _surfaceCenter.y);
-            RebuildSurfaceMesh();
-        }
+            _heightMapCenter = nextCenter;
+            int resolution = _visualProfile.HeightMapResolution;
+            float worldSize = _visualProfile.HeightMapWorldSize;
+            float sampleSpacing = worldSize / (resolution - 1);
+            float startX = nextCenter.x - worldSize * 0.5f;
+            float startZ = nextCenter.y - worldSize * 0.5f;
 
-        private void RebuildSurfaceMesh()
-        {
-            if (_surfaceMesh == null || _surfaceQuery == null || _visualProfile == null)
-            {
-                return;
-            }
-
-            int resolution = _visualProfile.SurfaceResolution;
-            int rowSize = resolution + 1;
-            var vertices = new Vector3[rowSize * rowSize];
-            var uv = new Vector2[vertices.Length];
-            var triangles = new int[resolution * resolution * 6];
-            float halfSize = _visualProfile.SurfaceSize * 0.5f;
-            float step = _visualProfile.SurfaceSize / resolution;
-
-            for (int z = 0; z < rowSize; z++)
-            {
-                for (int x = 0; x < rowSize; x++)
-                {
-                    int index = z * rowSize + x;
-                    float localX = -halfSize + x * step;
-                    float localZ = -halfSize + z * step;
-                    float worldX = _surfaceCenter.x + localX;
-                    float worldZ = _surfaceCenter.y + localZ;
-                    vertices[index] = new Vector3(localX, _surfaceQuery.GetSurfaceHeight(worldX, worldZ), localZ);
-                    uv[index] = new Vector2((float)x / resolution, (float)z / resolution);
-                }
-            }
-
-            int triangleIndex = 0;
             for (int z = 0; z < resolution; z++)
             {
                 for (int x = 0; x < resolution; x++)
                 {
-                    int bottomLeft = z * rowSize + x;
-                    triangles[triangleIndex++] = bottomLeft;
-                    triangles[triangleIndex++] = bottomLeft + rowSize;
-                    triangles[triangleIndex++] = bottomLeft + 1;
-                    triangles[triangleIndex++] = bottomLeft + 1;
-                    triangles[triangleIndex++] = bottomLeft + rowSize;
-                    triangles[triangleIndex++] = bottomLeft + rowSize + 1;
+                    _heightSamples[z * resolution + x] = _surfaceQuery.GetSurfaceHeight(
+                        startX + x * sampleSpacing,
+                        startZ + z * sampleSpacing);
                 }
             }
 
-            _surfaceMesh.Clear();
-            _surfaceMesh.vertices = vertices;
-            _surfaceMesh.uv = uv;
-            _surfaceMesh.triangles = triangles;
-            _surfaceMesh.RecalculateNormals();
-            _surfaceMesh.RecalculateBounds();
+            _heightMap.SetPixelData(_heightSamples, 0);
+            _heightMap.Apply(false, false);
+            Shader.SetGlobalVector(CloudHeightMapCenterId, new Vector4(
+                nextCenter.x,
+                nextCenter.y,
+                worldSize,
+                1f / worldSize));
         }
 
-        private void UpdateBankParticles(Vector3 cameraPosition)
+        private void ApplyGlobalSettings()
         {
-            if (_bankParticles == null || _boundaryConfig == null || _surfaceQuery == null || _visualProfile == null)
+            if (_visualProfile == null || _boundaryConfig == null)
             {
                 return;
             }
 
-            float cellSize = _visualProfile.BankCellSize;
-            var nextCell = new Vector2Int(
-                Mathf.FloorToInt(cameraPosition.x / cellSize),
-                Mathf.FloorToInt(cameraPosition.z / cellSize));
-            if (nextCell == _bankCell)
-            {
-                return;
-            }
-
-            _bankCell = nextCell;
-            var particles = new ParticleSystem.Particle[GetBankParticleCapacity()];
-            int particleIndex = 0;
-            int radius = _visualProfile.BankCellRadius;
-            for (int cellZ = nextCell.y - radius; cellZ <= nextCell.y + radius; cellZ++)
-            {
-                for (int cellX = nextCell.x - radius; cellX <= nextCell.x + radius; cellX++)
-                {
-                    for (int item = 0; item < _visualProfile.BankParticlesPerCell; item++)
-                    {
-                        uint seed = Hash(_boundaryConfig.WorldSeed ^ 0x5F3759DF, cellX, cellZ, item);
-                        float worldX = (cellX + Next01(ref seed)) * cellSize;
-                        float worldZ = (cellZ + Next01(ref seed)) * cellSize;
-                        float surfaceHeight = _surfaceQuery.GetSurfaceHeight(worldX, worldZ);
-                        float particleSize = Mathf.Lerp(
-                            _visualProfile.BankParticleSize.x,
-                            _visualProfile.BankParticleSize.y,
-                            Next01(ref seed));
-                        var particle = new ParticleSystem.Particle
-                        {
-                            position = new Vector3(
-                                worldX,
-                                surfaceHeight + Mathf.Lerp(
-                                    _visualProfile.BankAltitudeOffset.x,
-                                    _visualProfile.BankAltitudeOffset.y,
-                                    Next01(ref seed)),
-                                worldZ),
-                            rotation = Next01(ref seed) * 360f,
-                            startColor = Color.white,
-                            remainingLifetime = float.MaxValue,
-                            startLifetime = float.MaxValue
-                        };
-                        particle.startSize3D = new Vector3(
-                            particleSize * Mathf.Lerp(0.8f, 1.2f, Next01(ref seed)),
-                            particleSize * Mathf.Lerp(0.28f, 0.48f, Next01(ref seed)),
-                            particleSize * Mathf.Lerp(0.65f, 1f, Next01(ref seed)));
-                        particles[particleIndex++] = particle;
-                    }
-                }
-            }
-
-            _bankParticles.SetParticles(particles, particleIndex);
+            Shader.SetGlobalVector(CloudLayerParamsId, new Vector4(
+                _visualProfile.LayerThickness,
+                _visualProfile.DepthBelowSurface,
+                _visualProfile.ShellRadius,
+                _visualProfile.MaxRenderDistance));
+            Shader.SetGlobalVector(CloudShapeParamsId, new Vector4(
+                _visualProfile.Coverage,
+                _visualProfile.Density,
+                _visualProfile.NoiseScale,
+                _boundaryConfig.WorldSeed));
+            Shader.SetGlobalVector(CloudLightParamsId, new Vector4(
+                _visualProfile.LightAbsorption,
+                _visualProfile.ScatterEccentricity,
+                _visualProfile.PowderStrength,
+                _visualProfile.AmbientStrength));
+            // unity_SHAr..unity_SHC live in the UnityPerDraw cbuffer, which a full-screen procedural
+            // draw never binds, so the environment ambient has to be supplied explicitly.
+            RenderSettings.ambientProbe.Evaluate(_ambientDirections, _ambientColors);
+            Shader.SetGlobalVector(CloudAmbientSkyId, ToLinearVector(_ambientColors[0]));
+            Shader.SetGlobalVector(CloudAmbientGroundId, ToLinearVector(_ambientColors[1]));
+            Shader.SetGlobalFloat(CloudFadeStartId, _visualProfile.DistanceFadeStart);
+            Shader.SetGlobalVector(CloudWindId, new Vector4(
+                _visualProfile.Wind.x,
+                _visualProfile.Wind.y,
+                0f,
+                0f));
+            Shader.SetGlobalColor(CloudBaseColorId, _visualProfile.BaseColor);
+            Shader.SetGlobalColor(CloudSunColorId, _visualProfile.SunColor);
+            Shader.SetGlobalInt(CloudStepCountId, _visualProfile.StepCount);
         }
 
-        private int GetBankParticleCapacity()
+        private static Vector4 ToLinearVector(Color color)
         {
-            if (_visualProfile == null)
-            {
-                return 0;
-            }
-
-            int diameter = _visualProfile.BankCellRadius * 2 + 1;
-            return diameter * diameter * _visualProfile.BankParticlesPerCell;
-        }
-
-        private void UpdateCloudCells(Vector3 cameraPosition)
-        {
-            if (_boundaryConfig == null || _surfaceQuery == null || _visualProfile == null)
-            {
-                return;
-            }
-
-            float cellSize = _visualProfile.CellSize;
-            var nextCell = new Vector2Int(
-                Mathf.FloorToInt(cameraPosition.x / cellSize),
-                Mathf.FloorToInt(cameraPosition.z / cellSize));
-            if (nextCell == _cloudCell)
-            {
-                return;
-            }
-
-            _cloudCell = nextCell;
-            _puffMatrices.Clear();
-            int radius = _visualProfile.CellRadius;
-            for (int cellZ = nextCell.y - radius; cellZ <= nextCell.y + radius; cellZ++)
-            {
-                for (int cellX = nextCell.x - radius; cellX <= nextCell.x + radius; cellX++)
-                {
-                    AddCellClouds(cellX, cellZ);
-                }
-            }
-
-            ApplyPuffPool();
-        }
-
-        private void AddCellClouds(int cellX, int cellZ)
-        {
-            if (_boundaryConfig == null || _surfaceQuery == null || _visualProfile == null)
-            {
-                return;
-            }
-
-            for (int cluster = 0; cluster < _visualProfile.ClustersPerCell; cluster++)
-            {
-                uint seed = Hash(_boundaryConfig.WorldSeed, cellX, cellZ, cluster);
-                float worldX = (cellX + Next01(ref seed)) * _visualProfile.CellSize;
-                float worldZ = (cellZ + Next01(ref seed)) * _visualProfile.CellSize;
-                float surfaceHeight = _surfaceQuery.GetSurfaceHeight(worldX, worldZ);
-                float altitude = surfaceHeight + Mathf.Lerp(
-                    _visualProfile.AltitudeAboveSurface.x,
-                    _visualProfile.AltitudeAboveSurface.y,
-                    Next01(ref seed));
-                float clusterScale = Mathf.Lerp(
-                    _visualProfile.ClusterScale.x,
-                    _visualProfile.ClusterScale.y,
-                    Next01(ref seed));
-
-                for (int puff = 0; puff < _visualProfile.PuffsPerCluster; puff++)
-                {
-                    Vector3 offset = new(
-                        (Next01(ref seed) - 0.5f) * clusterScale,
-                        (Next01(ref seed) - 0.5f) * clusterScale * 0.25f,
-                        (Next01(ref seed) - 0.5f) * clusterScale * 0.55f);
-                    Vector3 scale = new(
-                        clusterScale * Mathf.Lerp(0.35f, 0.7f, Next01(ref seed)),
-                        clusterScale * Mathf.Lerp(0.16f, 0.3f, Next01(ref seed)),
-                        clusterScale * Mathf.Lerp(0.3f, 0.6f, Next01(ref seed)));
-                    _puffMatrices.Add(Matrix4x4.TRS(
-                        new Vector3(worldX, altitude, worldZ) + offset,
-                        Quaternion.Euler(0f, Next01(ref seed) * 360f, 0f),
-                        scale));
-                }
-            }
-        }
-
-        private void ApplyPuffPool()
-        {
-            if (_puffMesh == null || _puffRoot == null || _visualProfile?.PuffMaterial == null)
-            {
-                return;
-            }
-
-            while (_puffPool.Count < _puffMatrices.Count)
-            {
-                var puffObject = new GameObject($"Cloud Puff {_puffPool.Count}");
-                puffObject.transform.SetParent(_puffRoot, false);
-                var meshFilter = puffObject.AddComponent<MeshFilter>();
-                meshFilter.sharedMesh = _puffMesh;
-                var meshRenderer = puffObject.AddComponent<MeshRenderer>();
-                meshRenderer.sharedMaterial = _visualProfile.PuffMaterial;
-                meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
-                meshRenderer.receiveShadows = false;
-                _puffPool.Add(puffObject);
-            }
-
-            for (int index = 0; index < _puffPool.Count; index++)
-            {
-                GameObject puffObject = _puffPool[index];
-                bool isActive = index < _puffMatrices.Count;
-                puffObject.SetActive(isActive);
-                if (!isActive)
-                {
-                    continue;
-                }
-
-                Matrix4x4 matrix = _puffMatrices[index];
-                puffObject.transform.SetPositionAndRotation(matrix.GetPosition(), matrix.rotation);
-                puffObject.transform.localScale = matrix.lossyScale;
-            }
-        }
-
-        private static uint Hash(int worldSeed, int cellX, int cellZ, int item)
-        {
-            unchecked
-            {
-                uint hash = (uint)worldSeed ^ 2166136261u;
-                hash = (hash ^ (uint)cellX) * 16777619u;
-                hash = (hash ^ (uint)cellZ) * 16777619u;
-                hash = (hash ^ (uint)item) * 16777619u;
-                return hash;
-            }
-        }
-
-        private static float Next01(ref uint state)
-        {
-            state ^= state << 13;
-            state ^= state >> 17;
-            state ^= state << 5;
-            return (state & 0x00FFFFFFu) / 16777216f;
+            return new Vector4(Mathf.Max(color.r, 0f), Mathf.Max(color.g, 0f), Mathf.Max(color.b, 0f), 1f);
         }
     }
 }

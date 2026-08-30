@@ -14,7 +14,7 @@ Shader "TinCan/Environment/Cloud Sea"
 
     SubShader
     {
-        Tags { "RenderType"="Transparent" "Queue"="Transparent" "RenderPipeline"="UniversalPipeline" }
+        Tags { "RenderType"="Transparent" "Queue"="Transparent-10" "RenderPipeline"="UniversalPipeline" }
         Blend One OneMinusSrcAlpha
         ZWrite Off
         Cull Off
@@ -42,6 +42,7 @@ Shader "TinCan/Environment/Cloud Sea"
                 float3 positionWS : TEXCOORD0;
                 float fogFactor : TEXCOORD1;
                 float3 viewDirectionWS : TEXCOORD2;
+                float3 normalWS : TEXCOORD3;
             };
 
             CBUFFER_START(UnityPerMaterial)
@@ -81,13 +82,29 @@ Shader "TinCan/Environment/Cloud Sea"
                 return noise;
             }
 
+            float GetCloudDisplacement(float2 worldPosition, float2 heightScroll)
+            {
+                float heightNoise = FractalNoise(worldPosition * _HeightNoiseScale + heightScroll);
+                return smoothstep(0.18, 0.88, heightNoise) * _CloudHeight;
+            }
+
             Varyings Vert(Attributes input)
             {
                 Varyings output;
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 float2 heightScroll = _Time.y * _ScrollSpeed.xy * 0.08;
-                float heightNoise = FractalNoise(positionWS.xz * _HeightNoiseScale + heightScroll);
-                positionWS.y += smoothstep(0.18, 0.88, heightNoise) * _CloudHeight;
+                const float normalSampleDistance = 3.0;
+                float leftHeight = GetCloudDisplacement(positionWS.xz - float2(normalSampleDistance, 0), heightScroll);
+                float rightHeight = GetCloudDisplacement(positionWS.xz + float2(normalSampleDistance, 0), heightScroll);
+                float backHeight = GetCloudDisplacement(positionWS.xz - float2(0, normalSampleDistance), heightScroll);
+                float forwardHeight = GetCloudDisplacement(positionWS.xz + float2(0, normalSampleDistance), heightScroll);
+                float3 baseNormalWS = TransformObjectToWorldNormal(input.normalOS);
+                float3 displacementSlope = float3(
+                    leftHeight - rightHeight,
+                    0,
+                    backHeight - forwardHeight) / (normalSampleDistance * 2.0);
+                output.normalWS = normalize(baseNormalWS + displacementSlope);
+                positionWS.y += GetCloudDisplacement(positionWS.xz, heightScroll);
                 output.positionCS = TransformWorldToHClip(positionWS);
                 output.positionWS = positionWS;
                 output.fogFactor = ComputeFogFactor(output.positionCS.z);
@@ -101,8 +118,7 @@ Shader "TinCan/Environment/Cloud Sea"
                 float broad = FractalNoise(input.positionWS.xz * _NoiseScale + scroll);
                 float detail = ValueNoise(input.positionWS.xz * _NoiseScale * 3.7 - scroll * 0.6);
                 float density = saturate(broad * 0.78 + detail * 0.22);
-                float3 normalWS = normalize(cross(ddy(input.positionWS), ddx(input.positionWS)));
-                normalWS *= normalWS.y < 0 ? -1 : 1;
+                float3 normalWS = normalize(input.normalWS);
                 float diffuse = saturate(dot(normalWS, normalize(float3(-0.35, 0.8, -0.2))) * 0.5 + 0.5);
                 half4 color = lerp(_DeepColor, _ShallowColor, saturate(density * 0.65 + diffuse * 0.35));
                 color.rgb += (density - 0.5) * _NoiseStrength;

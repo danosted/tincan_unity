@@ -30,8 +30,11 @@ namespace TinCan.Features.Abilities
         [Header("Activation Constraints")]
         public TinCan.Core.Domain.Abilities.Inputs.GameplayInput TriggerInput; // Input mapped to this ability
         public AbilityInputPolicy InputPolicy = AbilityInputPolicy.OnInputTriggered;
-        public List<GameplayTag> ActivationRequiredTags;
-        public List<GameplayTag> ActivationBlockedTags;
+        public bool IsToggleable; // If true, re-triggering while active cancels it instead of being blocked
+        public List<GameplayTag> ActivationRequiredTagsOnActor;
+        public List<GameplayTag> ActivationBlockedTagsOnActor;
+        public List<GameplayTag> ActivationRequiredTagsOnTarget;
+        public List<GameplayTag> ActivationBlockedTagsOnTarget;
         public GameplayTag TriggerTag; // If this tag is received in a GameplayEvent, activate this ability
 
         [Header("Timing Windows (Tag-Based)")]

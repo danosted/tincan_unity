@@ -12,5 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6994ed6b8e52b634d926c9fd98e27ce7, type: 3}
   m_Name: IA_AcquireAirshipControl
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Interaction.InteractionDefinition
-  _handlerTag: {fileID: 11400000, guid: 1588b135530f1494687fbebc57591f58, type: 2}
-  _ability: {fileID: 0}
+  _handlerTypeName: TinCan.Features.Interaction.PossessionInteractionHandler, TinCan.Features,
+    Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  _ability: {fileID: 11400000, guid: b32705ea6b078db499571ef2b8ae3887, type: 2}
+  _abilityActorRole: 0

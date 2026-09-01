@@ -12,5 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6994ed6b8e52b634d926c9fd98e27ce7, type: 3}
   m_Name: IA_RepairModule
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Interaction.InteractionDefinition
-  _handlerTag: {fileID: 11400000, guid: cbecd9f93668a4443b6ef35e85f4d722, type: 2}
+  _handlerTypeName: TinCan.Features.Interaction.ActivateAbilityInteractionHandler,
+    TinCan.Features, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   _ability: {fileID: 11400000, guid: 7ad3bd62fdedf794b87a380844716e24, type: 2}
+  _abilityActorRole: 0

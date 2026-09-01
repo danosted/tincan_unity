@@ -38,7 +38,7 @@ namespace TinCan.Tests.EditMode
             _abilityRegistry = new FakeAbilityRegistry();
             _eventPublisher = new FakeEventPublisher();
             _processor = new HumanoidMovementProcessor();
-            _abilitySystem = new AbilitySystemUseCase(_abilityRegistry, _timeService, _eventPublisher);
+            _abilitySystem = new AbilitySystemUseCase(_abilityRegistry, _actorRegistry, _timeService, _eventPublisher);
             _useCase = new HumanoidMovementUseCase(_inputService, _networkService, _processor, _abilitySystem, _actorRegistry, _timeService);
 
             // Wide, solid platform collider positioned just below the character so a downward

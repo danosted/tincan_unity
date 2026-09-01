@@ -34,6 +34,7 @@ namespace TinCan.Network.Infrastructure
         [SerializeField] private GameplayAttribute _flightSpeedAttribute;
         [SerializeField] private GameplayAttribute _turnSpeedAttribute;
         [SerializeField] private GameplayAttribute _healthAttribute;
+        [SerializeField] private System.Collections.Generic.List<AbilityDefinition> _startingAbilities;
 
         // IShipState Implementation
         public IAbilityControllerBase Controller => _abilitySync;
@@ -91,6 +92,12 @@ namespace TinCan.Network.Infrastructure
             _attributes = new AirshipAttributeSet(_abilitySync, _flightSpeedAttribute, _turnSpeedAttribute, _healthAttribute);
             _attributes.InitializeBaseValues(_view.MaxForwardSpeed, _view.TurnSpeed, 1000f);
             _abilitySync.RegisterAttributeSet(_attributes);
+
+            // TODO: temporary bridge until abilities are granted via equipment/skill tree instead of starting lists.
+            foreach (var ability in _startingAbilities ?? new System.Collections.Generic.List<AbilityDefinition>())
+            {
+                _abilitySync.GrantAbility(ability);
+            }
 
             if (Registry != null)
             {

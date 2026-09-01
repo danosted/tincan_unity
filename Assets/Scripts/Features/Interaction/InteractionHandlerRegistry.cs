@@ -1,28 +1,31 @@
+using System;
 using System.Collections.Generic;
-using TinCan.Core.Domain.Abilities.Tags;
 
 namespace TinCan.Features.Interaction
 {
     public class InteractionHandlerRegistry : IInteractionHandlerRegistry
     {
-        private readonly Dictionary<GameplayTag, IInteractionHandler> _handlers;
+        private readonly Dictionary<Type, IInteractionHandler> _handlersByType;
 
         public InteractionHandlerRegistry(IEnumerable<IInteractionHandler> handlers)
         {
-            _handlers = new Dictionary<GameplayTag, IInteractionHandler>();
+            _handlersByType = new Dictionary<Type, IInteractionHandler>();
             foreach (var handler in handlers)
             {
-                if (handler.Tag != null)
-                {
-                    _handlers[handler.Tag] = handler;
-                }
+                _handlersByType[handler.GetType()] = handler;
             }
         }
 
-        public bool TryGetHandler(GameplayTag handlerTag, out IInteractionHandler handler)
+        public bool TryGetHandler(Type handlerType, out IInteractionHandler handler)
         {
             handler = null!;
-            return handlerTag != null && _handlers.TryGetValue(handlerTag, out handler);
+            return handlerType != null && _handlersByType.TryGetValue(handlerType, out handler);
+        }
+
+        public bool TryGetHandler<THandler>(out THandler handler) where THandler : class, IInteractionHandler
+        {
+            handler = null;
+            return TryGetHandler(typeof(THandler), out var found) && (handler = found as THandler) != null;
         }
     }
 }

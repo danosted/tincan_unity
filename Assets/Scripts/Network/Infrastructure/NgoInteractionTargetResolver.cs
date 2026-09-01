@@ -1,3 +1,4 @@
+#nullable enable
 using TinCan.Features.Interaction;
 using TinCan.Core.Domain;
 using Unity.Netcode;
@@ -16,9 +17,9 @@ namespace TinCan.Network.Infrastructure
             _networkManager = networkManager;
         }
 
-        public bool TryResolve(InteractionTargetId targetId, out IInteractable target)
+        public bool TryResolve(InteractionTargetId targetId, out IInteractable? target)
         {
-            target = null!;
+            target = null;
             if (!_networkManager.SpawnManager.SpawnedObjects.TryGetValue(targetId.NetworkObjectId, out var targetObject))
             {
                 return false;

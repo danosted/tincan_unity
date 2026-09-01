@@ -178,6 +178,8 @@ MonoBehaviour:
   _flightSpeedAttribute: {fileID: 11400000, guid: dfba58bddba97f844a531ebee046cadd, type: 2}
   _turnSpeedAttribute: {fileID: 0}
   _healthAttribute: {fileID: 0}
+  _startingAbilities:
+  - {fileID: 11400000, guid: a3a229ddf05fa034381a35fc2fb1bc2e, type: 2}
 --- !u!114 &8128722450371628807
 MonoBehaviour:
   m_ObjectHideFlags: 0

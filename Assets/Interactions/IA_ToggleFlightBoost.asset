@@ -12,5 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6994ed6b8e52b634d926c9fd98e27ce7, type: 3}
   m_Name: IA_ToggleFlightBoost
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Interaction.InteractionDefinition
-  _handlerTag: {fileID: 11400000, guid: 4657d8abfc7f9da4cbe51218041e09f6, type: 2}
+  _handlerTypeName: TinCan.Features.Interaction.ActivateAbilityInteractionHandler,
+    TinCan.Features, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   _ability: {fileID: 11400000, guid: a3a229ddf05fa034381a35fc2fb1bc2e, type: 2}
+  _abilityActivator: 1

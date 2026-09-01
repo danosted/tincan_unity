@@ -1,0 +1,8 @@
+﻿<Solution>
+  <Project Path="TinCan.Features.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="TinCan.Tests.EditMode.csproj" />
+  <Project Path="TinCan.Core.Domain.csproj" />
+  <Project Path="TinCan.Features.Interaction.Editor.csproj" />
+  <Project Path="TinCan.Tests.Shared.csproj" />
+</Solution>

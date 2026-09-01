@@ -27,7 +27,9 @@ This document outlines the strict coding standards required for the TinCan proje
 
 ## 5. Clean Code Rules
 - **Keep it small:** Classes should have a single responsibility.
-- **Fail Fast:** Use Guard clauses at the top of methods instead of deep nesting.
+- **Fail Fast:** Use Guard clauses at the top of methods instead of deep nesting; prefer early returns over wrapping the remaining logic in nested `if` blocks.
+- **Pattern Matching:** Prefer switch expressions (`x switch { ... }`) and pattern-matching switch statements over long if/else-if chains when branching on an enum or a small combination of conditions. Use tuple patterns (e.g. `switch (a, b) { case (true, false): ... }`) for multi-condition matrices, and `when` guards for conditional arms. One arm per case/condition.
+- **Named Tuples:** Use named tuple elements (e.g. `(IActor Requester, IActor Target)`) instead of positional tuples when returning or destructuring multiple values, for clarity at call sites.
 - **Regions:** Do not use `#region`. If a class is too large and needs regions, it should be refactored into multiple classes.
 
 ## Related Documents

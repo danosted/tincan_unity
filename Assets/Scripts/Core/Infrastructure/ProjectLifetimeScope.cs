@@ -41,9 +41,6 @@ namespace TinCan.Core.Infrastructure
 
         [Header("Abilities")]
         [SerializeField] private TinCan.Core.Domain.Abilities.Tags.GameplayTag _buildingTag;
-        [SerializeField] private TinCan.Core.Domain.Abilities.Tags.GameplayTag _possessionInteractionTag;
-        [SerializeField] private TinCan.Core.Domain.Abilities.Tags.GameplayTag _toggleAbilityInteractionTag;
-        [SerializeField] private TinCan.Core.Domain.Abilities.Tags.GameplayTag _repairAbilityInteractionTag;
 
         [Header("Building Modules")]
         [SerializeField] private List<GameObject> _buildablePrefabs = new();
@@ -83,15 +80,8 @@ namespace TinCan.Core.Infrastructure
             builder.Register<Abilities.AbilityRegistry>(Lifetime.Singleton).As<IAbilityRegistry>();
             builder.Register<ActorOrchestrator>(Lifetime.Singleton).As<IActorOrchestrator>();
             builder.Register<NgoInteractionTargetResolver>(Lifetime.Singleton).As<IInteractionTargetResolver>();
-            builder.Register<PossessionInteractionHandler>(Lifetime.Singleton)
-                .WithParameter("handlerTag", _possessionInteractionTag)
-                .As<IInteractionHandler>();
-            builder.Register<ToggleAbilityInteractionHandler>(Lifetime.Singleton)
-                .WithParameter("handlerTag", _toggleAbilityInteractionTag)
-                .As<IInteractionHandler>();
-            builder.Register<RepairAbilityInteractionHandler>(Lifetime.Singleton)
-                .WithParameter("handlerTag", _repairAbilityInteractionTag)
-                .As<IInteractionHandler>();
+            builder.Register<PossessionInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
+            builder.Register<ActivateAbilityInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
             builder.Register<InteractionHandlerRegistry>(Lifetime.Singleton).As<IInteractionHandlerRegistry>();
 
             // Register Possession Mediator Factory lazily
@@ -113,7 +103,7 @@ namespace TinCan.Core.Infrastructure
                 .AsSelf()
                 .As<IInitializable>()
                 .As<ITickable>();
-            builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
+            builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>().As<ITickable>();
             builder.Register<ShipStateProvider>(Lifetime.Singleton).As<IShipState>();
             builder.Register<AirshipMovementUseCase>(Lifetime.Singleton);
             builder.Register<CloudBoundaryUseCase>(Lifetime.Singleton);

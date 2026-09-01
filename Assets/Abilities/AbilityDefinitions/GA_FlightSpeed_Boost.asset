@@ -17,8 +17,11 @@ MonoBehaviour:
   BlockAbilitiesWithTag: []
   TriggerInput: {fileID: 0}
   InputPolicy: 0
-  ActivationRequiredTags: []
-  ActivationBlockedTags: []
+  IsToggleable: 1
+  ActivationRequiredTagsOnActor: []
+  ActivationBlockedTagsOnActor: []
+  ActivationRequiredTagsOnTarget: []
+  ActivationBlockedTagsOnTarget: []
   TriggerTag: {fileID: 0}
   TimingTagWindows: []
   ActiveEffect: {fileID: 11400000, guid: b8ff4f3629436c842af9c30525c2e95f, type: 2}

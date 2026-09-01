@@ -1,5 +1,5 @@
+using System;
 using TinCan.Core.Domain;
-using TinCan.Core.Domain.Abilities.Tags;
 
 namespace TinCan.Features.Interaction
 {
@@ -22,12 +22,12 @@ namespace TinCan.Features.Interaction
 
     public interface IInteractionHandler
     {
-        GameplayTag Tag { get; }
         void Handle(InteractionContext context);
     }
 
     public interface IInteractionHandlerRegistry
     {
-        bool TryGetHandler(GameplayTag handlerTag, out IInteractionHandler handler);
+        bool TryGetHandler(Type handlerType, out IInteractionHandler handler);
+        bool TryGetHandler<THandler>(out THandler handler) where THandler : class, IInteractionHandler;
     }
 }

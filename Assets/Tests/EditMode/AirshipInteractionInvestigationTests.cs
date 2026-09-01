@@ -30,7 +30,7 @@ namespace TinCan.Tests.EditMode
             _timeService = new FakeTimeService { DeltaTime = 1f / 30f };
             _actorRegistry = new FakeActorRegistry();
             _processor = new HumanoidMovementProcessor();
-            _abilitySystem = new AbilitySystemUseCase(new FakeAbilityRegistry(), _timeService, new FakeEventPublisher());
+            _abilitySystem = new AbilitySystemUseCase(new FakeAbilityRegistry(), _actorRegistry, _timeService, new FakeEventPublisher());
             _useCase = new HumanoidMovementUseCase(new FakeInputService(), new FakeNetworkService(), _processor, _abilitySystem, _actorRegistry, _timeService);
 
             _shipRoot = new GameObject("ShipRoot");

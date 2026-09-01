@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using TinCan.Core.Domain;
 
@@ -45,6 +46,6 @@ namespace TinCan.Features.Interaction
 
     public interface IInteractionTargetResolver
     {
-        bool TryResolve(InteractionTargetId targetId, out IInteractable target);
+        bool TryResolve(InteractionTargetId targetId, out IInteractable? target);
     }
 }

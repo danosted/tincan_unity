@@ -33,7 +33,7 @@ namespace TinCan.Features.Interaction
                 target is not IInteractionTarget interactionTarget ||
                 interactionTarget.Definition == null ||
                 !_handlerRegistry.TryGetHandler(
-                    interactionTarget.Definition.HandlerTag,
+                    interactionTarget.Definition.HandlerType,
                     out var handler))
             {
                 return;

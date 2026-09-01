@@ -1,6 +1,5 @@
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
-using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Features.Abilities;
 using TinCan.Features.Possession;
 using UnityEngine;
@@ -10,17 +9,11 @@ namespace TinCan.Features.Interaction
     public class PossessionInteractionHandler : IInteractionHandler
     {
         private readonly IPossessionAuthority _possessionAuthority;
-        private readonly GameplayTag _handlerTag;
 
-        public PossessionInteractionHandler(
-            IPossessionAuthority possessionAuthority,
-            GameplayTag handlerTag)
+        public PossessionInteractionHandler(IPossessionAuthority possessionAuthority)
         {
             _possessionAuthority = possessionAuthority;
-            _handlerTag = handlerTag;
         }
-
-        public GameplayTag Tag => _handlerTag;
 
         public void Handle(InteractionContext context)
         {
@@ -33,71 +26,54 @@ namespace TinCan.Features.Interaction
         }
     }
 
-    public class ToggleAbilityInteractionHandler : IInteractionHandler
+    /// <summary>
+    /// Activates (or toggles) the definition's Ability, resolving actor/target per ActorRole.
+    /// Does not grant the ability — the actor must already have it (starting abilities, equipment, skill tree, etc.).
+    /// </summary>
+    public class ActivateAbilityInteractionHandler : IInteractionHandler
     {
         private readonly AbilitySystemUseCase _abilitySystem;
-        private readonly GameplayTag _handlerTag;
 
-        public ToggleAbilityInteractionHandler(
-            AbilitySystemUseCase abilitySystem,
-            GameplayTag handlerTag)
+        public ActivateAbilityInteractionHandler(AbilitySystemUseCase abilitySystem)
         {
             _abilitySystem = abilitySystem;
-            _handlerTag = handlerTag;
         }
-
-        public GameplayTag Tag => _handlerTag;
 
         public void Handle(InteractionContext context)
         {
             if (context.Definition.Ability == null ||
-                context.Target is not MonoBehaviour targetMono ||
-                targetMono.GetComponentInParent<IAbilityControllerBase>() is not { } targetController)
+                !TryResolveTargetController(context.Target, out var targetController))
             {
                 return;
             }
 
-            _abilitySystem.GrantAbility(targetController, context.Definition.Ability);
-            if (targetController.HasTag(context.Definition.Ability.AbilityTag))
+            // One arm per ActorRole; add a case here if a new role is ever needed.
+            var (abilityController, target) = context.Definition.AbilityActivator switch
             {
-                _abilitySystem.CancelAbility(targetController, context.Definition.Ability);
-                return;
-            }
+                InteractionDefinition.AbilityActivatorType.Requester when context.Requester is IAbilityControllerBase requesterController
+                    => (requesterController, targetController),
+                InteractionDefinition.AbilityActivatorType.Target
+                    => (targetController, targetController),
+                _ => (null, null)
+            };
 
-            _abilitySystem.TryActivateAbility(targetController, context.Definition.Ability, targetController);
-        }
-    }
+            if (abilityController == null) return;
 
-    public class RepairAbilityInteractionHandler : IInteractionHandler
-    {
-        private readonly AbilitySystemUseCase _abilitySystem;
-        private readonly GameplayTag _handlerTag;
-
-        public RepairAbilityInteractionHandler(
-            AbilitySystemUseCase abilitySystem,
-            GameplayTag handlerTag)
-        {
-            _abilitySystem = abilitySystem;
-            _handlerTag = handlerTag;
+            _abilitySystem.TryActivateAbility(abilityController, context.Definition.Ability, target);
+            // TODO: publish event on ability activation outcome
         }
 
-        public GameplayTag Tag => _handlerTag;
-
-        public void Handle(InteractionContext context)
+        // IRepairable exposes its controller directly; other targets resolve one via the component hierarchy.
+        private static bool TryResolveTargetController(IInteractable target, out IAbilityControllerBase controller)
         {
-            if (context.Definition.Ability == null ||
-                context.Requester is not IAbilityControllerBase requesterController ||
-                context.Target is not IRepairable repairable ||
-                repairable.Controller == null)
+            if (target is IRepairable repairable)
             {
-                return;
+                controller = repairable.Controller;
+                return controller != null;
             }
 
-            _abilitySystem.GrantAbility(requesterController, context.Definition.Ability);
-            _abilitySystem.TryActivateAbility(
-                requesterController,
-                context.Definition.Ability,
-                repairable.Controller);
+            controller = (target as MonoBehaviour)?.GetComponentInParent<IAbilityControllerBase>();
+            return controller != null;
         }
     }
 }

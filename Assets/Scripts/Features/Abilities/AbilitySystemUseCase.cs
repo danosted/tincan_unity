@@ -18,9 +18,10 @@ namespace TinCan.Features.Abilities
     /// Handles ticking of effects, cooldowns, and ability activation logic.
     /// Supports Input-Driven Simulation for predicted gameplay.
     /// </summary>
-    public class AbilitySystemUseCase : ITickable
+    public class AbilitySystemUseCase : ITickable, IInitializable, IDisposable
     {
         private readonly IAbilityRegistry _registry;
+        private readonly IActorRegistry _actorRegistry;
         private readonly ITimeService _timeService;
         private readonly IEventPublisher _eventPublisher;
 
@@ -28,11 +29,29 @@ namespace TinCan.Features.Abilities
         private readonly Dictionary<Guid, List<AbilitySpec>> _actorAbilities = new();
         private readonly Dictionary<Guid, List<ActiveGameplayEffect>> _activeEffects = new();
 
-        public AbilitySystemUseCase(IAbilityRegistry registry, ITimeService timeService, IEventPublisher eventPublisher)
+        public AbilitySystemUseCase(IAbilityRegistry registry, IActorRegistry actorRegistry, ITimeService timeService, IEventPublisher eventPublisher)
         {
             _registry = registry;
+            _actorRegistry = actorRegistry;
             _timeService = timeService;
             _eventPublisher = eventPublisher;
+        }
+
+        public void Initialize()
+        {
+            _actorRegistry.OnActorUnregistered += HandleActorUnregistered;
+        }
+
+        public void Dispose()
+        {
+            _actorRegistry.OnActorUnregistered -= HandleActorUnregistered;
+        }
+
+        // Actors never explicitly revoke granted abilities/effects today, so despawn is the only cleanup point.
+        private void HandleActorUnregistered(IActor actor)
+        {
+            _actorAbilities.Remove(actor.Id);
+            _activeEffects.Remove(actor.Id);
         }
 
         public void Tick()
@@ -80,18 +99,17 @@ namespace TinCan.Features.Abilities
                     bool justPressed = isPressedNow && !wasPressedBefore;
                     bool justReleased = !isPressedNow && wasPressedBefore;
 
-                    if (spec.Definition.InputPolicy == AbilityInputPolicy.OnInputTriggered)
+                    // One arm per InputPolicy; guards express exactly when that policy triggers.
+                    switch (spec.Definition.InputPolicy)
                     {
-                        if (justPressed && !spec.IsActive) TryActivateAbility(actor, spec.Definition);
-                    }
-                    else if (spec.Definition.InputPolicy == AbilityInputPolicy.OnInputHeld)
-                    {
-                        if (isPressedNow && !spec.IsActive) TryActivateAbility(actor, spec.Definition);
-                        else if (!isPressedNow && spec.IsActive) EndAbility(actor, spec);
-                    }
-                    else if (spec.Definition.InputPolicy == AbilityInputPolicy.OnInputReleased)
-                    {
-                        if (justReleased && !spec.IsActive) TryActivateAbility(actor, spec.Definition);
+                        case AbilityInputPolicy.OnInputTriggered when justPressed && !spec.IsActive:
+                        case AbilityInputPolicy.OnInputReleased when justReleased && !spec.IsActive:
+                        case AbilityInputPolicy.OnInputHeld when isPressedNow && !spec.IsActive:
+                            TryActivateAbility(actor, spec.Definition);
+                            break;
+                        case AbilityInputPolicy.OnInputHeld when !isPressedNow && spec.IsActive:
+                            EndAbility(actor, spec);
+                            break;
                     }
                 }
             }
@@ -142,15 +160,17 @@ namespace TinCan.Features.Abilities
                 bool shouldHaveTag = elapsed >= window.StartOffset && elapsed <= (window.StartOffset + window.Duration);
                 bool hasTag = spec.ActiveWindowTags.Contains(window.Tag);
 
-                if (shouldHaveTag && !hasTag)
+                // One arm per (shouldHaveTag, hasTag) combo; the other two combos are no-ops.
+                switch (shouldHaveTag, hasTag)
                 {
-                    actor.AddTag(window.Tag);
-                    spec.ActiveWindowTags.Add(window.Tag);
-                }
-                else if (!shouldHaveTag && hasTag)
-                {
-                    actor.RemoveTag(window.Tag);
-                    spec.ActiveWindowTags.Remove(window.Tag);
+                    case (true, false):
+                        actor.AddTag(window.Tag);
+                        spec.ActiveWindowTags.Add(window.Tag);
+                        break;
+                    case (false, true):
+                        actor.RemoveTag(window.Tag);
+                        spec.ActiveWindowTags.Remove(window.Tag);
+                        break;
                 }
             }
 
@@ -189,11 +209,10 @@ namespace TinCan.Features.Abilities
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
 
             var spec = abilities.FirstOrDefault(a => a.Definition == definition);
-            if (spec != null)
-            {
-                if (spec.IsActive) EndAbility(actor, spec);
-                abilities.Remove(spec);
-            }
+            if (spec == null) return;
+
+            if (spec.IsActive) EndAbility(actor, spec);
+            abilities.Remove(spec);
         }
 
         public void CancelAbility(IAbilityControllerBase actor, AbilityDefinition definition)
@@ -201,7 +220,7 @@ namespace TinCan.Features.Abilities
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
 
             var spec = abilities.FirstOrDefault(a => a.Definition == definition);
-            if (spec != null && spec.IsActive)
+            if (spec is { IsActive: true })
             {
                 EndAbility(actor, spec);
             }
@@ -211,20 +230,23 @@ namespace TinCan.Features.Abilities
         {
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return false;
 
-            var spec = abilities.FirstOrDefault(a => a.Definition == definition);
-            if (spec == null) return false;
+            var ability = abilities.FirstOrDefault(a => a.Definition == definition);
+            if (ability == null) return false;
 
-            // Prevent re-activation of an already active ability
-            if (spec.IsActive) return false;
-
-            // 1. Check Tags
-            if (!CanActivateAbility(actor, spec)) return false;
-
-            // 2. Check Costs (Future implementation)
-
-            // 3. Activate
-            ExecuteAbility(actor, spec, target);
-            return true;
+            // One arm per (IsActive, IsToggleable) combo; costs would be a future arm here too.
+            switch (isActive: ability.IsActive, isToggleable: definition.IsToggleable)
+            {
+                case (isActive: true, isToggleable: true):
+                    CancelAbility(actor, definition);
+                    return true;
+                case (isActive: true, isToggleable: false):
+                    return false;
+                case (isActive: false, isToggleable: _) when !CanActivateAbility(actor, ability, target):
+                    return false;
+                default:
+                    ExecuteAbility(actor, ability, target);
+                    return true;
+            }
         }
 
         /// <summary>
@@ -240,16 +262,22 @@ namespace TinCan.Features.Abilities
             return GameplayEffectResult.Successful();
         }
 
-        private bool CanActivateAbility(IAbilityControllerBase actor, AbilitySpec spec)
+        private bool CanActivateAbility(IAbilityControllerBase actor, AbilitySpec spec, IAbilityControllerBase target = null)
         {
-            var tags = actor.ActiveTags;
+            var actorActiveTags = actor.ActiveTags;
             var def = spec.Definition;
 
             // Blocked by tags?
-            if (def.ActivationBlockedTags.Any(t => tags.HasTag(t))) return false;
+            if (def.ActivationBlockedTagsOnActor.Any(t => actorActiveTags.HasTag(t))) return false;
 
             // Missing required tags?
-            if (def.ActivationRequiredTags.Any(t => !tags.HasTag(t))) return false;
+            if (def.ActivationRequiredTagsOnActor.Any(t => !actorActiveTags.HasTag(t))) return false;
+
+            // Blocked by target tags?
+            if (def.ActivationBlockedTagsOnTarget.Any(t => target != null && target.ActiveTags.HasTag(t))) return false;
+
+            // Missing required target tags?
+            if (def.ActivationRequiredTagsOnTarget.Any(t => target != null && !target.ActiveTags.HasTag(t))) return false;
 
             // Cooldown?
             if (spec.IsOnCooldown(_timeService.Time)) return false;
@@ -314,16 +342,14 @@ namespace TinCan.Features.Abilities
         public void SendGameplayEvent(GameplayEventData eventData)
         {
             if (eventData.Target == null) return;
+            if (!_actorAbilities.TryGetValue(eventData.Target.Id, out var abilities)) return;
 
-            // Check if any ability triggers on this event
-            if (_actorAbilities.TryGetValue(eventData.Target.Id, out var abilities))
+            // Any ability whose TriggerTag matches this event's tag activates.
+            foreach (var spec in abilities)
             {
-                foreach (var spec in abilities)
+                if (spec.Definition.TriggerTag != null && spec.Definition.TriggerTag == eventData.EventTag)
                 {
-                    if (spec.Definition.TriggerTag != null && spec.Definition.TriggerTag == eventData.EventTag)
-                    {
-                        TryActivateAbility(eventData.Target, spec.Definition);
-                    }
+                    TryActivateAbility(eventData.Target, spec.Definition);
                 }
             }
         }
@@ -333,23 +359,25 @@ namespace TinCan.Features.Abilities
             if (!_activeEffects.TryGetValue(actor.Id, out var effects)) return;
             effects.Remove(effect);
 
+            var grantedEffectTags = effects.SelectMany(e => e.Definition.GrantedTags).ToList();
+
             // Remove Tags
             foreach (var tag in effect.Definition.GrantedTags)
             {
-                // Note: Only remove if no other active effect grants this tag (simplified for now)
+                // Note: Only remove if no other active effect grants this tag
+                if (grantedEffectTags.Contains(tag)) continue;
                 actor.RemoveTag(tag);
             }
 
             UpdateAttributes(actor);
 
             // If this effect was the primary active effect for an ability, end the ability automatically.
-            if (_actorAbilities.TryGetValue(actor.Id, out var abilities))
+            if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
+
+            var parentSpec = abilities.FirstOrDefault(s => s.AppliedActiveEffect == effect);
+            if (parentSpec is { IsActive: true })
             {
-                var parentSpec = abilities.FirstOrDefault(s => s.AppliedActiveEffect == effect);
-                if (parentSpec != null && parentSpec.IsActive)
-                {
-                    EndAbility(actor, parentSpec);
-                }
+                EndAbility(actor, parentSpec);
             }
         }
 
@@ -364,18 +392,13 @@ namespace TinCan.Features.Abilities
                     float oldBase = attrVal.BaseValue;
 
                     // Instant effects modify the BASE value permanently
-                    switch (modifier.Operation)
+                    attrVal.BaseValue = modifier.Operation switch
                     {
-                        case ModifierOp.Add:
-                            attrVal.BaseValue += modifier.Value;
-                            break;
-                        case ModifierOp.Multiply:
-                            attrVal.BaseValue *= modifier.Value;
-                            break;
-                        case ModifierOp.Override:
-                            attrVal.BaseValue = modifier.Value;
-                            break;
-                    }
+                        ModifierOp.Add => attrVal.BaseValue + modifier.Value,
+                        ModifierOp.Multiply => attrVal.BaseValue * modifier.Value,
+                        ModifierOp.Override => modifier.Value,
+                        _ => attrVal.BaseValue
+                    };
 
                     actor.SetAttribute(modifier.Attribute, attrVal);
                     _eventPublisher.LogInfo("AbilitySystem", $"Instant Effect {definition.name} modified Base {modifier.Attribute.name}: {oldBase} -> {attrVal.BaseValue}");
@@ -420,18 +443,13 @@ namespace TinCan.Features.Abilities
 
         private void ApplyModifier(ref AttributeValue attr, AttributeModifier mod)
         {
-            switch (mod.Operation)
+            attr.CurrentValue = mod.Operation switch
             {
-                case ModifierOp.Add:
-                    attr.CurrentValue += mod.Value;
-                    break;
-                case ModifierOp.Multiply:
-                    attr.CurrentValue *= mod.Value;
-                    break;
-                case ModifierOp.Override:
-                    attr.CurrentValue = mod.Value;
-                    break;
-            }
+                ModifierOp.Add => attr.CurrentValue + mod.Value,
+                ModifierOp.Multiply => attr.CurrentValue * mod.Value,
+                ModifierOp.Override => mod.Value,
+                _ => attr.CurrentValue
+            };
         }
     }
 }

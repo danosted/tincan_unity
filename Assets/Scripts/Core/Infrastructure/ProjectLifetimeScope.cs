@@ -155,7 +155,10 @@ namespace TinCan.Core.Infrastructure
                     onServerStarted: () =>
                     {
                         // Spawn the airship on server start
-                        var airshipInstance = Instantiate(_airshipPrefab);
+                        var airshipInstance = Instantiate(
+                            _airshipPrefab,
+                            _airshipPrefab.transform.position + Vector3.up * 40f,
+                            _airshipPrefab.transform.rotation);
                         container.InjectGameObject(airshipInstance);
                         var netObj = airshipInstance.GetComponent<NetworkObject>();
                         netObj.Spawn();

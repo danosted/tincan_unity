@@ -36,8 +36,8 @@ namespace TinCan.Features.Airship
         {
             // Pitch mapped to Jump (Up) and Sprint (Down) for testing
             float pitch = 0f;
-            if (InputService.IsActionPressed(ActionNames.Jump)) pitch = 1f;
-            else if (InputService.IsActionPressed(ActionNames.Sprint)) pitch = -1f;
+            if (InputService.IsActionPressed(ActionNames.Jump)) pitch = -1f;
+            else if (InputService.IsActionPressed(ActionNames.Sprint)) pitch = 1f;
 
             var input = new AirshipInputState
             {

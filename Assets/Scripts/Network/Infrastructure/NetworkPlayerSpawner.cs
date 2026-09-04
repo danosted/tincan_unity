@@ -24,7 +24,10 @@ namespace TinCan.Network.Infrastructure
         public void SpawnPlayer(ulong clientId, GameObject prefab, bool isServer, bool isLocalPlayer = false)
         {
             // 1. Create the instance locally (Server-side)
-            var instance = Object.Instantiate(prefab);
+            var instance = Object.Instantiate(
+                prefab,
+                prefab.transform.position + Vector3.up * 40f,
+                prefab.transform.rotation);
             instance.name = $"{prefab.name}_Client{clientId}";
 
             // 2. Inject dependencies immediately

@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8771b6bc70d0f8f4c9d15e16573f68b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.GasChallenge.GasPocketVolume
-  _radius: 3
+  _radius: 16
   _damagePerSecond: 10
   _gizmoColor: {r: 0.2, g: 0.9, b: 0.4, a: 0.35}
   _triggerCollider: {fileID: 1314325900020460417}
@@ -69,7 +69,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 3
+  m_Radius: 16
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4867691940544991542
 GameObject:
@@ -99,7 +99,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.70405716, z: -0, w: 0.7101433}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 6, y: 6, z: 6}
+  m_LocalScale: {x: 32, y: 32, z: 32}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1365678477054848856}

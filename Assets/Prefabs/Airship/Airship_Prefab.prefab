@@ -227,7 +227,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.ShipRepairPointNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
-  _interactionDefinition: {fileID: 11400000, guid: de849c71415cb8b41962b9c79d2a168a, type: 2}
+  _interactionDefinition: {fileID: 11400000, guid: 1fa7d3a5eab445c2b9b4c8d2b05bb8d4, type: 2}
 --- !u!1 &6670021249475936897
 GameObject:
   m_ObjectHideFlags: 0

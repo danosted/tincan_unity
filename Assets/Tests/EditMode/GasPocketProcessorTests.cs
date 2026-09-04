@@ -38,5 +38,33 @@ namespace TinCan.Tests.EditMode
             Assert.That(result.IsInGas, Is.False);
             Assert.That(result.DamageThisTick, Is.EqualTo(0f));
         }
+
+        [Test]
+        public void GasPocketVolume_WhenShipColliderIsInside_ReturnsDangerState()
+        {
+            var pocketObject = new GameObject("GasPocket");
+            var pocketCollider = pocketObject.AddComponent<SphereCollider>();
+            pocketCollider.radius = 3f;
+            pocketCollider.center = Vector3.zero;
+            var pocket = pocketObject.AddComponent<GasPocketVolume>();
+            pocket.SetRadius(3f);
+
+            var shipObject = new GameObject("Airship");
+            var shipCollider = shipObject.AddComponent<SphereCollider>();
+            shipCollider.radius = 1f;
+            shipCollider.center = new Vector3(1f, 0f, 0f);
+
+            var result = GasPocketProcessor.EvaluateAirship(
+                new GasPocketResult(false, 0f, 0f),
+                shipCollider,
+                pocket,
+                1f);
+
+            Assert.That(result.IsInGas, Is.True);
+            Assert.That(result.DamageThisTick, Is.EqualTo(10f));
+
+            Object.DestroyImmediate(pocketObject);
+            Object.DestroyImmediate(shipObject);
+        }
     }
 }

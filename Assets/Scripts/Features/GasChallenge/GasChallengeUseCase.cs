@@ -53,12 +53,19 @@ namespace TinCan.Features.GasChallenge
             foreach (IAirshipView airship in _actorRegistry.GetActors<IAirshipView>().Where(a => a.IsSimulating))
             {
                 var state = new GasPocketResult(false, 0f, 0f);
+
+                var shipCollider = (airship as Component)?.GetComponentInChildren<Collider>();
+                if (shipCollider == null)
+                {
+                    continue;
+                }
+
                 foreach (GasPocketVolume pocket in gasPockets)
                 {
                     var result = GasPocketProcessor.EvaluateAirship(
                         state,
-                        airship.Transform.position,
-                        pocket.ToDefinition(),
+                        shipCollider,
+                        pocket,
                         _timeService.DeltaTime);
 
                     if (result.IsInGas)

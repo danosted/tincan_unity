@@ -42,8 +42,13 @@ namespace TinCan.Network.Infrastructure
         private HumanoidControllerView _movement = null!;
         private ThirdPersonLookView _look = null!;
         private AbilityNetworkMediator _abilitySync = null!;
+        private NetworkTransformMediator _networkTransform = null!;
         private INetworkPlayerSpawner _spawner = null!;
         private uint _nextInputSequence;
+        private uint _lastReconciledSequence;
+        private Vector3 _pendingPositionCorrection = Vector3.zero;
+        private readonly Dictionary<uint, Vector3> _predictedPositionsBySequence = new();
+        private readonly Queue<uint> _predictedPositionHistory = new();
 
         [Header("Attributes (GAS)")]
         [SerializeField] private GameplayAttribute? _moveSpeedAttribute;
@@ -57,6 +62,13 @@ namespace TinCan.Network.Infrastructure
             writePerm: NetworkVariableWritePermission.Owner);
         private readonly NetworkVariable<PlayerAttachmentState> _attachmentState = new NetworkVariable<PlayerAttachmentState>(
             writePerm: NetworkVariableWritePermission.Server);
+        private readonly NetworkVariable<HumanoidMovementSnapshot> _movementSnapshot = new NetworkVariable<HumanoidMovementSnapshot>(
+            writePerm: NetworkVariableWritePermission.Server);
+
+        private const int MaxPredictedPositionSamples = 128;
+        private const float ReconciliationSnapDistance = 3f;
+        private const float ReconciliationSmoothing = 14f;
+        private const float ReconciliationEpsilon = 0.0001f;
 
         // IHumanoidCharacterView Implementation
         public IHumanoidMovementView Movement => _movement;
@@ -91,6 +103,8 @@ namespace TinCan.Network.Infrastructure
             _movement = GetComponent<HumanoidControllerView>();
             _look = GetComponent<ThirdPersonLookView>();
             _abilitySync = GetComponent<AbilityNetworkMediator>();
+            _networkTransform = GetComponent<NetworkTransformMediator>();
+            _nextInputSequence = _netInputState.Value.Sequence;
 
             // Register default attribute set wrapper for humanoids
             var attributes = new HumanoidAttributeSet(this, _moveSpeedAttribute, _jumpForceAttribute, _staminaAttribute);
@@ -114,12 +128,24 @@ namespace TinCan.Network.Infrastructure
             }
 
             _netInputState.OnValueChanged += OnInputStateChanged;
+            _movementSnapshot.OnValueChanged += OnMovementSnapshotChanged;
+
+            if (IsOwner && !IsServer)
+            {
+                _networkTransform.enabled = false;
+            }
+
             _spawner.NotifyPlayerSpawned(gameObject, OwnerClientId, IsOwner);
         }
 
         public override void OnNetworkDespawn()
         {
             _netInputState.OnValueChanged -= OnInputStateChanged;
+            _movementSnapshot.OnValueChanged -= OnMovementSnapshotChanged;
+            if (_networkTransform != null)
+            {
+                _networkTransform.enabled = true;
+            }
             base.OnNetworkDespawn();
         }
 
@@ -138,10 +164,73 @@ namespace TinCan.Network.Infrastructure
             if (IsServer)
             {
                 PublishAttachmentState();
+                PublishMovementSnapshot();
+                return;
+            }
+
+            if (IsOwner)
+            {
+                CapturePredictedPosition();
+                ApplyOwnerReconciliation();
                 return;
             }
 
             ApplyAttachmentPose();
+        }
+
+        private void CapturePredictedPosition()
+        {
+            uint sequence = _netInputState.Value.Sequence;
+            if (sequence == 0) return;
+
+            if (!_predictedPositionsBySequence.ContainsKey(sequence))
+            {
+                _predictedPositionHistory.Enqueue(sequence);
+                while (_predictedPositionHistory.Count > MaxPredictedPositionSamples)
+                {
+                    uint oldest = _predictedPositionHistory.Dequeue();
+                    _predictedPositionsBySequence.Remove(oldest);
+                }
+            }
+
+            _predictedPositionsBySequence[sequence] = transform.position;
+        }
+
+        private void ApplyOwnerReconciliation()
+        {
+            if (_pendingPositionCorrection.sqrMagnitude <= ReconciliationEpsilon * ReconciliationEpsilon) return;
+
+            float blend = HumanoidPredictionReconciliation.CalculateBlendFactor(ReconciliationSmoothing, Time.deltaTime);
+            Vector3 correctionStep = _pendingPositionCorrection * blend;
+            _pendingPositionCorrection -= correctionStep;
+
+            if (_pendingPositionCorrection.sqrMagnitude <= ReconciliationEpsilon * ReconciliationEpsilon)
+            {
+                _pendingPositionCorrection = Vector3.zero;
+            }
+
+            _movement.SetPose(transform.position + correctionStep, transform.rotation);
+        }
+
+        private void OnMovementSnapshotChanged(HumanoidMovementSnapshot previous, HumanoidMovementSnapshot current)
+        {
+            if (!IsOwner || IsServer) return;
+            if (current.LastProcessedInputSequence <= _lastReconciledSequence) return;
+            if (!_predictedPositionsBySequence.TryGetValue(current.LastProcessedInputSequence, out Vector3 predictedPosition)) return;
+
+            _lastReconciledSequence = current.LastProcessedInputSequence;
+            PrunePredictedPositions(_lastReconciledSequence);
+
+            if (!HumanoidPredictionReconciliation.TryComputePositionError(current.Position, predictedPosition, out Vector3 correction)) return;
+
+            if (correction.magnitude >= ReconciliationSnapDistance)
+            {
+                _pendingPositionCorrection = Vector3.zero;
+                _movement.SetPose(current.Position, current.Rotation);
+                return;
+            }
+
+            _pendingPositionCorrection += correction;
         }
 
         private void ApplyAttachmentPose()
@@ -178,6 +267,29 @@ namespace TinCan.Network.Infrastructure
                     IsAttached = false,
                     LastProcessedInputSequence = _netInputState.Value.Sequence
                 };
+        }
+
+        private void PublishMovementSnapshot()
+        {
+            var input = _netInputState.Value;
+            _movementSnapshot.Value = new HumanoidMovementSnapshot
+            {
+                LastProcessedInputSequence = input.Sequence,
+                Position = transform.position,
+                Rotation = transform.rotation,
+                HorizontalVelocity = Vector3.zero,
+                VerticalVelocity = 0f,
+                PreviousInputMask = input.ActiveInputMask
+            };
+        }
+
+        private void PrunePredictedPositions(uint acknowledgedSequence)
+        {
+            while (_predictedPositionHistory.Count > 0 && _predictedPositionHistory.Peek() <= acknowledgedSequence)
+            {
+                uint sequence = _predictedPositionHistory.Dequeue();
+                _predictedPositionsBySequence.Remove(sequence);
+            }
         }
 
         public bool HasTag(GameplayTag tag) => _abilitySync.HasTag(tag);

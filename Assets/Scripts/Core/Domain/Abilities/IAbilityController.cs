@@ -15,6 +15,11 @@ namespace TinCan.Core.Domain.Abilities
         void AddTag(GameplayTag tag);
         void RemoveTag(GameplayTag tag);
 
+        // Effect tags follow the simulation: authoritative on the server, predicted locally by the owner.
+        // Controllers without networking can use the same storage as ordinary tags.
+        void AddEffectTag(GameplayTag tag) => AddTag(tag);
+        void RemoveEffectTag(GameplayTag tag) => RemoveTag(tag);
+
         bool TryGetAttribute(GameplayAttribute attribute, out AttributeValue value);
         void SetAttribute(GameplayAttribute attribute, AttributeValue value);
         void ResetAttributesToBase();

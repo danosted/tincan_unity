@@ -115,6 +115,10 @@ namespace TinCan.Features.HumanoidMovement
             Vector3 worldDirection = currentLookRotation * input.MovementDirection;
             worldDirection.y = 0;
             if (worldDirection.sqrMagnitude > 1) worldDirection.Normalize();
+            if ((ground.IsGrounded || ground.IsPlatformSupported) && ground.GroundNormal.sqrMagnitude > 0.0001f)
+            {
+                worldDirection = _processor.ProjectMovementOnGround(worldDirection, ground.GroundNormal);
+            }
 
             // Rotate character to always face the look direction
             movement.SetRotation(Quaternion.Slerp(movement.Transform.rotation, currentLookRotation, 20f * deltaTime));
@@ -189,6 +193,7 @@ namespace TinCan.Features.HumanoidMovement
             ground.SurfaceDelta = Vector3.zero;
             ground.RotationDelta = Quaternion.identity;
             ground.IsPlatformSupported = false;
+            ground.GroundNormal = Vector3.up;
 
             Transform? platformTransform = null;
             IMovingGround? movingGround = null;

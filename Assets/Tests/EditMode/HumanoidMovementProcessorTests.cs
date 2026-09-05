@@ -60,6 +60,28 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void ProjectMovementOnGround_ProjectsForwardInputAlong50DegreeSlope()
+        {
+            Vector3 groundNormal = Quaternion.Euler(-50f, 0f, 0f) * Vector3.up;
+
+            Vector3 result = _processor.ProjectMovementOnGround(Vector3.forward, groundNormal);
+
+            Assert.That(result.magnitude, Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(result.y, Is.GreaterThan(0f));
+            Assert.That(Vector3.Dot(result.normalized, groundNormal), Is.EqualTo(0f).Within(0.0001f));
+        }
+
+        [Test]
+        public void ProjectMovementOnGround_ReturnsInputForInvalidGroundNormal()
+        {
+            Vector3 input = new Vector3(0f, 0f, 1f);
+
+            Vector3 result = _processor.ProjectMovementOnGround(input, Vector3.zero);
+
+            Assert.That(result, Is.EqualTo(input));
+        }
+
+        [Test]
         public void CalculateVerticalVelocity_JumpAppliesJumpForceWhenGrounded()
         {
             float result = _processor.CalculateVerticalVelocity(

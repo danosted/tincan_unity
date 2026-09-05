@@ -8,6 +8,22 @@ namespace TinCan.Features.HumanoidMovement
     /// </summary>
     public class HumanoidMovementProcessor
     {
+        public Vector3 ProjectMovementOnGround(Vector3 movementDirection, Vector3 groundNormal)
+        {
+            if (movementDirection.sqrMagnitude < 0.0001f || groundNormal.sqrMagnitude < 0.0001f)
+            {
+                return movementDirection;
+            }
+
+            Vector3 projectedDirection = Vector3.ProjectOnPlane(movementDirection, groundNormal.normalized);
+            if (projectedDirection.sqrMagnitude < 0.0001f)
+            {
+                return Vector3.zero;
+            }
+
+            return projectedDirection.normalized * movementDirection.magnitude;
+        }
+
         public Vector3 CalculateHorizontalVelocity(Vector3 currentVelocity, Vector3 targetDirection, float targetSpeed, float acceleration, float deceleration, float deltaTime)
         {
             Vector3 targetVelocity = targetDirection * targetSpeed;

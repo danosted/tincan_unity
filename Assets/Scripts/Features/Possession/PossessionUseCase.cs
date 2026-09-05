@@ -12,7 +12,7 @@ namespace TinCan.Features.Possession
     /// Application Layer: Manages the possession of different IPossessable actors.
     /// Handles switching between characters, vehicles, or cameras using the ActorRegistry.
     /// </summary>
-    public class PossessionUseCase : IInitializable, ITickable, System.IDisposable
+    public class PossessionUseCase : IInitializable, ITickable, System.IDisposable, IPossessionState
     {
         private readonly INetworkService _networkService;
         private readonly INetworkPlayerSpawner _spawner;

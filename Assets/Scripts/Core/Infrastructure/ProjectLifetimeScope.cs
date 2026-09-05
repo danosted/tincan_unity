@@ -21,6 +21,9 @@ using TinCan.Core.Domain.Events;
 using TinCan.Core.Infrastructure.Events;
 using TinCan.Core.Domain.Abilities.Tags;
 using Assets.Scripts.Features.Airship;
+using TinCan.Features.UI;
+using TinCan.Features.UI.Commands;
+using TinCan.UI;
 namespace TinCan.Core.Infrastructure
 {
     /// <summary>
@@ -48,6 +51,9 @@ namespace TinCan.Core.Infrastructure
 
         [Header("Airship Components")]
         [SerializeField] private GameplayTag _doorInteractionTag;
+
+        [Header("UI")]
+        [SerializeField] private MenuDefinition _mainMenu;
         protected override void Configure(IContainerBuilder builder)
         {
             // Register Configs
@@ -103,7 +109,7 @@ namespace TinCan.Core.Infrastructure
             builder.Register<PossessionUseCase>(Lifetime.Singleton)
                 .AsSelf()
                 .As<IInitializable>()
-                .As<ITickable>();
+                .As<ITickable>().As<IPossessionState>();
             builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>().As<ITickable>();
             builder.Register<ShipStateProvider>(Lifetime.Singleton).As<IShipState>();
             builder.Register<AirshipMovementUseCase>(Lifetime.Singleton);
@@ -120,6 +126,8 @@ namespace TinCan.Core.Infrastructure
                 entryPoints.Add<VehicleBoardingUseCase>().As<IVehicleBoardingUseCase>();
                 entryPoints.Add<PossessionInputController>();
                 entryPoints.Add<InteractivityUseCase>();
+                builder.Register<ScriptedInput>(Lifetime.Singleton).AsSelf().As<IScriptedInput>().As<ILateTickable>();
+                builder.Register<InputGate>(Lifetime.Singleton);
                 entryPoints.Add<UnityInputService>().As<IInputService>();
                 entryPoints.Add<EventOrchestratorUseCase>().As<IEventOrchestrator>();
                 entryPoints.Add<BuildModeUseCase>().WithParameter("buildingTag", _buildingTag);
@@ -213,6 +221,44 @@ namespace TinCan.Core.Infrastructure
 
             // Airship components (Consider moving this to a separate LifetimeScope for the Airship feature)
             builder.Register<DoorInteractionHandler>(Lifetime.Singleton).WithParameter("handlerTag", _doorInteractionTag).As<IInteractionHandler>();
+
+            ConfigureUi(builder);
+        }
+
+        // Headless menu/HUD framework (ship tasks prototype, slice 0). See .docs/UI_FRAMEWORK.md.
+        // Menus are MenuDefinition assets; commands are plain IMenuCommand classes; views are optional children of this prefab.
+        private void ConfigureUi(IContainerBuilder builder)
+        {
+            builder.Register<MenuCommandRegistry>(Lifetime.Singleton).As<IMenuCommandRegistry>();
+            builder.Register<MenuUseCase>(Lifetime.Singleton).As<IMenuSystem>();
+            builder.Register<CommandLineSessionBootstrap>(Lifetime.Singleton).As<IStartable>();
+            builder.Register<HudUseCase>(Lifetime.Singleton).As<IHudValues>();
+            builder.Register<StartHostMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
+            builder.Register<JoinGameMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
+            builder.Register<QuitMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
+
+            if (_mainMenu != null)
+            {
+                builder.RegisterInstance(_mainMenu);
+                builder.Register<MainMenuBootstrap>(Lifetime.Singleton).As<IInitializable>().As<ITickable>();
+            }
+            else
+            {
+                Debug.LogWarning("[ProjectLifetimeScope] No main MenuDefinition assigned; the start menu will not appear.");
+            }
+
+            // Views are optional: inject whichever overlay components exist in the scene (usually children of this prefab).
+            builder.RegisterBuildCallback(container =>
+            {
+                foreach (var view in FindObjectsByType<MenuOverlayView>(FindObjectsInactive.Include))
+                {
+                    container.Inject(view);
+                }
+                foreach (var view in FindObjectsByType<HudOverlayView>(FindObjectsInactive.Include))
+                {
+                    container.Inject(view);
+                }
+            });
         }
 
     }

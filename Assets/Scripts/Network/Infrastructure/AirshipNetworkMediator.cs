@@ -34,7 +34,6 @@ namespace TinCan.Network.Infrastructure
         [Header("GAS Attributes")]
         [SerializeField] private GameplayAttribute _flightSpeedAttribute;
         [SerializeField] private GameplayAttribute _turnSpeedAttribute;
-        [SerializeField] private GameplayAttribute _healthAttribute;
         [SerializeField] private System.Collections.Generic.List<AbilityDefinition> _startingAbilities;
         [SerializeField] private HealthAttribute _healthAttribute;
         [SerializeField] private MaxHealthAttribute _maxHealthAttribute;

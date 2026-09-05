@@ -355,7 +355,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2551848856
+  GlobalObjectIdHash: 1498952331
   InScenePlacedSourceGlobalObjectIdHash: 2551848856
   DeferredDespawnTick: 0
   Ownership: 1
@@ -407,11 +407,10 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _flightSpeedAttribute: {fileID: 11400000, guid: dfba58bddba97f844a531ebee046cadd, type: 2}
   _turnSpeedAttribute: {fileID: 0}
+  _startingAbilities: []
   _healthAttribute: {fileID: 11400000, guid: 8b14d6bb0c2e84b40a3ec90b5bbb15b2, type: 2}
   _maxHealthAttribute: {fileID: 11400000, guid: 83839a02dfc640d40b46055a7a50bf6f, type: 2}
   _maxHealth: 1000
-  _startingAbilities:
-    - {fileID: 11400000, guid: a3a229ddf05fa034381a35fc2fb1bc2e, type: 2}
 --- !u!114 &8128722450371628807
 MonoBehaviour:
   m_ObjectHideFlags: 0

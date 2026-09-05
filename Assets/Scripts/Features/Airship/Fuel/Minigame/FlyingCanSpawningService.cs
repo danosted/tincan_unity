@@ -1,12 +1,11 @@
 #nullable enable
 using TinCan.Core.Domain;
-using TinCan.Features.Airship.Fuel.Minigame;
 using Unity.Netcode;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 
-namespace TinCan.Network.Infrastructure
+namespace TinCan.Features.Airship.Fuel.Minigame
 {
     /// <summary>
     /// Server-side spawner for flying cans. Same shape as ModuleSpawningService minus the parenting: cans live in

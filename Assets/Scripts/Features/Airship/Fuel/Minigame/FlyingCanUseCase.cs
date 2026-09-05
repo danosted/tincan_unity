@@ -12,8 +12,10 @@ namespace TinCan.Features.Airship.Fuel.Minigame
     /// Application Layer: spawns, moves and expires flying jerry cans around the first simulating airship.
     /// Server only; ticked from the network tick after the airship has moved.
     /// </summary>
-    public class FlyingCanUseCase
+    public class FlyingCanUseCase : ISimulationTickable
     {
+        public SimulationPhase Phase => SimulationPhase.AfterAirship;
+
         private readonly INetworkService _networkService;
         private readonly IActorRegistry _actorRegistry;
         private readonly ITimeService _timeService;

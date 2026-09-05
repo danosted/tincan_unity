@@ -1,8 +1,8 @@
 using System;
+using System.Collections.Generic;
+using TinCan.Core.Domain;
 using TinCan.Core.Infrastructure;
 using TinCan.Features.Airship;
-using TinCan.Features.Airship.Fuel;
-using TinCan.Features.Airship.Fuel.Minigame;
 using TinCan.Features.CloudBoundary;
 using TinCan.Features.HumanoidMovement;
 using Unity.Netcode;
@@ -12,38 +12,33 @@ using VContainer.Unity;
 namespace TinCan.Network.Infrastructure
 {
     /// <summary>
-    /// Drives simulation-critical use cases from NGO's fixed network tick.
+    /// Drives simulation-critical use cases from the fixed network tick. Core movement is explicit; features hook in
+    /// by registering an ISimulationTickable (see FeatureInstaller) and are run by phase in registration order.
     /// </summary>
     public class NetworkSimulationScheduler : IInitializable, IDisposable
     {
         private readonly NetworkManager _networkManager;
         private readonly ProjectTimeService _timeService;
         private readonly AirshipMovementUseCase _airshipMovement;
-        private readonly FuelConsumptionUseCase _fuelConsumption;
-        private readonly FlyingCanUseCase _flyingCans;
-        private readonly NetCatchUseCase _netCatch;
         private readonly CloudBoundaryUseCase _cloudBoundary;
         private readonly HumanoidMovementUseCase _humanoidMovement;
+        private readonly SimulationTickRunner _features;
         private bool _isSubscribed;
 
         public NetworkSimulationScheduler(
             NetworkManager networkManager,
             ProjectTimeService timeService,
             AirshipMovementUseCase airshipMovement,
-            FuelConsumptionUseCase fuelConsumption,
-            FlyingCanUseCase flyingCans,
-            NetCatchUseCase netCatch,
             CloudBoundaryUseCase cloudBoundary,
-            HumanoidMovementUseCase humanoidMovement)
+            HumanoidMovementUseCase humanoidMovement,
+            IEnumerable<ISimulationTickable> featureTickables)
         {
             _networkManager = networkManager;
             _timeService = timeService;
             _airshipMovement = airshipMovement;
-            _fuelConsumption = fuelConsumption;
-            _flyingCans = flyingCans;
-            _netCatch = netCatch;
             _cloudBoundary = cloudBoundary;
             _humanoidMovement = humanoidMovement;
+            _features = new SimulationTickRunner(featureTickables);
         }
 
         public void Initialize()
@@ -93,12 +88,11 @@ namespace TinCan.Network.Infrastructure
             try
             {
                 _airshipMovement.Tick();
-                _fuelConsumption.Tick();
-                _flyingCans.Tick();
+                _features.Run(SimulationPhase.AfterAirship);
                 _cloudBoundary.Tick();
                 Physics.SyncTransforms();
                 _humanoidMovement.Tick();
-                _netCatch.Tick();
+                _features.Run(SimulationPhase.AfterHumanoid);
             }
             finally
             {

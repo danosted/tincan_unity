@@ -14,8 +14,10 @@ namespace TinCan.Features.Airship.Fuel.Minigame
     /// the predicted input bit), the server checks once per swing whether a flying can is within reach of the net
     /// head. A catch despawns the can and adds it to the ship's jerry-can supply. Ticked after humanoid movement.
     /// </summary>
-    public class NetCatchUseCase
+    public class NetCatchUseCase : ISimulationTickable
     {
+        public SimulationPhase Phase => SimulationPhase.AfterHumanoid;
+
         private const string LogSource = "Fuel";
 
         private readonly INetworkService _networkService;

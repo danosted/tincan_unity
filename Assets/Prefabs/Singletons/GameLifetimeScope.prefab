@@ -129,8 +129,6 @@ MonoBehaviour:
   _buildablePrefabs:
   - {fileID: 2084250224356171082, guid: fd433d6689aad314caa0c6811c337d1d, type: 3}
   _doorInteractionTag: {fileID: 0}
-  _mainMenu: {fileID: 11400000, guid: b86264eab9e75ba46867776a645cba17, type: 2}
-  _flyingCanConfig: {fileID: 11400000, guid: 31593c6eacc0a1148b6a8b9cdab8ebfe, type: 2}
 --- !u!1 &6248915608490685301
 GameObject:
   m_ObjectHideFlags: 0

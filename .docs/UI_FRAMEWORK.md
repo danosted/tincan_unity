@@ -14,8 +14,8 @@ Gameplay code never talks to a view. It opens menus through `IMenuSystem`, react
 
 ## Where things are wired
 
-- `ProjectLifetimeScope.ConfigureUi` registers the model, the commands and the bootstrap, and injects any `MenuOverlayView` / `HudOverlayView` found in the scene at container build. The `GameLifetimeScope` prefab carries two children, `MenuOverlay` and `HudOverlay`, each with a `UIDocument` (panel settings: `Assets/Settings/UI/DefaultPanelSettings.asset`) and the matching view component. Every scene that contains that prefab gets the UI for free.
-- `ProjectLifetimeScope._mainMenu` points at `Assets/UI/Menus/Menu_Main.asset`. Without it the start menu does not appear (a warning is logged).
+- `Assets/Resources/Installers/UiFeatureInstaller.asset` (a `FeatureInstaller`, see `FEATURE_INSTALLERS.md`) registers the model, the commands and the bootstrap. The overlay views implement `IInjectedView`, so the lifetime scope injects them at container build. The `GameLifetimeScope` prefab carries two children, `MenuOverlay` and `HudOverlay`, each with a `UIDocument` (panel settings: `Assets/Settings/UI/DefaultPanelSettings.asset`) and the matching view component. Every scene that contains that prefab gets the UI for free.
+- The installer's `Main Menu` field points at `Assets/UI/Menus/Menu_Main.asset`. Without it the start menu does not appear (a warning is logged).
 - `Assets/UI/Menus/Menu_Join.asset` is the sub-menu with the address/port fields.
 
 ## The data: `MenuDefinition`
@@ -71,7 +71,7 @@ public class OpenSettingsMenuCommand : IMenuCommand
 
    `MenuContext` gives you the `IMenuSystem`, the `MenuId`/`ItemId` that was invoked, and `GetValue(itemId)` for sibling rows (this is how `JoinGameMenuCommand` reads `address` and `port`).
 
-2. Register it in `ProjectLifetimeScope.ConfigureUi`:
+2. Register it in `UiFeatureInstaller.Install` (or your own feature installer):
 
 ```csharp
 builder.Register<OpenSettingsMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
@@ -127,7 +127,7 @@ Do not read Cancel elsewhere to toggle UI; add behaviour to the bootstrap instea
 
 ## Replacing the views
 
-Write a new `MonoBehaviour` that takes `IMenuSystem` (and `INetworkService` for cursor handling) via `[Inject]`, subscribes to `Changed`, and renders `Current`. Add it to the `GameLifetimeScope` prefab and inject it in `ConfigureUi` the way the overlays are. The model, commands, menus and tests are untouched.
+Write a new `MonoBehaviour` implementing `IInjectedView` that takes `IMenuSystem` (and `INetworkService` for cursor handling) via `[Inject]`, subscribes to `Changed`, and renders `Current`. Add it to the `GameLifetimeScope` prefab; injection is automatic. The model, commands, menus and tests are untouched.
 
 ## Known limits
 

@@ -12,8 +12,10 @@ namespace TinCan.Features.Airship.Fuel
     /// Application Layer: burns fuel while an airship is being driven and toggles the engine-stall ability
     /// when the tank runs dry. Ticked from the network tick right after airship movement; server only.
     /// </summary>
-    public class FuelConsumptionUseCase
+    public class FuelConsumptionUseCase : ISimulationTickable
     {
+        public SimulationPhase Phase => SimulationPhase.AfterAirship;
+
         private const string LogSource = "Fuel";
 
         private readonly INetworkService _networkService;

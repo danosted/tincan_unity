@@ -22,6 +22,9 @@ using TinCan.Core.Infrastructure.Events;
 using TinCan.Core.Domain.Abilities.Tags;
 using Assets.Scripts.Features.Airship;
 using TinCan.Features.UI;
+using TinCan.Features.Airship.Fuel;
+using TinCan.Features.Airship.Fuel.Minigame;
+using TinCan.Features.Carry;
 using TinCan.Features.UI.Commands;
 using TinCan.UI;
 namespace TinCan.Core.Infrastructure
@@ -54,6 +57,9 @@ namespace TinCan.Core.Infrastructure
 
         [Header("UI")]
         [SerializeField] private MenuDefinition _mainMenu;
+
+        [Header("Minigame")]
+        [SerializeField] private FlyingCanConfig _flyingCanConfig;
         protected override void Configure(IContainerBuilder builder)
         {
             // Register Configs
@@ -223,6 +229,45 @@ namespace TinCan.Core.Infrastructure
             builder.Register<DoorInteractionHandler>(Lifetime.Singleton).WithParameter("handlerTag", _doorInteractionTag).As<IInteractionHandler>();
 
             ConfigureUi(builder);
+            ConfigureFuel(builder);
+            ConfigureFlyingCans(builder);
+        }
+
+        // Flying jerry cans (slice 3). Ticked from NetworkSimulationScheduler; disabled config when none is assigned.
+        private void ConfigureFlyingCans(IContainerBuilder builder)
+        {
+            var config = _flyingCanConfig;
+            if (config == null)
+            {
+                config = ScriptableObject.CreateInstance<FlyingCanConfig>();
+                config.Enabled = false;
+                Debug.LogWarning("[ProjectLifetimeScope] No FlyingCanConfig assigned; flying cans disabled.");
+            }
+
+            builder.RegisterInstance(config);
+            builder.Register<FlyingCanWaveProcessor>(Lifetime.Transient);
+            builder.Register<FlyingCanMotionProcessor>(Lifetime.Transient);
+            builder.Register<FlyingCanSpawningService>(Lifetime.Singleton).As<IFlyingCanSpawner>();
+            builder.Register<FlyingCanUseCase>(Lifetime.Singleton);
+            builder.Register<CatchProcessor>(Lifetime.Transient);
+            builder.Register<NetCatchUseCase>(Lifetime.Singleton);
+            builder.Register<TakeNetInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
+
+            builder.RegisterBuildCallback(container =>
+            {
+                if (config.CanPrefab == null) return;
+                container.AddNetworkedPrefab(container.Resolve<NetworkManager>(), config.CanPrefab);
+            });
+        }
+
+        // Airship fuel loop (ship tasks prototype, slice 1). Ticked from NetworkSimulationScheduler.
+        private void ConfigureFuel(IContainerBuilder builder)
+        {
+            builder.Register<FuelConsumptionProcessor>(Lifetime.Transient);
+            builder.Register<FuelConsumptionUseCase>(Lifetime.Singleton);
+            builder.Register<PourFuelInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
+            builder.Register<TakeJerryCanInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
+            builder.Register<FuelHudPresenter>(Lifetime.Singleton).As<ITickable>();
         }
 
         // Headless menu/HUD framework (ship tasks prototype, slice 0). See .docs/UI_FRAMEWORK.md.

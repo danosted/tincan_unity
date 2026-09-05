@@ -1,6 +1,8 @@
 using System;
 using TinCan.Core.Infrastructure;
 using TinCan.Features.Airship;
+using TinCan.Features.Airship.Fuel;
+using TinCan.Features.Airship.Fuel.Minigame;
 using TinCan.Features.CloudBoundary;
 using TinCan.Features.HumanoidMovement;
 using Unity.Netcode;
@@ -17,6 +19,9 @@ namespace TinCan.Network.Infrastructure
         private readonly NetworkManager _networkManager;
         private readonly ProjectTimeService _timeService;
         private readonly AirshipMovementUseCase _airshipMovement;
+        private readonly FuelConsumptionUseCase _fuelConsumption;
+        private readonly FlyingCanUseCase _flyingCans;
+        private readonly NetCatchUseCase _netCatch;
         private readonly CloudBoundaryUseCase _cloudBoundary;
         private readonly HumanoidMovementUseCase _humanoidMovement;
         private bool _isSubscribed;
@@ -25,12 +30,18 @@ namespace TinCan.Network.Infrastructure
             NetworkManager networkManager,
             ProjectTimeService timeService,
             AirshipMovementUseCase airshipMovement,
+            FuelConsumptionUseCase fuelConsumption,
+            FlyingCanUseCase flyingCans,
+            NetCatchUseCase netCatch,
             CloudBoundaryUseCase cloudBoundary,
             HumanoidMovementUseCase humanoidMovement)
         {
             _networkManager = networkManager;
             _timeService = timeService;
             _airshipMovement = airshipMovement;
+            _fuelConsumption = fuelConsumption;
+            _flyingCans = flyingCans;
+            _netCatch = netCatch;
             _cloudBoundary = cloudBoundary;
             _humanoidMovement = humanoidMovement;
         }
@@ -82,9 +93,12 @@ namespace TinCan.Network.Infrastructure
             try
             {
                 _airshipMovement.Tick();
+                _fuelConsumption.Tick();
+                _flyingCans.Tick();
                 _cloudBoundary.Tick();
                 Physics.SyncTransforms();
                 _humanoidMovement.Tick();
+                _netCatch.Tick();
             }
             finally
             {

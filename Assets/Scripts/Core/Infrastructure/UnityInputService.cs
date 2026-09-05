@@ -12,10 +12,14 @@ namespace TinCan.Core.Infrastructure
     {
         private readonly Dictionary<string, ButtonControl> _keyMappings = new Dictionary<string, ButtonControl>();
         private readonly InputBindingConfig _bindingConfig;
+        private readonly ScriptedInput _scriptedInput;
+        private readonly InputGate _inputGate;
 
-        public UnityInputService(InputBindingConfig bindingConfig)
+        public UnityInputService(InputBindingConfig bindingConfig, ScriptedInput scriptedInput, InputGate inputGate)
         {
             _bindingConfig = bindingConfig;
+            _scriptedInput = scriptedInput;
+            _inputGate = inputGate;
         }
 
         public void Initialize()
@@ -58,6 +62,8 @@ namespace TinCan.Core.Infrastructure
 
         public bool IsActionPressed(string actionName)
         {
+            if (!_inputGate.Allows(actionName)) return false;
+            if (_scriptedInput.IsPressed(actionName)) return true;
             if (_keyMappings.TryGetValue(actionName, out var control))
             {
                 return control != null && control.isPressed;
@@ -67,6 +73,8 @@ namespace TinCan.Core.Infrastructure
 
         public bool WasActionTriggered(string actionName)
         {
+            if (!_inputGate.Allows(actionName)) return false;
+            if (_scriptedInput.WasTriggered(actionName)) return true;
             if (_keyMappings.TryGetValue(actionName, out var control))
             {
                 return control != null && control.wasPressedThisFrame;
@@ -84,6 +92,7 @@ namespace TinCan.Core.Infrastructure
 
         public Vector2 GetMouseDelta()
         {
+            if (_inputGate.GameplayBlocked) return Vector2.zero;
             return Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero;
         }
 

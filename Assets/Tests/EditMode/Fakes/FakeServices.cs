@@ -18,8 +18,11 @@ namespace TinCan.Tests.EditMode.Fakes
 
     public class FakeInputService : IInputService
     {
-        public bool IsActionPressed(string actionName) => false;
-        public bool WasActionTriggered(string actionName) => false;
+        public HashSet<string> PressedActions { get; } = new();
+        public HashSet<string> TriggeredActions { get; } = new();
+
+        public bool IsActionPressed(string actionName) => PressedActions.Contains(actionName);
+        public bool WasActionTriggered(string actionName) => TriggeredActions.Contains(actionName);
         public float GetAxis(string positiveAction, string negativeAction) => 0f;
         public Vector2 GetMouseDelta() => Vector2.zero;
         public ulong GetActiveInputMask() => 0UL;
@@ -33,11 +36,20 @@ namespace TinCan.Tests.EditMode.Fakes
         public bool IsClient => false;
         public bool IsHost => false;
         public ulong LocalClientId { get; set; } = 0;
+        public string LastAddress { get; private set; } = string.Empty;
+        public ushort LastPort { get; private set; }
+        public int StartHostCalls { get; private set; }
+        public int StartClientCalls { get; private set; }
 
         public void SetPlayerPrefab(GameObject prefab) { }
-        public void StartHost() { }
+        public void SetConnection(string address, ushort port)
+        {
+            LastAddress = address;
+            LastPort = port;
+        }
+        public void StartHost() => StartHostCalls++;
         public void StartServer() { }
-        public void StartClient() { }
+        public void StartClient() => StartClientCalls++;
         public void Shutdown() { }
     }
 

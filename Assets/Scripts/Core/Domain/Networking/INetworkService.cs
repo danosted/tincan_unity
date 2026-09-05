@@ -19,6 +19,9 @@ namespace TinCan.Core.Domain.Networking
         ulong LocalClientId { get; }
 
         void SetPlayerPrefab(UnityEngine.GameObject prefab);
+
+        /// <summary>Address and port used by the next StartClient (and the listen port for the next StartHost/StartServer).</summary>
+        void SetConnection(string address, ushort port);
         void StartHost();
         void StartServer();
         void StartClient();

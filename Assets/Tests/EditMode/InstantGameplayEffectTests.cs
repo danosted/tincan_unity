@@ -32,6 +32,7 @@ namespace TinCan.Tests.EditMode
 
             _abilitySystem = new AbilitySystemUseCase(
                 new FakeAbilityRegistry(),
+                new FakeActorRegistry(),
                 new FakeTimeService(),
                 new FakeEventPublisher());
 

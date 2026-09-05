@@ -400,6 +400,11 @@ namespace TinCan.Features.Abilities
                         _ => attrVal.BaseValue
                     };
 
+                    if (modifier.ClampMaxAttribute != null && actor.TryGetAttribute(modifier.ClampMaxAttribute, out var maxVal))
+                    {
+                        attrVal.BaseValue = Mathf.Clamp(attrVal.BaseValue, 0f, Mathf.Max(0f, maxVal.CurrentValue));
+                    }
+
                     actor.SetAttribute(modifier.Attribute, attrVal);
                     _eventPublisher.LogInfo("AbilitySystem", $"Instant Effect {definition.name} modified Base {modifier.Attribute.name}: {oldBase} -> {attrVal.BaseValue}");
                 }

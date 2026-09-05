@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 09bf0cd2fa7f6cb4d93ddaee0d342057, type: 3}
-  m_Name: GE_DamageModule
-  m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Abilities.GameplayEffectDefinition
+  m_Name: GE_GasPocketExplosion
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Abilities.GameplayEffectDefinition
   DurationType: 0
   DurationSeconds: 0
   Modifiers:
   - Attribute: {fileID: 11400000, guid: 8b14d6bb0c2e84b40a3ec90b5bbb15b2, type: 2}
     Operation: 0
-    Value: -15
+    Value: -350
     ClampMaxAttribute: {fileID: 11400000, guid: 83839a02dfc640d40b46055a7a50bf6f, type: 2}
   GrantedTags: []

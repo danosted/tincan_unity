@@ -177,6 +177,12 @@ namespace TinCan.Network.Infrastructure.Abilities
             return null;
         }
 
+        public bool TryGetAttributeSet<TAttributeSet>(out TAttributeSet set) where TAttributeSet : class, IAttributeSet
+        {
+            set = GetAttributeSet<TAttributeSet>()!;
+            return set != null;
+        }
+
         public void RegisterAttributeSet(IAttributeSet set)
         {
             _attributeSets[set.GetType()] = set;

@@ -1,45 +1,33 @@
 #nullable enable
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Networking;
+using TinCan.Features.Abilities;
 using TinCan.Features.Airship;
+using Unity.Netcode;
 using UnityEngine;
 using VContainer.Unity;
 
 namespace TinCan.Features.GasChallenge
 {
+    /// <summary>
+    /// Server-authoritative hazard loop: detonates a gas pocket the first time an airship overlaps it.
+    /// </summary>
     public class GasChallengeUseCase : ITickable
     {
         private readonly IActorRegistry _actorRegistry;
         private readonly INetworkService _networkService;
-        private readonly ITimeService _timeService;
-        private readonly Dictionary<Guid, GasPocketResult> _airshipGasStates = new();
+        private readonly AbilitySystemUseCase _abilitySystem;
 
         public GasChallengeUseCase(
             IActorRegistry actorRegistry,
             INetworkService networkService,
-            ITimeService timeService)
+            AbilitySystemUseCase abilitySystem)
         {
             _actorRegistry = actorRegistry;
             _networkService = networkService;
-            _timeService = timeService;
-        }
-
-        public bool IsAirshipInDanger(IAirshipView airship)
-        {
-            return _airshipGasStates.TryGetValue(airship.Id, out var state) && state.IsInGas;
-        }
-
-        public float GetDangerLevel(IAirshipView airship)
-        {
-            if (!_airshipGasStates.TryGetValue(airship.Id, out var state))
-            {
-                return 0f;
-            }
-
-            return state.WarningLevel;
+            _abilitySystem = abilitySystem;
         }
 
         public void Tick()
@@ -49,37 +37,52 @@ namespace TinCan.Features.GasChallenge
                 return;
             }
 
-            var gasPockets = UnityEngine.Object.FindObjectsByType<GasPocketVolume>(FindObjectsSortMode.None);
+            var gasPockets = Object.FindObjectsByType<GasPocketVolume>(FindObjectsInactive.Exclude);
+            if (gasPockets.Length == 0)
+            {
+                return;
+            }
+
             foreach (IAirshipView airship in _actorRegistry.GetActors<IAirshipView>().Where(a => a.IsSimulating))
             {
-                var state = new GasPocketResult(false, 0f, 0f);
-
                 var shipCollider = (airship as Component)?.GetComponentInChildren<Collider>();
                 if (shipCollider == null)
                 {
                     continue;
                 }
 
+                if (airship is not IShipState shipState || shipState.Controller == null)
+                {
+                    continue;
+                }
+
                 foreach (GasPocketVolume pocket in gasPockets)
                 {
-                    var result = GasPocketProcessor.EvaluateAirship(
-                        state,
-                        shipCollider,
-                        pocket,
-                        _timeService.DeltaTime);
-
-                    if (result.IsInGas)
+                    if (!GasPocketDetonationProcessor.ShouldDetonate(pocket, shipCollider))
                     {
-                        state = result;
+                        continue;
                     }
-                }
 
-                _airshipGasStates[airship.Id] = state;
-
-                if (state.DamageThisTick > 0f && airship is IHealth health)
-                {
-                    health.ApplyDamage(state.DamageThisTick);
+                    Detonate(pocket, shipState.Controller);
                 }
+            }
+        }
+
+        private void Detonate(GasPocketVolume pocket, IAbilityControllerBase target)
+        {
+            pocket.MarkDetonated();
+
+            if (pocket.ExplosionEffect == null)
+            {
+                Debug.LogWarning($"[GasChallengeUseCase] Gas pocket '{pocket.name}' has no explosion effect assigned.");
+                return;
+            }
+
+            _abilitySystem.ApplyGameplayEffect(target, pocket.ExplosionEffect);
+
+            if (pocket.TryGetComponent<NetworkObject>(out var networkObject) && networkObject.IsSpawned)
+            {
+                networkObject.Despawn(true);
             }
         }
     }

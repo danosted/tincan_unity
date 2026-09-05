@@ -18,21 +18,23 @@ namespace TinCan.Network.Infrastructure
     public class ShipModuleNetworkMediator : NetworkMediator, IShipModule, IRepairable, IInteractionTarget
     {
         [SerializeField] private string _moduleName = "Unnamed Module";
-        [SerializeField] private GameplayAttribute _healthAttribute;
+        [SerializeField] private HealthAttribute _healthAttribute;
+        [SerializeField] private MaxHealthAttribute _maxHealthAttribute;
         [SerializeField] private float _maxHealth = 100f;
+        [SerializeField, Range(0f, 1f)] private float _brokenThreshold = 0.1f;
         [SerializeField] private InteractionDefinition _interactionDefinition;
 
         public string ModuleName => _moduleName;
 
         private IActor _parentShip;
         private AbilityNetworkMediator _abilitySync;
-        private ModuleAttributeSet _attributes;
+        private HealthAttributeSet _attributes;
 
         // IRepairable Implementation
         public TinCan.Core.Domain.Abilities.IAbilityControllerBase Controller => _abilitySync;
 
-        public float HealthPercentage => _attributes != null ? _attributes.Health / _maxHealth : 1f;
-        public bool IsBroken => HealthPercentage <= 0.1f; // Broken at 10% health
+        public float HealthPercentage => _attributes?.HealthPercentage ?? 1f;
+        public bool IsBroken => _attributes?.IsBroken ?? false;
         public InteractionDefinition Definition => _interactionDefinition;
 
         public virtual void OnAttachedToShip(IActor ship)
@@ -63,7 +65,7 @@ namespace TinCan.Network.Infrastructure
 
             if (_healthAttribute != null)
             {
-                _attributes = new ModuleAttributeSet(_abilitySync, _healthAttribute);
+                _attributes = new HealthAttributeSet(_abilitySync, _healthAttribute, _maxHealthAttribute, _brokenThreshold);
                 _attributes.InitializeBaseValues(_maxHealth);
                 _abilitySync.RegisterAttributeSet(_attributes);
             }

@@ -49,7 +49,8 @@ namespace TinCan.Network.Infrastructure
         [SerializeField] private GameplayAttribute? _moveSpeedAttribute;
         [SerializeField] private GameplayAttribute? _jumpForceAttribute;
         [SerializeField] private GameplayAttribute? _staminaAttribute;
-        [SerializeField] private GameplayAttribute? _healthAttribute;
+        [SerializeField] private HealthAttribute? _healthAttribute;
+        [SerializeField] private MaxHealthAttribute? _maxHealthAttribute;
         [SerializeField] private List<AbilityDefinition>? _startingAbilities;
 
         private readonly NetworkVariable<HumanoidInputState> _netInputState = new NetworkVariable<HumanoidInputState>(
@@ -92,12 +93,19 @@ namespace TinCan.Network.Infrastructure
             _abilitySync = GetComponent<AbilityNetworkMediator>();
 
             // Register default attribute set wrapper for humanoids
-            var attributes = new HumanoidAttributeSet(this, _moveSpeedAttribute, _jumpForceAttribute, _staminaAttribute, _healthAttribute);
+            var attributes = new HumanoidAttributeSet(this, _moveSpeedAttribute, _jumpForceAttribute, _staminaAttribute);
 
             // Initialize base values for all clients and server to ensure prediction works instantly
-            attributes.InitializeBaseValues(_movement.WalkSpeed, _movement.JumpForce, 100f, 100f);
+            attributes.InitializeBaseValues(_movement.WalkSpeed, _movement.JumpForce, 100f);
 
             _abilitySync.RegisterAttributeSet(attributes);
+
+            if (_healthAttribute && _maxHealthAttribute)
+            {
+                var health = new HealthAttributeSet(_abilitySync, _healthAttribute, _maxHealthAttribute);
+                health.InitializeBaseValues(100f);
+                _abilitySync.RegisterAttributeSet(health);
+            }
 
             // Grant abilities directly through the mediator, which now correctly resolves the parent ID
             foreach (var ability in _startingAbilities ?? new List<AbilityDefinition>())
@@ -178,6 +186,9 @@ namespace TinCan.Network.Infrastructure
 
         public void RemoveTag(GameplayTag tag) => _abilitySync.RemoveTag(tag);
         public HumanoidAttributeSet? GetAttributeSet() => _abilitySync.GetAttributeSet<HumanoidAttributeSet>();
+
+        public bool TryGetAttributeSet<TAttributeSet>(out TAttributeSet set) where TAttributeSet : class, IAttributeSet
+            => _abilitySync.TryGetAttributeSet(out set);
 
         public bool TryGetAttribute(GameplayAttribute attribute, out AttributeValue value) => _abilitySync.TryGetAttribute(attribute, out value);
         public void SetAttribute(GameplayAttribute attribute, AttributeValue value) => _abilitySync.SetAttribute(attribute, value);

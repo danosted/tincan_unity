@@ -21,13 +21,14 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(AirshipControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
-    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Features.FreeCamera.IHasOrbitalCamera, IShipState, IHealth
+    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Features.FreeCamera.IHasOrbitalCamera, IShipState
     {
         public override bool IsSimulating => IsSpawned && IsServer;
 
         private AirshipControllerView _view;
         private AbilityNetworkMediator _abilitySync;
         private AirshipAttributeSet _attributes;
+        private HealthAttributeSet _health;
         private uint _nextInputSequence;
 
         [Header("GAS Attributes")]
@@ -35,42 +36,12 @@ namespace TinCan.Network.Infrastructure
         [SerializeField] private GameplayAttribute _turnSpeedAttribute;
         [SerializeField] private GameplayAttribute _healthAttribute;
         [SerializeField] private System.Collections.Generic.List<AbilityDefinition> _startingAbilities;
+        [SerializeField] private HealthAttribute _healthAttribute;
+        [SerializeField] private MaxHealthAttribute _maxHealthAttribute;
         [SerializeField] private float _maxHealth = 1000f;
 
         // IShipState Implementation
         public IAbilityControllerBase Controller => _abilitySync;
-        public float CurrentHealth => _attributes?.Health ?? 0f;
-        public float MaxHealth => _maxHealth;
-        public float HealthPercentage => MaxHealth <= 0f ? 0f : CurrentHealth / MaxHealth;
-        public bool IsBroken => CurrentHealth <= 0f;
-
-        public void ApplyDamage(float amount)
-        {
-            if (!IsServer || _healthAttribute == null || !_abilitySync.TryGetAttribute(_healthAttribute, out var value)) return;
-
-            var previousValue = value.CurrentValue;
-            value.CurrentValue = HealthValueProcessor.ApplyDamage(value.CurrentValue, _maxHealth, amount);
-
-            if (!Mathf.Approximately(previousValue, value.CurrentValue))
-            {
-                _abilitySync.SetAttribute(_healthAttribute, value);
-                Debug.Log($"health changed to {value.CurrentValue}");
-            }
-        }
-
-        public void Repair(float amount)
-        {
-            if (!IsServer || _healthAttribute == null || !_abilitySync.TryGetAttribute(_healthAttribute, out var value)) return;
-
-            var previousValue = value.CurrentValue;
-            value.CurrentValue = HealthValueProcessor.Repair(value.CurrentValue, _maxHealth, amount);
-
-            if (!Mathf.Approximately(previousValue, value.CurrentValue))
-            {
-                _abilitySync.SetAttribute(_healthAttribute, value);
-                Debug.Log($"health changed to {value.CurrentValue}");
-            }
-        }
 
         private readonly NetworkVariable<AirshipInputState> _netInputState = new NetworkVariable<AirshipInputState>(
             writePerm: NetworkVariableWritePermission.Owner);
@@ -122,10 +93,14 @@ namespace TinCan.Network.Infrastructure
             _abilitySync = GetComponent<AbilityNetworkMediator>();
 
             // Initialize and register attributes
-            _attributes = new AirshipAttributeSet(_abilitySync, _flightSpeedAttribute, _turnSpeedAttribute, _healthAttribute);
-            _attributes.InitializeBaseValues(_view.MaxForwardSpeed, _view.TurnSpeed, _maxHealth);
+            _attributes = new AirshipAttributeSet(_abilitySync, _flightSpeedAttribute, _turnSpeedAttribute);
+            _attributes.InitializeBaseValues(_view.MaxForwardSpeed, _view.TurnSpeed);
             _abilitySync.RegisterAttributeSet(_attributes);
 
+            _health = new HealthAttributeSet(_abilitySync, _healthAttribute, _maxHealthAttribute);
+            _health.InitializeBaseValues(_maxHealth);
+            _abilitySync.RegisterAttributeSet(_health);
+            
             // TODO: temporary bridge until abilities are granted via equipment/skill tree instead of starting lists.
             foreach (var ability in _startingAbilities ?? new System.Collections.Generic.List<AbilityDefinition>())
             {

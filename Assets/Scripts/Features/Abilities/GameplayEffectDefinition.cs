@@ -1,3 +1,4 @@
+#nullable enable
 using UnityEngine;
 using TinCan.Core.Domain.Abilities.Tags;
 using System.Collections.Generic;
@@ -15,9 +16,7 @@ namespace TinCan.Features.Abilities
     {
         Add,
         Multiply,
-        Override,
-        CurrentAdd,
-        CurrentSubtract
+        Override
     }
 
     [System.Serializable]
@@ -26,6 +25,9 @@ namespace TinCan.Features.Abilities
         public TinCan.Core.Domain.Abilities.Attributes.GameplayAttribute Attribute;
         public ModifierOp Operation;
         public float Value;
+
+        /// <summary>Optional upper bound for instant effects; the modified attribute is clamped to [0, this attribute's current value].</summary>
+        public Core.Domain.Abilities.Attributes.GameplayAttribute? ClampMaxAttribute;
     }
 
     /// <summary>

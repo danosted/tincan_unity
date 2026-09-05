@@ -19,6 +19,8 @@ namespace TinCan.Core.Domain.Abilities
         void SetAttribute(GameplayAttribute attribute, AttributeValue value);
         void ResetAttributesToBase();
 
+        bool TryGetAttributeSet<TAttributeSet>(out TAttributeSet set) where TAttributeSet : class, IAttributeSet;
+
         void GrantAbility(IAbilityDefinition definition);
         void RemoveAbility(IAbilityDefinition definition);
         bool TryActivateAbility(IAbilityDefinition definition, IAbilityControllerBase target = null);

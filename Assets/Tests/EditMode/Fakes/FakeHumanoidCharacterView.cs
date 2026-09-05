@@ -110,6 +110,12 @@ namespace TinCan.Tests.EditMode.Fakes
         public void SetAttribute(GameplayAttribute attribute, AttributeValue value) { }
         public void ResetAttributesToBase() { }
 
+        public bool TryGetAttributeSet<TAttributeSet>(out TAttributeSet set) where TAttributeSet : class, IAttributeSet
+        {
+            set = null;
+            return false;
+        }
+
         public void GrantAbility(IAbilityDefinition definition) { }
         public void RemoveAbility(IAbilityDefinition definition) { }
         public bool TryActivateAbility(IAbilityDefinition definition, IAbilityControllerBase target = null) => false;

@@ -1,4 +1,5 @@
 #nullable enable
+using TinCan.Features.Abilities;
 using UnityEngine;
 
 namespace TinCan.Features.GasChallenge
@@ -8,14 +9,17 @@ namespace TinCan.Features.GasChallenge
         private const string VisualChildName = "GasPocketVisuals";
 
         [SerializeField] private float _radius = 3f;
-        [SerializeField] private float _damagePerSecond = 10f;
+        [SerializeField] private GameplayEffectDefinition? _explosionEffect;
         [SerializeField] private Color _gizmoColor = new Color(0.2f, 0.9f, 0.4f, 0.35f);
         [SerializeField] private SphereCollider _triggerCollider;
 
         public Vector3 Center => transform.position;
         public float Radius => _radius;
-        public float DamagePerSecond => _damagePerSecond;
+        public GameplayEffectDefinition? ExplosionEffect => _explosionEffect;
+        public bool HasDetonated { get; private set; }
         public SphereCollider TriggerCollider => _triggerCollider;
+
+        public void MarkDetonated() => HasDetonated = true;
 
         private void Reset()
         {
@@ -103,11 +107,6 @@ namespace TinCan.Features.GasChallenge
             var closestPoint = shipCollider.ClosestPoint(pocketCenter);
             var distanceToClosestPoint = Vector3.Distance(closestPoint, pocketCenter);
             return distanceToClosestPoint <= _radius;
-        }
-
-        public GasPocketVolumeDefinition ToDefinition()
-        {
-            return new GasPocketVolumeDefinition(transform.position, _radius, _damagePerSecond);
         }
 
         private void OnDrawGizmos()

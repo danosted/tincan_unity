@@ -2,6 +2,7 @@
 
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
+using TinCan.Features.Abilities;
 using TinCan.Features.Interaction;
 using UnityEngine;
 
@@ -11,7 +12,7 @@ namespace TinCan.Network.Infrastructure
     {
         [SerializeField] private InteractionDefinition _interactionDefinition = null!;
 
-        private IHealth? _shipHealth;
+        private HealthAttributeSet? _shipHealth;
         private IAbilityControllerBase? _shipController;
 
         public IAbilityControllerBase? Controller => _shipController;
@@ -22,8 +23,11 @@ namespace TinCan.Network.Infrastructure
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            _shipHealth = GetComponentInParent<IHealth>();
             _shipController = GetComponentInParent<IAbilityControllerBase>();
+            if (_shipController != null && _shipController.TryGetAttributeSet<HealthAttributeSet>(out var health))
+            {
+                _shipHealth = health;
+            }
         }
     }
 }

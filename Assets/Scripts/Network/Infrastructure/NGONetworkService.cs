@@ -81,7 +81,8 @@ namespace TinCan.Network.Infrastructure
                 Debug.LogWarning("[NGONetworkService] No UnityTransport on the NetworkManager; cannot set connection data.");
                 return;
             }
-            transport.SetConnectionData(address, port);
+            // A remote join destination must not become the bind address for a later host session.
+            transport.SetConnectionData(address, port, transport.ConnectionData.ServerListenAddress ?? string.Empty);
         }
 
         public void StartHost() => _manager.StartHost();

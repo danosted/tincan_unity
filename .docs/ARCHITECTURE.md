@@ -39,6 +39,11 @@ Instead of tight coupling and hardcoded subsystem checks, we utilize an ECS-lite
 - **ActorOrchestrator:** Handles automatic registration. MonoBehaviours (Views/Mediators) DO NOT register themselves. When an object is spawned via the `NetworkPrefabInterceptor`, the `ActorOrchestrator` scans the prefab for relevant component interfaces (`IAbilityControllerBase`, `IInteractorView`, etc.) and registers them to the correct Domain registries.
 - **Decoupled UseCases:** A `UseCase` iterates over its specific Registry, processing data without knowing if the actor is a Humanoid, an Airship, or an AI.
 
+## Feature guides
+
+- [`FEATURE_INSTALLERS.md`](./FEATURE_INSTALLERS.md): how a feature registers itself (one `FeatureInstaller` asset), spawns its networked prefabs, contributes ship fixtures, and runs on the network tick without touching shared files.
+- [`UI_FRAMEWORK.md`](./UI_FRAMEWORK.md): data-driven menus (`MenuDefinition`), the headless `IMenuSystem` / `IMenuCommand` / `IHudValues` API, Cancel-key ownership, and how to add menus, commands and HUD values.
+
 ## Extensibility Points
 
 When adding a new feature (like a new vehicle or weapon):

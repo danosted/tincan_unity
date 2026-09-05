@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using TinCan.Core.Domain.Networking;
 using UnityEngine;
 using VContainer;
@@ -71,6 +72,18 @@ namespace TinCan.Network.Infrastructure
         public bool IsClient => _manager != null && _manager.IsClient;
         public bool IsHost => _manager != null && _manager.IsHost;
         public ulong LocalClientId => _manager != null ? _manager.LocalClientId : 0;
+
+        public void SetConnection(string address, ushort port)
+        {
+            var transport = _manager != null ? _manager.GetComponent<UnityTransport>() : null;
+            if (transport == null)
+            {
+                Debug.LogWarning("[NGONetworkService] No UnityTransport on the NetworkManager; cannot set connection data.");
+                return;
+            }
+            // A remote join destination must not become the bind address for a later host session.
+            transport.SetConnectionData(address, port, transport.ConnectionData.ServerListenAddress ?? string.Empty);
+        }
 
         public void StartHost() => _manager.StartHost();
         public void StartServer() => _manager.StartServer();

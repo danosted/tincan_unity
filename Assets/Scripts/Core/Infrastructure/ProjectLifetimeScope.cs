@@ -20,6 +20,8 @@ using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Infrastructure.Events;
 using TinCan.Core.Domain.Abilities.Tags;
+using TinCan.Core.Domain.Features;
+using TinCan.Features.Airship.Fixtures;
 using Assets.Scripts.Features.Airship;
 namespace TinCan.Core.Infrastructure
 {
@@ -48,8 +50,17 @@ namespace TinCan.Core.Infrastructure
 
         [Header("Airship Components")]
         [SerializeField] private GameplayTag _doorInteractionTag;
+
+        private FeatureInstallerCatalog _features;
+
         protected override void Configure(IContainerBuilder builder)
         {
+            // Feature composition: every FeatureInstaller asset under Resources/Installers registers itself here.
+            // Adding a feature must not require editing this file; see .docs/FEATURE_INSTALLERS.md.
+            _features = FeatureInstallerCatalog.LoadFromResources();
+            builder.RegisterInstance(_features).AsSelf().As<IShipFixtureCatalog>();
+            builder.Register<ShipFixtureSpawningUseCase>(Lifetime.Singleton).As<IInitializable>().As<ITickable>();
+
             // Register Configs
             builder.RegisterInstance(_inputBindingConfig);
             builder.RegisterInstance(_cloudBoundaryConfig);
@@ -103,7 +114,7 @@ namespace TinCan.Core.Infrastructure
             builder.Register<PossessionUseCase>(Lifetime.Singleton)
                 .AsSelf()
                 .As<IInitializable>()
-                .As<ITickable>();
+                .As<ITickable>().As<IPossessionState>();
             builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>().As<ITickable>();
             builder.Register<ShipStateProvider>(Lifetime.Singleton).As<IShipState>();
             builder.Register<AirshipMovementUseCase>(Lifetime.Singleton);
@@ -111,6 +122,11 @@ namespace TinCan.Core.Infrastructure
             builder.Register<GasChallengeUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
             builder.Register<HumanoidMovementUseCase>(Lifetime.Singleton).AsSelf().As<IHumanoidRespawnService>();
             builder.Register<NetworkSimulationScheduler>(Lifetime.Singleton).As<IInitializable>();
+
+            foreach (var installer in _features.Installers)
+            {
+                installer.Install(builder);
+            }
             builder.RegisterComponentInHierarchy<CloudEnvironmentView>();
 
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
@@ -120,6 +136,8 @@ namespace TinCan.Core.Infrastructure
                 entryPoints.Add<VehicleBoardingUseCase>().As<IVehicleBoardingUseCase>();
                 entryPoints.Add<PossessionInputController>();
                 entryPoints.Add<InteractivityUseCase>();
+                builder.Register<ScriptedInput>(Lifetime.Singleton).AsSelf().As<IScriptedInput>().As<ILateTickable>();
+                builder.Register<InputGate>(Lifetime.Singleton);
                 entryPoints.Add<UnityInputService>().As<IInputService>();
                 entryPoints.Add<EventOrchestratorUseCase>().As<IEventOrchestrator>();
                 entryPoints.Add<BuildModeUseCase>().WithParameter("buildingTag", _buildingTag);
@@ -208,11 +226,47 @@ namespace TinCan.Core.Infrastructure
                     container.InjectGameObject(character.gameObject);
                 }
 
+                // Feature-owned networked prefabs: registered with NGO at runtime (no DefaultNetworkPrefabs edits)
+                // and with the DI interceptor so instances are injected on every peer.
+                foreach (var prefab in _features.NetworkedPrefabs)
+                {
+                    if (!IsInStaticPrefabLists(networkManager, prefab) && !networkManager.NetworkConfig.Prefabs.Contains(prefab))
+                    {
+                        networkManager.AddNetworkPrefab(prefab);
+                    }
+                    container.AddNetworkedPrefab(networkManager, prefab);
+                }
+
+                // Views and other scene objects that opt into injection (e.g. UI overlays on this prefab).
+                foreach (var behaviour in FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include))
+                {
+                    if (behaviour is IInjectedView) container.Inject(behaviour);
+                }
+
+                foreach (var installer in _features.Installers)
+                {
+                    installer.OnContainerBuilt(container);
+                }
             });
 
 
             // Airship components (Consider moving this to a separate LifetimeScope for the Airship feature)
             builder.Register<DoorInteractionHandler>(Lifetime.Singleton).WithParameter("handlerTag", _doorInteractionTag).As<IInteractionHandler>();
+        }
+
+        // NetworkConfig.Prefabs is only initialised when a session starts, so Contains() cannot see the list assets yet;
+        // NGO's editor tooling may also have auto-added a prefab to DefaultNetworkPrefabs. Check the assets directly.
+        private static bool IsInStaticPrefabLists(NetworkManager networkManager, GameObject prefab)
+        {
+            foreach (var list in networkManager.NetworkConfig.Prefabs.NetworkPrefabsLists)
+            {
+                if (list == null) continue;
+                foreach (var entry in list.PrefabList)
+                {
+                    if (entry != null && entry.Prefab == prefab) return true;
+                }
+            }
+            return false;
         }
 
     }

@@ -1,5 +1,9 @@
 # Feature Installers & Ship Fixtures
 
+> Reference doc. For a step-by-step walkthrough that uses this pattern, see
+> [`TUTORIAL_NEW_FEATURE.md`](TUTORIAL_NEW_FEATURE.md); for the list of features and their style, the
+> [feature index](CODE_MAP.md#feature-index).
+
 **Why this exists.** Every feature used to edit the same four files: `ProjectLifetimeScope.cs` (registrations plus a
 `[SerializeField]` per config), `GameLifetimeScope.prefab` (the values for those fields), `DefaultNetworkPrefabs.asset`
 (every networked prefab) and `Airship_Prefab.prefab` (every fixture on the ship). With several people working in

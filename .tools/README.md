@@ -76,10 +76,8 @@ Review logs if something goes wrong during setup or upgrade.
 
 ## Integration with Documentation
 
-These scripts follow the standards in:
-- [`.docs/AI_CONFIGURATION.md`](../.docs/AI_CONFIGURATION.md) - AI operational guidelines
-- [`.docs/ARCHITECTURE.md`](../.docs/ARCHITECTURE.md) - System architecture
-- [`.docs/CODE_STANDARDS.md`](../.docs/CODE_STANDARDS.md) - Coding standards
+Project documentation starts at [`.docs/README.md`](../.docs/README.md) (humans) and
+[`AGENTS.md`](../AGENTS.md) (AI assistants). Daily Unity CLI commands are listed in the `.docs` hub.
 
 ## Future Scripts
 
@@ -113,7 +111,3 @@ When creating new scripts:
 3. Write logs to `logs/` folder
 4. Document in this README
 5. Reference relevant `.md` files in `.docs/`
-
----
-
-**Last Updated:** January 18, 2026

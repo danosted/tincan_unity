@@ -1,29 +1,24 @@
 # TinCan - Co-op Multiplayer FPS
 
-Welcome to TinCan! This is a Unity3D multiplayer game built with Netcode for GameObjects (NGO) and VContainer for dependency injection.
+TinCan is a Unity co-op airship game built with Netcode for GameObjects (NGO) and VContainer for dependency
+injection. It is developed with heavy AI assistance: AI agents write much of the code, humans guide the
+architecture, review, and playtest.
 
-This project is developed using **Human + AI Collaboration**. We heavily rely on AI agents to help write code, but humans guide the architecture and decisions.
+## Quick start
 
-## 🚀 Quick Start
-
-1. **Clone the Repo & Setup:**
-   On Windows, run the bootstrap command from the repository root:
+1. **Set up** (Windows, from the repo root; installs PowerShell 7, the Unity CLI and the pinned Editor):
    ```powershell
    .\.tools\setup.cmd
    ```
-   It installs PowerShell 7, the Unity CLI, and the required Unity Editor version when missing. Unity CLI telemetry is disabled by default; pass `-EnableUnityTelemetry` to opt in.
-2. **Open in Unity:** Open this folder as a Unity Project.
-3. **Read the AI Rules:** Since you'll be working with AI, please review the AI Guidelines below.
+   Details and the upgrade script are in [`.tools/README.md`](.tools/README.md).
+2. **Open** this folder as a Unity project. Run `git lfs install` once if you have not.
+3. **Play it in 60 seconds:** open `Assets/Scenes/drm_cloud_environment.unity`, press Play, click **Start Host**
+   in the menu. "No cameras rendering" before that is expected; the camera lives on the player prefab. For a
+   second player use Multiplayer Play Mode and **Join** with `127.0.0.1`.
 
-## 🤖 AI Guidelines & Core Documentation
+## Where to read next
 
-To ensure AI assistants generate high-quality code that matches our project's architecture, we maintain strict documentation inside the `.docs/` folder. **Both humans and AI agents must read these files:**
-
-1. **[AI Configuration & Rules](.docs/AI_CONFIGURATION.md)**
-   Defines *how* AI agents should interact with you (e.g., being concise, avoiding heavy code generation without permission, and verifying API usage).
-2. **[Architecture Overview](.docs/ARCHITECTURE.md)**
-   Explains the core pillars of our game: `VContainer` for Dependency Injection, `NGO` for networking, and the `Possession & Interaction` flow.
-3. **[Code Standards](.docs/CODE_STANDARDS.md)**
-   Specific rules on C# styling, using `UniTask` instead of coroutines, and avoiding heavy `[SerializeField]` usage in favor of dynamic resolution.
-
-*Note: AI assistants are instructed via the vendor-agnostic [`AGENTS.md`](AGENTS.md) (which `CLAUDE.md` and `.github/copilot-instructions.md` point to) to reference the `.docs` folder before writing any code.*
+- **Humans start at [`.docs/README.md`](.docs/README.md).** It has the 60-second mental model, a code map,
+  task recipes, a build-a-feature tutorial, and the daily commands.
+- **AI assistants start at [`AGENTS.md`](AGENTS.md).** It points at the same docs plus the rules AI must follow
+  here. Vendor files such as `.github/copilot-instructions.md` only point to it.

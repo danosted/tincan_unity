@@ -1,0 +1,72 @@
+{
+  "scene": "fuel_gauge",
+  "formats": [
+    "fbx"
+  ],
+  "coordinate_system": "Y-up, -Z forward; one exported unit is one meter",
+  "integration": {
+    "title": "Fuel Gauge Integration",
+    "summary": "A close-view maritime fuel gauge with an optional freestanding deck support and a separately rotatable indicator.",
+    "asset_type": "interactive_prop",
+    "placement": "Place the imported roots on the deck. Keep FuelGauge_Stand for the freestanding version, or omit it and attach FuelGauge_Static to a wall or machinery panel.",
+    "nodes": [
+      {
+        "name": "FuelGauge_Stand",
+        "role": "Optional top-level deck pedestal; it does not move with the needle."
+      },
+      {
+        "name": "FuelGauge_Static",
+        "role": "Top-level housing and dial; parent of the indicator."
+      },
+      {
+        "name": "FuelGauge_Indicator",
+        "role": "Animated needle with its origin on the axle; child of FuelGauge_Static."
+      }
+    ],
+    "setup_steps": [
+      "Import without a rig or animation clips and preserve the three named nodes and their hierarchy.",
+      "Store FuelGauge_Indicator's imported local rotation as the neutral rotation.",
+      "Drive only the indicator around its local axle; never translate it or replace its pivot.",
+      "In Unity FBX imports, Blender local Y normally becomes local Z. Confirm once with the local transform gizmo and negate the axle if motion is reversed.",
+      "Add primitive colliders to the stand and housing, excluding the indicator and dial details."
+    ],
+    "collision": "Use a box or cylinder for the housing plus simple boxes/cylinders for the optional stand; the indicator should have no collider.",
+    "animation": {
+      "target_node": "FuelGauge_Indicator",
+      "source_axis": "local_Y",
+      "unity_axis_hint": "local_Z",
+      "exported_pose": "neutral_zero_rotation",
+      "empty_angle_degrees": -65.0,
+      "full_angle_degrees": 65.0,
+      "fuel_remaining_formula": "angle_degrees = -65 + clamp(fuel_remaining, 0, 1) * 130",
+      "fuel_spent_formula": "fuel_remaining = 1 - clamp(fuel_spent, 0, 1)"
+    },
+    "examples": [
+      {
+        "title": "Engine-agnostic fuel update",
+        "language": "text",
+        "code": "fuel = clamp(fuel_remaining, 0, 1)\nangle = -65 + fuel * 130\nindicator.local_rotation = neutral_rotation * rotation_about_local_axle(angle)"
+      },
+      {
+        "title": "Unity C# core logic",
+        "language": "csharp",
+        "code": "float angle = Mathf.Lerp(-65f, 65f, Mathf.Clamp01(fuelRemaining));\nindicator.localRotation = neutralRotation * Quaternion.AngleAxis(angle, Vector3.forward);"
+      }
+    ]
+  },
+  "bundles": [
+    {
+      "file": "fuel_gauge.fbx",
+      "format": "fbx",
+      "description": "Deck-mounted maritime fuel gauge with separate stand, static housing, and animated indicator nodes.",
+      "meters_per_source_unit": 0.1,
+      "source_collections": [],
+      "source_objects": [
+        "FuelGauge_Stand",
+        "FuelGauge_Static",
+        "FuelGauge_Indicator"
+      ],
+      "exported_object_count": 3
+    }
+  ]
+}

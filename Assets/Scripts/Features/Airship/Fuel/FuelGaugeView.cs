@@ -4,29 +4,37 @@ using UnityEngine;
 namespace TinCan.Features.Airship.Fuel
 {
     /// <summary>
-    /// Presentation Layer: an in-world dial at the helm. Polls the ship's fuel tank every frame (like AirshipDoor),
-    /// so late joiners and clients need no extra sync; rotates the needle child between the empty and full angles
-    /// and tints the optional lamp when the tank is dry. Sits anywhere under the airship prefab.
+    /// Presentation Layer: the in-world fuel gauge beside the helm (model: Assets/Models/ShipComponents/FuelGauge).
+    /// Polls the ship's fuel tank every frame (like AirshipDoor), so late joiners and clients need no extra sync;
+    /// swings the indicator around its axle between the empty and full angles, relative to the indicator's imported
+    /// (neutral) pose, and tints the optional lamp when the tank is dry. Sits anywhere under the airship prefab.
     /// </summary>
     public class FuelGaugeView : MonoBehaviour
     {
-        private const string NeedleName = "Needle";
+        /// <summary>Indicator node names in lookup order: the fuel_gauge.fbx needle, then the legacy placeholder.</summary>
+        private static readonly string[] NeedleNames = { "FuelGauge_Indicator", "Needle" };
         private const string LampName = "Lamp";
 
-        [SerializeField] private float _emptyAngle = 120f;
-        [SerializeField] private float _fullAngle = -120f;
+        [Tooltip("Indicator angle for an empty tank, in degrees around Needle Axis. fuel_gauge.fbx: +65 points at E.")]
+        [SerializeField] private float _emptyAngle = 65f;
+        [Tooltip("Indicator angle for a full tank. fuel_gauge.fbx: -65 points at F. Swap both signs if the needle runs backwards.")]
+        [SerializeField] private float _fullAngle = -65f;
+        [Tooltip("Needle axle in the indicator's local space. fuel_gauge.fbx imports with the dial normal on local Y.")]
+        [SerializeField] private Vector3 _needleAxis = Vector3.up;
         [SerializeField] private float _needleSmoothing = 6f;
         [SerializeField] private Color _lampOkColor = new(0.1f, 0.6f, 0.1f);
         [SerializeField] private Color _lampEmptyColor = new(0.9f, 0.1f, 0.1f);
 
         private Transform? _needle;
+        private Quaternion _neutralRotation = Quaternion.identity;
         private Renderer? _lamp;
         private IFuelTank? _tank;
         private float _currentAngle;
 
         private void Awake()
         {
-            _needle = transform.Find(NeedleName);
+            _needle = FindNeedle(transform);
+            if (_needle != null) _neutralRotation = _needle.localRotation;
             _lamp = transform.Find(LampName)?.GetComponent<Renderer>();
             _currentAngle = _fullAngle;
         }
@@ -38,7 +46,7 @@ namespace TinCan.Features.Airship.Fuel
 
             float target = NeedleAngle(tank.Level, tank.Capacity, _emptyAngle, _fullAngle);
             _currentAngle = Mathf.Lerp(_currentAngle, target, Mathf.Clamp01(_needleSmoothing * Time.deltaTime));
-            if (_needle != null) _needle.localRotation = Quaternion.Euler(0f, 0f, _currentAngle);
+            if (_needle != null) _needle.localRotation = NeedleRotation(_neutralRotation, _needleAxis, _currentAngle);
             if (_lamp != null) _lamp.material.color = tank.IsEmpty ? _lampEmptyColor : _lampOkColor;
         }
 
@@ -47,6 +55,34 @@ namespace TinCan.Features.Airship.Fuel
         {
             float fraction = capacity > 0f ? Mathf.Clamp01(level / capacity) : 0f;
             return Mathf.Lerp(emptyAngle, fullAngle, fraction);
+        }
+
+        /// <summary>Pure composition of the imported neutral pose with a swing around the local axle; unit tested without a scene.</summary>
+        public static Quaternion NeedleRotation(Quaternion neutralRotation, Vector3 axis, float angle) =>
+            neutralRotation * Quaternion.AngleAxis(angle, axis);
+
+        /// <summary>Depth-first search for the first descendant carrying one of the known indicator names.</summary>
+        public static Transform? FindNeedle(Transform root)
+        {
+            foreach (var name in NeedleNames)
+            {
+                var found = FindDescendant(root, name);
+                if (found != null) return found;
+            }
+
+            return null;
+        }
+
+        private static Transform? FindDescendant(Transform parent, string name)
+        {
+            foreach (Transform child in parent)
+            {
+                if (child.name == name) return child;
+                var nested = FindDescendant(child, name);
+                if (nested != null) return nested;
+            }
+
+            return null;
         }
 
         private IFuelTank? ResolveTank()

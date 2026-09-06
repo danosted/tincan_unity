@@ -24,6 +24,7 @@ All multiplayer synchronization runs through Unity's official Netcode for GameOb
 To maintain a responsive FPS experience, we follow an **Input-Driven Simulation** paradigm:
 - **Input-Driven Simulation (Input Sync):** Primary for movement and time-critical actions. Clients capture intent as an `InputState`. Both Client (Prediction) and Server (Authority) execute the same Use Case logic using this input stream.
 - **Decoupled Prediction Loop:** UseCases that own a simulation loop (e.g., `HumanoidMovementUseCase`) are strictly responsible for passing their predicted `InputState` to auxiliary systems (like `AbilitySystemUseCase.ProcessAbilitySimulation`). Global systems must check `actor is ISimulatedActor` and skip global ticking for actors that handle their own prediction, guaranteeing that simulation physics and abilities share the exact same temporal tick.
+  The current airship is a legacy exception: `Assets/Scripts/Features/Airship/AirshipMovementUseCase.cs` does not tick GAS. Its separate `Assets/Scripts/Network/Infrastructure/Abilities/AbilityNetworkMediator.cs` is not an `ISimulatedActor`, so `AbilitySystemUseCase.Tick` still updates that controller globally. Moving ship abilities into prediction requires changing both paths together to preserve one ticking owner.
 - **State-Driven Synchronization (State Sync):** The server is the source of truth for high-level state changes (Tags, Attributes, Inventory). Mediators sync these back to clients via `NetworkVariable` or `ClientRpc` for visual confirmation.
 - **Avoid Side-Channels:** Do not use independent `ServerRpc` calls for actions that are part of the core simulation loop (like ability triggers or jumping). These should be bits in the `InputState` to ensure they are processed at the correct simulation tick.
 
@@ -37,6 +38,7 @@ The game relies heavily on dynamic possession (e.g., leaving a humanoid body to 
 Instead of tight coupling and hardcoded subsystem checks, we utilize an ECS-lite compositional pattern based around Registries:
 - **Registries as Queries:** Subsystems operate on generic sets of interfaces (e.g., `IInteractorRegistry`, `IAbilityRegistry`, `IActorRegistry`).
 - **ActorOrchestrator:** Handles automatic registration. MonoBehaviours (Views/Mediators) DO NOT register themselves. When an object is spawned via the `NetworkPrefabInterceptor`, the `ActorOrchestrator` scans the prefab for relevant component interfaces (`IAbilityControllerBase`, `IInteractorView`, etc.) and registers them to the correct Domain registries.
+  Mediators delegate their network lifecycle to `IActorOrchestrator.RegisterHierarchy` / `UnregisterHierarchy`. Feature fixtures such as `FuelTankNetworkMediator` also delegate ship membership to `RegisterShipModule` / `UnregisterShipModule`; the orchestrator removes old membership on reparenting, while the fixture owns its local attribute binding.
 - **Decoupled UseCases:** A `UseCase` iterates over its specific Registry, processing data without knowing if the actor is a Humanoid, an Airship, or an AI.
 
 ### 6. Feature composition

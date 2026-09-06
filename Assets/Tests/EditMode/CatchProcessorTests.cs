@@ -1,20 +1,19 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Features.Airship.Fuel.Minigame;
-using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 
 namespace TinCan.Tests.EditMode
 {
     public class CatchProcessorTests
     {
-        private readonly List<FakeFlyingCanView> _cans = new();
+        private readonly List<(Guid Id, Vector3 Position)> _cans = new();
 
         [TearDown]
         public void TearDown()
         {
-            foreach (var can in _cans) can.Destroy();
             _cans.Clear();
         }
 
@@ -41,7 +40,7 @@ namespace TinCan.Tests.EditMode
             bool found = processor.TryFindCatchable(Vector3.zero, 2f, _cans, out var nearest);
 
             Assert.That(found, Is.True);
-            Assert.That(nearest, Is.SameAs(nearer));
+            Assert.That(nearest, Is.EqualTo(nearer));
         }
 
         [Test]
@@ -51,14 +50,14 @@ namespace TinCan.Tests.EditMode
             Spawn(new Vector3(0f, 0f, 5f));
 
             Assert.That(processor.TryFindCatchable(Vector3.zero, 2f, _cans, out var nearest), Is.False);
-            Assert.That(nearest, Is.Null);
+            Assert.That(nearest, Is.EqualTo(Guid.Empty));
         }
 
-        private FakeFlyingCanView Spawn(Vector3 position)
+        private Guid Spawn(Vector3 position)
         {
-            var can = new FakeFlyingCanView(position);
-            _cans.Add(can);
-            return can;
+            var id = Guid.NewGuid();
+            _cans.Add((id, position));
+            return id;
         }
     }
 }

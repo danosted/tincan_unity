@@ -308,6 +308,22 @@ namespace TinCan.Features.Abilities
             }
         }
 
+        /// <summary>Finds the latest live effect granting a tag, preserving its identity across simulation steps.</summary>
+        public bool TryGetActiveEffectGrantingTag(Guid actorId, GameplayTag tag, out ActiveGameplayEffect effect)
+        {
+            effect = null;
+            if (!_activeEffects.TryGetValue(actorId, out var effects)) return false;
+
+            for (int i = effects.Count - 1; i >= 0; i--)
+            {
+                var candidate = effects[i];
+                if (candidate.IsExpired(_timeService.Time) || !candidate.Definition.GrantedTags.Contains(tag)) continue;
+                effect = candidate;
+                return true;
+            }
+            return false;
+        }
+
         public ActiveGameplayEffect ApplyEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition)
         {
             var effect = new ActiveGameplayEffect(definition, _timeService.Time);

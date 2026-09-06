@@ -10,5 +10,7 @@ namespace TinCan.Core.Domain
     {
         void RegisterHierarchy(GameObject root);
         void UnregisterHierarchy(GameObject root);
+        void RegisterShipModule(IShipModule module, IShipModuleRegistry registry);
+        void UnregisterShipModule(IShipModule module);
     }
 }

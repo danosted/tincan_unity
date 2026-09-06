@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d594b84eed27c94c9306075992bbe69, type: 3}
+  m_Name: GA_SwingNet
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Abilities.AbilityDefinition
+  AbilityTag: {fileID: 0}
+  CancelAbilitiesWithTag: []
+  BlockAbilitiesWithTag: []
+  TriggerInput: {fileID: 11400000, guid: 228c6f632dea57046a0b40d23fb4e13d, type: 2}
+  InputPolicy: 0
+  IsToggleable: 0
+  ActivationRequiredTagsOnActor:
+  - {fileID: 11400000, guid: 645a9df9691d5514aa320b45b5be7fed, type: 2}
+  ActivationBlockedTagsOnActor: []
+  ActivationRequiredTagsOnTarget: []
+  ActivationBlockedTagsOnTarget: []
+  TriggerTag: {fileID: 0}
+  TimingTagWindows: []
+  ActiveEffect: {fileID: 11400000, guid: e4c582b7197ab0947baf598bd7bd3540, type: 2}
+  ActiveEffectTarget: 0
+  CostEffect: {fileID: 0}
+  CooldownEffect: {fileID: 0}

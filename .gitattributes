@@ -126,3 +126,8 @@
 
 # Unity Packages - LFS
 *.unitypackage filter=lfs diff=lfs merge=lfs -text
+
+# Unity YAML: merge with UnityYAMLMerge (see .docs/FEATURE_INSTALLERS.md for the one-time git config)
+*.unity merge=unityyamlmerge eol=lf
+*.prefab merge=unityyamlmerge eol=lf
+*.asset merge=unityyamlmerge eol=lf

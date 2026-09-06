@@ -1,4 +1,5 @@
 #nullable enable
+using TinCan.Core.Domain;
 using TinCan.Features.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -10,7 +11,7 @@ namespace TinCan.UI
     /// Throwaway presentation for <see cref="IHudValues"/>: one label per value, top-left.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
-    public class HudOverlayView : MonoBehaviour
+    public class HudOverlayView : MonoBehaviour, IInjectedView
     {
         private IHudValues? _hud;
         private UIDocument? _document;

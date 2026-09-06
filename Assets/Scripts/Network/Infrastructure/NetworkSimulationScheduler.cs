@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using TinCan.Core.Domain;
 using TinCan.Core.Infrastructure;
 using TinCan.Features.Airship;
 using TinCan.Features.CloudBoundary;
@@ -10,7 +12,8 @@ using VContainer.Unity;
 namespace TinCan.Network.Infrastructure
 {
     /// <summary>
-    /// Drives simulation-critical use cases from NGO's fixed network tick.
+    /// Drives simulation-critical use cases from the fixed network tick. Core movement is explicit; features hook in
+    /// by registering an ISimulationTickable (see FeatureInstaller) and are run by phase in registration order.
     /// </summary>
     public class NetworkSimulationScheduler : IInitializable, IDisposable
     {
@@ -19,6 +22,7 @@ namespace TinCan.Network.Infrastructure
         private readonly AirshipMovementUseCase _airshipMovement;
         private readonly CloudBoundaryUseCase _cloudBoundary;
         private readonly HumanoidMovementUseCase _humanoidMovement;
+        private readonly SimulationTickRunner _features;
         private bool _isSubscribed;
 
         public NetworkSimulationScheduler(
@@ -26,13 +30,15 @@ namespace TinCan.Network.Infrastructure
             ProjectTimeService timeService,
             AirshipMovementUseCase airshipMovement,
             CloudBoundaryUseCase cloudBoundary,
-            HumanoidMovementUseCase humanoidMovement)
+            HumanoidMovementUseCase humanoidMovement,
+            IEnumerable<ISimulationTickable> featureTickables)
         {
             _networkManager = networkManager;
             _timeService = timeService;
             _airshipMovement = airshipMovement;
             _cloudBoundary = cloudBoundary;
             _humanoidMovement = humanoidMovement;
+            _features = new SimulationTickRunner(featureTickables);
         }
 
         public void Initialize()
@@ -82,9 +88,11 @@ namespace TinCan.Network.Infrastructure
             try
             {
                 _airshipMovement.Tick();
+                _features.Run(SimulationPhase.AfterAirship);
                 _cloudBoundary.Tick();
                 Physics.SyncTransforms();
                 _humanoidMovement.Tick();
+                _features.Run(SimulationPhase.AfterHumanoid);
             }
             finally
             {

@@ -131,7 +131,7 @@ namespace TinCan.Features.Abilities
             // Remove any tags added by this ability's timing windows
             foreach (var tag in spec.ActiveWindowTags)
             {
-                actor.RemoveTag(tag);
+                actor.RemoveEffectTag(tag);
             }
             spec.ActiveWindowTags.Clear();
 
@@ -164,11 +164,11 @@ namespace TinCan.Features.Abilities
                 switch (shouldHaveTag, hasTag)
                 {
                     case (true, false):
-                        actor.AddTag(window.Tag);
+                        actor.AddEffectTag(window.Tag);
                         spec.ActiveWindowTags.Add(window.Tag);
                         break;
                     case (false, true):
-                        actor.RemoveTag(window.Tag);
+                        actor.RemoveEffectTag(window.Tag);
                         spec.ActiveWindowTags.Remove(window.Tag);
                         break;
                 }
@@ -264,20 +264,19 @@ namespace TinCan.Features.Abilities
 
         private bool CanActivateAbility(IAbilityControllerBase actor, AbilitySpec spec, IAbilityControllerBase target = null)
         {
-            var actorActiveTags = actor.ActiveTags;
             var def = spec.Definition;
 
-            // Blocked by tags?
-            if (def.ActivationBlockedTagsOnActor.Any(t => actorActiveTags.HasTag(t))) return false;
+            // Query the controller so owners include synchronized and locally predicted tags.
+            if (def.ActivationBlockedTagsOnActor.Any(t => actor.HasTag(t))) return false;
 
             // Missing required tags?
-            if (def.ActivationRequiredTagsOnActor.Any(t => !actorActiveTags.HasTag(t))) return false;
+            if (def.ActivationRequiredTagsOnActor.Any(t => !actor.HasTag(t))) return false;
 
             // Blocked by target tags?
-            if (def.ActivationBlockedTagsOnTarget.Any(t => target != null && target.ActiveTags.HasTag(t))) return false;
+            if (def.ActivationBlockedTagsOnTarget.Any(t => target != null && target.HasTag(t))) return false;
 
             // Missing required target tags?
-            if (def.ActivationRequiredTagsOnTarget.Any(t => target != null && !target.ActiveTags.HasTag(t))) return false;
+            if (def.ActivationRequiredTagsOnTarget.Any(t => target != null && !target.HasTag(t))) return false;
 
             // Cooldown?
             if (spec.IsOnCooldown(_timeService.Time)) return false;
@@ -309,6 +308,22 @@ namespace TinCan.Features.Abilities
             }
         }
 
+        /// <summary>Finds the latest live effect granting a tag, preserving its identity across simulation steps.</summary>
+        public bool TryGetActiveEffectGrantingTag(Guid actorId, GameplayTag tag, out ActiveGameplayEffect effect)
+        {
+            effect = null;
+            if (!_activeEffects.TryGetValue(actorId, out var effects)) return false;
+
+            for (int i = effects.Count - 1; i >= 0; i--)
+            {
+                var candidate = effects[i];
+                if (candidate.IsExpired(_timeService.Time) || !candidate.Definition.GrantedTags.Contains(tag)) continue;
+                effect = candidate;
+                return true;
+            }
+            return false;
+        }
+
         public ActiveGameplayEffect ApplyEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition)
         {
             var effect = new ActiveGameplayEffect(definition, _timeService.Time);
@@ -330,7 +345,7 @@ namespace TinCan.Features.Abilities
             // Grant Tags
             foreach (var tag in definition.GrantedTags)
             {
-                actor.AddTag(tag);
+                actor.AddEffectTag(tag);
             }
 
             // Apply Attribute Modifiers
@@ -366,7 +381,7 @@ namespace TinCan.Features.Abilities
             {
                 // Note: Only remove if no other active effect grants this tag
                 if (grantedEffectTags.Contains(tag)) continue;
-                actor.RemoveTag(tag);
+                actor.RemoveEffectTag(tag);
             }
 
             UpdateAttributes(actor);

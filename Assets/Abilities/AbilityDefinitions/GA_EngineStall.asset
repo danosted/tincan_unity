@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d594b84eed27c94c9306075992bbe69, type: 3}
+  m_Name: GA_EngineStall
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Abilities.AbilityDefinition
+  AbilityTag: {fileID: 0}
+  CancelAbilitiesWithTag: []
+  BlockAbilitiesWithTag: []
+  TriggerInput: {fileID: 0}
+  InputPolicy: 0
+  IsToggleable: 1
+  ActivationRequiredTagsOnActor: []
+  ActivationBlockedTagsOnActor: []
+  ActivationRequiredTagsOnTarget: []
+  ActivationBlockedTagsOnTarget: []
+  TriggerTag: {fileID: 0}
+  TimingTagWindows: []
+  ActiveEffect: {fileID: 11400000, guid: 8c1d580d91dbeeb4789fe8d4cf4d7290, type: 2}
+  ActiveEffectTarget: 0
+  CostEffect: {fileID: 0}
+  CooldownEffect: {fileID: 0}

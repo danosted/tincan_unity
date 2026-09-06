@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d2b60027c07ed2469ad8e79bda5bb2f, type: 3}
+  m_Name: FlyingCanConfig
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Airship.Fuel.Minigame.FlyingCanConfig
+  CanPrefab: {fileID: 4833976213325917608, guid: 34a7f40211dc2f943a5b130d2a0e6e5f, type: 3}
+  Enabled: 1
+  SpawnOnlyWhileDriven: 0
+  SpawnInterval: 4
+  MaxAlive: 4
+  Lifetime: 15
+  AheadDistance: 60
+  LateralMin: 4.5
+  LateralMax: 6.5
+  HeightMin: -2.5
+  HeightMax: -1
+  CanSpeed: 8
+  SwingingTag: {fileID: 11400000, guid: dfa57cc4c00f7124185347c7e3053a30, type: 2}
+  NetReach: 1.8
+  NetHeight: 1
+  CatchRadius: 2.5

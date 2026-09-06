@@ -73,7 +73,8 @@ namespace TinCan.Features.Airship
 
             // Calculate Visual Banking (Roll)
             // Bank angle scales with input yaw and current speed
-            float speedFactor = Mathf.Clamp01(Mathf.Abs(currentSpeed) / maxForwardSpeed);
+            // Max speed can be 0 (e.g. engine stalled via an attribute override); avoid 0/0 = NaN poisoning the rotation.
+            float speedFactor = maxForwardSpeed > 0f ? Mathf.Clamp01(Mathf.Abs(currentSpeed) / maxForwardSpeed) : 0f;
             float targetBankAngle = -input.Yaw * maxBankAngle * speedFactor;
 
             // Convert currentRoll to -180 to 180 range

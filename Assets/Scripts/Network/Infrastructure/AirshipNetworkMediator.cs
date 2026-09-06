@@ -51,7 +51,8 @@ namespace TinCan.Network.Infrastructure
         // IAirshipView Implementation (Forwarding to view or using attributes)
         public Transform Transform => _view.transform;
         public float MaxForwardSpeed => _attributes?.MoveSpeed ?? _view.MaxForwardSpeed;
-        public float MaxBackwardSpeed => _view.MaxBackwardSpeed;
+        // A zero flight-speed override disables propulsion in both directions (for example, an empty fuel tank).
+        public float MaxBackwardSpeed => MaxForwardSpeed > 0f ? _view.MaxBackwardSpeed : 0f;
         public float AccelerationRate => _view.AccelerationRate;
         public float DecelerationRate => _view.DecelerationRate;
         public float AngularAcceleration => _view.AngularAcceleration;

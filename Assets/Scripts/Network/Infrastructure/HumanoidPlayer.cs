@@ -185,6 +185,8 @@ namespace TinCan.Network.Infrastructure
         public void AddTag(GameplayTag tag) => _abilitySync.AddTag(tag);
 
         public void RemoveTag(GameplayTag tag) => _abilitySync.RemoveTag(tag);
+        public void AddEffectTag(GameplayTag tag) => _abilitySync.AddEffectTag(tag);
+        public void RemoveEffectTag(GameplayTag tag) => _abilitySync.RemoveEffectTag(tag);
         public HumanoidAttributeSet? GetAttributeSet() => _abilitySync.GetAttributeSet<HumanoidAttributeSet>();
 
         public bool TryGetAttributeSet<TAttributeSet>(out TAttributeSet set) where TAttributeSet : class, IAttributeSet

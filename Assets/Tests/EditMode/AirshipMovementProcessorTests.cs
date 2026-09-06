@@ -126,5 +126,29 @@ namespace TinCan.Tests.EditMode
             // targetBankAngle = -1 * 20 * 1(speedFactor) = -20; rollDifference = -20 - 0 = -20; rollVel = -20 * 1
             Assert.That(result.z, Is.EqualTo(-20f).Within(0.0001f));
         }
+
+        [Test]
+        public void CalculateAngularVelocity_ZeroMaxForwardSpeed_StaysFinite()
+        {
+            // A stalled engine overrides the flight speed attribute to 0; the bank factor must not become 0/0.
+            var input = new AirshipInputState { Yaw = 1f, Pitch = 0f };
+
+            Vector3 result = _processor.CalculateAngularVelocity(
+                currentAngularVelocity: Vector3.zero,
+                input: input,
+                currentSpeed: 0f,
+                maxForwardSpeed: 0f,
+                currentRoll: 0f,
+                turnSpeed: 45f,
+                pitchSpeed: 30f,
+                angularAccel: 15f,
+                angularDecel: 20f,
+                maxBankAngle: 15f,
+                bankSpeed: 2f,
+                deltaTime: 0.1f);
+
+            Assert.That(float.IsNaN(result.x) || float.IsNaN(result.y) || float.IsNaN(result.z), Is.False);
+            Assert.That(result.z, Is.EqualTo(0f).Within(0.0001f));
+        }
     }
 }

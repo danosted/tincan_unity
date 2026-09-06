@@ -1,5 +1,6 @@
 #nullable enable
 using TinCan.Core.Domain.Networking;
+using TinCan.Core.Domain;
 using TinCan.Features.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -12,7 +13,7 @@ namespace TinCan.UI
     /// MenuSnapshot, preserving controls while values change. Replace this class when real UI arrives.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
-    public class MenuOverlayView : MonoBehaviour
+    public class MenuOverlayView : MonoBehaviour, IInjectedView
     {
         private IMenuSystem? _menus;
         private INetworkService? _networkService;

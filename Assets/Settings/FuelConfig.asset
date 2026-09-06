@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ac1e3dd4c6a81a4382b8c59c6ada9f0, type: 3}
+  m_Name: FuelConfig
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Airship.Fuel.FuelConfig
+  Capacity: 100
+  InitialLevel: 100
+  DrainPerSecondAtFullThrottle: 0.75
+  BoostMultiplier: 2
+  JerryCanLitres: 25
+  InitialSupply: 3
+  DebugFreeRefuel: 0
+  StallWhenEmpty: 1
+  BoostActiveTag: {fileID: 11400000, guid: 525daa4b9da694d4398b7264e73a1586, type: 2}
+  StalledTag: {fileID: 11400000, guid: 64142c2be12877b41bd665104a774a08, type: 2}
+  StallAbility: {fileID: 11400000, guid: d5c9f3e0a30d77049bb74522bccda9d6, type: 2}

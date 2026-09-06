@@ -21,6 +21,7 @@ namespace TinCan.Network.Infrastructure.Abilities
         private AbilitySystemUseCase _abilitySystem = null!; // Injected
         private GameplayTagContainer _activeTags = new GameplayTagContainer(null);
         private readonly HashSet<string> _clientActiveTagNames = new();
+        private readonly HashSet<string> _predictedEffectTagNames = new();
         private readonly Dictionary<Type, IAttributeSet> _attributeSets = new();
         private NetworkList<NetworkedAttribute> _networkedAttributes = null!; // Initialized in Awake
 
@@ -61,6 +62,7 @@ namespace TinCan.Network.Infrastructure.Abilities
         {
             _networkedAttributes.OnListChanged -= OnNetworkedAttributesChanged;
             _clientActiveTagNames.Clear();
+            _predictedEffectTagNames.Clear();
             base.OnNetworkDespawn();
         }
 
@@ -87,7 +89,19 @@ namespace TinCan.Network.Infrastructure.Abilities
             if (IsServer) return _activeTags.HasTag(tag);
 
             // Client-side fallback check using synchronized strings
-            return _clientActiveTagNames.Contains(tag.name);
+            return _clientActiveTagNames.Contains(tag.name) || _predictedEffectTagNames.Contains(tag.name);
+        }
+
+        public void AddEffectTag(GameplayTag tag)
+        {
+            if (IsServer) AddTag(tag);
+            else if (IsOwner) _predictedEffectTagNames.Add(tag.name);
+        }
+
+        public void RemoveEffectTag(GameplayTag tag)
+        {
+            if (IsServer) RemoveTag(tag);
+            else if (IsOwner) _predictedEffectTagNames.Remove(tag.name);
         }
 
         public void AddTag(GameplayTag tag)

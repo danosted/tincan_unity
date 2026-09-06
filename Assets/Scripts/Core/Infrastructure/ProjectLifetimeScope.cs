@@ -20,10 +20,9 @@ using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Infrastructure.Events;
 using TinCan.Core.Domain.Abilities.Tags;
+using TinCan.Core.Domain.Features;
+using TinCan.Features.Airship.Fixtures;
 using Assets.Scripts.Features.Airship;
-using TinCan.Features.UI;
-using TinCan.Features.UI.Commands;
-using TinCan.UI;
 namespace TinCan.Core.Infrastructure
 {
     /// <summary>
@@ -52,10 +51,16 @@ namespace TinCan.Core.Infrastructure
         [Header("Airship Components")]
         [SerializeField] private GameplayTag _doorInteractionTag;
 
-        [Header("UI")]
-        [SerializeField] private MenuDefinition _mainMenu;
+        private FeatureInstallerCatalog _features;
+
         protected override void Configure(IContainerBuilder builder)
         {
+            // Feature composition: every FeatureInstaller asset under Resources/Installers registers itself here.
+            // Adding a feature must not require editing this file; see .docs/FEATURE_INSTALLERS.md.
+            _features = FeatureInstallerCatalog.LoadFromResources();
+            builder.RegisterInstance(_features).AsSelf().As<IShipFixtureCatalog>();
+            builder.Register<ShipFixtureSpawningUseCase>(Lifetime.Singleton).As<IInitializable>().As<ITickable>();
+
             // Register Configs
             builder.RegisterInstance(_inputBindingConfig);
             builder.RegisterInstance(_cloudBoundaryConfig);
@@ -117,6 +122,11 @@ namespace TinCan.Core.Infrastructure
             builder.Register<GasChallengeUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
             builder.Register<HumanoidMovementUseCase>(Lifetime.Singleton).AsSelf().As<IHumanoidRespawnService>();
             builder.Register<NetworkSimulationScheduler>(Lifetime.Singleton).As<IInitializable>();
+
+            foreach (var installer in _features.Installers)
+            {
+                installer.Install(builder);
+            }
             builder.RegisterComponentInHierarchy<CloudEnvironmentView>();
 
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
@@ -216,49 +226,47 @@ namespace TinCan.Core.Infrastructure
                     container.InjectGameObject(character.gameObject);
                 }
 
+                // Feature-owned networked prefabs: registered with NGO at runtime (no DefaultNetworkPrefabs edits)
+                // and with the DI interceptor so instances are injected on every peer.
+                foreach (var prefab in _features.NetworkedPrefabs)
+                {
+                    if (!IsInStaticPrefabLists(networkManager, prefab) && !networkManager.NetworkConfig.Prefabs.Contains(prefab))
+                    {
+                        networkManager.AddNetworkPrefab(prefab);
+                    }
+                    container.AddNetworkedPrefab(networkManager, prefab);
+                }
+
+                // Views and other scene objects that opt into injection (e.g. UI overlays on this prefab).
+                foreach (var behaviour in FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include))
+                {
+                    if (behaviour is IInjectedView) container.Inject(behaviour);
+                }
+
+                foreach (var installer in _features.Installers)
+                {
+                    installer.OnContainerBuilt(container);
+                }
             });
 
 
             // Airship components (Consider moving this to a separate LifetimeScope for the Airship feature)
             builder.Register<DoorInteractionHandler>(Lifetime.Singleton).WithParameter("handlerTag", _doorInteractionTag).As<IInteractionHandler>();
-
-            ConfigureUi(builder);
         }
 
-        // Headless menu/HUD framework (ship tasks prototype, slice 0). See .docs/UI_FRAMEWORK.md.
-        // Menus are MenuDefinition assets; commands are plain IMenuCommand classes; views are optional children of this prefab.
-        private void ConfigureUi(IContainerBuilder builder)
+        // NetworkConfig.Prefabs is only initialised when a session starts, so Contains() cannot see the list assets yet;
+        // NGO's editor tooling may also have auto-added a prefab to DefaultNetworkPrefabs. Check the assets directly.
+        private static bool IsInStaticPrefabLists(NetworkManager networkManager, GameObject prefab)
         {
-            builder.Register<MenuCommandRegistry>(Lifetime.Singleton).As<IMenuCommandRegistry>();
-            builder.Register<MenuUseCase>(Lifetime.Singleton).As<IMenuSystem>();
-            builder.Register<CommandLineSessionBootstrap>(Lifetime.Singleton).As<IStartable>();
-            builder.Register<HudUseCase>(Lifetime.Singleton).As<IHudValues>();
-            builder.Register<StartHostMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
-            builder.Register<JoinGameMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
-            builder.Register<QuitMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
-
-            if (_mainMenu != null)
+            foreach (var list in networkManager.NetworkConfig.Prefabs.NetworkPrefabsLists)
             {
-                builder.RegisterInstance(_mainMenu);
-                builder.Register<MainMenuBootstrap>(Lifetime.Singleton).As<IInitializable>().As<ITickable>();
-            }
-            else
-            {
-                Debug.LogWarning("[ProjectLifetimeScope] No main MenuDefinition assigned; the start menu will not appear.");
-            }
-
-            // Views are optional: inject whichever overlay components exist in the scene (usually children of this prefab).
-            builder.RegisterBuildCallback(container =>
-            {
-                foreach (var view in FindObjectsByType<MenuOverlayView>(FindObjectsInactive.Include))
+                if (list == null) continue;
+                foreach (var entry in list.PrefabList)
                 {
-                    container.Inject(view);
+                    if (entry != null && entry.Prefab == prefab) return true;
                 }
-                foreach (var view in FindObjectsByType<HudOverlayView>(FindObjectsInactive.Include))
-                {
-                    container.Inject(view);
-                }
-            });
+            }
+            return false;
         }
 
     }

@@ -17,3 +17,5 @@ MonoBehaviour:
     UnityActionName: Sprint
   - InputType: {fileID: 11400000, guid: 95089513fd64b334bb86314ea4130092, type: 2}
     UnityActionName: BuildMode
+  - InputType: {fileID: 11400000, guid: 228c6f632dea57046a0b40d23fb4e13d, type: 2}
+    UnityActionName: AbilityPrimary

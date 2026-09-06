@@ -16,3 +16,9 @@ Validate each code change with Unity compilation and EditMode tests. Preserve th
 `Assets/Scripts/Features/Abilities/AbilitySystemUseCase.cs` exposes the latest live effect granting a tag. `Assets/Scripts/Features/Airship/Fuel/Minigame/NetCatchUseCase.cs` uses that instance to enforce one catch per swing, even when expiration and reactivation happen in the same simulation step. It snapshots Unity positions before calling the value-only geometry in `Assets/Scripts/Features/Airship/Fuel/Minigame/CatchProcessor.cs`.
 
 The consecutive-swing regression failed with one catch before the fix and passes with two afterward. Unity 6000.4.5f1 compilation completed without errors; all 148 EditMode tests passed. Human playtest remaining: repeated net swings on host and client, including two players reaching the same can.
+
+## PR #17 completed
+
+`Assets/Scripts/Features/Airship/Fuel/FuelTankNetworkMediator.cs` delegates its actor/capability lifecycle and ship membership to `Assets/Scripts/Core/Infrastructure/ActorOrchestrator.cs` through `Assets/Scripts/Core/Domain/IActorOrchestrator.cs`. The orchestrator keeps ship membership idempotent and removes previous membership on reparenting; the tank rebinds its attribute view to the current ship. The fixture recipe in `.docs/FEATURE_INSTALLERS.md` describes this ownership.
+
+`Assets/Tests/EditMode/FuelFixtureRegistrationTests.cs` covers actor/capability registration, early and late parenting, duplicate server attachment, reparenting, detachment and despawn. Unity compilation completed without errors; all 159 EditMode tests passed. Human playtest remaining: host/client fixture spawn and a late-joining client's fuel gauge.

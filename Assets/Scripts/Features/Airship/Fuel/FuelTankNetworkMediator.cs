@@ -5,6 +5,7 @@ using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Attributes;
 using Unity.Netcode;
 using UnityEngine;
+using VContainer;
 
 namespace TinCan.Features.Airship.Fuel
 {
@@ -20,7 +21,8 @@ namespace TinCan.Features.Airship.Fuel
         [SerializeField] private FuelConfig? _config;
 
         private FuelAttributeSet? _attributes;
-        private IShipModuleRegistry? _registry;
+        private IAbilityControllerBase? _controller;
+        private IActorOrchestrator _orchestrator = null!;
         private readonly FuelConsumptionProcessor _processor = new();
 
         public Guid Id { get; } = Guid.NewGuid();
@@ -32,9 +34,13 @@ namespace TinCan.Features.Airship.Fuel
         public float Level => _attributes?.Level ?? 0f;
         public bool IsEmpty => Level <= 0f;
 
+        [Inject]
+        public void Construct(IActorOrchestrator orchestrator) => _orchestrator = orchestrator;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            _orchestrator.RegisterHierarchy(gameObject);
             TryBindToParentShip();
         }
 
@@ -47,6 +53,7 @@ namespace TinCan.Features.Airship.Fuel
         public override void OnNetworkDespawn()
         {
             OnDetachedFromShip();
+            _orchestrator.UnregisterHierarchy(gameObject);
             base.OnNetworkDespawn();
         }
 
@@ -58,8 +65,8 @@ namespace TinCan.Features.Airship.Fuel
 
         public void OnDetachedFromShip()
         {
-            _registry?.UnregisterModule(this);
-            _registry = null;
+            _orchestrator.UnregisterShipModule(this);
+            _controller = null;
             _attributes = null;
         }
 
@@ -84,13 +91,22 @@ namespace TinCan.Features.Airship.Fuel
         private void TryBindToParentShip()
         {
             var parent = transform.parent;
-            if (parent == null) return;
+            if (parent == null)
+            {
+                OnDetachedFromShip();
+                return;
+            }
             Bind(parent.GetComponentInParent<IAbilityControllerBase>(), parent.GetComponentInParent<IShipModuleRegistry>());
         }
 
         private void Bind(IAbilityControllerBase? controller, IShipModuleRegistry? registry)
         {
-            if (_attributes != null) return;
+            if (registry != null) _orchestrator.RegisterShipModule(this, registry);
+            else _orchestrator.UnregisterShipModule(this);
+
+            if (ReferenceEquals(_controller, controller) && _attributes != null) return;
+            _controller = controller;
+            _attributes = null;
             if (controller == null || _fuelAttribute == null || _config == null)
             {
                 Debug.LogWarning($"[{nameof(FuelTankNetworkMediator)}] Cannot bind: missing ship ability controller, fuel attribute or config.", this);
@@ -101,12 +117,6 @@ namespace TinCan.Features.Airship.Fuel
             if (IsServer && !_attributes.HasValue)
             {
                 _attributes.SetLevel(_processor.ClampLevel(_config.InitialLevel, _config.Capacity));
-            }
-
-            if (registry != null && _registry == null)
-            {
-                _registry = registry;
-                _registry.RegisterModule(this);
             }
         }
     }

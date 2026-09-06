@@ -1,3 +1,5 @@
+#nullable enable
+using System.Collections.Generic;
 using UnityEngine;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
@@ -15,6 +17,7 @@ namespace TinCan.Core.Infrastructure
         private readonly IActorRegistry _actorRegistry;
         private readonly IInteractorRegistry _interactorRegistry;
         private readonly IAbilityRegistry _abilityRegistry;
+        private readonly Dictionary<IShipModule, IShipModuleRegistry> _moduleRegistries = new();
 
         public ActorOrchestrator(IActorRegistry actorRegistry, IInteractorRegistry interactorRegistry, IAbilityRegistry abilityRegistry)
         {
@@ -50,6 +53,7 @@ namespace TinCan.Core.Infrastructure
             // Unregister Identity
             if (root.TryGetComponent<IActor>(out var actor))
             {
+                if (actor is IShipModule module) UnregisterShipModule(module);
                 _actorRegistry.Unregister(actor);
             }
 
@@ -65,6 +69,21 @@ namespace TinCan.Core.Infrastructure
             {
                 _abilityRegistry.Unregister(controller);
             }
+        }
+
+        public void RegisterShipModule(IShipModule module, IShipModuleRegistry registry)
+        {
+            if (_moduleRegistries.TryGetValue(module, out var previous) && ReferenceEquals(previous, registry)) return;
+            UnregisterShipModule(module);
+            _moduleRegistries.Add(module, registry);
+            registry.RegisterModule(module);
+        }
+
+        public void UnregisterShipModule(IShipModule module)
+        {
+            if (!_moduleRegistries.TryGetValue(module, out var registry)) return;
+            _moduleRegistries.Remove(module);
+            registry.UnregisterModule(module);
         }
     }
 }

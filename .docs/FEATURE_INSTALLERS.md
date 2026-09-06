@@ -68,6 +68,10 @@ public class MyFeatureInstaller : FeatureInstaller
    `OnAttachedToShip(ship)` on the server; on clients override `OnNetworkObjectParentChanged` or read
    `transform.parent` in `OnNetworkSpawn` (see `FuelTankNetworkMediator`). Create a `ShipFixtureDefinition` asset
    (**TinCan > Features > Ship Fixture**) pointing at the prefab and list it from the installer.
+   Delegate actor/capability registration and cleanup to `IActorOrchestrator.RegisterHierarchy` and
+   `UnregisterHierarchy` from the network lifecycle. Delegate ship membership to its `RegisterShipModule` and
+   `UnregisterShipModule` methods; the orchestrator handles repeated attachment and removal from a previous ship.
+   Keep the fixture's own attribute binding in its mediator, rebinding when its parent changes.
 4. **Networked prefabs you spawn yourself** (projectiles, debris): list them in `NetworkedPrefabs`; do not add them
    to `DefaultNetworkPrefabs.asset`. NGO normally auto-adds every imported network prefab to that list, which would
    register it twice; the project therefore has **Generate Default Network Prefabs** turned off

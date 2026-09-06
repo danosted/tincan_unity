@@ -1,0 +1,98 @@
+{
+  "scene": "fuel_equipment",
+  "formats": [
+    "fbx"
+  ],
+  "coordinate_system": "Y-up, -Z forward; one exported unit is one meter",
+  "integration": {
+    "title": "Maritime Fuel Equipment Integration",
+    "summary": "Two 10 L can variants, a 20 L standalone motor, and a two-handed sky-can catching pole. Geometry and sockets are supplied; gameplay logic and physics belong in the game.",
+    "asset_type": "interactive_props",
+    "placement": "Each file has one root at its floor contact/butt end, recentered to zero. Source units are meters. Pole length is approximately 1.94 m; cans are approximately 0.55 m tall.",
+    "nodes": [
+      {
+        "name": "JerryCan_Red / JerryCan_Teal",
+        "role": "Independent can roots. Each has _Cap, _Grip, _Catch, and _Pour children prefixed with its root name."
+      },
+      {
+        "name": "FuelMotor_Refill",
+        "role": "Target at the open fuel inlet; local +Z points out of the tank in Blender."
+      },
+      {
+        "name": "FuelMotor_CapHinge",
+        "role": "Open pose is authored zero; rotate local X +90 degrees to close. Parent of FuelMotor_Cap."
+      },
+      {
+        "name": "CanCatcher_MainGrip / CanCatcher_SupportGrip",
+        "role": "Hand placement points at 0.20 m and 0.70 m along the shaft. Attach the player hand to MainGrip using its inverse local transform."
+      },
+      {
+        "name": "CanCatcher_Catch",
+        "role": "Trigger/attachment point inside hook. Align a falling can's _Catch point here while keeping the can upright."
+      }
+    ],
+    "setup_steps": [
+      "Import each file as a separate prefab, preserving named empty sockets and mesh hierarchy; no character rig or animation clips are supplied.",
+      "Use one rigidbody per can. Add a small catch trigger near its handle; use swept collision/continuous collision detection for fast falling cans.",
+      "When a falling can enters the hook trigger, align its _Catch socket to CanCatcher_Catch, disable its free-fall physics and attach it. Hold at most one can; detach and restore physics on release.",
+      "For refuelling, remove the can cap along source +Z and keep the motor cap open. Align the _Pour point over FuelMotor_Refill, with the can tilted so the spout points into the tank.",
+      "Transfer fuel only while in range, pouring, and open: amount = min(rate * dt, canFuel, motorCapacity - motorFuel). Subtract and add the same amount. Clamp both reservoirs and prevent duplicate transfer calls.",
+      "Motor begins empty. Hide FuelMotor_EmptyPlate and FuelMotor_EmptyText after fuel is added; enable your motor effects only while fuel remains. The motor has no external driven machinery.",
+      "Socket positions survive coordinate conversion; source +Z normally maps to engine +Y. Inspect local axes before applying cap rotations or a first-person hand pose."
+    ],
+    "collision": "Use boxes for can shells and motor body, capsules for pole shaft and hook segments, and separate small triggers for catch/refill. Avoid one convex hull over the hook opening. Do not give decorative ribs or labels colliders.",
+    "examples": [
+      {
+        "title": "Bounded fuel transfer",
+        "language": "text",
+        "code": "if pouring and caps_open and spout_in_range:\n    amount = max(0, min(rate * dt, can.fuel, motor.capacity - motor.fuel))\n    can.fuel -= amount\n    motor.fuel += amount"
+      }
+    ]
+  },
+  "bundles": [
+    {
+      "file": "jerry_can_red.fbx",
+      "format": "fbx",
+      "description": "Red fuel can with removable cap and grip, catch, and pour sockets.",
+      "meters_per_source_unit": 1.0,
+      "source_collections": [
+        "ASSET_JerryCan_Red"
+      ],
+      "source_objects": [],
+      "exported_object_count": 25
+    },
+    {
+      "file": "jerry_can_teal.fbx",
+      "format": "fbx",
+      "description": "Teal fuel can with removable cap and grip, catch, and pour sockets.",
+      "meters_per_source_unit": 1.0,
+      "source_collections": [
+        "ASSET_JerryCan_Teal"
+      ],
+      "source_objects": [],
+      "exported_object_count": 25
+    },
+    {
+      "file": "fuel_motor.fbx",
+      "format": "fbx",
+      "description": "Standalone twin-cylinder motor with open fuel inlet and hinged cap.",
+      "meters_per_source_unit": 1.0,
+      "source_collections": [
+        "ASSET_FuelMotor"
+      ],
+      "source_objects": [],
+      "exported_object_count": 50
+    },
+    {
+      "file": "can_catcher.fbx",
+      "format": "fbx",
+      "description": "Player-wielded catching pole with two grip sockets and an upward-opening hook.",
+      "meters_per_source_unit": 1.0,
+      "source_collections": [
+        "ASSET_CanCatcher"
+      ],
+      "source_objects": [],
+      "exported_object_count": 29
+    }
+  ]
+}

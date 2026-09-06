@@ -192,8 +192,7 @@ unity cmd editor_stop
 **When:** a branch or PR landed that you did not write.
 
 **Steps:**
-1. Read the plan or PR description first; if there is a plan file under `.docs/plans/` on the author's machine,
-   ask for it (that folder is gitignored today).
+1. Read the plan under `.docs/plans/` (committed with the work) or the PR description first.
 2. Shape of the change:
    ```bash
    git log --oneline --stat main..HEAD

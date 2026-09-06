@@ -44,4 +44,4 @@ The human entry point is [`.docs/README.md`](.docs/README.md). Keep it and the d
 - Fresh machine setup: `.\.tools\setup.cmd` (details in [`.tools/README.md`](.tools/README.md)). `.unity-version` is the version source of truth; `ProjectSettings/ProjectVersion.txt` is owned by the Editor.
 - Scenes contain no camera. The camera lives on the player prefab and only exists after Play → Start Host spawns the player — "No cameras rendering" before that is expected, not a bug.
 - Empty asset folders are kept in git via `.gitkeep` files (Unity ignores dot-files, so they get no `.meta`).
-- `.docs/plans/` is gitignored today; plans written there do not reach teammates. Say so in your summary.
+- Plans live in `.docs/plans/` and are committed with the work. Start each with a `Status: Draft | Approved | Done` line.

@@ -97,8 +97,8 @@ Ranked by value for effort. Tick them off as they land.
       which commits to review more carefully. Add a `.mailmap` merging Dan's two identities.
 - [ ] **PR template** (`.github/PULL_REQUEST_TEMPLATE.md`) with a human review checklist: change note linked,
       tests green, feature index updated, assets touched listed, playtested host + client.
-- [ ] **Stop gitignoring `.docs/plans/`.** Plans are the best record of AI intent and currently never reach
-      teammates. Add a `Status: Draft | Approved | Done` header instead.
+- [x] **Stop gitignoring `.docs/plans/`** (done 2026-09-06; Dan had added the ignore in May). Plans are the
+      best record of AI intent. Give each a `Status: Draft | Approved | Done` header and commit it with the work.
 - [ ] **Repo hygiene PR.** Delete the empty scaffold folders, move `ThirdPersonCharacter`, rename the duplicate
       `IShipState`, remove the two deleted scenes from Build Settings. See CODE_MAP "Legacy, oddities and traps".
 - [ ] **Editor window `TinCan > Feature Overview`** listing installers, fixtures, networked prefabs, tickables

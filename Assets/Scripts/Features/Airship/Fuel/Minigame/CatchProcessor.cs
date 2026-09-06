@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,24 +15,23 @@ namespace TinCan.Features.Airship.Fuel.Minigame
             return playerPosition + flatForward * reach + Vector3.up * height;
         }
 
-        public bool TryFindCatchable(Vector3 netPosition, float radius, IEnumerable<IFlyingCanView> cans, out IFlyingCanView? nearest)
+        public bool TryFindCatchable(Vector3 netPosition, float radius, IEnumerable<(Guid Id, Vector3 Position)> cans, out Guid nearestId)
         {
-            nearest = null;
+            nearestId = Guid.Empty;
+            bool found = false;
             float bestSqr = radius * radius;
 
             foreach (var can in cans)
             {
-                var transform = can.Transform;
-                if (transform == null) continue;
-
-                float sqr = (transform.position - netPosition).sqrMagnitude;
+                float sqr = (can.Position - netPosition).sqrMagnitude;
                 if (sqr > bestSqr) continue;
 
                 bestSqr = sqr;
-                nearest = can;
+                nearestId = can.Id;
+                found = true;
             }
 
-            return nearest != null;
+            return found;
         }
     }
 }

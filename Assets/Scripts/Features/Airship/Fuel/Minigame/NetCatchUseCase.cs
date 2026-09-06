@@ -5,7 +5,9 @@ using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
+using TinCan.Features.Abilities;
 using TinCan.Features.HumanoidMovement;
+using UnityEngine;
 
 namespace TinCan.Features.Airship.Fuel.Minigame
 {
@@ -24,8 +26,10 @@ namespace TinCan.Features.Airship.Fuel.Minigame
         private readonly CatchProcessor _processor;
         private readonly FlyingCanConfig _config;
         private readonly IEventPublisher _eventPublisher;
-        private readonly HashSet<Guid> _caughtThisSwing = new();
-        private readonly List<IFlyingCanView> _cans = new();
+        private readonly AbilitySystemUseCase _abilities;
+        private readonly Dictionary<Guid, ActiveGameplayEffect> _caughtThisSwing = new();
+        private readonly Dictionary<Guid, IFlyingCanView> _cans = new();
+        private readonly List<(Guid Id, Vector3 Position)> _candidates = new();
         private readonly List<IHumanoidCharacterView> _players = new();
 
         public NetCatchUseCase(
@@ -34,7 +38,8 @@ namespace TinCan.Features.Airship.Fuel.Minigame
             IFlyingCanSpawner spawner,
             CatchProcessor processor,
             FlyingCanConfig config,
-            IEventPublisher eventPublisher)
+            IEventPublisher eventPublisher,
+            AbilitySystemUseCase abilities)
         {
             _networkService = networkService;
             _actorRegistry = actorRegistry;
@@ -42,6 +47,7 @@ namespace TinCan.Features.Airship.Fuel.Minigame
             _processor = processor;
             _config = config;
             _eventPublisher = eventPublisher;
+            _abilities = abilities;
         }
 
         public void Tick()
@@ -50,33 +56,46 @@ namespace TinCan.Features.Airship.Fuel.Minigame
 
             // Snapshot both sets: despawning a can unregisters it from the registry we are iterating.
             _cans.Clear();
-            _cans.AddRange(_actorRegistry.GetActors<IFlyingCanView>());
+            _candidates.Clear();
+            foreach (var can in _actorRegistry.GetActors<IFlyingCanView>())
+            {
+                var canTransform = can.Transform;
+                if (canTransform == null) continue;
+                _cans.Add(can.Id, can);
+                _candidates.Add((can.Id, canTransform.position));
+            }
             _players.Clear();
             _players.AddRange(_actorRegistry.GetActors<IHumanoidCharacterView>());
+            foreach (var id in _caughtThisSwing.Keys.Except(_players.Select(player => player.Id)).ToArray())
+                _caughtThisSwing.Remove(id);
 
             foreach (var character in _players)
             {
-                if (!character.HasTag(_config.SwingingTag))
+                if (!character.HasTag(_config.SwingingTag) ||
+                    !_abilities.TryGetActiveEffectGrantingTag(character.Id, _config.SwingingTag, out var swing))
                 {
                     _caughtThisSwing.Remove(character.Id);
                     continue;
                 }
 
-                if (_caughtThisSwing.Contains(character.Id) || _cans.Count == 0) continue;
-                TryCatch(character);
+                if (_caughtThisSwing.TryGetValue(character.Id, out var caughtSwing) && ReferenceEquals(caughtSwing, swing)) continue;
+                if (_candidates.Count == 0) continue;
+                TryCatch(character, swing);
             }
         }
 
-        private void TryCatch(IHumanoidCharacterView character)
+        private void TryCatch(IHumanoidCharacterView character, ActiveGameplayEffect swing)
         {
             var body = character.Movement?.Transform;
             if (body == null) return;
 
             var netPosition = _processor.NetPosition(body.position, body.forward, _config.NetReach, _config.NetHeight);
-            if (!_processor.TryFindCatchable(netPosition, _config.CatchRadius, _cans, out var can) || can == null) return;
+            if (!_processor.TryFindCatchable(netPosition, _config.CatchRadius, _candidates, out var canId)) return;
+            var can = _cans[canId];
 
-            _caughtThisSwing.Add(character.Id);
-            _cans.Remove(can);
+            _caughtThisSwing[character.Id] = swing;
+            _candidates.RemoveAll(candidate => candidate.Id == canId);
+            _cans.Remove(canId);
             _spawner.Despawn(can);
 
             var supply = ResolveSupply();

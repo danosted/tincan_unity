@@ -145,6 +145,9 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 - **`NetworkVariable.OnValueChanged` does not fire for the initial value.** Read `.Value` in `OnNetworkSpawn`.
 - **Fixture binding:** a mediator inside a spawned fixture must bind to the ship in both `OnNetworkSpawn` and
   `OnNetworkObjectParentChanged` (clients see the parent change later than the spawn).
+- **Fixture parenting is local-space.** `ModuleSpawningService` bakes the pose into ship-local values and parents with
+  `worldPositionStays = false`, so NGO replicates the local pose. Parenting with `true` replicates the world pose and
+  clients (interpolated ship, late joiners) end up with the fixture floating off the ship.
 - **UniTask is not installed** even though `CODE_STANDARDS.md` names it. No async or coroutine code exists yet.
 - **`ProjectSettings/EditorBuildSettings.asset`** still lists two deleted scenes under `Assets/Scenes/Dev/`.
 - **Standalone builds are blocked** by Visual Scripting AOT stubs referencing Physics 2D (module disabled) and a

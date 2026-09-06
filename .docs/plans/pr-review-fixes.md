@@ -22,3 +22,7 @@ The consecutive-swing regression failed with one catch before the fix and passes
 `Assets/Scripts/Features/Airship/Fuel/FuelTankNetworkMediator.cs` delegates its actor/capability lifecycle and ship membership to `Assets/Scripts/Core/Infrastructure/ActorOrchestrator.cs` through `Assets/Scripts/Core/Domain/IActorOrchestrator.cs`. The orchestrator keeps ship membership idempotent and removes previous membership on reparenting; the tank rebinds its attribute view to the current ship. The fixture recipe in `.docs/FEATURE_INSTALLERS.md` describes this ownership.
 
 `Assets/Tests/EditMode/FuelFixtureRegistrationTests.cs` covers actor/capability registration, early and late parenting, duplicate server attachment, reparenting, detachment and despawn. Unity compilation completed without errors; all 159 EditMode tests passed. Human playtest remaining: host/client fixture spawn and a late-joining client's fuel gauge.
+
+## PR #18 completed
+
+`.docs/TASK_GUIDES.md` and `.docs/ARCHITECTURE.md` now distinguish the intended prediction-loop ownership from the current airship's separate globally ticked ability controller. `.docs/TUTORIAL_NEW_FEATURE.md` teaches fixture registration through the orchestrator, and `.docs/CODE_MAP.md` includes the new fixture tests. Verified these statements against the current ability registry, ability mediator, airship movement use case and fixture lifecycle; this branch has the same source and tests as the validated PR #17 branch.

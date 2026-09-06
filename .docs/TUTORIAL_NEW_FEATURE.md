@@ -96,8 +96,13 @@ instead (see `JerryCanSupplyNetworkMediator.cs` for the `NetworkVariable` + `OnV
 `BallastTankNetworkMediator.cs` from `Fuel/FuelTankNetworkMediator.cs`:
 `NetworkBehaviour, IBallastTank, IShipModule`. Keep these parts exactly:
 - `[SerializeField] BallastConfig? _config` (the fixture-scoped config style).
-- Bind to the parent ship in **both** `OnNetworkSpawn` and `OnNetworkObjectParentChanged`, and register with
-  `IShipModuleRegistry` through `IShipModule.OnAttachedToShip`; unregister in `OnNetworkDespawn`.
+- Inject `IActorOrchestrator`; call `RegisterHierarchy(gameObject)` in `OnNetworkSpawn` and
+  `UnregisterHierarchy(gameObject)` in `OnNetworkDespawn` for actor and capability membership.
+- Bind to the parent ship in **both** `OnNetworkSpawn` and `OnNetworkObjectParentChanged`; also accept the
+  server's `IShipModule.OnAttachedToShip` callback. Delegate membership to the orchestrator's
+  `RegisterShipModule(this, registry)` and `UnregisterShipModule(this)` methods. Rebind local state when
+  changing ships, and clear the binding on detachment or despawn. See `Fuel/FuelTankNetworkMediator.cs`
+  and `Assets/Tests/EditMode/FuelFixtureRegistrationTests.cs` for early/late parenting and repeated attachment.
 - Every write (`Fill`, `Dump`) starts with `if (!IsServer ...) return;` and clamps through the processor.
 
 ### 9. Locator

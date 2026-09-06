@@ -134,8 +134,14 @@ For per-frame, all-peer work (HUD, visuals) use `ITickable` instead.
 **Verify:** a use-case test with `Fakes/FakeServices.cs` (`FakeNetworkService.IsServer`, `FakeActorRegistry`,
 `FakeTimeService`) as in `FuelConsumptionUseCaseTests.cs`; `FeatureCompositionTests.cs` covers phase ordering.
 
-**Trap:** the airship is an `ISimulatedActor`, so `AbilitySystemUseCase.Tick` skips it. Periodic ship logic must
-be a tickable, not a GAS effect.
+**Trap:** `AbilitySystemUseCase.Tick` checks each controller in `IAbilityRegistry`, not the ship's movement
+view. The airship's separate `Network/Infrastructure/Abilities/AbilityNetworkMediator.cs` is not an
+`ISimulatedActor`, so its effects currently update on the global GAS tick while it is simulating.
+`Features/Airship/AirshipMovementUseCase.cs` does not call `ProcessAbilitySimulation`. This is a legacy
+exception to the intended prediction-loop ownership in `ARCHITECTURE.md`; the movement interface alone
+does not suppress the separate controller's global tick. Use `ISimulationTickable` for periodic ship logic
+that needs a defined position in the network tick, such as fuel drain. GAS effects can still modify ship
+attributes; do not add a second GAS tick without moving ownership out of the global path.
 
 ## 7. Write a test or a fake
 

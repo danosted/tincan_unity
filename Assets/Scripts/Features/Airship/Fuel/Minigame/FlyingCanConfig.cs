@@ -5,32 +5,39 @@ using UnityEngine;
 namespace TinCan.Features.Airship.Fuel.Minigame
 {
     /// <summary>
-    /// Tunables for the flying jerry-can minigame. Offsets are in airship-local space (x = starboard, y = up, z = forward).
+    /// Tunables for scattered stationary fuel pickups. New batches follow the ship's travel direction.
     /// </summary>
     [CreateAssetMenu(fileName = "FlyingCanConfig", menuName = "TinCan/Airship/Flying Can Config")]
     public class FlyingCanConfig : ScriptableObject
     {
         [Header("Prefab")]
-        [Tooltip("Networked prefab with FlyingCanNetworkMediator + NetworkTransformMediator. Must also be in DefaultNetworkPrefabs.")]
+        [Tooltip("Networked prefab registered by FlyingCanFeatureInstaller.")]
         public GameObject? CanPrefab;
 
-        [Header("Waves")]
+        [Header("World pickups")]
         public bool Enabled = true;
-        [Tooltip("Only spawn while someone is at the helm and throttling.")]
-        public bool SpawnOnlyWhileDriven = false;
-        [Min(0.1f)] public float SpawnInterval = 4f;
-        [Range(1, 12)] public int MaxAlive = 4;
-        [Min(0f)] public float Lifetime = 15f;
+        [Tooltip("Travel distance between new batches of two cans. Also spaces the initial spawn volumes.")]
+        [Min(1f)] public float RowSpacing = 20f;
+        [Tooltip("Maximum live pickups. Nearby cans are never removed just to make room.")]
+        [Min(2)] public int MaxAlive = 48;
+        [Tooltip("Remove cans only beyond this distance from every simulating ship. No age limit.")]
+        [Min(1f)] public float DespawnDistance = 200f;
+        [Tooltip("Avoid duplicate pickups when revisiting an existing field.")]
+        [Min(0.1f)] public float MinimumSeparation = 10f;
+        [Tooltip("No new can may spawn within this radius of any ship's centre. Includes room for the hull and balloon.")]
+        [Min(0f)] public float MinimumShipDistance = 50f;
 
         [Header("Spawn volume (ship-local)")]
-        [Min(1f)] public float AheadDistance = 60f;
-        public float LateralMin = 4.5f;
-        public float LateralMax = 6.5f;
-        public float HeightMin = -2.5f;
-        public float HeightMax = -1.0f;
-
-        [Header("Motion")]
-        [Min(0.1f)] public float CanSpeed = 8f;
+        [Tooltip("Distance at which new cans appear in the travel direction; tune to the visible horizon.")]
+        [Min(1f)] public float AheadDistance = 120f;
+        [Tooltip("Centre of the nearest initial spawn volume, ahead of the ship.")]
+        [Min(0f)] public float InitialAheadDistance = 60f;
+        [Tooltip("Random forward/backward offset within each spawn volume, so cans do not form rows.")]
+        [Min(0f)] public float DepthSpread = 15f;
+        public float LateralMin = 0f;
+        public float LateralMax = 55f;
+        public float HeightMin = -25f;
+        public float HeightMax = 25f;
 
         [Header("Catch (handheld net)")]
         [Tooltip("Tag the player carries while the net swing effect is active (State.Net.Swinging).")]
@@ -42,6 +49,6 @@ namespace TinCan.Features.Airship.Fuel.Minigame
         [Tooltip("A can within this distance of the net head is caught. Generous: the client sees interpolated cans.")]
         [Min(0.1f)] public float CatchRadius = 2.5f;
 
-        public FlyingCanSpawnParameters SpawnParameters => new(AheadDistance, LateralMin, LateralMax, HeightMin, HeightMax, CanSpeed);
+        public FlyingCanSpawnParameters SpawnParameters => new(LateralMin, LateralMax, HeightMin, HeightMax, DepthSpread);
     }
 }

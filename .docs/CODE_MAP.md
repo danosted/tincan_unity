@@ -109,7 +109,7 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 
 | Feature | Folder (`Assets/Scripts/Features/`) | Style | Entry points | Assets | Tests |
 |---|---|---|---|---|---|
-| Fuel loop (tank, drain, stall, jerry cans, motor, gauge, HUD) | `Airship/Fuel/` | installer | `FuelConsumptionUseCase`, `FuelTankNetworkMediator`, `PourFuelInteractionHandler`, `TakeJerryCanInteractionHandler`, `FuelHudPresenter`, `FuelGaugeView` | `Resources/Installers/FuelFeatureInstaller`, `Settings/FuelConfig`, `Settings/Fixtures/FuelSystemFixture`, `Prefabs/Airship/Parts/FuelSystem`, `Models/ShipComponents/FuelGauge/fuel_gauge`, `IA_PourFuel`, `IA_TakeJerryCan`, `Attr_Fuel`, `GA_EngineStall`, `GE_EngineStall`, `State.Engine.Stalled` | `FuelConsumption*Tests`, `FuelFixtureRegistrationTests`, `PourFuelInteractionHandlerTests`, `TakeJerryCanInteractionHandlerTests`, `FuelGaugeViewTests`, `FuelHudPresenterTests`, `AirshipStallTests` |
+| Fuel loop (tank, drain, stall, jerry cans, motor, gauge, HUD) | `Airship/Fuel/` | installer | `FuelConsumptionUseCase`, `FuelTankNetworkMediator`, `PourFuelInteractionHandler`, `TakeJerryCanInteractionHandler`, `FuelHudPresenter`, `FuelGaugeView`, `FuelMotorStatusView` | `Resources/Installers/FuelFeatureInstaller`, `Settings/FuelConfig`, `Settings/Fixtures/FuelSystemFixture`, `Prefabs/Airship/Parts/FuelSystem`, `Models/ShipComponents/FuelGauge/fuel_gauge`, `Models/ShipComponents/FuelEquipment`, `Materials/M_FuelStatusLamp`, `IA_PourFuel`, `IA_TakeJerryCan`, `Attr_Fuel`, `GA_EngineStall`, `GE_EngineStall`, `State.Engine.Stalled` | `FuelConsumption*Tests`, `FuelFixtureRegistrationTests`, `PourFuelInteractionHandlerTests`, `TakeJerryCanInteractionHandlerTests`, `FuelGaugeViewTests`, `FuelMotorStatusViewTests`, `FuelHudPresenterTests`, `AirshipStallTests` |
 | Flying cans + net catch | `Airship/Fuel/Minigame/` | installer (Order 10) | `FlyingCanUseCase`, `NetCatchUseCase`, `TakeNetInteractionHandler`, `Network/Infrastructure/FlyingCanNetworkMediator`, `FlyingCanSpawningService` | `Resources/Installers/FlyingCanFeatureInstaller`, `Settings/FlyingCanConfig`, `Prefabs/Hazards/FlyingJerryCan`, `IA_TakeNet`, `GA_SwingNet`, `GE_NetSwing`, `State.Net.Swinging`, `Input_Primary` | `FlyingCan*Tests`, `CatchProcessorTests`, `NetCatchUseCaseTests`, `NetSwingPredictionTests`, `TakeNetInteractionHandlerTests` |
 | Carry (net / jerry can on the player) | `Carry/` | via Fuel + FlyingCan installers | `PlayerCarryNetworkMediator`, `NetRackNetworkMediator`, `NetSwingVisualView` | `State.Carrying.Net`, visuals on `NetworkPlayer.prefab` | covered by handler tests |
 | Menus + HUD framework | `UI/` (+ views in `Scripts/UI/`) | installer (Order -10) | `MenuUseCase`, `HudUseCase`, `MainMenuBootstrap`, `CommandLineSessionBootstrap`, `Commands/*` | `Resources/Installers/UiFeatureInstaller`, `UI/Menus/Menu_Main`, `Menu_Join`, overlays on `GameLifetimeScope.prefab` | `Menu*Tests`, `HudUseCaseTests`, `MainMenuBootstrapTests`, `CommandLineSessionBootstrapTests` |
@@ -130,19 +130,48 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 ## Fuel equipment visuals
 
 `Assets/Models/ShipComponents/FuelEquipment/` supplies nested FBX instances inside the existing gameplay
-prefabs. Preserve the imported root transforms: their rotation and scale perform the FBX axis/unit conversion.
+prefabs. Equipment wrappers use a uniform 2.5 scale, matching the fuel gauge. Preserve the imported FBX root
+transforms: their rotation and scale perform the axis/unit conversion. Carry grip offsets remain inside the
+scaled wrappers; adjust the wrapper poses on the player when tuning first-person visibility. The player's
+`NetSwingVisualView` uses a 30-degree swing for the longer pole, keeping the hook near the existing catch area.
 
 | Prefab | Visuals |
 |---|---|
-| `Assets/Prefabs/Airship/Parts/FuelSystem.prefab` | `fuel_motor` under `MotorFillPort`; red/teal/red cans under `JerryCanSupply/Can_0..2`; `can_catcher` under `NetRack`. The supply crate and existing fuel gauge remain. |
+| `Assets/Prefabs/Airship/Parts/FuelSystem.prefab` | `fuel_motor` and `FuelMotorStatusView` under `MotorFillPort`; `jerry_can_rack` and three red cans under `JerryCanSupply/Can_0..2`; `can_catcher` under `NetRack`; existing fuel gauge. Can wrappers stay direct children for supply visibility, with their positions taken from the rack's three slot sockets. |
 | `Assets/Prefabs/NetworkPlayer.prefab` | Red can under `Carry_JerryCan`, catching pole under `Carry_Net`, positioned using their grip sockets. Keep these wrapper names: carry visibility and swing animation resolve them at runtime. |
-| `Assets/Prefabs/Hazards/FlyingJerryCan.prefab` | Red can under `Visual`, centered on the existing networked flight root. |
+| `Assets/Prefabs/Hazards/FlyingJerryCan.prefab` | Red can under `Visual`, centered on the networked world pickup root. |
 
-The motor uses a body box and a separate tall interaction trigger; the rack uses a shaft capsule and its
-existing interaction trigger. Model sockets are retained for future animation. The art pack's suggested
+The motor uses a body box and a separate interaction trigger. The can rack has individual floor, divider,
+and rail boxes that leave the bays open; the catching pole has a shaft capsule. Both have interaction triggers
+reachable at player height. Model sockets are retained for future animation. The art pack's suggested
 pouring/physics mechanics are not implemented by this visual replacement: fuel amounts, pickup, catch, and
-refill still come from the existing feature code and configs. The motor's static `EMPTY` plate/text are hidden;
-`FuelGaugeView` and the HUD remain the live fuel indicators.
+refill still come from the existing feature code and configs.
+
+`Assets/Scripts/Features/Airship/Fuel/FuelMotorStatusView.cs` reads the replicated tank level. At or below
+5% capacity it shows the motor's `FuelMotor_EmptyPlate` and `FuelMotor_EmptyText` and changes `FuelStatusLamp`
+to red; above the threshold the plate hides and the lamp turns green. The threshold and colors are tunable on
+the motor view. The lamp uses `Assets/Materials/M_FuelStatusLamp.mat` and a material property block, so instances
+do not modify a shared material's colors. Engine stalling still requires zero fuel. `FuelGaugeView` controls
+only its needle; the removed placeholder lamp settings are no longer exposed. Coverage lives in
+`Assets/Tests/EditMode/FuelMotorStatusViewTests.cs`, including exactly 5%, refill, and initial low-fuel state.
+
+### Stationary fuel pickups
+
+`Assets/Settings/FuelConfig.asset` starts the rack with one can. All current fuel cans use the red model;
+the teal import is reserved for a future fuel type. `Assets/Scripts/Features/Airship/Fuel/Minigame/FlyingCanUseCase.cs`
+seeds scattered pickups ahead of the first simulating ship, then adds batches at the horizon as it travels.
+`Assets/Settings/FlyingCanConfig.asset` starts the initial spawn volumes 60 m ahead, with random offsets up to
+55 m left/right, 25 m above/below, and 15 m forward/backward. Every candidate must be at least 50 m from
+every ship's centre and 10 m from another can; blocked candidates are retried a bounded number of times,
+then skipped. The clearance accommodates the current hull and balloon; tune it if the ship model changes.
+New batches spawn after 20 m of travel at a 120 m horizon, with a 200 m removal distance and 48-can cap.
+Spawn direction follows actual displacement, including reverse and vertical travel.
+Cans stay fixed in world space with no lifetime. Only cans far from every simulating ship are removed;
+nearby cans are preserved at the cap, and a separation check avoids overlapping pickups on return trips.
+Standing still or turning in place adds no cans after the initial field. Net catches still add to the rack.
+Ship collision response remains deferred: approaching an existing can does not push or relocate it.
+Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProcessorTests.cs` and
+`NetCatchUseCaseTests.cs`; tune horizon visibility and catch approach feel with a host/client playtest.
 
 ## Legacy, oddities and traps
 

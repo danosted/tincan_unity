@@ -19,8 +19,6 @@ namespace TinCan.Tests.EditMode.Fakes
         public Guid Id { get; } = Guid.NewGuid();
         public bool IsSimulating => true;
         public Transform Transform => _gameObject.transform;
-        public Vector3 Velocity { get; set; }
-        public float SpawnTime { get; set; }
 
         public void Destroy()
         {
@@ -42,10 +40,10 @@ namespace TinCan.Tests.EditMode.Fakes
         public List<IFlyingCanView> Despawned { get; } = new();
         public bool RefuseSpawns { get; set; }
 
-        public IFlyingCanView? Spawn(Vector3 position, Vector3 velocity)
+        public IFlyingCanView? Spawn(Vector3 position)
         {
             if (RefuseSpawns) return null;
-            var can = new FakeFlyingCanView(position) { Velocity = velocity };
+            var can = new FakeFlyingCanView(position);
             Spawned.Add(can);
             _registry.Register(can);
             return can;

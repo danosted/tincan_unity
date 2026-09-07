@@ -1,5 +1,4 @@
 #nullable enable
-using TinCan.Core.Domain;
 using Unity.Netcode;
 using UnityEngine;
 using VContainer;
@@ -16,39 +15,32 @@ namespace TinCan.Features.Airship.Fuel.Minigame
         private readonly NetworkManager _networkManager;
         private readonly IObjectResolver _container;
         private readonly FlyingCanConfig _config;
-        private readonly ITimeService _timeService;
 
-        public FlyingCanSpawningService(NetworkManager networkManager, IObjectResolver container, FlyingCanConfig config, ITimeService timeService)
+        public FlyingCanSpawningService(NetworkManager networkManager, IObjectResolver container, FlyingCanConfig config)
         {
             _networkManager = networkManager;
             _container = container;
             _config = config;
-            _timeService = timeService;
         }
 
-        public IFlyingCanView? Spawn(Vector3 position, Vector3 velocity)
+        public IFlyingCanView? Spawn(Vector3 position)
         {
             if (!_networkManager.IsServer || _config == null || _config.CanPrefab == null) return null;
 
-            var instance = Object.Instantiate(_config.CanPrefab, position, Quaternion.LookRotation(velocity.sqrMagnitude > 0f ? velocity : Vector3.forward));
+            var instance = Object.Instantiate(_config.CanPrefab, position, Quaternion.identity);
             _container.InjectGameObject(instance);
 
             var netObj = instance.GetComponent<NetworkObject>();
-            if (netObj == null)
+            var can = instance.GetComponent<IFlyingCanView>();
+            if (netObj == null || can == null)
             {
-                Debug.LogWarning("[FlyingCanSpawningService] CanPrefab has no NetworkObject; destroying instance.");
+                Debug.LogWarning("[FlyingCanSpawningService] CanPrefab needs a NetworkObject and IFlyingCanView; destroying instance.");
                 Object.Destroy(instance);
                 return null;
             }
 
             netObj.Spawn();
 
-            var can = instance.GetComponent<IFlyingCanView>();
-            if (can != null)
-            {
-                can.Velocity = velocity;
-                can.SpawnTime = _timeService.Time; // every can gets a lifetime, including ones spawned by tools
-            }
             return can;
         }
 

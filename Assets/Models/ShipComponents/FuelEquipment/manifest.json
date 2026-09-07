@@ -1,22 +1,23 @@
 {
   "scene": "fuel_equipment",
   "formats": [
-    "fbx"
+    "fbx",
+    "glb"
   ],
   "coordinate_system": "Y-up, -Z forward; one exported unit is one meter",
-  "integration": {
-    "title": "Maritime Fuel Equipment Integration",
-    "summary": "Two 10 L can variants, a 20 L standalone motor, a two-handed sky-can catching pole, and a three-slot wooden deck rack with iron rails. Geometry and sockets are supplied; gameplay logic and physics belong in the game.",
+  "asset_contract": {
+    "title": "Maritime Aether Equipment",
+    "summary": "Two 10-energy-unit wind crystals, a 20-energy-unit aether receiver, a catching staff, and a three-slot wooden deck rack with iron rails. Legacy petrol asset IDs are retained for reference compatibility. Geometry and sockets are supplied; gameplay logic and physics belong in the game.",
     "asset_type": "interactive_props",
-    "placement": "Each file has one root at its floor contact/butt end, recentered to zero. Source units are meters. Pole length is approximately 1.94 m; cans are approximately 0.55 m tall.",
+    "placement": "Each file has one root at its floor contact/butt end, recentered to zero. Source units are meters. Staff length is approximately 2.08 m; crystal vessels are approximately 0.87 m tall above their roots.",
     "nodes": [
       {
         "name": "JerryCan_Red / JerryCan_Teal",
-        "role": "Independent can roots. Each has _Cap, _Grip, _Catch, and _Pour children prefixed with its root name."
+        "role": "Independent crystal roots. Each has _Cap (focus seal), _Grip, _Catch, and _Pour (energy focus) children prefixed with its legacy root name. capacity_energy is 10 units."
       },
       {
         "name": "FuelMotor_Refill",
-        "role": "Target at the open fuel inlet; local +Z points out of the tank in Blender."
+        "role": "Energy-channel target at the open receiver; local +Z points out of its inlet in Blender."
       },
       {
         "name": "FuelMotor_CapHinge",
@@ -24,33 +25,46 @@
       },
       {
         "name": "CanCatcher_MainGrip / CanCatcher_SupportGrip",
-        "role": "Hand placement points at 0.20 m and 0.70 m along the shaft. Attach the player hand to MainGrip using its inverse local transform."
+        "role": "Hand placement points at 0.20 m and 0.70 m along the shaft."
       },
       {
         "name": "CanCatcher_Catch",
-        "role": "Trigger/attachment point inside hook. Align a falling can's _Catch point here while keeping the can upright."
+        "role": "Attachment socket inside the hook."
       },
       {
         "name": "JerryCanRack / JerryCanRack_Slot_01 / JerryCanRack_Slot_02 / JerryCanRack_Slot_03",
-        "role": "Static rack root at deck level and three can-root placement sockets, spaced 0.44 m apart. Align an existing can root to a socket's full transform; the socket includes its floor-contact offset."
+        "role": "Static rack root at deck level and three can-root placement sockets, spaced 0.44 m apart. Each socket includes its floor-contact offset."
       }
     ],
+    "contents": "Meshes, translucent materials, and four-second wind transform clips; no character rig, collision meshes, or gameplay scripts. Frames 1 and 97 match, with playback on 1\u201396 at 24 fps. The rack exports empty. Receiver capacity_energy is 20 and initial_energy is 0; the active showcase effect demonstrates its powered appearance. FBX transparency and emission may require engine material setup.",
+    "dimensions": {
+      "rack_meters": [
+        1.42,
+        0.634,
+        0.3
+      ],
+      "rack_slot_spacing_meters": 0.44
+    },
+    "movable_parts": "Crystal caps are separate focus seals; leave them attached during energy transfer. Wind_1 and Wind_2 meshes rotate around local source Z, carrying their motes. FuelMotor_Cap is parented to FuelMotor_CapHinge; local X zero is open and +90 degrees is closed."
+  },
+  "optional_recipes": {
     "setup_steps": [
-      "Import each file as a separate prefab, preserving named empty sockets and mesh hierarchy; no character rig or animation clips are supplied.",
+      "Import each file as a separate prefab, preserving named sockets and mesh hierarchy. Loop the supplied four-second wind clip. No character rig is required. Configure alpha-blended crystal materials and emissive wind for your render pipeline.",
+      "For a two-handed pose, attach the player hand to CanCatcher_MainGrip using its inverse local transform.",
       "Place JerryCanRack at deck level. Its footprint including anchor ears is 1.42 by 0.634 m and its height is 0.30 m. The rack exports empty; add either can variant to any Slot_01/02/03 transform with unit local scale and identity local rotation. Keep one can per slot, disable its free physics while stored, and restore physics when lifted out. Slot occupancy and storage logic are not supplied.",
       "Use one rigidbody per can. Add a small catch trigger near its handle; use swept collision/continuous collision detection for fast falling cans.",
       "When a falling can enters the hook trigger, align its _Catch socket to CanCatcher_Catch, disable its free-fall physics and attach it. Hold at most one can; detach and restore physics on release.",
-      "For refuelling, remove the can cap along source +Z and keep the motor cap open. Align the _Pour point over FuelMotor_Refill, with the can tilted so the spout points into the tank.",
-      "Transfer fuel only while in range, pouring, and open: amount = min(rate * dt, canFuel, motorCapacity - motorFuel). Subtract and add the same amount. Clamp both reservoirs and prevent duplicate transfer calls.",
-      "Motor begins empty. Hide FuelMotor_EmptyPlate and FuelMotor_EmptyText after fuel is added; enable your motor effects only while fuel remains. The motor has no external driven machinery.",
+      "For energy transfer, keep the crystal focus seal attached and the receiver cap open. Aim the legacy _Pour focus at FuelMotor_Refill; no liquid or pouring pose is needed.",
+      "Transfer energy only while actively channelling, in range, and the receiver is open: amount = min(rate * dt, crystalEnergy, receiverCapacity - receiverEnergy). Subtract and add the same amount. Clamp both stores and prevent duplicate transfer calls.",
+      "Receiver initial_energy is zero. Hide its Heart_Wind meshes and child motes while empty; enable them when energy is available. The showcase intentionally displays the powered appearance.",
       "Socket positions survive coordinate conversion; source +Z normally maps to engine +Y. Inspect local axes before applying cap rotations or a first-person hand pose."
     ],
     "collision": "Use boxes for can shells and motor body, capsules for pole shaft and hook segments, and separate small triggers for catch/refill. For the static rack use separate boxes for the floor, rails, and dividers, plus one optional trigger per bay; leave all three openings clear. Avoid one convex hull over the hook or rack openings. Do not give decorative ribs, bolts, or labels colliders.",
     "examples": [
       {
-        "title": "Bounded fuel transfer",
+        "title": "Bounded energy transfer",
         "language": "text",
-        "code": "if pouring and caps_open and spout_in_range:\n    amount = max(0, min(rate * dt, can.fuel, motor.capacity - motor.fuel))\n    can.fuel -= amount\n    motor.fuel += amount"
+        "code": "if channelling and receiver_open and focus_in_range:\n    amount = max(0, min(rate * dt, crystal.energy, receiver.capacity_energy - receiver.energy))\n    crystal.energy -= amount\n    receiver.energy += amount"
       }
     ]
   },
@@ -58,46 +72,98 @@
     {
       "file": "jerry_can_red.fbx",
       "format": "fbx",
-      "description": "Red fuel can with removable cap and grip, catch, and pour sockets.",
+      "description": "Violet wind crystal with animated interior, carry handle, and energy-focus socket.",
       "meters_per_source_unit": 1.0,
       "source_collections": [
         "ASSET_JerryCan_Red"
       ],
       "source_objects": [],
-      "exported_object_count": 25
+      "exported_object_count": 42,
+      "animation_loop_seconds": 4.0
+    },
+    {
+      "file": "jerry_can_red.glb",
+      "format": "glb",
+      "description": "Violet wind crystal with animated interior, carry handle, and energy-focus socket.",
+      "meters_per_source_unit": 1.0,
+      "source_collections": [
+        "ASSET_JerryCan_Red"
+      ],
+      "source_objects": [],
+      "exported_object_count": 42,
+      "animation_loop_seconds": 4.0
     },
     {
       "file": "jerry_can_teal.fbx",
       "format": "fbx",
-      "description": "Teal fuel can with removable cap and grip, catch, and pour sockets.",
+      "description": "Teal wind crystal with animated interior, carry handle, and energy-focus socket.",
       "meters_per_source_unit": 1.0,
       "source_collections": [
         "ASSET_JerryCan_Teal"
       ],
       "source_objects": [],
-      "exported_object_count": 25
+      "exported_object_count": 42,
+      "animation_loop_seconds": 4.0
+    },
+    {
+      "file": "jerry_can_teal.glb",
+      "format": "glb",
+      "description": "Teal wind crystal with animated interior, carry handle, and energy-focus socket.",
+      "meters_per_source_unit": 1.0,
+      "source_collections": [
+        "ASSET_JerryCan_Teal"
+      ],
+      "source_objects": [],
+      "exported_object_count": 42,
+      "animation_loop_seconds": 4.0
     },
     {
       "file": "fuel_motor.fbx",
       "format": "fbx",
-      "description": "Standalone twin-cylinder motor with open fuel inlet and hinged cap.",
+      "description": "Aether receiver with animated crystal heart, rune dial, and hinged energy inlet.",
       "meters_per_source_unit": 1.0,
       "source_collections": [
         "ASSET_FuelMotor"
       ],
       "source_objects": [],
-      "exported_object_count": 50
+      "exported_object_count": 59,
+      "animation_loop_seconds": 4.0
+    },
+    {
+      "file": "fuel_motor.glb",
+      "format": "glb",
+      "description": "Aether receiver with animated crystal heart, rune dial, and hinged energy inlet.",
+      "meters_per_source_unit": 1.0,
+      "source_collections": [
+        "ASSET_FuelMotor"
+      ],
+      "source_objects": [],
+      "exported_object_count": 59,
+      "animation_loop_seconds": 4.0
     },
     {
       "file": "can_catcher.fbx",
       "format": "fbx",
-      "description": "Player-wielded catching pole with two grip sockets and an upward-opening hook.",
+      "description": "Catching staff with two grip sockets, upward-opening hook, and animated violet focus.",
       "meters_per_source_unit": 1.0,
       "source_collections": [
         "ASSET_CanCatcher"
       ],
       "source_objects": [],
-      "exported_object_count": 29
+      "exported_object_count": 58,
+      "animation_loop_seconds": 4.0
+    },
+    {
+      "file": "can_catcher.glb",
+      "format": "glb",
+      "description": "Catching staff with two grip sockets, upward-opening hook, and animated violet focus.",
+      "meters_per_source_unit": 1.0,
+      "source_collections": [
+        "ASSET_CanCatcher"
+      ],
+      "source_objects": [],
+      "exported_object_count": 58,
+      "animation_loop_seconds": 4.0
     },
     {
       "file": "jerry_can_rack.fbx",
@@ -108,7 +174,20 @@
         "ASSET_JerryCanRack"
       ],
       "source_objects": [],
-      "exported_object_count": 57
+      "exported_object_count": 57,
+      "animation_loop_seconds": null
+    },
+    {
+      "file": "jerry_can_rack.glb",
+      "format": "glb",
+      "description": "Low timber rack with iron retaining rails, four deck anchors, and three can placement sockets; cans exported separately.",
+      "meters_per_source_unit": 1.0,
+      "source_collections": [
+        "ASSET_JerryCanRack"
+      ],
+      "source_objects": [],
+      "exported_object_count": 57,
+      "animation_loop_seconds": null
     }
   ]
 }

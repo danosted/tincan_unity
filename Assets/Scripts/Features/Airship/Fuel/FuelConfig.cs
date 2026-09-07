@@ -23,7 +23,7 @@ namespace TinCan.Features.Airship.Fuel
 
         [Header("Refuel")]
         [Min(0f)] public float JerryCanLitres = 25f;
-        [Min(0)] public int InitialSupply = 3;
+        [Min(0)] public int InitialSupply = 1;
         [Tooltip("Slice 1 stopgap: the motor refuels on interact without a jerry can. Turn off once the carry loop exists.")]
         public bool DebugFreeRefuel = true;
 

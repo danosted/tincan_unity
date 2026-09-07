@@ -340,7 +340,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Carry.NetSwingVisualView
   _swingingTag: {fileID: 11400000, guid: dfa57cc4c00f7124185347c7e3053a30, type: 2}
-  _swingAngle: 70
+  _swingAngle: 30
   _speed: 14
 --- !u!1 &5585002282877400610
 GameObject:
@@ -495,8 +495,8 @@ Transform:
   m_GameObject: {fileID: 6669817176236899705}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.45, y: 0.38, z: 0.55}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0.65, y: 0.38, z: 0.65}
+  m_LocalScale: {x: 2.5, y: 2.5, z: 2.5}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5900277168085415494}
@@ -527,8 +527,8 @@ Transform:
   m_GameObject: {fileID: 6744744127472954468}
   serializedVersion: 2
   m_LocalRotation: {x: 0.6087614, y: 0, z: 0, w: 0.7933533}
-  m_LocalPosition: {x: 0.45, y: 0.3, z: 0.9}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0.45, y: 0.15, z: 0.65}
+  m_LocalScale: {x: 2.5, y: 2.5, z: 2.5}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 481990173723876125}

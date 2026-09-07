@@ -7,13 +7,12 @@ namespace TinCan.Features.Airship.Fuel
     /// Presentation Layer: the in-world fuel gauge beside the helm (model: Assets/Models/ShipComponents/FuelGauge).
     /// Polls the ship's fuel tank every frame (like AirshipDoor), so late joiners and clients need no extra sync;
     /// swings the indicator around its axle between the empty and full angles, relative to the indicator's imported
-    /// (neutral) pose, and tints the optional lamp when the tank is dry. Sits anywhere under the airship prefab.
+    /// (neutral) pose. Low-fuel warning visuals live on FuelMotorStatusView.
     /// </summary>
     public class FuelGaugeView : MonoBehaviour
     {
         /// <summary>Indicator node names in lookup order: the fuel_gauge.fbx needle, then the legacy placeholder.</summary>
         private static readonly string[] NeedleNames = { "FuelGauge_Indicator", "Needle" };
-        private const string LampName = "Lamp";
 
         [Tooltip("Indicator angle for an empty tank, in degrees around Needle Axis. fuel_gauge.fbx: +65 points at E.")]
         [SerializeField] private float _emptyAngle = 65f;
@@ -22,12 +21,9 @@ namespace TinCan.Features.Airship.Fuel
         [Tooltip("Needle axle in the indicator's local space. fuel_gauge.fbx imports with the dial normal on local Y.")]
         [SerializeField] private Vector3 _needleAxis = Vector3.up;
         [SerializeField] private float _needleSmoothing = 6f;
-        [SerializeField] private Color _lampOkColor = new(0.1f, 0.6f, 0.1f);
-        [SerializeField] private Color _lampEmptyColor = new(0.9f, 0.1f, 0.1f);
 
         private Transform? _needle;
         private Quaternion _neutralRotation = Quaternion.identity;
-        private Renderer? _lamp;
         private IFuelTank? _tank;
         private float _currentAngle;
 
@@ -35,7 +31,6 @@ namespace TinCan.Features.Airship.Fuel
         {
             _needle = FindNeedle(transform);
             if (_needle != null) _neutralRotation = _needle.localRotation;
-            _lamp = transform.Find(LampName)?.GetComponent<Renderer>();
             _currentAngle = _fullAngle;
         }
 
@@ -47,7 +42,6 @@ namespace TinCan.Features.Airship.Fuel
             float target = NeedleAngle(tank.Level, tank.Capacity, _emptyAngle, _fullAngle);
             _currentAngle = Mathf.Lerp(_currentAngle, target, Mathf.Clamp01(_needleSmoothing * Time.deltaTime));
             if (_needle != null) _needle.localRotation = NeedleRotation(_neutralRotation, _needleAxis, _currentAngle);
-            if (_lamp != null) _lamp.material.color = tank.IsEmpty ? _lampEmptyColor : _lampOkColor;
         }
 
         /// <summary>Pure mapping of level to needle angle; kept static so it can be unit tested without a scene.</summary>

@@ -17,7 +17,7 @@ MonoBehaviour:
   DrainPerSecondAtFullThrottle: 0.75
   BoostMultiplier: 2
   JerryCanLitres: 25
-  InitialSupply: 3
+  InitialSupply: 1
   DebugFreeRefuel: 0
   StallWhenEmpty: 1
   BoostActiveTag: {fileID: 11400000, guid: 525daa4b9da694d4398b7264e73a1586, type: 2}

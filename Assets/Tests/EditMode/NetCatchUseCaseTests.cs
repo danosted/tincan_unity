@@ -83,8 +83,8 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void Tick_SwingingNearACan_CatchesItOnce()
         {
-            var inReach = _spawner.Spawn(new Vector3(0f, 1f, 2.5f), Vector3.zero)!; // net head is at (0,1,2)
-            _spawner.Spawn(new Vector3(0f, 1f, 3f), Vector3.zero);
+            var inReach = _spawner.Spawn(new Vector3(0f, 1f, 2.5f))!; // net head is at (0,1,2)
+            _spawner.Spawn(new Vector3(0f, 1f, 3f));
             _abilities.ApplyEffect(_player, _swingEffect);
 
             _useCase.Tick();
@@ -98,7 +98,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void Tick_NotSwinging_NeverCatches()
         {
-            _spawner.Spawn(new Vector3(0f, 1f, 2f), Vector3.zero);
+            _spawner.Spawn(new Vector3(0f, 1f, 2f));
 
             _useCase.Tick();
 
@@ -109,7 +109,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void Tick_NewSwingAfterTagDrops_CanCatchAgain()
         {
-            _spawner.Spawn(new Vector3(0f, 1f, 2f), Vector3.zero);
+            _spawner.Spawn(new Vector3(0f, 1f, 2f));
             _abilities.ApplyEffect(_player, _swingEffect);
             _useCase.Tick();
             Assert.That(_spawner.Despawned.Count, Is.EqualTo(1));
@@ -117,7 +117,7 @@ namespace TinCan.Tests.EditMode
             _time.Time = 0.5f;
             _abilities.ProcessAbilitySimulation(_player, default, 0, _time.DeltaTime);
             _useCase.Tick();
-            _spawner.Spawn(new Vector3(0f, 1f, 2f), Vector3.zero);
+            _spawner.Spawn(new Vector3(0f, 1f, 2f));
             _abilities.ApplyEffect(_player, _swingEffect);
             _useCase.Tick();
 
@@ -139,14 +139,14 @@ namespace TinCan.Tests.EditMode
                 foreach (var tag in ability.ActivationRequiredTagsOnActor) _player.AddTag(tag);
                 _abilities.GrantAbility(_player, ability);
                 var pressed = new HumanoidInputState { ActiveInputMask = 1UL << ability.TriggerInput.BitIndex };
-                _spawner.Spawn(new Vector3(0f, 1f, 2f), Vector3.zero);
+                _spawner.Spawn(new Vector3(0f, 1f, 2f));
                 _abilities.ProcessAbilitySimulation(_player, pressed, 0, _time.DeltaTime);
                 _useCase.Tick();
 
                 _time.Time = 0.25f;
                 _abilities.ProcessAbilitySimulation(_player, default, pressed.ActiveInputMask, _time.DeltaTime);
                 _useCase.Tick();
-                _spawner.Spawn(new Vector3(0f, 1f, 2f), Vector3.zero);
+                _spawner.Spawn(new Vector3(0f, 1f, 2f));
                 _time.Time = 0.5f;
                 _abilities.ProcessAbilitySimulation(_player, pressed, 0, _time.DeltaTime);
                 Assert.That(_player.HasTag(_swingTag), Is.True);
@@ -166,7 +166,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void Tick_CanOutOfReach_NothingHappens()
         {
-            _spawner.Spawn(new Vector3(4f, 1f, 2f), Vector3.zero);
+            _spawner.Spawn(new Vector3(4f, 1f, 2f));
             _abilities.ApplyEffect(_player, _swingEffect);
 
             _useCase.Tick();
@@ -179,7 +179,7 @@ namespace TinCan.Tests.EditMode
         {
             _abilities.ApplyEffect(_player, _swingEffect);
             _time.Time = 0.5f; // GAS has not removed the tag yet.
-            _spawner.Spawn(new Vector3(0f, 1f, 2f), Vector3.zero);
+            _spawner.Spawn(new Vector3(0f, 1f, 2f));
 
             _useCase.Tick();
 
@@ -193,7 +193,7 @@ namespace TinCan.Tests.EditMode
             _registry.Register(otherPlayer);
             _abilities.ApplyEffect(_player, _swingEffect);
             _abilities.ApplyEffect(otherPlayer, _swingEffect);
-            _spawner.Spawn(new Vector3(0f, 1f, 2f), Vector3.zero);
+            _spawner.Spawn(new Vector3(0f, 1f, 2f));
 
             _useCase.Tick();
 
@@ -205,7 +205,7 @@ namespace TinCan.Tests.EditMode
         public void Tick_NoSwingTagConfigured_IsANoOp()
         {
             _config.SwingingTag = null;
-            _spawner.Spawn(new Vector3(0f, 1f, 2f), Vector3.zero);
+            _spawner.Spawn(new Vector3(0f, 1f, 2f));
             _player.AddTag(_swingTag);
 
             Assert.DoesNotThrow(() => _useCase.Tick());
@@ -213,3 +213,4 @@ namespace TinCan.Tests.EditMode
         }
     }
 }
+

@@ -32,7 +32,6 @@ namespace TinCan.Features.Airship.Fuel.Minigame
 
             builder.RegisterInstance(config);
             builder.Register<FlyingCanWaveProcessor>(Lifetime.Transient);
-            builder.Register<FlyingCanMotionProcessor>(Lifetime.Transient);
             builder.Register<FlyingCanSpawningService>(Lifetime.Singleton).As<IFlyingCanSpawner>();
             builder.Register<FlyingCanUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
             builder.Register<CatchProcessor>(Lifetime.Transient);

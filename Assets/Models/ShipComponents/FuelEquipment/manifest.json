@@ -6,7 +6,7 @@
   "coordinate_system": "Y-up, -Z forward; one exported unit is one meter",
   "integration": {
     "title": "Maritime Fuel Equipment Integration",
-    "summary": "Two 10 L can variants, a 20 L standalone motor, and a two-handed sky-can catching pole. Geometry and sockets are supplied; gameplay logic and physics belong in the game.",
+    "summary": "Two 10 L can variants, a 20 L standalone motor, a two-handed sky-can catching pole, and a three-slot wooden deck rack with iron rails. Geometry and sockets are supplied; gameplay logic and physics belong in the game.",
     "asset_type": "interactive_props",
     "placement": "Each file has one root at its floor contact/butt end, recentered to zero. Source units are meters. Pole length is approximately 1.94 m; cans are approximately 0.55 m tall.",
     "nodes": [
@@ -29,10 +29,15 @@
       {
         "name": "CanCatcher_Catch",
         "role": "Trigger/attachment point inside hook. Align a falling can's _Catch point here while keeping the can upright."
+      },
+      {
+        "name": "JerryCanRack / JerryCanRack_Slot_01 / JerryCanRack_Slot_02 / JerryCanRack_Slot_03",
+        "role": "Static rack root at deck level and three can-root placement sockets, spaced 0.44 m apart. Align an existing can root to a socket's full transform; the socket includes its floor-contact offset."
       }
     ],
     "setup_steps": [
       "Import each file as a separate prefab, preserving named empty sockets and mesh hierarchy; no character rig or animation clips are supplied.",
+      "Place JerryCanRack at deck level. Its footprint including anchor ears is 1.42 by 0.634 m and its height is 0.30 m. The rack exports empty; add either can variant to any Slot_01/02/03 transform with unit local scale and identity local rotation. Keep one can per slot, disable its free physics while stored, and restore physics when lifted out. Slot occupancy and storage logic are not supplied.",
       "Use one rigidbody per can. Add a small catch trigger near its handle; use swept collision/continuous collision detection for fast falling cans.",
       "When a falling can enters the hook trigger, align its _Catch socket to CanCatcher_Catch, disable its free-fall physics and attach it. Hold at most one can; detach and restore physics on release.",
       "For refuelling, remove the can cap along source +Z and keep the motor cap open. Align the _Pour point over FuelMotor_Refill, with the can tilted so the spout points into the tank.",
@@ -40,7 +45,7 @@
       "Motor begins empty. Hide FuelMotor_EmptyPlate and FuelMotor_EmptyText after fuel is added; enable your motor effects only while fuel remains. The motor has no external driven machinery.",
       "Socket positions survive coordinate conversion; source +Z normally maps to engine +Y. Inspect local axes before applying cap rotations or a first-person hand pose."
     ],
-    "collision": "Use boxes for can shells and motor body, capsules for pole shaft and hook segments, and separate small triggers for catch/refill. Avoid one convex hull over the hook opening. Do not give decorative ribs or labels colliders.",
+    "collision": "Use boxes for can shells and motor body, capsules for pole shaft and hook segments, and separate small triggers for catch/refill. For the static rack use separate boxes for the floor, rails, and dividers, plus one optional trigger per bay; leave all three openings clear. Avoid one convex hull over the hook or rack openings. Do not give decorative ribs, bolts, or labels colliders.",
     "examples": [
       {
         "title": "Bounded fuel transfer",
@@ -93,6 +98,17 @@
       ],
       "source_objects": [],
       "exported_object_count": 29
+    },
+    {
+      "file": "jerry_can_rack.fbx",
+      "format": "fbx",
+      "description": "Low timber rack with iron retaining rails, four deck anchors, and three can placement sockets; cans exported separately.",
+      "meters_per_source_unit": 1.0,
+      "source_collections": [
+        "ASSET_JerryCanRack"
+      ],
+      "source_objects": [],
+      "exported_object_count": 57
     }
   ]
 }

@@ -173,3 +173,5 @@ test-results/
 # Package manager
 Packages/Library/
 
+# Output generated
+/output/

@@ -109,7 +109,7 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 
 | Feature | Folder (`Assets/Scripts/Features/`) | Style | Entry points | Assets | Tests |
 |---|---|---|---|---|---|
-| Fuel loop (tank, drain, stall, jerry cans, motor, gauge, HUD) | `Airship/Fuel/` | installer | `FuelConsumptionUseCase`, `FuelTankNetworkMediator`, `PourFuelInteractionHandler`, `TakeJerryCanInteractionHandler`, `FuelHudPresenter`, `FuelGaugeView` | `Resources/Installers/FuelFeatureInstaller`, `Settings/FuelConfig`, `Settings/Fixtures/FuelSystemFixture`, `Prefabs/Airship/Parts/FuelSystem`, `Models/ShipComponents/FuelGauge/fuel_gauge`, `IA_PourFuel`, `IA_TakeJerryCan`, `Attr_Fuel`, `GA_EngineStall`, `GE_EngineStall`, `State.Engine.Stalled` | `FuelConsumption*Tests`, `FuelFixtureRegistrationTests`, `PourFuelInteractionHandlerTests`, `TakeJerryCanInteractionHandlerTests`, `FuelGaugeViewTests`, `FuelHudPresenterTests`, `AirshipStallTests` |
+| Fuel loop (tank, drain, stall, jerry cans, motor, gauge, HUD) | `Airship/Fuel/` | installer | `FuelConsumptionUseCase`, `FuelTankNetworkMediator`, `PourFuelInteractionHandler`, `TakeJerryCanInteractionHandler`, `FuelHudPresenter`, `FuelGaugeView`, `FuelMotorStatusView` | `Resources/Installers/FuelFeatureInstaller`, `Settings/FuelConfig`, `Settings/Fixtures/FuelSystemFixture`, `Prefabs/Airship/Parts/FuelSystem`, `Models/ShipComponents/FuelGauge/fuel_gauge`, `Models/ShipComponents/FuelEquipment`, `Animations/AetherEquipment`, `IA_PourFuel`, `IA_TakeJerryCan`, `Attr_Fuel`, `GA_EngineStall`, `GE_EngineStall`, `State.Engine.Stalled` | `FuelConsumption*Tests`, `FuelFixtureRegistrationTests`, `PourFuelInteractionHandlerTests`, `TakeJerryCanInteractionHandlerTests`, `FuelGaugeViewTests`, `FuelMotorStatusViewTests`, `FuelHudPresenterTests`, `AirshipStallTests` |
 | Flying cans + net catch | `Airship/Fuel/Minigame/` | installer (Order 10) | `FlyingCanUseCase`, `NetCatchUseCase`, `TakeNetInteractionHandler`, `Network/Infrastructure/FlyingCanNetworkMediator`, `FlyingCanSpawningService` | `Resources/Installers/FlyingCanFeatureInstaller`, `Settings/FlyingCanConfig`, `Prefabs/Hazards/FlyingJerryCan`, `IA_TakeNet`, `GA_SwingNet`, `GE_NetSwing`, `State.Net.Swinging`, `Input_Primary` | `FlyingCan*Tests`, `CatchProcessorTests`, `NetCatchUseCaseTests`, `NetSwingPredictionTests`, `TakeNetInteractionHandlerTests` |
 | Carry (net / jerry can on the player) | `Carry/` | via Fuel + FlyingCan installers | `PlayerCarryNetworkMediator`, `NetRackNetworkMediator`, `NetSwingVisualView` | `State.Carrying.Net`, visuals on `NetworkPlayer.prefab` | covered by handler tests |
 | Menus + HUD framework | `UI/` (+ views in `Scripts/UI/`) | installer (Order -10) | `MenuUseCase`, `HudUseCase`, `MainMenuBootstrap`, `CommandLineSessionBootstrap`, `Commands/*` | `Resources/Installers/UiFeatureInstaller`, `UI/Menus/Menu_Main`, `Menu_Join`, overlays on `GameLifetimeScope.prefab` | `Menu*Tests`, `HudUseCaseTests`, `MainMenuBootstrapTests`, `CommandLineSessionBootstrapTests` |
@@ -126,6 +126,60 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 | Coordinated events | `Events/` | direct | `EventOrchestratorUseCase`, `ToggleShipTagStation` | `CoordinatedEventDefinition` (no asset yet) | none |
 | Free camera | `FreeCamera/` | direct | `FreeCameraMovementUseCase`, `FreeCameraTransformView` | | none |
 | Environment helpers | `Environment/` | none needed | `MovingPlatform`, `SimpleOscillator` | | `Tests/Shared/FakeMovingGround` |
+
+## Aether equipment visuals
+
+`Assets/Models/ShipComponents/FuelEquipment/` supplies aether crystals, receiver, staff and rack as nested FBX instances inside the existing gameplay
+prefabs. Equipment wrappers use a uniform 2.5 scale, matching the fuel gauge. Preserve the imported FBX root
+transforms: their rotation and scale perform the axis/unit conversion. Carry grip offsets remain inside the
+scaled wrappers; adjust the wrapper poses on the player when tuning first-person visibility. The player's
+`NetSwingVisualView` uses a 30-degree swing for the longer pole, keeping the hook near the existing catch area.
+
+| Prefab | Visuals |
+|---|---|
+| `Assets/Prefabs/Airship/Parts/FuelSystem.prefab` | Aether receiver (`fuel_motor`) and `FuelMotorStatusView` under `MotorFillPort`; `jerry_can_rack` and three violet crystal vessels under `JerryCanSupply/Can_0..2`; catching staff (`can_catcher`) under `NetRack`; existing fuel gauge. Crystal wrappers stay direct children for supply visibility, positioned from the rack's three slot sockets. |
+| `Assets/Prefabs/NetworkPlayer.prefab` | Violet crystal under `Carry_JerryCan`, catching staff under `Carry_Net`, aligned to their updated grip sockets. The crystal grip is raised to clear the deck at 2.5 scale. Keep wrapper names: carry visibility and swing animation resolve them at runtime. |
+| `Assets/Prefabs/Hazards/FlyingJerryCan.prefab` | Violet crystal under `Visual`, recentered using the new mesh bounds on the stationary networked pickup root. |
+
+The receiver's body box fits its revised dimensions, with a separate interaction trigger reachable at player
+height. The rack has individual floor, divider and rail boxes that leave the bays open; the staff has a shaft
+capsule. Imported crystal materials use URP transparency and emissive wind. Model sockets remain available.
+Legacy fuel IDs are retained: `jerry_can_red.fbx` now contains the violet crystal, and `fuel_motor.fbx` the receiver.
+The art pack's suggested energy capacities, empty starting receiver, channelling, cap mechanics and physics
+are not gameplay changes: amounts, pickup, catch and refill still come from the existing feature code/configs.
+
+`Assets/Animations/AetherEquipment/` holds three four-second looping clips and AnimatorControllers for the
+violet crystal, receiver and staff. Clips are derived from the FBX `Scene` animation and retain only wind/mote
+transform curves. Full exported clips also key the root and static props; do not assign them directly to held
+or floating models because those curves overwrite grip offsets and centering. Regenerate these wind-only
+clips when animation content in the FBXs changes. Animators live on model roots, with root motion disabled.
+
+`Assets/Scripts/Features/Airship/Fuel/FuelMotorStatusView.cs` reads the replicated tank level. At or below
+5% capacity it changes `FuelMotor_DialCore` and `FuelMotor_DialRune*` to red; above the threshold they glow cyan.
+The old added lamp/housing and EMPTY plate are no longer used. Colors use material property blocks so instances
+do not modify shared materials. `FuelMotor_Heart_Wind_1/2` and their motes remain visible with any energy and
+hide only at zero; refilling restores them even below 5%. The warning threshold and colors are tunable on the
+view. Engine stalling still requires zero fuel. `FuelGaugeView` controls only its needle. Coverage lives in
+`Assets/Tests/EditMode/FuelMotorStatusViewTests.cs`, including exactly 5%, initially empty, refill and independent
+warning/powered transitions.
+
+### Stationary fuel pickups
+
+`Assets/Settings/FuelConfig.asset` starts the rack with one crystal. All current pickups use the violet crystal in the legacy red model;
+the teal import is reserved for a future fuel type. `Assets/Scripts/Features/Airship/Fuel/Minigame/FlyingCanUseCase.cs`
+seeds scattered pickups ahead of the first simulating ship, then adds batches at the horizon as it travels.
+`Assets/Settings/FlyingCanConfig.asset` starts the initial spawn volumes 60 m ahead, with random offsets up to
+55 m left/right, 25 m above/below, and 15 m forward/backward. Every candidate must be at least 50 m from
+every ship's centre and 10 m from another can; blocked candidates are retried a bounded number of times,
+then skipped. The clearance accommodates the current hull and sails; tune it if the ship model changes.
+New batches spawn after 20 m of travel at a 120 m horizon, with a 200 m removal distance and 48-can cap.
+Spawn direction follows actual displacement, including reverse and vertical travel.
+Cans stay fixed in world space with no lifetime. Only cans far from every simulating ship are removed;
+nearby cans are preserved at the cap, and a separation check avoids overlapping pickups on return trips.
+Standing still or turning in place adds no cans after the initial field. Net catches still add to the rack.
+Ship collision response remains deferred: approaching an existing can does not push or relocate it.
+Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProcessorTests.cs` and
+`NetCatchUseCaseTests.cs`; tune horizon visibility and catch approach feel with a host/client playtest.
 
 ## Legacy, oddities and traps
 

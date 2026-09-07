@@ -127,6 +127,23 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 | Free camera | `FreeCamera/` | direct | `FreeCameraMovementUseCase`, `FreeCameraTransformView` | | none |
 | Environment helpers | `Environment/` | none needed | `MovingPlatform`, `SimpleOscillator` | | `Tests/Shared/FakeMovingGround` |
 
+## Fuel equipment visuals
+
+`Assets/Models/ShipComponents/FuelEquipment/` supplies nested FBX instances inside the existing gameplay
+prefabs. Preserve the imported root transforms: their rotation and scale perform the FBX axis/unit conversion.
+
+| Prefab | Visuals |
+|---|---|
+| `Assets/Prefabs/Airship/Parts/FuelSystem.prefab` | `fuel_motor` under `MotorFillPort`; red/teal/red cans under `JerryCanSupply/Can_0..2`; `can_catcher` under `NetRack`. The supply crate and existing fuel gauge remain. |
+| `Assets/Prefabs/NetworkPlayer.prefab` | Red can under `Carry_JerryCan`, catching pole under `Carry_Net`, positioned using their grip sockets. Keep these wrapper names: carry visibility and swing animation resolve them at runtime. |
+| `Assets/Prefabs/Hazards/FlyingJerryCan.prefab` | Red can under `Visual`, centered on the existing networked flight root. |
+
+The motor uses a body box and a separate tall interaction trigger; the rack uses a shaft capsule and its
+existing interaction trigger. Model sockets are retained for future animation. The art pack's suggested
+pouring/physics mechanics are not implemented by this visual replacement: fuel amounts, pickup, catch, and
+refill still come from the existing feature code and configs. The motor's static `EMPTY` plate/text are hidden;
+`FuelGaugeView` and the HUD remain the live fuel indicators.
+
 ## Legacy, oddities and traps
 
 - **Empty scaffold folders** (only `.gitkeep`): `Core/Application`, `Core/Presentation`, `Player`, `Utils`,

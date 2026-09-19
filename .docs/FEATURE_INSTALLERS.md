@@ -15,6 +15,7 @@ parallel those files were in permanent conflict. A feature now contributes every
 |---|---|---|
 | `FeatureInstaller` | `Core/Domain/Features/` | Abstract `ScriptableObject`. Holds the feature's config references, registers its services, lists its networked prefabs and its ship fixtures. |
 | `FeatureInstallerCatalog` | `Core/Domain/Features/` | Loads every installer from any `Resources/Installers` folder, orders them (`Order`, then name), and aggregates prefabs and fixtures. |
+| `FeatureProfile` | `Core/Domain/Features/` | Optional per-scene allow-list of installers; can include other profiles as shared bases. Restricts the catalog instead of loading everything from Resources. |
 | `ShipFixtureDefinition` | `Core/Domain/Features/` | A networked prefab plus a ship-local pose. |
 | `ShipFixtureSpawningUseCase` | `Features/Airship/Fixtures/` | Server only. Furnishes each airship once with all fixtures, spawning each as its own `NetworkObject` parented to the ship (via `IModuleSpawningService`, the same path build-mode modules use). |
 | `ISimulationTickable` | `Core/Domain/` | Lets a feature run on the fixed network tick without editing `NetworkSimulationScheduler`. Phases: `AfterAirship`, `AfterHumanoid`. |
@@ -88,6 +89,23 @@ or `DefaultNetworkPrefabs.asset` needs to change.
 - Components that must live on the airship's or player's own `NetworkObject` (NGO requires `NetworkBehaviour`s to
   exist at spawn). Keep those as one nested prefab per feature so the shared prefab only ever gains one child line.
 - Starting abilities on the player prefab and the input binding config are still lists in shared assets.
+
+## Selecting features per scene
+
+By default `ProjectLifetimeScope` loads every installer under any `Resources/Installers` folder — the same set for
+every scene, since `Resources` isn't scene-scoped. To compose a specific experience (e.g. a fuel-only sandbox scene
+without the flying-can minigame), create a `FeatureProfile` asset (**TinCan > Features > Feature Profile**), list
+only the installers that scene wants, and assign it to that scene's `GameLifetimeScope` instance (its
+`ProjectLifetimeScope` component, `Feature Composition` header). A scene with no profile assigned keeps loading
+everything, unchanged. This only gates installer-based features; the legacy features still registered directly in
+`ProjectLifetimeScope.Configure` are global to every scene regardless of profile.
+
+A profile can also **include** other profiles, so shared bases (e.g. a `Profile_Base` listing just
+`UiFeatureInstaller`) aren't repeated in every experience-specific profile. `ProjectLifetimeScope` calls
+`FeatureProfile.ResolveInstallers()`, which walks a profile's `_includes` recursively, merges every reachable
+profile's own installer list, de-duplicates installers listed more than once, and tolerates cyclic includes (a
+profile that (in)directly includes itself is simply visited once). Compose by listing base profiles under
+`_includes` and only the feature-specific installers under the profile's own list.
 
 ## Merging Unity YAML
 

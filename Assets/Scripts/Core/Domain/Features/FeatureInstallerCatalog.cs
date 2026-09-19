@@ -15,7 +15,12 @@ namespace TinCan.Core.Domain.Features
 
         public FeatureInstallerCatalog(IEnumerable<FeatureInstaller> installers)
         {
-            Installers = Sort(installers);
+            var _installers = installers;
+            if (!_installers.Any())
+            {
+                _installers = Resources.LoadAll<FeatureInstaller>(ResourcesFolder);
+            }
+            Installers = Sort(_installers);
             Fixtures = Installers.SelectMany(i => i.ShipFixtures).Where(f => f != null).ToList();
             NetworkedPrefabs = Installers.SelectMany(i => i.NetworkedPrefabs).Where(p => p != null).Distinct().ToList();
         }
@@ -27,6 +32,10 @@ namespace TinCan.Core.Domain.Features
         /// <summary>Loads every FeatureInstaller asset under any Resources/Installers folder.</summary>
         public static FeatureInstallerCatalog LoadFromResources() =>
             new(Resources.LoadAll<FeatureInstaller>(ResourcesFolder));
+
+        /// <summary>Restricts the catalog to the installers listed by a scene's FeatureProfile (and any profiles it includes).</summary>
+        public static FeatureInstallerCatalog LoadFromProfile(FeatureProfile profile) =>
+            new(profile.ResolveInstallers());
 
         public static List<FeatureInstaller> Sort(IEnumerable<FeatureInstaller> installers) =>
             installers

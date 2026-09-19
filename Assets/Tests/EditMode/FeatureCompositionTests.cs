@@ -1,5 +1,6 @@
 #nullable enable
 using System.Collections.Generic;
+using System.Reflection;
 using NUnit.Framework;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
@@ -51,6 +52,42 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void LoadFromProfile_RestrictsCatalogToListedInstallers()
+        {
+            var kept = Installer("Kept", 0);
+            Installer("Excluded", 0);
+            var profile = Profile(new[] { kept });
+
+            var catalog = FeatureInstallerCatalog.LoadFromProfile(profile);
+
+            Assert.That(catalog.Installers, Is.EqualTo(new[] { kept }));
+        }
+
+        [Test]
+        public void ResolveInstallers_MergesIncludedProfiles_DeduplicatingSharedInstallers()
+        {
+            var ui = Installer("Ui", -10);
+            var fuel = Installer("Fuel", 0);
+            var flyingCan = Installer("FlyingCan", 10);
+            var basics = Profile(new[] { ui });
+            var sandbox = Profile(new[] { fuel, flyingCan }, includes: new[] { basics, basics });
+
+            var resolved = sandbox.ResolveInstallers();
+
+            Assert.That(resolved, Is.EquivalentTo(new[] { ui, fuel, flyingCan }));
+        }
+
+        [Test]
+        public void ResolveInstallers_TolerantOfCyclicIncludes()
+        {
+            var a = Profile(new FeatureInstaller[0]);
+            var b = Profile(new FeatureInstaller[0], includes: new[] { a });
+            SetIncludes(a, new[] { b }); // a -> b -> a
+
+            Assert.DoesNotThrow(() => a.ResolveInstallers());
+        }
+
+        [Test]
         public void TickRunner_RunsOnlyTheRequestedPhase_InRegistrationOrder()
         {
             var log = new List<string>();
@@ -77,5 +114,19 @@ namespace TinCan.Tests.EditMode
             _assets.Add(installer);
             return installer;
         }
+
+        private FeatureProfile Profile(IReadOnlyList<FeatureInstaller> installers, IReadOnlyList<FeatureProfile>? includes = null)
+        {
+            var profile = ScriptableObject.CreateInstance<FeatureProfile>();
+            _assets.Add(profile);
+            typeof(FeatureProfile).GetField("_installers", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .SetValue(profile, new List<FeatureInstaller>(installers));
+            SetIncludes(profile, includes ?? System.Array.Empty<FeatureProfile>());
+            return profile;
+        }
+
+        private static void SetIncludes(FeatureProfile profile, IReadOnlyList<FeatureProfile> includes) =>
+            typeof(FeatureProfile).GetField("_includes", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .SetValue(profile, new List<FeatureProfile>(includes));
     }
 }

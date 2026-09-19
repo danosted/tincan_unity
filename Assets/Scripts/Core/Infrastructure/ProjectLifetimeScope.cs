@@ -1,3 +1,4 @@
+#nullable enable
 using VContainer;
 using VContainer.Unity;
 using System.Collections.Generic;
@@ -51,13 +52,19 @@ namespace TinCan.Core.Infrastructure
         [Header("Airship Components")]
         [SerializeField] private GameplayTag _doorInteractionTag;
 
-        private FeatureInstallerCatalog _features;
+        [Header("Feature Composition")]
+        [SerializeField] private FeatureProfile _featureProfile;
+
+        private FeatureInstallerCatalog _features = null!;
 
         protected override void Configure(IContainerBuilder builder)
         {
-            // Feature composition: every FeatureInstaller asset under Resources/Installers registers itself here.
+            // Feature composition: every FeatureInstaller asset under Resources/Installers registers itself here,
+            // unless this scene assigns a FeatureProfile to restrict it to a curated subset.
             // Adding a feature must not require editing this file; see .docs/FEATURE_INSTALLERS.md.
-            _features = FeatureInstallerCatalog.LoadFromResources();
+            _features = _featureProfile != null
+                ? FeatureInstallerCatalog.LoadFromProfile(_featureProfile)
+                : FeatureInstallerCatalog.LoadFromResources();
             builder.RegisterInstance(_features).AsSelf().As<IShipFixtureCatalog>();
             builder.Register<ShipFixtureSpawningUseCase>(Lifetime.Singleton).As<IInitializable>().As<ITickable>();
 

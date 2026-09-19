@@ -31,7 +31,7 @@ that need `NetworkManager`, `UnityTransport` or `UIDocument` in `Assembly-CSharp
 | `Assets/Scripts/Core/Domain/` | Core.Domain | `IActor`, `IActorRegistry`, `IPossessable`, `IInputService`, `ITimeService`, `SimulationAbstraction.cs` (`SimulationUseCase<TView,TInput>`), `ISimulationTickable.cs` (phases + `SimulationTickRunner`), `IInjectedView`, `IShipModule`, `ScriptedInput`. |
 | `Core/Domain/Abilities/` (+`Attributes`, `Inputs`, `Tags`) | Core.Domain | GAS contracts: `IAbilityController`, `GameplayTag`, `GameplayAttribute`, `AttributeValue`, `GameplayInput`, `InputBindingConfig`. |
 | `Core/Domain/Events/` | Core.Domain | `IEventPublisher`, `IEventObserver`, `GameEvents`, `LogEvent` (+ `LogInfo` extension). |
-| `Core/Domain/Features/` | Core.Domain | `FeatureInstaller`, `FeatureInstallerCatalog`, `ShipFixtureDefinition`. |
+| `Core/Domain/Features/` | Core.Domain | `FeatureInstaller`, `FeatureInstallerCatalog`, `FeatureProfile`, `ShipFixtureDefinition`. |
 | `Core/Domain/Networking/` | Core.Domain | `INetworkService`, `INetworkPlayerSpawner`, `IModuleSpawningService`. |
 | `Assets/Scripts/Core/Infrastructure/` | Assembly-CSharp | `ProjectLifetimeScope` (composition root), `NetworkPrefabInterceptor` (injects before NGO spawn), `ActorOrchestrator` (registers spawned hierarchies), `ActorRegistry`, `UnityInputService`, `ProjectTimeService`, `Events/`. |
 | `Assets/Scripts/Network/Infrastructure/` | Assembly-CSharp | `NetworkSimulationScheduler` (the tick), `NetworkMediator` base, `HumanoidPlayer`, `AirshipNetworkMediator`, `NGONetworkService`, `NetworkPlayerSpawner`, `ModuleSpawningService`, `NgoInteractionTargetResolver`, `FlyingCanNetworkMediator`, ship-module mediators, `Abilities/AbilityNetworkMediator`. |

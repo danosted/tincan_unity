@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b62658fcf13b7ef42bfb877bd9a0014e, type: 3}
+  m_Name: Profile_FuelSandbox
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Features.FeatureProfile
+  _includes:
+  - {fileID: 11400000, guid: 9eb7122c181303945ab4af61310ae2fa, type: 2}
+  _installers:
+  - {fileID: 11400000, guid: 517f831c92a4fa5419acd4a2062a3879, type: 2}
+  - {fileID: 11400000, guid: 31cb9aa7535ae214297f4aa31b158d36, type: 2}

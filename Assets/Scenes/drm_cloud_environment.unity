@@ -119,6 +119,55 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &110729086
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 110729087}
+  - component: {fileID: 110729088}
+  m_Layer: 0
+  m_Name: VolumetricCloudsVolume (Test)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &110729087
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 110729086}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &110729088
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 110729086}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.Volume
+  m_IsGlobal: 1
+  priority: 0
+  blendDistance: 0
+  weight: 1
+  sharedProfile: {fileID: 11400000, guid: 5af436c5aae9f4942b5453b389fa361b, type: 2}
 --- !u!1 &616960081
 GameObject:
   m_ObjectHideFlags: 0
@@ -148,6 +197,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fce6478f02b3b5d4996a2084681319c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.CloudBoundary.CloudEnvironmentView
+  _legacyVisualsEnabled: 0
 --- !u!4 &616960083
 Transform:
   m_ObjectHideFlags: 0
@@ -206,8 +256,8 @@ Light:
   m_Enabled: 1
   serializedVersion: 13
   m_Type: 1
-  m_Color: {r: 0.9960785, g: 0.7058824, b: 0.1254902, a: 1}
-  m_Intensity: 1.6
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Intensity: 1.53
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -343,6 +393,10 @@ PrefabInstance:
       value: GameLifetimeScope
       objectReference: {fileID: 0}
     - target: {fileID: 8318144274937578961, guid: da32a759790a2154d94d7c933d152774, type: 3}
+      propertyPath: _featureProfile
+      value: 
+      objectReference: {fileID: 11400000, guid: 9eb7122c181303945ab4af61310ae2fa, type: 2}
+    - target: {fileID: 8318144274937578961, guid: da32a759790a2154d94d7c933d152774, type: 3}
       propertyPath: _doorInteractionTag
       value: 
       objectReference: {fileID: 11400000, guid: ad6580903fe73b749af9dc3b738d6b08, type: 2}
@@ -351,6 +405,87 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: da32a759790a2154d94d7c933d152774, type: 3}
+--- !u!1 &1185019880
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1185019881}
+  - component: {fileID: 1185019882}
+  m_Layer: 0
+  m_Name: CloudAtmosphereDirector
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1185019881
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1185019880}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1185019882
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1185019880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86ad3cd820bca1440910e2fd0c150079, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features.CloudBoundary.Atmosphere::TinCan.Features.CloudBoundary.Atmosphere.CloudAtmosphereDirector
+  _cloudsProfile: {fileID: 11400000, guid: 5af436c5aae9f4942b5453b389fa361b, type: 2}
+  _sunLight: {fileID: 1051261781}
+  _rendererFeature: {fileID: -3254320598164341664, guid: 957cfca5635937d48b5890845ef790a8, type: 2}
+  _cloudsEnabled: 1
+  _localClouds: 1
+  _densityMultiplier: 0.5
+  _shapeFactor: 0.886
+  _shapeScale: 88.3
+  _erosionFactor: 0.6
+  _erosionScale: 600
+  _microErosionScale: 2000
+  _microErosionEnabled: 1
+  _microErosionFactor: 0.5
+  _bottomAltitude: 15.1
+  _altitudeRange: 100
+  _globalSpeed: 22.6
+  _globalOrientation: 31
+  _shapeSpeedMultiplier: 1
+  _erosionSpeedMultiplier: 0.25
+  _verticalShapeWindSpeed: 3
+  _verticalErosionWindSpeed: 8
+  _altitudeDistortion: 0.095
+  _ambientLightProbeDimmer: 1.3
+  _sunLightDimmer: 1.49
+  _multiScattering: 0.8
+  _powderEffectIntensity: 0.15
+  _erosionOcclusion: 0.1
+  _forwardEccentricity: 0.4
+  _backwardEccentricity: 0.5
+  _numPrimarySteps: 128
+  _numLightSteps: 8
+  _maxStepSize: 15
+  _resolutionScale: 0.75
+  _upscaleMode: 0
+  _temporalAccumulationFactor: 0.85
+  _sunIntensity: 1.53
+  _sunColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1001 &1817979957
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -416,3 +551,5 @@ SceneRoots:
   - {fileID: 1817979957}
   - {fileID: 1051261780}
   - {fileID: 616960083}
+  - {fileID: 110729087}
+  - {fileID: 1185019881}

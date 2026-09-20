@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7d43a4887b6bd44ebe8b4b949105d91, type: 3}
+  m_Name: CloudSubmersionConfig
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.CloudBoundary.CloudSubmersionConfig
+  _transitionDepth: 25
+  _minLightMultiplier: 0.18
+  _vapourGain: 1.25
+  _audioGain: 1.5
+  _whiteoutFogDensity: 0.08
+  _whiteoutFogColor: {r: 0.85, g: 0.87, b: 0.9, a: 1}

@@ -15,3 +15,4 @@ MonoBehaviour:
   _includes: []
   _installers:
   - {fileID: 11400000, guid: 2b442204bf01ffa468d014705c78fda2, type: 2}
+  - {fileID: 11400000, guid: 982c03912c946534ca0dea802dff9dd9, type: 2}

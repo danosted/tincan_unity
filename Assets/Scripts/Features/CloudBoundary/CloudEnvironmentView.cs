@@ -16,26 +16,44 @@ namespace TinCan.Features.CloudBoundary
         private ICloudSurfaceQuery? _surfaceQuery;
         private CloudBoundaryConfig? _boundaryConfig;
         private CloudVisualProfile? _visualProfile;
+        private CloudSubmersionProcessor? _submersionProcessor;
+        private CloudSubmersionConfig? _submersionConfig;
         private GameObject? _surfaceObject;
         private Transform? _puffRoot;
         private ParticleSystem? _bankParticles;
         private Mesh? _surfaceMesh;
         private Mesh? _puffMesh;
         private Camera? _renderCamera;
+        private Light? _sunLight;
+        private float _baseLightIntensity;
+        private bool _baseAtmosphereCached;
+        private bool _baseFogEnabled;
+        private Color _baseFogColor;
+        private float _baseFogDensity;
         private float _nextCameraSearchTime;
         private Vector2 _surfaceCenter = new(float.PositiveInfinity, float.PositiveInfinity);
         private Vector2Int _bankCell = new(int.MinValue, int.MinValue);
         private Vector2Int _cloudCell = new(int.MinValue, int.MinValue);
 
+        [Header("Legacy Visuals")]
+        [Tooltip("Procedural cloud sea surface, lower bank particles, and billboard puffs. Disable while evaluating a replacement (e.g. the volumetric clouds renderer feature).")]
+        [SerializeField] private bool _legacyVisualsEnabled = true;
+
+        public CloudSubmersionState CurrentAtmosphere { get; private set; }
+
         [Inject]
         public void Construct(
             ICloudSurfaceQuery surfaceQuery,
             CloudBoundaryConfig boundaryConfig,
-            CloudVisualProfile visualProfile)
+            CloudVisualProfile visualProfile,
+            CloudSubmersionProcessor submersionProcessor,
+            CloudSubmersionConfig submersionConfig)
         {
             _surfaceQuery = surfaceQuery;
             _boundaryConfig = boundaryConfig;
             _visualProfile = visualProfile;
+            _submersionProcessor = submersionProcessor;
+            _submersionConfig = submersionConfig;
         }
 
         private void Start()
@@ -47,12 +65,15 @@ namespace TinCan.Features.CloudBoundary
                 return;
             }
 
-            CreateSurface();
-            _puffMesh = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
-            CreateBankParticles();
-            var puffRootObject = new GameObject("Cloud Puffs");
-            puffRootObject.transform.SetParent(transform, false);
-            _puffRoot = puffRootObject.transform;
+            if (_legacyVisualsEnabled)
+            {
+                CreateSurface();
+                _puffMesh = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
+                CreateBankParticles();
+                var puffRootObject = new GameObject("Cloud Puffs");
+                puffRootObject.transform.SetParent(transform, false);
+                _puffRoot = puffRootObject.transform;
+            }
         }
 
         private void Update()
@@ -68,9 +89,57 @@ namespace TinCan.Features.CloudBoundary
                 return;
             }
 
-            UpdateSurface(camera.transform.position);
-            UpdateBankParticles(camera.transform.position);
-            UpdateCloudCells(camera.transform.position);
+            if (_legacyVisualsEnabled)
+            {
+                UpdateSurface(camera.transform.position);
+                UpdateBankParticles(camera.transform.position);
+                UpdateCloudCells(camera.transform.position);
+            }
+
+            UpdateSubmersion(camera.transform.position);
+        }
+
+        private void UpdateSubmersion(Vector3 cameraPosition)
+        {
+            if (_submersionProcessor == null || _submersionConfig == null || _surfaceQuery == null)
+            {
+                return;
+            }
+
+            CacheBaseAtmosphere();
+
+            float surfaceHeight = _surfaceQuery.GetSurfaceHeight(cameraPosition.x, cameraPosition.z);
+            CurrentAtmosphere = _submersionProcessor.Evaluate(
+                surfaceHeight,
+                cameraPosition.y,
+                _submersionConfig.TransitionDepth,
+                _submersionConfig.MinLightMultiplier,
+                _submersionConfig.VapourGain,
+                _submersionConfig.AudioGain);
+
+            RenderSettings.fog = true;
+            RenderSettings.fogColor = Color.Lerp(_baseFogColor, _submersionConfig.WhiteoutFogColor, CurrentAtmosphere.Whiteout);
+            RenderSettings.fogDensity = Mathf.Lerp(_baseFogDensity, _submersionConfig.WhiteoutFogDensity, CurrentAtmosphere.Whiteout);
+
+            if (_sunLight != null)
+            {
+                _sunLight.intensity = _baseLightIntensity * CurrentAtmosphere.LightMultiplier;
+            }
+        }
+
+        private void CacheBaseAtmosphere()
+        {
+            if (_baseAtmosphereCached)
+            {
+                return;
+            }
+
+            _baseAtmosphereCached = true;
+            _baseFogEnabled = RenderSettings.fog;
+            _baseFogColor = RenderSettings.fogColor;
+            _baseFogDensity = _baseFogEnabled ? RenderSettings.fogDensity : 0f;
+            _sunLight = RenderSettings.sun;
+            _baseLightIntensity = _sunLight != null ? _sunLight.intensity : 0f;
         }
 
         private Camera? ResolveRenderCamera()
@@ -366,16 +435,36 @@ namespace TinCan.Features.CloudBoundary
                     _visualProfile.ClusterScale.y,
                     Next01(ref seed));
 
-                for (int puff = 0; puff < _visualProfile.PuffsPerCluster; puff++)
+                // Cumulus footprint: a wide, flat, heavily overlapping base tier anchors the shape,
+                // then a smaller, rounder crown tier stacks toward the center-top. Independent random
+                // spheres per puff (the old approach) reads as a scatter of separate ellipsoids instead
+                // of one cloud.
+                int puffCount = _visualProfile.PuffsPerCluster;
+                int baseCount = Mathf.Clamp(Mathf.RoundToInt(puffCount * 0.4f), 1, puffCount);
+
+                for (int puff = 0; puff < puffCount; puff++)
                 {
+                    bool isBase = puff < baseCount;
+                    float crownT = isBase ? 0f : Mathf.InverseLerp(baseCount - 1, Mathf.Max(baseCount, puffCount - 1), puff);
+                    float horizontalSpread = isBase ? 1f : Mathf.Lerp(0.65f, 0.3f, crownT);
+                    float verticalOffset = isBase
+                        ? (Next01(ref seed) - 0.5f) * clusterScale * 0.1f
+                        : Mathf.Lerp(0.22f, 0.8f, crownT) * clusterScale;
+                    float sizeFactor = isBase
+                        ? Mathf.Lerp(0.7f, 1f, Next01(ref seed))
+                        : Mathf.Lerp(0.32f, 0.6f, Next01(ref seed));
+                    float flatness = isBase
+                        ? Mathf.Lerp(0.14f, 0.24f, Next01(ref seed))
+                        : Mathf.Lerp(0.24f, 0.4f, Next01(ref seed));
+
                     Vector3 offset = new(
-                        (Next01(ref seed) - 0.5f) * clusterScale,
-                        (Next01(ref seed) - 0.5f) * clusterScale * 0.25f,
-                        (Next01(ref seed) - 0.5f) * clusterScale * 0.55f);
+                        (Next01(ref seed) - 0.5f) * clusterScale * horizontalSpread,
+                        verticalOffset,
+                        (Next01(ref seed) - 0.5f) * clusterScale * horizontalSpread * 0.7f);
                     Vector3 scale = new(
-                        clusterScale * Mathf.Lerp(0.35f, 0.7f, Next01(ref seed)),
-                        clusterScale * Mathf.Lerp(0.16f, 0.3f, Next01(ref seed)),
-                        clusterScale * Mathf.Lerp(0.3f, 0.6f, Next01(ref seed)));
+                        clusterScale * sizeFactor,
+                        clusterScale * sizeFactor * flatness,
+                        clusterScale * sizeFactor * Mathf.Lerp(0.65f, 0.9f, Next01(ref seed)));
                     _puffMatrices.Add(Matrix4x4.TRS(
                         new Vector3(worldX, altitude, worldZ) + offset,
                         Quaternion.Euler(0f, Next01(ref seed) * 360f, 0f),

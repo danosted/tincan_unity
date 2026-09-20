@@ -25,10 +25,14 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _EdgeSoftness: 0.52
+    - _DetailScale: 26
+    - _DetailStrength: 0.4
+    - _EdgeSoftness: 0.6
     - _FlowScale: 0.035
     - _FlowSpeed: 0.12
     - _FlowStrength: 0.3
+    - _ShapeScale: 9
+    - _ShapeStrength: 0.75
     m_Colors:
     - _BaseColor: {r: 0.94, g: 0.97, b: 1, a: 0.62}
     - _ShadowColor: {r: 0.48, g: 0.59, b: 0.72, a: 0.48}

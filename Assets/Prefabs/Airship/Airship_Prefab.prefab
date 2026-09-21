@@ -355,7 +355,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1498952331
+  GlobalObjectIdHash: 2551848856
   InScenePlacedSourceGlobalObjectIdHash: 2551848856
   DeferredDespawnTick: 0
   Ownership: 1
@@ -530,8 +530,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.HumanoidMovement.ThirdPersonLookView
   _cameraPivot: {fileID: 4295072262532451526}
-  _distance: 20
-  _height: 5
+  _distance: 40
+  _height: 8
   _sensitivity: 0.5
   _maxPitch: 90
   _isRotationRelative: 0

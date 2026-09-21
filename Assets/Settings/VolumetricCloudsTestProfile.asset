@@ -38,7 +38,7 @@ MonoBehaviour:
     m_Value: 4
   densityMultiplier:
     m_OverrideState: 1
-    m_Value: 0.5
+    m_Value: 1
   densityCurve:
     m_OverrideState: 1
     m_Value:
@@ -76,7 +76,7 @@ MonoBehaviour:
       m_RotationOrder: 4
   shapeFactor:
     m_OverrideState: 1
-    m_Value: 0.886
+    m_Value: 0.701
   shapeScale:
     m_OverrideState: 1
     m_Value: 88.3
@@ -167,10 +167,10 @@ MonoBehaviour:
     m_Value: 2000
   bottomAltitude:
     m_OverrideState: 1
-    m_Value: 15.1
+    m_Value: 6.41
   altitudeRange:
     m_OverrideState: 1
-    m_Value: 100
+    m_Value: 400
   shapeOffset:
     m_OverrideState: 1
     m_Value: {x: 0, y: 0, z: 0}
@@ -198,6 +198,16 @@ MonoBehaviour:
   verticalErosionWindSpeed:
     m_OverrideState: 1
     m_Value: 8
+  cloudMapSpeedMultiplier:
+    m_OverrideState: 1
+    m_Value: 0.5
+  cloudMap:
+    m_OverrideState: 1
+    m_Value: {fileID: 2800000, guid: 7ebc9b0fc07a1514688bfa6c48f4d24c, type: 3}
+    dimension: 1
+  cloudMapTiling:
+    m_OverrideState: 1
+    m_Value: {x: 0.001, y: 0.001, z: 0, w: 0}
   ambientLightProbeDimmer:
     m_OverrideState: 1
     m_Value: 1.3

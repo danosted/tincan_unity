@@ -38,6 +38,8 @@ float _EarthRadius;
 half _AccumulationFactor;
 half _NormalizationFactor;
 half _CloudNearPlane;
+half4 _CloudMapTiling;
+half4 _CloudMapOffset;
 CBUFFER_END
 
 // Ambient Probe (unity_SH)

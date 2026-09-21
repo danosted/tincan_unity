@@ -1,6 +1,8 @@
 #nullable enable
 using UnityEngine;
 using UnityEngine.Rendering;
+using TinCan.Core.Domain;
+using VContainer;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -12,10 +14,22 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
     /// Writes into the assigned VolumeProfile's VolumetricClouds component and the Light every
     /// time a field changes (Edit mode via ExecuteAlways, or Play mode), so both can be dialed
     /// in from one Inspector instead of hunting through the profile asset and the light separately.
+    /// Implements IInjectedView to receive ITimeService (network-synced when hosting/connected),
+    /// so cloud wind animation matches across multiplayer clients instead of drifting based on
+    /// each client's local wall-clock time.
     /// </summary>
     [ExecuteAlways]
-    public class CloudAtmosphereDirector : MonoBehaviour
+    public class CloudAtmosphereDirector : MonoBehaviour, IInjectedView
     {
+        private ITimeService? _timeService;
+
+        [Inject]
+        public void Construct(ITimeService timeService)
+        {
+            _timeService = timeService;
+        }
+
+
         [Header("Targets")]
         [SerializeField] private VolumeProfile? _cloudsProfile;
         [SerializeField] private Light? _sunLight;
@@ -47,6 +61,15 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
         [Min(0.01f)] [SerializeField] private float _bottomAltitude = 10f;
         [Tooltip("Thickness of the cloud layer in world units, starting at Bottom Altitude.")]
         [Min(100f)] [SerializeField] private float _altitudeRange = 100f;
+
+        [Header("Cloud Map (Variety)")]
+        [Tooltip("Paints cloud coverage and type across the world so the sky isn't one uniform look everywhere. Generate one via TinCan > Features > Generate Cloud Coverage Map. Leave unassigned to keep a single uniform cloud type (old behavior).")]
+        [SerializeField] private Texture? _cloudMap;
+        [Tooltip("World units per tile of the map. Smaller repeats the pattern more often (smaller weather regions); larger stretches it out.")]
+        [Min(1f)] [SerializeField] private float _cloudMapTileSize = 1000f;
+        [SerializeField] private Vector2 _cloudMapOffset = Vector2.zero;
+        [Tooltip("How fast the map drifts with the wind, relative to Global Speed. 0 = static weather regions.")]
+        [Range(0f, 1f)] [SerializeField] private float _cloudMapSpeedMultiplier = 0.5f;
 
         [Header("Cloud Wind")]
         [SerializeField] private float _globalSpeed = 30f;
@@ -141,6 +164,9 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
 
             Set(_clouds.state, _cloudsEnabled);
             Set(_clouds.localClouds, _localClouds);
+            Set(_clouds.cloudMap, _cloudMap);
+            Set(_clouds.cloudMapTiling, new Vector4(1f / _cloudMapTileSize, 1f / _cloudMapTileSize, _cloudMapOffset.x, _cloudMapOffset.y));
+            Set(_clouds.cloudMapSpeedMultiplier, _cloudMapSpeedMultiplier);
             Set(_clouds.densityMultiplier, _densityMultiplier);
             Set(_clouds.shapeFactor, _shapeFactor);
             Set(_clouds.shapeScale, _shapeScale);
@@ -188,6 +214,9 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
 
             _rendererFeature.ResolutionScale = _resolutionScale;
             _rendererFeature.UpscaleMode = _upscaleMode;
+            // Null when ITimeService hasn't been injected (Edit mode, or not yet built) or no
+            // network session is active - the renderer feature falls back to local time either way.
+            _rendererFeature.TimeOverride = _timeService?.Time;
 
 #if UNITY_EDITOR
             if (markDirty)
@@ -240,6 +269,18 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
         }
 
         private static void Set(ClampedIntParameter parameter, int value)
+        {
+            parameter.value = value;
+            parameter.overrideState = true;
+        }
+
+        private static void Set(TextureParameter parameter, Texture? value)
+        {
+            parameter.value = value;
+            parameter.overrideState = true;
+        }
+
+        private static void Set(Vector4Parameter parameter, Vector4 value)
         {
             parameter.value = value;
             parameter.overrideState = true;

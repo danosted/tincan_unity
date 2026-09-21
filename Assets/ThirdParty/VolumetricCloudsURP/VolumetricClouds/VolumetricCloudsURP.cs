@@ -118,6 +118,13 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
     }
 
     /// <summary>
+    /// Externally-supplied time value that drives wind animation instead of local time when set
+    /// (e.g. a network-synced clock, so wind position matches across multiplayer clients). Null
+    /// falls back to the original local-time behavior.
+    /// </summary>
+    public float? TimeOverride { get; set; }
+
+    /// <summary>
     /// Gets or sets the ambient probe update frequency for volumetric clouds.
     /// </summary>
     /// <value>
@@ -332,6 +339,7 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
             volumetricCloudsPass.outputDepth = depthTexture || outputDepth; // Implicitly enable clouds depth when we need to output to scene depth
             volumetricCloudsPass.outputToSceneDepth = depthTexture;
             volumetricCloudsPass.sunAttenuation = sunAttenuation;
+            volumetricCloudsPass.timeOverride = TimeOverride;
 
             volumetricCloudsShadowsPass.cloudsVolume = cloudsVolume;
 
@@ -450,7 +458,10 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
         private static readonly int accumulationFactor = Shader.PropertyToID("_AccumulationFactor");
         private static readonly int improvedTransmittanceBlend = Shader.PropertyToID("_ImprovedTransmittanceBlend");
         //private static readonly int normalizationFactor = Shader.PropertyToID("_NormalizationFactor");
-        private static readonly int cloudsCurveLut = Shader.PropertyToID("_CloudCurveTexture");
+        private static readonly int cloudsTypeLut = Shader.PropertyToID("_CloudLutTexture");
+        private static readonly int cloudMapTexture = Shader.PropertyToID("_CloudMapTexture");
+        private static readonly int cloudMapTiling = Shader.PropertyToID("_CloudMapTiling");
+        private static readonly int cloudMapOffset = Shader.PropertyToID("_CloudMapOffset");
         private static readonly int cloudnearPlane = Shader.PropertyToID("_CloudNearPlane");
         private static readonly int sunColor = Shader.PropertyToID("_SunColor");
         private static readonly int planetCenterRadius = Shader.PropertyToID("_PlanetCenterRadius");
@@ -491,8 +502,22 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
 
         private readonly static FieldInfo depthTextureFieldInfo = typeof(UniversalRenderer).GetField("m_DepthTexture", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        private Texture2D customLutPresetMap;
-        private readonly Color[] customLutColorArray = new Color[customLutMapResolution];
+        // Multi-column cloud-type LUT (one column per built-in preset: Sparse/Cloudy/Overcast/Stormy).
+        // Baked once from static preset curve data (see PrepareCloudTypeLut), not per-frame like the
+        // old single-column version, since the source data never changes at runtime.
+        private Texture2D customTypeLutMap;
+        private static readonly VolumetricClouds.CloudPresets[] cloudTypeLutPresets =
+        {
+            VolumetricClouds.CloudPresets.Sparse,
+            VolumetricClouds.CloudPresets.Cloudy,
+            VolumetricClouds.CloudPresets.Overcast,
+            VolumetricClouds.CloudPresets.Stormy,
+        };
+
+        // 1x1 fallback cloud map bound when no VolumetricClouds.cloudMap is assigned, holding the
+        // same constant this package used to hardcode, so leaving it unassigned reproduces the old
+        // uniform-sky behavior exactly.
+        private Texture2D fallbackCloudMapTexture;
 
         public const float earthRad = 6378100.0f;
         public const float windNormalizationFactor = 100000.0f; // NOISE_TEXTURE_NORMALIZATION_FACTOR in "VolumetricCloudsUtilities.hlsl"
@@ -504,6 +529,12 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
         private float verticalShapeOffset = 0.0f;
         private float verticalErosionOffset = 0.0f;
         private Vector2 windVector = Vector2.zero;
+        private Vector2 cloudMapOffsetAccum = Vector2.zero;
+
+        // Set externally (from the renderer feature, each frame) to drive wind animation from a
+        // network-synced clock instead of local time, so wind position matches across clients.
+        // Null falls back to local time, unchanged from the original behavior.
+        public float? timeOverride;
 
         private static float square(float x) => x * x;
 
@@ -567,8 +598,10 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
             cloudsMaterial.SetVector(shapeNoiseOffset, new Vector4(cloudsVolume.shapeOffset.value.x, cloudsVolume.shapeOffset.value.z, 0.0f, 0.0f));
             cloudsMaterial.SetFloat(verticalShapeNoiseOffset, cloudsVolume.shapeOffset.value.y);
 
-            // Wind animation
-            float totalTime = Application.isPlaying ? Time.time : Time.realtimeSinceStartup;
+            // Wind animation. timeOverride (set externally, e.g. from a network-synced clock so
+            // wind position matches across multiplayer clients) takes priority when supplied;
+            // otherwise falls back to local time exactly as before.
+            float totalTime = timeOverride ?? (Application.isPlaying ? Time.time : Time.realtimeSinceStartup);
             float deltaTime = totalTime - prevTotalTime;
             if (prevTotalTime == -1.0f)
                 deltaTime = 0.0f;
@@ -590,17 +623,21 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
                 windVector = Vector2.zero;
                 verticalShapeOffset = 0.0f;
                 verticalErosionOffset = 0.0f;
+                cloudMapOffsetAccum = Vector2.zero;
             }
             else
             {
                 windVector += deltaTime * cloudsVolume.globalSpeed.value * windDirection;
                 verticalShapeOffset += deltaTime * cloudsVolume.verticalShapeWindSpeed.value;
                 verticalErosionOffset += deltaTime * cloudsVolume.verticalErosionWindSpeed.value;
+                cloudMapOffsetAccum += deltaTime * cloudsVolume.globalSpeed.value * cloudsVolume.cloudMapSpeedMultiplier.value * windDirection;
                 // Reset the accumulated wind variables periodically to avoid extreme values.
                 windVector.x %= windNormalizationFactor;
                 windVector.y %= windNormalizationFactor;
                 verticalShapeOffset %= windNormalizationFactor;
                 verticalErosionOffset %= windNormalizationFactor;
+                cloudMapOffsetAccum.x %= windNormalizationFactor;
+                cloudMapOffsetAccum.y %= windNormalizationFactor;
             }
 
             // Update previous values
@@ -615,6 +652,7 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
             cloudsMaterial.SetFloat(altitudeDistortion, cloudsVolume.altitudeDistortion.value * 0.25f);
             cloudsMaterial.SetFloat(verticalShapeDisplacement, verticalShapeOffset);
             cloudsMaterial.SetFloat(verticalErosionDisplacement, verticalErosionOffset);
+            cloudsMaterial.SetVector(cloudMapOffset, cloudMapOffsetAccum);
 
             cloudsMaterial.SetFloat(densityMultiplier, cloudsVolume.densityMultiplier.value * cloudsVolume.densityMultiplier.value * 2.0f);
             cloudsMaterial.SetFloat(powderEffectIntensity, cloudsVolume.powderEffectIntensity.value);
@@ -650,7 +688,8 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
 
             SetupAmbientProbeIfNeeded(cloudsMaterial);
 
-            PrepareCustomLutData(cloudsVolume);
+            PrepareCloudTypeLut();
+            UpdateCloudMapProperties(cloudsVolume);
         }
 
         private void UpdateClouds(Light mainLight, Camera camera)
@@ -683,48 +722,112 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
             denoiseClouds = cloudsVolume.temporalAccumulationFactor.value >= 0.01f;
         }
 
-        private void PrepareCustomLutData(VolumetricClouds clouds)
+        // Bakes one column per built-in preset (Sparse/Cloudy/Overcast/Stormy) from their static
+        // density/erosion/AO curves, so the cloud map's "type" channel can pick between them.
+        // Reuses VolumetricCloudsVolume's own preset curve data instead of duplicating it.
+        private void PrepareCloudTypeLut()
         {
-            if (customLutPresetMap == null)
+            if (customTypeLutMap != null)
             {
-                customLutPresetMap = new Texture2D(1, customLutMapResolution, GraphicsFormat.R16G16B16A16_SFloat, TextureCreationFlags.None)
-                {
-                    name = "Custom LUT Curve",
-                    filterMode = FilterMode.Bilinear,
-                    wrapMode = TextureWrapMode.Clamp
-                };
-                customLutPresetMap.hideFlags = HideFlags.HideAndDontSave;
+                // Already baked - just make sure the material is still bound to it. The bake
+                // itself only needs to happen once (it's static preset data), but the material's
+                // runtime-only texture binding can get reset independently of this cached texture
+                // (e.g. by a material re-import), so re-applying SetTexture must not be skipped
+                // here or the binding can go stale while this cache still looks populated.
+                cloudsMaterial.SetTexture(cloudsTypeLut, customTypeLutMap);
+                return;
             }
 
-            var pixels = customLutColorArray;
-
-            var densityCurve = clouds.densityCurve.value;
-            var erosionCurve = clouds.erosionCurve.value;
-            var ambientOcclusionCurve = clouds.ambientOcclusionCurve.value;
-            Color white = Color.white;
-            if (densityCurve == null || densityCurve.length == 0)
+            int typeCount = cloudTypeLutPresets.Length;
+            customTypeLutMap = new Texture2D(typeCount, customLutMapResolution, GraphicsFormat.R16G16B16A16_SFloat, TextureCreationFlags.None)
             {
-                for (int i = 0; i < customLutMapResolution; i++)
-                    pixels[i] = white;
-            }
-            else
-            {
-                float step = 1.0f / (customLutMapResolution - 1f);
+                name = "Cloud Type LUT",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            customTypeLutMap.hideFlags = HideFlags.HideAndDontSave;
 
-                for (int i = 0; i < customLutMapResolution; i++)
+            var pixels = new Color[typeCount * customLutMapResolution];
+            float step = 1.0f / (customLutMapResolution - 1f);
+
+            for (int column = 0; column < typeCount; column++)
+            {
+                AnimationCurve densityCurve = GetPresetDensityCurve(cloudTypeLutPresets[column]);
+                AnimationCurve erosionCurve = GetPresetErosionCurve(cloudTypeLutPresets[column]);
+                AnimationCurve ambientOcclusionCurve = GetPresetAmbientOcclusionCurve(cloudTypeLutPresets[column]);
+
+                for (int row = 0; row < customLutMapResolution; row++)
                 {
-                    float currTime = step * i;
-                    float density = (i == 0 || i == customLutMapResolution - 1) ? 0 : Mathf.Clamp(densityCurve.Evaluate(currTime), 0.0f, 1.0f);
+                    float currTime = step * row;
+                    float density = Mathf.Clamp(densityCurve.Evaluate(currTime), 0.0f, 1.0f);
+                    // Some presets (e.g. Cloudy) don't fully fade to 0 by the top of their curve.
+                    // Forcing only the single boundary row to 0 (the original single-column bake's
+                    // approach) leaves a fade zone only ~1/customLutMapResolution of the layer's
+                    // *normalized* height - fine at the real-world altitude ranges this package
+                    // assumes, but at small Altitude Range values that's under 2 world units, which
+                    // reads as a hard cutoff instead of a taper. Fade over a fixed fraction of the
+                    // height range instead, so the fade's absolute size scales with Altitude Range.
+                    const float edgeFadeZone = 0.08f;
+                    float edgeFade = Mathf.Min(Mathf.InverseLerp(0f, edgeFadeZone, currTime), Mathf.InverseLerp(1f, 1f - edgeFadeZone, currTime));
+                    density *= Mathf.Clamp01(edgeFade);
                     float erosion = Mathf.Clamp(erosionCurve.Evaluate(currTime), 0.0f, 1.0f);
                     float ambientOcclusion = Mathf.Clamp(1.0f - ambientOcclusionCurve.Evaluate(currTime), 0.0f, 1.0f);
-                    pixels[i] = new Color(density, erosion, ambientOcclusion, 1.0f);
+                    // Texture2D pixel data is row-major from the bottom row up.
+                    pixels[row * typeCount + column] = new Color(density, erosion, ambientOcclusion, 1.0f);
                 }
             }
 
-            customLutPresetMap.SetPixels(pixels);
-            customLutPresetMap.Apply();
+            customTypeLutMap.SetPixels(pixels);
+            customTypeLutMap.Apply();
 
-            cloudsMaterial.SetTexture(cloudsCurveLut, customLutPresetMap);
+            cloudsMaterial.SetTexture(cloudsTypeLut, customTypeLutMap);
+        }
+
+        private static AnimationCurve GetPresetDensityCurve(VolumetricClouds.CloudPresets preset) => preset switch
+        {
+            VolumetricClouds.CloudPresets.Sparse => VolumetricClouds.s_SparseDensityCurve,
+            VolumetricClouds.CloudPresets.Overcast => VolumetricClouds.s_OvercastDensityCurve,
+            VolumetricClouds.CloudPresets.Stormy => VolumetricClouds.s_StormyDensityCurve,
+            _ => VolumetricClouds.s_CloudyDensityCurve,
+        };
+
+        private static AnimationCurve GetPresetErosionCurve(VolumetricClouds.CloudPresets preset) => preset switch
+        {
+            VolumetricClouds.CloudPresets.Sparse => VolumetricClouds.s_SparseErosionCurve,
+            VolumetricClouds.CloudPresets.Overcast => VolumetricClouds.s_OvercastErosionCurve,
+            VolumetricClouds.CloudPresets.Stormy => VolumetricClouds.s_StormyErosionCurve,
+            _ => VolumetricClouds.s_CloudyErosionCurve,
+        };
+
+        private static AnimationCurve GetPresetAmbientOcclusionCurve(VolumetricClouds.CloudPresets preset) => preset switch
+        {
+            VolumetricClouds.CloudPresets.Sparse => VolumetricClouds.s_SparseAmbientOcclusionCurve,
+            VolumetricClouds.CloudPresets.Overcast => VolumetricClouds.s_OvercastAmbientOcclusionCurve,
+            VolumetricClouds.CloudPresets.Stormy => VolumetricClouds.s_StormyAmbientOcclusionCurve,
+            _ => VolumetricClouds.s_CloudyAmbientOcclusionCurve,
+        };
+
+        private void UpdateCloudMapProperties(VolumetricClouds clouds)
+        {
+            Texture map = clouds.cloudMap.value;
+            if (map == null)
+            {
+                if (fallbackCloudMapTexture == null)
+                {
+                    fallbackCloudMapTexture = new Texture2D(1, 1, GraphicsFormat.R8G8B8A8_UNorm, TextureCreationFlags.None)
+                    {
+                        name = "Cloud Map Fallback (Uniform)",
+                        hideFlags = HideFlags.HideAndDontSave
+                    };
+                    fallbackCloudMapTexture.SetPixel(0, 0, new Color(0.9f, 0.0f, 0.25f, 1.0f));
+                    fallbackCloudMapTexture.Apply();
+                }
+
+                map = fallbackCloudMapTexture;
+            }
+
+            cloudsMaterial.SetTexture(cloudMapTexture, map);
+            cloudsMaterial.SetVector(cloudMapTiling, clouds.cloudMapTiling.value);
         }
 
         private void SetupAmbientProbeIfNeeded(Material cloudsMaterial)

@@ -342,6 +342,12 @@ float3 AnimateErosionNoisePosition(float3 positionPS)
     //return positionPS;
 }
 
+// Animation of the cloud map position (wind-driven scroll of the coverage/type map)
+float3 AnimateCloudMapPosition(float3 positionPS)
+{
+    return positionPS + float3(_CloudMapOffset.x, 0.0, _CloudMapOffset.y);
+}
+
 // Structure that holds all the data used to define the cloud density of a point in space
 struct CloudCoverageData
 {
@@ -358,13 +364,12 @@ struct CloudCoverageData
 // Function that evaluates the coverage data for a given point in planet space
 void GetCloudCoverageData(float3 positionPS, out CloudCoverageData data)
 {
-    // Convert the position into dome space and center the texture is centered above (0, 0, 0)
-    //float2 normalizedPosition = AnimateCloudMapPosition(positionPS).xz / _NormalizationFactor * _CloudMapTiling.xy + _CloudMapTiling.zw - 0.5;
-//#if defined(CLOUDS_SIMPLE_PRESET)
-    half4 cloudMapData = half4(0.9, 0.0, 0.25, 1.0);
-//#else
-    //float4 cloudMapData = SAMPLE_TEXTURE2D_LOD(_CloudMapTexture, s_linear_repeat_sampler, float2(normalizedPosition), 0);
-//#endif
+    // Simple world-space XZ tiling (not HDRP's dome/planet-curvature projection, which doesn't
+    // fit this project's flat local world). Tiling.xy = world units per tile, Tiling.zw = offset.
+    // When no cloud map is assigned, the renderer feature binds a 1x1 fallback texture holding
+    // the same constant this used to be hardcoded to, so this sample always has valid data.
+    float2 mapUV = AnimateCloudMapPosition(positionPS).xz * _CloudMapTiling.xy + _CloudMapTiling.zw;
+    half4 cloudMapData = SAMPLE_TEXTURE2D_LOD(_CloudMapTexture, s_linear_repeat_sampler, mapUV, 0);
     data.coverage = cloudMapData.x;
     data.rainClouds = cloudMapData.y;
     data.cloudType = cloudMapData.z;
@@ -431,12 +436,9 @@ void EvaluateCloudProperties(float3 positionPS, float noiseMipOffset, float eros
     if (cloudCoverageData.coverage.x <= CLOUD_DENSITY_TRESHOLD || cloudCoverageData.maxCloudHeight < properties.height)
         return;
 
-    // Read from the LUT
-//#if defined(CLOUDS_SIMPLE_PRESET)
-    half3 densityErosionAO = SAMPLE_TEXTURE2D_LOD(_CloudCurveTexture, s_linear_repeat_sampler, half2(0.0, properties.height), 0).xyz;
-//#else
-    //half3 densityErosionAO = SAMPLE_TEXTURE2D_LOD(_CloudLutTexture, s_linear_repeat_sampler, float2(cloudCoverageData.cloudType, properties.height), CLOUD_LUT_MIP_OFFSET).xyz;
-//#endif
+    // Read from the multi-column cloud-type LUT: U picks the cloud "type" (from the cloud map's
+    // blue channel), V is the normalized height within the layer.
+    half3 densityErosionAO = SAMPLE_TEXTURE2D_LOD(_CloudLutTexture, s_linear_repeat_sampler, half2(cloudCoverageData.cloudType, properties.height), 0).xyz;
 
     // Adjust the shape and erosion factor based on the LUT and the coverage
     half shapeFactor = lerp(0.1, 1.0, _ShapeFactor) * densityErosionAO.y;

@@ -4,6 +4,7 @@ Shader "Hidden/Sky/VolumetricClouds"
     {
         [HideInInspector][NoScaleOffset] _CloudLutTexture("Cloud LUT Texture", 2D) = "white" {}
         [HideInInspector][NoScaleOffset] _CloudCurveTexture("Cloud LUT Curve Texture", 2D) = "white" {}
+        [HideInInspector][NoScaleOffset] _CloudMapTexture("Cloud Coverage Map", 2D) = "white" {}
         [NoScaleOffset] _ErosionNoise("Erosion Noise Texture", 3D) = "white" {}
         [NoScaleOffset] _Worley128RGBA("Worley Noise Texture", 3D) = "white" {}
         [HideInInspector] _Seed("Private: Random Seed", Float) = 0.0
@@ -78,6 +79,7 @@ Shader "Hidden/Sky/VolumetricClouds"
             
             TEXTURE2D(_CloudLutTexture);
             TEXTURE2D(_CloudCurveTexture);
+            TEXTURE2D(_CloudMapTexture);
             TEXTURE3D(_Worley128RGBA);
             TEXTURE3D(_ErosionNoise);
             TEXTURECUBE(_VolumetricCloudsAmbientProbe);
@@ -417,6 +419,7 @@ Shader "Hidden/Sky/VolumetricClouds"
 
             TEXTURE2D(_CloudLutTexture);
             TEXTURE2D(_CloudCurveTexture);
+            TEXTURE2D(_CloudMapTexture);
             TEXTURE3D(_Worley128RGBA);
             TEXTURE3D(_ErosionNoise);
             TEXTURECUBE(_VolumetricCloudsAmbientProbe);
@@ -459,6 +462,7 @@ Shader "Hidden/Sky/VolumetricClouds"
 
             TEXTURE2D(_CloudLutTexture);
             TEXTURE2D(_CloudCurveTexture);
+            TEXTURE2D(_CloudMapTexture);
             TEXTURE3D(_Worley128RGBA);
             TEXTURE3D(_ErosionNoise);
             TEXTURECUBE(_VolumetricCloudsAmbientProbe);
@@ -656,6 +660,7 @@ Shader "Hidden/Sky/VolumetricClouds"
             
             TEXTURE2D(_CloudLutTexture);
             TEXTURE2D(_CloudCurveTexture);
+            TEXTURE2D(_CloudMapTexture);
             TEXTURE3D(_Worley128RGBA);
             TEXTURE3D(_ErosionNoise);
             TEXTURECUBE(_VolumetricCloudsAmbientProbe);

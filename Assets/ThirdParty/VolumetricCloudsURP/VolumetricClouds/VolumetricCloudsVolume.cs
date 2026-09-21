@@ -169,14 +169,24 @@ public class VolumetricClouds : VolumeComponent, IPostProcessComponent
     [Tooltip("Controls the vertical wind speed of the erosion cloud shapes.")]
     public FloatParameter verticalErosionWindSpeed = new(0.0f);
 
-    /*
     /// <summary>
     /// Controls the multiplier to the speed of the cloud map.
     /// </summary>
     [AdditionalProperty]
     [Tooltip("Controls the multiplier to the speed of the cloud map.")]
-    public ClampedFloatParameter cloudMapSpeedMultiplier = new(0.5f, 0.0f, 1.0f); 
-    */
+    public ClampedFloatParameter cloudMapSpeedMultiplier = new(0.5f, 0.0f, 1.0f);
+
+    /// <summary>
+    /// A texture painted (or generated) over the world XZ plane that varies cloud coverage and type by region: R = coverage, G = rain/storm amount, B = cloud type (selects a column in the type LUT), A = max cloud height. Leave unassigned to keep the old uniform behavior (equivalent to a constant 0.9/0/0.25/1.0 map).
+    /// </summary>
+    [Header("Cloud Map"), Tooltip("Varies cloud coverage and type across the world. Leave unassigned for the old uniform look.")]
+    public TextureParameter cloudMap = new(null);
+
+    /// <summary>
+    /// Controls the tiling (xy) and offset (zw) of the cloud map across the world XZ plane, in world units per tile.
+    /// </summary>
+    [Tooltip("xy = world units per tile (tiling scale), zw = offset.")]
+    public Vector4Parameter cloudMapTiling = new(new Vector4(0.001f, 0.001f, 0.0f, 0.0f));
 
     /// <summary>
     /// Controls the influence of the light probes on the cloud volume. A lower value will suppress the ambient light and produce darker clouds overall.
@@ -355,22 +365,23 @@ public class VolumetricClouds : VolumeComponent, IPostProcessComponent
         Custom
     }
 
-    // Cloud preset curves
-    static readonly AnimationCurve s_SparseDensityCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.05f, 1.0f), new Keyframe(0.75f, 1.0f), new Keyframe(1.0f, 0.0f));
-    static readonly AnimationCurve s_SparseErosionCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.1f, 0.9f), new Keyframe(1.0f, 1.0f));
-    static readonly AnimationCurve s_SparseAmbientOcclusionCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.25f, 0.5f), new Keyframe(1.0f, 0.0f));
+    // Cloud preset curves. Internal (not private) so the renderer feature can read them directly
+    // when baking the multi-column cloud-type LUT, instead of duplicating this keyframe data.
+    internal static readonly AnimationCurve s_SparseDensityCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.05f, 1.0f), new Keyframe(0.75f, 1.0f), new Keyframe(1.0f, 0.0f));
+    internal static readonly AnimationCurve s_SparseErosionCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.1f, 0.9f), new Keyframe(1.0f, 1.0f));
+    internal static readonly AnimationCurve s_SparseAmbientOcclusionCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.25f, 0.5f), new Keyframe(1.0f, 0.0f));
 
-    static readonly AnimationCurve s_CloudyDensityCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.15f, 1.0f), new Keyframe(1.0f, 0.1f));
-    static readonly AnimationCurve s_CloudyErosionCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.1f, 0.9f), new Keyframe(1.0f, 1.0f));
-    static readonly AnimationCurve s_CloudyAmbientOcclusionCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.25f, 0.4f), new Keyframe(1.0f, 0.0f));
+    internal static readonly AnimationCurve s_CloudyDensityCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.15f, 1.0f), new Keyframe(1.0f, 0.1f));
+    internal static readonly AnimationCurve s_CloudyErosionCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.1f, 0.9f), new Keyframe(1.0f, 1.0f));
+    internal static readonly AnimationCurve s_CloudyAmbientOcclusionCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.25f, 0.4f), new Keyframe(1.0f, 0.0f));
 
-    static readonly AnimationCurve s_OvercastDensityCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.05f, 1.0f), new Keyframe(0.9f, 0.0f), new Keyframe(1.0f, 0.0f));
-    static readonly AnimationCurve s_OvercastErosionCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.1f, 0.9f), new Keyframe(1.0f, 1.0f));
-    static readonly AnimationCurve s_OvercastAmbientOcclusionCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(1.0f, 0.0f));
+    internal static readonly AnimationCurve s_OvercastDensityCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.05f, 1.0f), new Keyframe(0.9f, 0.0f), new Keyframe(1.0f, 0.0f));
+    internal static readonly AnimationCurve s_OvercastErosionCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.1f, 0.9f), new Keyframe(1.0f, 1.0f));
+    internal static readonly AnimationCurve s_OvercastAmbientOcclusionCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(1.0f, 0.0f));
 
-    static readonly AnimationCurve s_StormyDensityCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.037f, 1.0f), new Keyframe(0.6f, 1.0f), new Keyframe(1.0f, 0.0f));
-    static readonly AnimationCurve s_StormyErosionCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.05f, 0.8f), new Keyframe(0.2438f, 0.9498f), new Keyframe(0.5f, 1.0f), new Keyframe(0.93f, 0.9268f), new Keyframe(1.0f, 1.0f));
-    static readonly AnimationCurve s_StormyAmbientOcclusionCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.1f, 0.4f), new Keyframe(1.0f, 0.0f));
+    internal static readonly AnimationCurve s_StormyDensityCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.037f, 1.0f), new Keyframe(0.6f, 1.0f), new Keyframe(1.0f, 0.0f));
+    internal static readonly AnimationCurve s_StormyErosionCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.05f, 0.8f), new Keyframe(0.2438f, 0.9498f), new Keyframe(0.5f, 1.0f), new Keyframe(0.93f, 0.9268f), new Keyframe(1.0f, 1.0f));
+    internal static readonly AnimationCurve s_StormyAmbientOcclusionCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.1f, 0.4f), new Keyframe(1.0f, 0.0f));
 
     void ApplyCurrentCloudPreset()
     {

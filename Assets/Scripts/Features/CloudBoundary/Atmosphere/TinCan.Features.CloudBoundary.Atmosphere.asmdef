@@ -4,7 +4,9 @@
     "references": [
         "Unity.RenderPipelines.Core.Runtime",
         "Unity.RenderPipelines.Universal.Runtime",
-        "VolumetricCloudsURP"
+        "VolumetricCloudsURP",
+        "TinCan.Core.Domain",
+        "VContainer"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

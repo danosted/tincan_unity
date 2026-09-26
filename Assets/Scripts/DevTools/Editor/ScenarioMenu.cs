@@ -26,6 +26,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "TagRequest (Host + Client, Lag100)")]
         public static void TagRequestDuo() => RunDuo("TagRequest", "Lag100");
 
+        [MenuItem(Root + "EquipCycle (Host)")]
+        public static void EquipCycleSolo() => RunSolo("EquipCycle");
+
+        [MenuItem(Root + "EquipCycle (Host + Client, Lag100)")]
+        public static void EquipCycleDuo() => RunDuo("EquipCycle", "Lag100");
+
         public static void RunSolo(string scenario) =>
             NetHarnessPlayerTagsMenu.Run(new[] { "autohost", $"scenario:{scenario}", "scenariomode:solo" }, Array.Empty<string>());
 

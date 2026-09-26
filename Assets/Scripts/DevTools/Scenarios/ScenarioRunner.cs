@@ -45,14 +45,17 @@ namespace TinCan.DevTools.Scenarios
         private readonly List<string> _failures = new();
         private readonly List<ScenarioExpectation> _expectations = new();
         private readonly List<string> _captures = new();
+        private readonly string? _lane;
 
         private int _index;
         private bool _entered;
         private float _stepStart;
         private float _now;
 
-        public ScenarioRunner(IReadOnlyList<ScenarioStep> steps, IScenarioWorld world, ScenarioTimeline timeline)
+        /// <param name="lane">Optional name ("server", "subject") prefixed to this runner's report lines, for a peer running several lanes.</param>
+        public ScenarioRunner(IReadOnlyList<ScenarioStep> steps, IScenarioWorld world, ScenarioTimeline timeline, string? lane = null)
         {
+            _lane = lane;
             _steps = steps;
             _world = world;
             _timeline = timeline;
@@ -85,21 +88,21 @@ namespace TinCan.DevTools.Scenarios
             }
 
             Status = _failures.Count == 0 ? ScenarioStatus.Passed : ScenarioStatus.Failed;
-            _timeline.Add("end", Status.ToString(), Status == ScenarioStatus.Passed, string.Join("; ", _failures));
+            _timeline.Add("end", L(Status.ToString()), Status == ScenarioStatus.Passed, string.Join("; ", _failures));
         }
 
         /// <summary>Stops the run from outside (overall timeout, shutdown) and releases held input.</summary>
         public void Abort(string reason)
         {
             if (IsDone) return;
-            Fail($"aborted at '{CurrentStep}': {reason}");
+            Fail($"{L("aborted")} at '{CurrentStep}': {reason}");
         }
 
         private void Enter(ScenarioStep step)
         {
             _entered = true;
             _stepStart = _now;
-            _timeline.Add("step", step.Label);
+            _timeline.Add("step", L(step.Label));
 
             switch (step.Kind)
             {
@@ -114,19 +117,19 @@ namespace TinCan.DevTools.Scenarios
                     break;
                 case ScenarioStepKind.Do:
                     var result = _world.Execute(step.Name, step.Argument);
-                    _timeline.Add("do", step.Label, result.Ok, result.Detail);
-                    if (!result.Ok) Fail($"'{step.Label}' failed: {result.Detail}");
+                    _timeline.Add("do", L(step.Label), result.Ok, result.Detail);
+                    if (!result.Ok) Fail($"'{L(step.Label)}' failed: {result.Detail}");
                     break;
                 case ScenarioStepKind.Expect:
                     var verdict = _world.Evaluate(step.Name, step.Argument);
-                    _expectations.Add(new ScenarioExpectation { name = step.Label, passed = verdict.Ok, detail = verdict.Detail });
-                    _timeline.Add("expect", step.Label, verdict.Ok, verdict.Detail);
-                    if (!verdict.Ok) _failures.Add($"'{step.Label}' not met: {verdict.Detail}");
+                    _expectations.Add(new ScenarioExpectation { name = L(step.Label), passed = verdict.Ok, detail = verdict.Detail });
+                    _timeline.Add("expect", L(step.Label), verdict.Ok, verdict.Detail);
+                    if (!verdict.Ok) _failures.Add($"'{L(step.Label)}' not met: {verdict.Detail}");
                     break;
                 case ScenarioStepKind.Checkpoint:
                     string path = _world.Capture(step.Name);
                     _captures.Add(path);
-                    _timeline.Add("checkpoint", step.Name, true, path);
+                    _timeline.Add("checkpoint", L(step.Name), true, path);
                     break;
             }
         }
@@ -145,10 +148,10 @@ namespace TinCan.DevTools.Scenarios
                     var check = _world.Evaluate(step.Name, step.Argument);
                     if (check.Ok)
                     {
-                        _timeline.Add("reached", step.Label, true, $"after {inStep:0.00} s. {check.Detail}".Trim());
+                        _timeline.Add("reached", L(step.Label), true, $"after {inStep:0.00} s. {check.Detail}".Trim());
                         return true;
                     }
-                    if (inStep >= step.Duration) Fail($"'{step.Label}' timed out after {step.Duration:0.#} s: {check.Detail}");
+                    if (inStep >= step.Duration) Fail($"'{L(step.Label)}' timed out after {step.Duration:0.#} s: {check.Detail}");
                     return false;
                 default:
                     return true;
@@ -165,13 +168,15 @@ namespace TinCan.DevTools.Scenarios
             }
         }
 
+        private string L(string label) => _lane == null ? label : $"{_lane}: {label}";
+
         private void Fail(string failure)
         {
             _failures.Add(failure);
             foreach (var action in _held) _world.Release(action);
             _held.Clear();
             Status = ScenarioStatus.Failed;
-            _timeline.Add("end", "Failed", false, failure);
+            _timeline.Add("end", L("Failed"), false, failure);
         }
     }
 }

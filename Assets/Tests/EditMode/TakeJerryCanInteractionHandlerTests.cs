@@ -5,9 +5,10 @@ using NUnit.Framework;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Features.Airship.Fuel;
-using TinCan.Features.Carry;
 using TinCan.Features.Interaction;
+using TinCan.Features.Items;
 using TinCan.Tests.EditMode.Fakes;
+using Object = UnityEngine.Object;
 
 namespace TinCan.Tests.EditMode
 {
@@ -28,15 +29,26 @@ namespace TinCan.Tests.EditMode
         private RecordingPublisher _events = null!;
         private TakeJerryCanInteractionHandler _handler = null!;
         private FakeJerryCanSupply _supply = null!;
-        private FakeCarrierActor _player = null!;
+        private FakeEquipmentActor _player = null!;
+        private ItemDefinition _can = null!;
+        private ItemDefinition _net = null!;
 
         [SetUp]
         public void SetUp()
         {
             _events = new RecordingPublisher();
             _handler = new TakeJerryCanInteractionHandler(_events);
-            _supply = new FakeJerryCanSupply { Count = 3 };
-            _player = new FakeCarrierActor();
+            _can = ItemDefinition.Create(1, "ITEM_JerryCan");
+            _net = ItemDefinition.Create(2, "ITEM_CatchingNet");
+            _supply = new FakeJerryCanSupply { Count = 3, Item = _can };
+            _player = new FakeEquipmentActor();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Object.DestroyImmediate(_can);
+            Object.DestroyImmediate(_net);
         }
 
         [Test]
@@ -44,19 +56,19 @@ namespace TinCan.Tests.EditMode
         {
             _handler.Handle(new InteractionContext(_player, _supply, null!));
 
-            Assert.That(_player.Carried, Is.EqualTo(CarriedItem.JerryCan));
+            Assert.That(_player.Held, Is.SameAs(_can));
             Assert.That(_supply.Count, Is.EqualTo(2));
             Assert.That(_events.Events, Has.Exactly(1).TypeOf<JerryCanTakenEvent>());
         }
 
         [Test]
-        public void Handle_CarryingACan_ReturnsIt()
+        public void Handle_HoldingACan_ReturnsIt()
         {
-            _player.Carried = CarriedItem.JerryCan;
+            _player.Held = _can;
 
             _handler.Handle(new InteractionContext(_player, _supply, null!));
 
-            Assert.That(_player.Carried, Is.EqualTo(CarriedItem.None));
+            Assert.That(_player.Held, Is.Null);
             Assert.That(_supply.Count, Is.EqualTo(4));
             Assert.That(_events.Events, Has.Exactly(1).TypeOf<JerryCanReturnedEvent>());
         }
@@ -68,23 +80,34 @@ namespace TinCan.Tests.EditMode
 
             _handler.Handle(new InteractionContext(_player, _supply, null!));
 
-            Assert.That(_player.Carried, Is.EqualTo(CarriedItem.None));
+            Assert.That(_player.Held, Is.Null);
             Assert.That(_supply.Count, Is.EqualTo(0));
         }
 
         [Test]
-        public void Handle_CarryingSomethingElse_IsRefused()
+        public void Handle_HoldingSomethingElse_IsRefused()
         {
-            _player.Carried = CarriedItem.Net;
+            _player.Held = _net;
 
             _handler.Handle(new InteractionContext(_player, _supply, null!));
 
-            Assert.That(_player.Carried, Is.EqualTo(CarriedItem.Net));
+            Assert.That(_player.Held, Is.SameAs(_net));
             Assert.That(_supply.Count, Is.EqualTo(3));
         }
 
         [Test]
-        public void Handle_RequesterWithoutCarrier_IsIgnored()
+        public void Handle_SupplyWithoutItem_HandsOutNothing()
+        {
+            _supply.Item = null;
+
+            _handler.Handle(new InteractionContext(_player, _supply, null!));
+
+            Assert.That(_player.Held, Is.Null);
+            Assert.That(_supply.Count, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Handle_RequesterWithoutEquipment_IsIgnored()
         {
             _handler.Handle(new InteractionContext(new PlainActor(), _supply, null!));
 
@@ -94,11 +117,8 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void Handle_TargetIsNotASupply_IsIgnored()
         {
-            var tank = new FakeFuelTank();
-            var port = new NotASupply();
-
-            Assert.DoesNotThrow(() => _handler.Handle(new InteractionContext(_player, port, null!)));
-            Assert.That(_player.Carried, Is.EqualTo(CarriedItem.None));
+            Assert.DoesNotThrow(() => _handler.Handle(new InteractionContext(_player, new NotASupply(), null!)));
+            Assert.That(_player.Held, Is.Null);
         }
 
         private sealed class NotASupply : IInteractable { }

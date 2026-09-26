@@ -176,13 +176,18 @@ function Confirm-ScenesClean {
 
 function Invoke-Compile {
     Invoke-Unity @("recompile") 60 | Out-Null
+    # Right after the request the status can read "idle" before compilation starts; keep polling through it and
+    # accept a lasting idle (nothing to compile) as success.
     $deadline = (Get-Date).AddSeconds(300)
+    $idleSince = $null
     do {
         Start-Sleep -Seconds 2
         $status = Invoke-Unity @("recompile_status") 15
-    } while ($status.status -eq "compiling" -and (Get-Date) -lt $deadline)
+        if ($status.status -eq "idle") { if (-not $idleSince) { $idleSince = Get-Date } } else { $idleSince = $null }
+        $settled = $status.status -in @("completed", "up_to_date", "failed") -or ($idleSince -and ((Get-Date) - $idleSince).TotalSeconds -ge 20)
+    } while (-not $settled -and (Get-Date) -lt $deadline)
 
-    if ($status.status -notin @("completed", "up_to_date")) {
+    if ($status.status -notin @("completed", "up_to_date", "idle")) {
         Stop-Unusable "recompile did not complete (status '$($status.status)'): $($status.raw)"
     }
     $errors = @($status.errors | Where-Object { $_ })

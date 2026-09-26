@@ -48,6 +48,16 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
 - **State-Driven Synchronization (State Sync):** The server is the source of truth for high-level state changes (Tags, Attributes, Inventory). Mediators sync these back to clients via `NetworkVariable` or `ClientRpc` for visual confirmation.
 - **Avoid Side-Channels:** Do not use independent `ServerRpc` calls for actions that are part of the core simulation loop (like ability triggers or jumping). These should be bits in the `InputState` to ensure they are processed at the correct simulation tick.
 
+- **Equipment grants abilities.** What a player holds is an `ItemDefinition` whose id the server writes into
+  `EquipmentNetworkMediator`. The item carries its capabilities as data: an Infinite `EquippedEffect` whose tags say
+  what is held (`State.Carrying.Net`), and `GrantedAbilities` (`GA_SwingNet`).
+  - Ability grants are not replicated, so on each change `EquipmentAbilityBinder` applies them on the server
+    (authority) and on the owning client (prediction), never on proxies.
+  - It revokes exactly what it granted and leaves starting abilities alone.
+  - An ability that needs a target (swing a net, repair a hull) only sets intent and a tag window. A feature use
+    case on the server finds the target and performs the world effect (`NetCatchUseCase`).
+  - Plan: `.docs/plans/ship-damage-repair.md`.
+
 ### 4. Possession & Interaction Flow
 The game relies heavily on dynamic possession (e.g., leaving a humanoid body to fly a free-camera, or boarding an airship).
 - **IPossessable:** Implemented by entities that can be owned by a player (e.g., Humanoid, Airship).

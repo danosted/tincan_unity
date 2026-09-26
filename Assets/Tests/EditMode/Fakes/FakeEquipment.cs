@@ -3,32 +3,33 @@ using System;
 using TinCan.Core.Domain;
 using TinCan.Features.Airship.Fuel;
 using TinCan.Features.Carry;
+using TinCan.Features.Items;
 using UnityEngine;
 
 namespace TinCan.Tests.EditMode.Fakes
 {
-    /// <summary>A requester that is its own carrier (the shape handlers see when the player actor implements ICarrier).</summary>
-    public class FakeCarrierActor : IActor, ICarrier
+    /// <summary>A requester that is its own equipment (the shape handlers see when the player actor implements IEquipment).</summary>
+    public class FakeEquipmentActor : IActor, IEquipment
     {
         public Guid Id { get; } = Guid.NewGuid();
         public bool IsSimulating => true;
-        public CarriedItem Carried { get; set; }
-        public int PickUps { get; private set; }
-        public int Drops { get; private set; }
+        public ItemDefinition? Held { get; set; }
+        public int Equips { get; private set; }
+        public int Unequips { get; private set; }
 
-        public bool TryPickUp(CarriedItem item)
+        public bool TryEquip(ItemDefinition item)
         {
-            if (item == CarriedItem.None || Carried != CarriedItem.None) return false;
-            Carried = item;
-            PickUps++;
+            if (Held != null) return false;
+            Held = item;
+            Equips++;
             return true;
         }
 
-        public bool TryDrop()
+        public bool TryUnequip()
         {
-            if (Carried == CarriedItem.None) return false;
-            Carried = CarriedItem.None;
-            Drops++;
+            if (Held == null) return false;
+            Held = null;
+            Unequips++;
             return true;
         }
     }
@@ -36,6 +37,7 @@ namespace TinCan.Tests.EditMode.Fakes
     public class FakeJerryCanSupply : IInteractable, IJerryCanSupply
     {
         public int Count { get; set; }
+        public ItemDefinition? Item { get; set; }
 
         public bool TryTake()
         {
@@ -55,6 +57,7 @@ namespace TinCan.Tests.EditMode.Fakes
     {
         public FakeJerryCanSupply Inner { get; } = new();
         public int Count => Inner.Count;
+        public ItemDefinition? Item => Inner.Item;
         public bool TryTake() => Inner.TryTake();
         public void Add(int amount) => Inner.Add(amount);
 

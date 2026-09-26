@@ -43,20 +43,20 @@ namespace TinCan.Features.Abilities
     /// <summary>Keeps every <see cref="GameplayTagDatabase"/> in step with the tag assets on disk.</summary>
     public class GameplayTagDatabasePostprocessor : UnityEditor.AssetPostprocessor
     {
+        // Refreshes inside the callback rather than via EditorApplication.delayCall: an unfocused Editor may not tick
+        // for a long time, and the database then stayed stale after a tag was created.
         private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
         {
-            bool touchesTags = imported.Concat(deleted).Concat(moved).Any(path => path.EndsWith(".asset"));
+            bool touchesTags =
+                imported.Concat(moved).Any(path => UnityEditor.AssetDatabase.GetMainAssetTypeAtPath(path) == typeof(GameplayTag)) ||
+                deleted.Any(path => path.EndsWith(".asset"));
             if (!touchesTags) return;
 
-            // Deferred: loading assets from inside the import callback is not allowed.
-            UnityEditor.EditorApplication.delayCall += () =>
+            foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:" + nameof(GameplayTagDatabase)))
             {
-                foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:" + nameof(GameplayTagDatabase)))
-                {
-                    var path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
-                    UnityEditor.AssetDatabase.LoadAssetAtPath<GameplayTagDatabase>(path)?.Refresh();
-                }
-            };
+                var path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                UnityEditor.AssetDatabase.LoadAssetAtPath<GameplayTagDatabase>(path)?.Refresh();
+            }
         }
     }
 #endif

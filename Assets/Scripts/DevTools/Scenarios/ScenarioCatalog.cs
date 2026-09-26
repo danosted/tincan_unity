@@ -77,7 +77,55 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             _ => { });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest };
+        /// <summary>
+        /// Items grant and revoke abilities on the right peers. The server hands the subject the net. The subject sees
+        /// it replicate, gets GA_SwingNet granted locally (prediction) and swings. The server sees the swing, swaps the
+        /// net for a jerry can, and checks that the swing ability and net tag are gone while starting abilities survive.
+        /// The subject checks the same on its side, then the server empties the subject's hands.
+        /// </summary>
+        public static readonly ScenarioEntry EquipCycle = new(
+            new Scenario.Builder("EquipCycle")
+                .Describe("Equip net -> swing -> swap to jerry can -> unequip; grants and visuals follow on server and owner.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Expect("SubjectHolds", "none")
+                    .Do("EquipSubject", "ITEM_CatchingNet"))
+                .Act(s => s
+                    .WaitUntil("SubjectHolds", 5f, "ITEM_CatchingNet")
+                    .WaitUntil("SubjectHasAbility", 3f, "GA_SwingNet")
+                    .WaitUntil("SubjectHasTag", 3f, "State.Carrying.Net")
+                    .Expect("SubjectVisualShown", "Carry_Net")
+                    .Checkpoint("net-held")
+                    .Hold(0.3f, ActionNames.AbilityPrimary)
+                    .WaitUntil("SubjectHolds", 10f, "ITEM_JerryCan")
+                    .WaitUntil("SubjectLacksAbility", 3f, "GA_SwingNet")
+                    .WaitUntil("SubjectLacksTag", 3f, "State.Carrying.Net")
+                    .WaitUntil("SubjectHasTag", 3f, "State.Carrying.JerryCan")
+                    .Expect("SubjectHasAbility", "GA_Sprint")
+                    .Expect("SubjectVisualShown", "Carry_JerryCan")
+                    .Expect("SubjectVisualHidden", "Carry_Net")
+                    .Checkpoint("can-held")
+                    .WaitUntil("SubjectHolds", 10f, "none")
+                    .WaitUntil("SubjectLacksTag", 3f, "State.Carrying.JerryCan")
+                    .Expect("SubjectVisualHidden", "Carry_JerryCan"))
+                .Assert(s => s
+                    .WaitUntil("SubjectHasAbility", 5f, "GA_SwingNet")
+                    .WaitUntil("SubjectHasTag", 10f, "State.Net.Swinging")
+                    .Do("EquipSubject", "ITEM_JerryCan")
+                    .Expect("SubjectLacksAbility", "GA_SwingNet")
+                    .Expect("SubjectLacksTag", "State.Carrying.Net")
+                    .Expect("SubjectHasTag", "State.Carrying.JerryCan")
+                    .Expect("SubjectHasAbility", "GA_Sprint")
+                    .Wait(3f, "subject observes the can")
+                    .Do("UnequipSubject")
+                    .Expect("SubjectHolds", "none")
+                    .Expect("SubjectLacksTag", "State.Carrying.JerryCan"))
+                .Build(),
+            builder => builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle };
 
         public static string Names => string.Join(", ", All.Select(entry => entry.Scenario.Name));
 

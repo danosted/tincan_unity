@@ -6,8 +6,9 @@ using System.Linq;
 namespace TinCan.DevTools.Scenarios
 {
     /// <summary>
-    /// Which part of a scenario this peer plays. <see cref="Solo"/> is a host playing alone against its own player;
-    /// in a host + client run the host is <see cref="Server"/> and the client is <see cref="Subject"/>.
+    /// Which part of a scenario this peer plays. In a host + client run the host is <see cref="Server"/> and the client
+    /// is <see cref="Subject"/>. <see cref="Solo"/> is a host playing alone against its own player: it runs the Server
+    /// and Subject lanes side by side, so phases interact exactly as they do across the network.
     /// </summary>
     public enum ScenarioRole
     {
@@ -42,7 +43,6 @@ namespace TinCan.DevTools.Scenarios
 
         public IReadOnlyList<ScenarioStep> StepsFor(ScenarioRole role) => role switch
         {
-            ScenarioRole.Solo => Arrange.Concat(Act).Concat(Assert).ToArray(),
             ScenarioRole.Server => Arrange.Concat(Assert).ToArray(),
             ScenarioRole.Subject => Act,
             _ => Array.Empty<ScenarioStep>()

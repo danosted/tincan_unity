@@ -30,3 +30,4 @@ MonoBehaviour:
   NetReach: 1.8
   NetHeight: 1
   CatchRadius: 2.5
+  NetItem: {fileID: 11400000, guid: 89a9305e9f8494f4b9b7cc503a190564, type: 2}

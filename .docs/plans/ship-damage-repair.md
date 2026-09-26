@@ -194,6 +194,19 @@ the Items installer breaks Fuel and FlyingCan after the migration, so Items beco
     changes.
   - Note: work happens on `main`. The developer moves verified commits to a PR branch.
 
+- 2026-09-26: Step 2 done.
+  - Items and equipment: `EquipmentNetworkMediator` replaces `PlayerCarryNetworkMediator`. It was renamed with
+    `git mv`, so the prefab's script GUID is unchanged.
+  - `EquipmentAbilityBinder` grants and revokes on the server and the owner.
+  - `ItemsFeatureInstaller` (Order -15) is listed in `Profile_Base`.
+  - The net and the jerry can are items (`ITEM_CatchingNet` grants `GA_SwingNet`, which left the player's starting
+    abilities). The handlers keep their names, so the `IA_*` assets still resolve them.
+  - GAS: public `RemoveEffect(actor, handle)` and `HasAbility`.
+  - Harness: a solo run now plays the server and subject lanes in parallel.
+  - Scenario `EquipCycle` passes solo and host + client. `NetCatch` and `TagRequest` still pass. Tests at 298/298.
+  - Also fixed: the tag database now refreshes inside the import callback. `delayCall` never ran in a background
+    Editor.
+
 ## Build order (vertical slices)
 0. **Feedback loop skeleton**: `Scenario` + expectations + report writer + self-terminating run + capture, first
    proven on an existing feature (a `NetCatch` scenario) so the harness is trusted before new code relies on it.

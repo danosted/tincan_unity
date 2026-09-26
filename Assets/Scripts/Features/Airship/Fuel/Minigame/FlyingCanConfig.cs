@@ -49,6 +49,9 @@ namespace TinCan.Features.Airship.Fuel.Minigame
         [Tooltip("A can within this distance of the net head is caught. Generous: the client sees interpolated cans.")]
         [Min(0.1f)] public float CatchRadius = 2.5f;
 
+        [Tooltip("The item a player holds while carrying the catching net; it grants the swing ability.")]
+        public TinCan.Features.Items.ItemDefinition? NetItem;
+
         public FlyingCanSpawnParameters SpawnParameters => new(LateralMin, LateralMax, HeightMin, HeightMax, DepthSpread);
     }
 }

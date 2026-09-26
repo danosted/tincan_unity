@@ -183,6 +183,17 @@ the Items installer breaks Fuel and FlyingCan after the migration, so Items beco
   Lag100 (~45 s including launch). Hardened against the Editor/MPPM failures hit along the way: the dirty-scene
   modal, a wedged pipeline, a clone with an empty scene, and MPPM tag-file contention.
 
+- 2026-09-26: Step 1 done.
+  - `IGameplayTagRegistry` + `GameplayTagDatabase`, which lists every tag asset automatically. Registered by
+    `GameplayTagsFeatureInstaller` (Order -20), which is listed in `Profile_Base`.
+  - `AbilityNetworkMediator` resolves client tag requests through the registry, falling back to the old scan when
+    the installer is off.
+  - `ItemDefinition` + `ItemCatalog`, pure and tested.
+  - Scenario `TagRequest` passes solo and host + client. Tests at 291/291.
+  - Also fixed: the scene no longer turns dirty after a recompile, because the director dirties only on real value
+    changes.
+  - Note: work happens on `main`. The developer moves verified commits to a PR branch.
+
 ## Build order (vertical slices)
 0. **Feedback loop skeleton**: `Scenario` + expectations + report writer + self-terminating run + capture, first
    proven on an existing feature (a `NetCatch` scenario) so the harness is trusted before new code relies on it.

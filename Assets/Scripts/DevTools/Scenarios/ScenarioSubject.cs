@@ -7,6 +7,7 @@ using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Networking;
 using TinCan.Features.HumanoidMovement;
 using UnityEngine;
+using VContainer;
 
 namespace TinCan.DevTools.Scenarios
 {
@@ -41,15 +42,17 @@ namespace TinCan.DevTools.Scenarios
     }
 
     /// <summary>
-    /// Finds gameplay tag assets by name for scenario arguments. Dev-only: it scans loaded assets, the same
-    /// approach the ability mediator uses for tag RPCs today, until a tag registry replaces both.
+    /// Finds gameplay tag assets by name for scenario arguments: through <see cref="IGameplayTagRegistry"/> when the
+    /// gameplay tags installer is active, otherwise by scanning loaded assets.
     /// </summary>
     public static class ScenarioTags
     {
         private static readonly Dictionary<string, GameplayTag> Cache = new(StringComparer.Ordinal);
 
-        public static GameplayTag? Find(string name)
+        public static GameplayTag? Find(string name, IGameplayTagRegistry? registry)
         {
+            if (registry != null) return registry.TryGet(name, out var registered) ? registered : null;
+
             if (Cache.TryGetValue(name, out var cached) && cached != null) return cached;
 
             var tag = Resources.FindObjectsOfTypeAll<GameplayTag>().FirstOrDefault(candidate => candidate.name == name);
@@ -62,8 +65,13 @@ namespace TinCan.DevTools.Scenarios
     public sealed class CommonScenarioLibrary : IScenarioLibrary
     {
         private readonly ScenarioSubject _subject;
+        private readonly IGameplayTagRegistry? _tags;
 
-        public CommonScenarioLibrary(ScenarioSubject subject) => _subject = subject;
+        public CommonScenarioLibrary(ScenarioSubject subject, IObjectResolver resolver)
+        {
+            _subject = subject;
+            _tags = resolver.TryResolve<IGameplayTagRegistry>(out var registry) ? registry : null;
+        }
 
         public IEnumerable<ScenarioCommand> Commands => Array.Empty<ScenarioCommand>();
 
@@ -73,12 +81,15 @@ namespace TinCan.DevTools.Scenarios
                 ? ScenarioCheck.Pass()
                 : ScenarioCheck.Fail("no subject player yet")),
             new ScenarioProbe("SubjectHasTag", tag => CheckTag(tag, expected: true)),
-            new ScenarioProbe("SubjectLacksTag", tag => CheckTag(tag, expected: false))
+            new ScenarioProbe("SubjectLacksTag", tag => CheckTag(tag, expected: false)),
+            new ScenarioProbe("TagRegistryActive", _ => _tags != null
+                ? ScenarioCheck.Pass($"{_tags.All.Count} tags registered")
+                : ScenarioCheck.Fail("no IGameplayTagRegistry registered (GameplayTagsFeatureInstaller missing or unassigned)"))
         };
 
         private ScenarioCheck CheckTag(string tagName, bool expected)
         {
-            var tag = ScenarioTags.Find(tagName);
+            var tag = ScenarioTags.Find(tagName, _tags);
             if (tag == null) return ScenarioCheck.Fail($"no GameplayTag asset named '{tagName}' is loaded");
 
             var subject = _subject.Resolve();

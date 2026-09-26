@@ -36,10 +36,29 @@ namespace TinCan.DevTools
             .Wait(4f, "coast")
             .Build();
 
-        /// <summary>Stands still; useful to measure idle drift and snaps.</summary>
-        public static readonly BotRoute Idle = new BotRoute.Builder("Idle").Wait(30f, "idle").Build();
+        /// <summary>
+        /// Host pilot that tilts the deck: pitches down, back, up and back (pitch is on Jump/Sprint at the helm),
+        /// then banks through turns both ways (~40 s). Pair with a client on <see cref="Idle"/> to measure deck
+        /// sliding.
+        /// </summary>
+        public static readonly BotRoute PilotTilt = new BotRoute.Builder("PilotTilt")
+            .Wait(6f, "wait for client")
+            .Ship(BotShipCommand.Take, 0.5f)
+            .Hold(3f, ActionNames.MoveForward)
+            .Hold(1f, ActionNames.Jump).Wait(3f, "pitched")
+            .Hold(1f, ActionNames.Sprint).Wait(2f, "level")
+            .Hold(1f, ActionNames.Sprint).Wait(3f, "pitched")
+            .Hold(1f, ActionNames.Jump).Wait(2f, "level")
+            .Hold(6f, ActionNames.MoveForward, ActionNames.MoveRight)
+            .Hold(6f, ActionNames.MoveForward, ActionNames.MoveLeft)
+            .Ship(BotShipCommand.Release, 0.5f)
+            .Wait(3f, "coast")
+            .Build();
 
-        private static readonly BotRoute[] All = { DeckWalk, Pilot, Idle };
+        /// <summary>Stands still; measures idle drift (deck sliding) and snaps.</summary>
+        public static readonly BotRoute Idle = new BotRoute.Builder("Idle").Wait(45f, "idle").Build();
+
+        private static readonly BotRoute[] All = { DeckWalk, Pilot, PilotTilt, Idle };
 
         public static bool TryGet(string? name, out BotRoute route)
         {

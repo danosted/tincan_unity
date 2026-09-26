@@ -46,6 +46,11 @@ namespace TinCan.DevTools.Editor
             HostTags.Where(tag => !tag.StartsWith("netsim")).ToArray(),
             ClientTags.Where(tag => !tag.StartsWith("netsim")).ToArray());
 
+        [MenuItem(Root + "Run Tilt Test (Lag100)")]
+        public static void RunTiltTest() => Run(
+            new[] { "autohost", "netsim:Lag100", "bot:PilotTilt" },
+            new[] { "autojoin", "netsim:Lag100", "bot:Idle" });
+
         [MenuItem(Root + "Clear Tags")]
         public static void ClearMenu() => Clear("cleared by hand");
 
@@ -73,8 +78,9 @@ namespace TinCan.DevTools.Editor
 
         private static void Clear(string reason)
         {
-            var allTags = HostTags.Concat(ClientTags).Distinct().ToArray();
             if (!TryGetMppm(out var projectTags, out var playerOne, out var playerTwo)) return;
+            var existing = projectTags!.GetType().GetProperty("Tags", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(projectTags) as string[];
+            var allTags = (existing ?? HostTags.Concat(ClientTags).ToArray()).Where(IsHarnessTag).Distinct().ToArray();
 
             SetPlayerTags(playerOne!, Array.Empty<string>());
             SetPlayerTags(playerTwo!, Array.Empty<string>());
@@ -84,6 +90,10 @@ namespace TinCan.DevTools.Editor
             SessionState.EraseBool(SessionKey);
             Debug.Log($"[NetHarness] Player tags cleared ({reason}).");
         }
+
+        /// <summary>Tags this menu owns; anything else a developer created by hand is left alone.</summary>
+        private static bool IsHarnessTag(string tag) =>
+            tag is "autohost" or "autojoin" or "telemetry" || tag.StartsWith("netsim:") || tag.StartsWith("bot:");
 
         private static bool Apply(string[] hostTags, string[] clientTags)
         {

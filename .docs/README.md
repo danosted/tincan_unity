@@ -46,6 +46,7 @@ Pick the path that matches what you want to do right now.
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | You want the why: DI, input-driven simulation, possession, registries, and what happens from Play to the tick loop. |
 | [`FEATURE_INSTALLERS.md`](FEATURE_INSTALLERS.md) | Reference for `FeatureInstaller`, ship fixtures, networked prefabs, and the UnityYAMLMerge setup. |
 | [`UI_FRAMEWORK.md`](UI_FRAMEWORK.md) | Reference for menus (`MenuDefinition`), `IMenuSystem`, `IMenuCommand`, `IHudValues`, Cancel-key ownership. |
+| [`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md) | You need to feel or measure what a remote client feels: simulated latency, an input bot, and movement telemetry. |
 | [`Network_Initialization_Flow.md`](Network_Initialization_Flow.md) | Deep dive: how VContainer and NGO initialise across host, server and client. |
 | [`CODE_STANDARDS.md`](CODE_STANDARDS.md) | C# rules everyone follows (naming, guard clauses, nullable, no regions). |
 | [`AI_CONFIGURATION.md`](AI_CONFIGURATION.md) | How AI assistants are expected to behave here. Read it so you know what to expect from them. |

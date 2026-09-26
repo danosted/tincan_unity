@@ -1,5 +1,7 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
+using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
 using VContainer.Unity;
@@ -29,8 +31,9 @@ namespace TinCan.Features.UI
 
     /// <summary>
     /// Starts a session from command-line arguments so builds can be used as unattended test clients:
-    /// <c>-autohost</c> or <c>-autojoin [address[:port]]</c>. Runs after the menu bootstrap; the menu closes itself
-    /// once the session is up.
+    /// <c>-autohost</c> or <c>-autojoin [address[:port]]</c>. In the Editor the same flags can come from Multiplayer
+    /// Play Mode player tags (see <see cref="LaunchArguments"/>). Runs after the menu bootstrap; the menu closes
+    /// itself once the session is up.
     /// </summary>
     public class CommandLineSessionBootstrap : IStartable
     {
@@ -48,7 +51,7 @@ namespace TinCan.Features.UI
 
         public void Start()
         {
-            if (!TryParse(System.Environment.GetCommandLineArgs(), out var request) || _networkService.IsActive) return;
+            if (!TryParse(LaunchArguments.Current, out var request) || _networkService.IsActive) return;
 
             switch (request.Kind)
             {
@@ -64,12 +67,12 @@ namespace TinCan.Features.UI
             }
         }
 
-        public static bool TryParse(string[] args, out SessionRequest request)
+        public static bool TryParse(IReadOnlyList<string>? args, out SessionRequest request)
         {
             request = new SessionRequest(SessionRequestKind.None, string.Empty, 0);
             if (args == null) return false;
 
-            for (int i = 0; i < args.Length; i++)
+            for (int i = 0; i < args.Count; i++)
             {
                 if (string.Equals(args[i], HostFlag, StringComparison.OrdinalIgnoreCase))
                 {
@@ -79,7 +82,7 @@ namespace TinCan.Features.UI
 
                 if (!string.Equals(args[i], JoinFlag, StringComparison.OrdinalIgnoreCase)) continue;
 
-                string endpoint = i + 1 < args.Length && !args[i + 1].StartsWith("-") ? args[i + 1] : string.Empty;
+                string endpoint = i + 1 < args.Count && !args[i + 1].StartsWith("-") ? args[i + 1] : string.Empty;
                 request = new SessionRequest(SessionRequestKind.Join, ParseAddress(endpoint), ParsePort(endpoint));
                 return true;
             }

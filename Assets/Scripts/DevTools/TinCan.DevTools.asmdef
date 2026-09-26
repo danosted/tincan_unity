@@ -1,0 +1,22 @@
+{
+    "name": "TinCan.DevTools",
+    "rootNamespace": "TinCan.DevTools",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Features",
+        "Unity.Netcode.Runtime",
+        "Unity.Networking.Transport",
+        "Unity.Collections",
+        "Unity.InputSystem",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

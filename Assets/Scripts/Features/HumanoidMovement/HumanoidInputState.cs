@@ -13,6 +13,7 @@ namespace TinCan.Features.HumanoidMovement
         public Vector3 MovementDirection;
         public bool IsJumping;
         public bool IsSprinting;
+        /// <summary>Look yaw relative to the yaw of the platform underfoot (world yaw when there is none).</summary>
         public Quaternion LookRotation;
 
         /// <summary>

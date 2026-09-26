@@ -35,6 +35,12 @@ namespace TinCan.Features.HumanoidMovement
         void Move(Vector3 motion);
 
         /// <summary>
+        /// Moves with the platform underneath between simulation ticks, without collision and without changing the
+        /// grounded state the last simulated move produced.
+        /// </summary>
+        void Carry(Vector3 displacement);
+
+        /// <summary>
         /// Sets the physical rotation of the character body.
         /// </summary>
         void SetRotation(Quaternion rotation);

@@ -157,6 +157,22 @@ namespace TinCan.Tests.EditMode
             Assert.That(_events.Events.Exists(evt => evt is CloudCharacterResetEvent), Is.True);
         }
 
+        [Test]
+        public void FallenCharacter_WithResetDisabled_IsLeftInPlace()
+        {
+            AddAirship(new Vector3(10f, 20f, 0f));
+            var movement = new FakeHumanoidMovementView("FallenCharacter");
+            movement.Transform.position = new Vector3(0f, -11f, 0f);
+            _movementViews.Add(movement);
+            _registry.Register(new FakeHumanoidCharacterView(movement));
+            _useCase.CharacterResetEnabled = false;
+
+            _useCase.Tick();
+
+            Assert.That(_respawnService.CallCount, Is.Zero);
+            Assert.That(movement.Transform.position, Is.EqualTo(new Vector3(0f, -11f, 0f)));
+        }
+
         private FakeAirshipView AddAirship(Vector3 position)
         {
             var airship = new FakeAirshipView("Airship", position);

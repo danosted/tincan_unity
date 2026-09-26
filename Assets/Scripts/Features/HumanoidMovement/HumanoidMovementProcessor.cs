@@ -19,7 +19,9 @@ namespace TinCan.Features.HumanoidMovement
         {
             if (isGrounded || isPlatformSupported)
             {
-                if (isJumping) return jumpForce;
+                // Only launch from rest or while settling: just after take-off the probe can still touch the deck,
+                // and a held jump must not reset the rise.
+                if (isJumping && currentVertical <= 0f) return jumpForce;
                 if (currentVertical < 0) return -2f; // Ground stickiness
             }
 

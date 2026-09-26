@@ -57,12 +57,25 @@ namespace TinCan.Features.HumanoidMovement
             _controller = GetComponent<CharacterController>();
         }
 
+        /// <summary>How far above the capsule's bottom the ground probe starts.</summary>
+        public const float GroundProbeLift = 0.1f;
+
+        /// <summary>How far below a resting contact the probe still counts ground.</summary>
+        public const float GroundProbeMargin = 0.15f;
+
+        /// <summary>
+        /// Probe length from <see cref="GroundProbeLift"/> above the pivot, for a capsule centred on the pivot. The
+        /// controller rests one skin width above the ground, so the probe must reach half height + skin + lift, plus a
+        /// margin. Without the margin it ends exactly at the resting contact and misses on rounding. Keep it short:
+        /// a probe spanning the full height treats nearby decks as ground while jumping.
+        /// </summary>
+        public static float GroundProbeLength(float height, float skinWidth) =>
+            height * 0.5f + skinWidth + GroundProbeLift + GroundProbeMargin;
+
         public void RefreshSensing()
         {
-            // Probe only around the feet. A probe spanning the full controller height
-            // treats nearby decks as ground while the player is jumping.
-            float groundProbeDistance = _controller.height * 0.5f + _controller.skinWidth + 0.1f;
-            if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, out var hit, groundProbeDistance, _interactableMask, QueryTriggerInteraction.Ignore))
+            float groundProbeDistance = GroundProbeLength(_controller.height, _controller.skinWidth);
+            if (Physics.Raycast(transform.position + Vector3.up * GroundProbeLift, Vector3.down, out var hit, groundProbeDistance, _interactableMask, QueryTriggerInteraction.Ignore))
             {
                 _lastGroundHit = hit;
                 Debug.DrawLine(transform.position, hit.point, Color.green);
@@ -87,6 +100,14 @@ namespace TinCan.Features.HumanoidMovement
         public void Move(Vector3 motion)
         {
             _controller.Move(motion);
+        }
+
+        public void Carry(Vector3 displacement)
+        {
+            // A plain transform move: CharacterController.Move would recompute isGrounded from a motion with no
+            // downward component and report the player airborne on the next tick. The scheduler syncs transforms
+            // into physics before the humanoid tick.
+            transform.position += displacement;
         }
 
         public void SetRotation(Quaternion rotation)

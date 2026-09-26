@@ -23,6 +23,23 @@ All multiplayer synchronization runs through Unity's official Netcode for GameOb
 ### 3. Simulation & Synchronization Paradigms
 To maintain a responsive FPS experience, we follow an **Input-Driven Simulation** paradigm:
 - **Input-Driven Simulation (Input Sync):** Primary for movement and time-critical actions. Clients capture intent as an `InputState`. Both Client (Prediction) and Server (Authority) execute the same Use Case logic using this input stream.
+  For humanoids the stream is exact, not "latest value". The owner stamps each tick's input with a sequence and sends
+  it, with the previous three, in an unreliable RPC (`HumanoidPlayer.SubmitInputsServerRpc`). The server queues
+  inputs in `Features/HumanoidMovement/HumanoidInputBuffer.cs` and consumes exactly one per simulation tick
+  (`HumanoidMovementUseCase.Tick` → `IBufferedInputSource.AdvanceInput`). A starved tick repeats the last input
+  without its jump. An overfull queue skips its oldest inputs but keeps their one-shot bits. Plan:
+  `.docs/plans/humanoid-prediction-reconciliation.md`.
+- **Humanoid prediction and reconciliation:**
+  - The owning client simulates its own player immediately and records each input with its predicted state
+    (`HumanoidPredictionHistory`). Transform sync does not overwrite it (`NetworkTransformMediator.OwnerPredicted`).
+  - After simulating each remote player's input the server sends that player's state back, unreliable, to the owner
+    only (`HumanoidPlayer.ReceiveAuthoritativeStateClientRpc`).
+  - The owner compares it with its prediction for the same input (`HumanoidReconciliationProcessor`). Within 2 cm
+    it keeps its prediction. Otherwise `HumanoidMovementUseCase.RewindAndReplay` restores the server state and
+    re-runs the unacknowledged inputs. On a teleport (`TeleportEpoch`, bumped by `ResetCharacter`) it snaps.
+  - **Ship-local rule:** player state is always compared in the local space of the platform underfoot, and
+    movement is simulated in that platform's yaw frame (input look and momentum). Each peer sees the ship at a
+    different pose, so world-space comparison or world-space momentum desyncs on a moving or turning ship.
 - **Decoupled Prediction Loop:** UseCases that own a simulation loop (e.g., `HumanoidMovementUseCase`) are strictly responsible for passing their predicted `InputState` to auxiliary systems (like `AbilitySystemUseCase.ProcessAbilitySimulation`). Global systems must check `actor is ISimulatedActor` and skip global ticking for actors that handle their own prediction, guaranteeing that simulation physics and abilities share the exact same temporal tick.
   The current airship is a legacy exception: `Assets/Scripts/Features/Airship/AirshipMovementUseCase.cs` does not tick GAS. Its separate `Assets/Scripts/Network/Infrastructure/Abilities/AbilityNetworkMediator.cs` is not an `ISimulatedActor`, so `AbilitySystemUseCase.Tick` still updates that controller globally. Moving ship abilities into prediction requires changing both paths together to preserve one ticking owner.
 - **State-Driven Synchronization (State Sync):** The server is the source of truth for high-level state changes (Tags, Attributes, Inventory). Mediators sync these back to clients via `NetworkVariable` or `ClientRpc` for visual confirmation.

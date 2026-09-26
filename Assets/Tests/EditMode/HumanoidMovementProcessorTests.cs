@@ -60,6 +60,34 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void GroundProbeLength_ReachesPastRestingContact()
+        {
+            // Capsule centred on the pivot rests skinWidth above the deck: contact is height/2 + skin below the pivot,
+            // and the probe starts GroundProbeLift above the pivot.
+            const float height = 2f, skin = 0.08f;
+            float reachBelowPivot = HumanoidControllerView.GroundProbeLength(height, skin) - HumanoidControllerView.GroundProbeLift;
+
+            Assert.That(reachBelowPivot, Is.GreaterThan(height * 0.5f + skin + 0.1f));
+            Assert.That(reachBelowPivot, Is.LessThan(height * 0.5f + skin + 0.5f)); // short enough not to see decks mid-jump
+        }
+
+        [Test]
+        public void CalculateVerticalVelocity_HeldJumpWhileRising_DoesNotRelaunch()
+        {
+            // Just after take-off the ground probe still touches the deck; a held jump must not reset the rise.
+            float result = _processor.CalculateVerticalVelocity(
+                currentVertical: 7f,
+                gravity: 10f,
+                isGrounded: false,
+                isPlatformSupported: true,
+                isJumping: true,
+                jumpForce: 8f,
+                deltaTime: 0.1f);
+
+            Assert.That(result, Is.EqualTo(6f).Within(1e-5f));
+        }
+
+        [Test]
         public void CalculateVerticalVelocity_JumpAppliesJumpForceWhenGrounded()
         {
             float result = _processor.CalculateVerticalVelocity(

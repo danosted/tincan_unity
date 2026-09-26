@@ -182,9 +182,10 @@ right values.
 **Automation:** resolve `IScriptedInput` and `Tap("Interact")`, `Press("MoveForward")`; injected Input System
 events are dropped while the Editor is unfocused, this seam is not.
 
-**Under real latency, hands-free:** give the Multiplayer Play Mode players tags (`autohost` / `autojoin`,
-`netsim:Lag100`, `bot:Pilot` / `bot:DeckWalk`). Press Play and both peers connect, the bots play fixed routes, and
-each peer writes a report to `Logs/net-telemetry/`. See [`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md).
+**Under real latency, hands-free:** **TinCan > Dev > Net Harness > Run Host + Client (Lag100)**. Both peers
+connect under ~100 ms simulated round trip, the bots play fixed routes, and each peer writes a report to
+`Logs/net-telemetry/`. The run's Multiplayer Play Mode tags are removed when Play ends. See
+[`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md).
 
 **Editor-side checks from the shell:**
 ```bash

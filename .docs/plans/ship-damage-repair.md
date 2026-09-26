@@ -1,0 +1,223 @@
+Status: Approved (2026-09-26)
+
+# Ship damage & repair, and the item/equipment layer under it
+
+## Context
+
+You want parts of the airship to break at runtime (a crude sphere marks the spot), and players to fix them with a repair tool
+they pick up. That is the first use of a broader idea: items you equip carry abilities (such as `Ability.Repair.Ship`)
+through GAS. The feature must be toggleable through a `FeatureInstaller`.
+
+## What exists today (and what it tells us)
+
+| Piece | Where | Relevance |
+|---|---|---|
+| Carrying one item | `Features/Carry/CarriedItem.cs` (`enum CarriedItem { None, JerryCan, Net }`, `ICarrier`), `PlayerCarryNetworkMediator` | This is already a one-slot equipment system, but hardcoded: the enum, the visual names and the net tag are all baked in. |
+| Tool, then tag, then ability | `PlayerCarryNetworkMediator.UpdateNetTag` adds `State.Carrying.Net`; `GA_SwingNet` requires it; `Input_Primary` bit triggers it (predicted); `NetCatchUseCase` (server, `AfterHumanoid`) watches `State.Net.Swinging` and does the world effect | This is the pattern to generalise: **the ability is intent plus a tag window, and a feature use case performs the world effect.** |
+| Repairables | `Core/Domain/IRepairable.cs`, `ShipModuleNetworkMediator` (per-module `AbilityNetworkMediator` + `HealthAttributeSet` + broken threshold), `ShipRepairPointNetworkMediator` | A damage point can reuse `IRepairable` + `HealthAttributeSet` as-is. |
+| Repair GAS assets | `GA_RepairModule` → `GE_RepairModule` on target, `GA_DamageModule`, `Interaction.Ability.Repair`, `IA_RepairModule`, `ActivateAbilityInteractionHandler` | Usable legacy from build mode. `MaintenanceUseCase` looks dead. |
+| Fixtures on the ship | `ShipFixtureDefinition` + `ShipFixtureSpawningUseCase`, `FuelFeatureInstaller` as the template | Damage sockets and the tool rack become fixtures. |
+| Timed ship events | `Features/Events/EventOrchestratorUseCase` (single event, tag check at end) | Too narrow to host breakage; leave it alone. |
+
+### GAS gaps this feature hits
+
+1. **Ability grants are not replicated.** `AbilitySystemUseCase._actorAbilities` is local to each peer, and starting
+   abilities are granted on every peer in `HumanoidPlayer.OnNetworkSpawn`. Equipment that grants abilities must
+   therefore grant them on the server **and** on the owner (for prediction), driven by replicated equipment state.
+2. **No grant provenance.** Nothing records who granted an ability. When you unequip, the item must revoke only
+   what it granted, so we need a grant handle (source → specs + effect).
+3. **Tags and items have no network identity.** Tags travel as names, and the server resolves them with
+   `Resources.FindObjectsOfTypeAll` (`AbilityNetworkMediator.RequestTagChangeServerRpc`). Items need a stable id to go
+   into a `NetworkVariable`, and the same registry should fix tags.
+4. **`CostEffect`, `AbilityTag`, `Cancel/BlockAbilitiesWithTag` are declared but unused.** That is fine for the
+   sketch; we note it so we don't rely on them.
+5. **Input-triggered abilities have no target** (`ProcessAbilitySimulation` activates with `target = null`). Tool
+   abilities resolve their target in a feature use case, as net catch already does.
+
+## Subsystems (layered, each its own installer)
+
+```
+Core.Domain  : IItemDefinition, ItemId, IEquipment, GameplayTagRegistry contract
+Items        : ItemDefinition SO, ItemCatalog (id <-> def), EquipmentNetworkMediator, EquipmentAbilityBinder, TakeItemInteractionHandler
+ShipDamage   : damage points, break scheduler, repair use case, HUD. Depends on Items + Abilities
+```
+
+### A. Item definitions + catalog (`Features/Items/`)
+- `ItemDefinition : ScriptableObject` has: `Id` (serialized int, validated unique), display name, `VisualName` (the
+  child to show under the player's `Visual`), `GrantedAbilities` (list of `AbilityDefinition`), `EquippedEffect` (an
+  Infinite `GameplayEffectDefinition` that grants tags such as `Item.Tool.Repair`).
+- `ItemCatalog` loads every definition (from the installer's list), resolves `Id → definition`, and is injected.
+- Assets go in `Assets/Items/ITEM_*.asset`.
+
+### B. Equipment (evolves Carry)
+- Replace `enum CarriedItem` with `ItemId`. `ICarrier` becomes `IEquipment { ItemDefinition? Held; TryEquip; TryUnequip }`.
+- `EquipmentNetworkMediator` (on `NetworkPlayer.prefab`, replacing `PlayerCarryNetworkMediator`) has a
+  `NetworkVariable<int>`, written by the server. On change, every peer toggles the visual found by name, as it
+  does today.
+- `EquipmentAbilityBinder` (pure C#, tested) runs on a change on the server and on the owner. It revokes the old
+  item's grant handle, applies the new item's `EquippedEffect`, and grants its abilities. Proxies skip it.
+- Migrate the jerry can and the net onto items (`ITEM_JerryCan`, `ITEM_CatchingNet` granting `GA_SwingNet`). This
+  deletes the hardcoded net-tag code and proves the layer with a feature that already works.
+- Multi-slot inventory stays out of scope. The `NetworkVariable<int>` becomes a `NetworkList<int>` plus an active
+  index later, without changing the binder.
+
+### C. Ship damage feature (`Features/Airship/Damage/`, `ShipDamageFeatureInstaller`)
+- **Damage sockets fixture**: one `ShipFixtureDefinition` prefab holding N `ShipDamagePointNetworkMediator`
+  children at hand-placed ship-local poses. Each one is `IRepairable` + `IActor`, with its own `AbilityNetworkMediator` and
+  `HealthAttributeSet` (the same approach as `ShipModuleNetworkMediator`). The sphere shows while `IsBroken`. Pre-placed
+  sockets avoid spawn churn and make late join trivial.
+- **`ShipBreakageUseCase`** (server, `ISimulationTickable AfterAirship`): a timer from `ShipDamageConfig` (interval
+  range, max broken at once). It picks a healthy socket (`ShipBreakageProcessor`, seeded RNG, tested) and applies
+  `GE_ShipDamage` (instant health → 0, grants `State.Damaged`). It publishes `ShipPartBrokenEvent`. Other
+  sources (gas pocket, collisions) can call the same entry point later.
+- **Consequence: fuel leak, coupled only through GAS.**
+  - Fuel owns a new attribute, `Attr_FuelLeakRate` (units per second, base 0), initialised on the ship next to `Attr_Fuel`.
+  - `FuelConsumptionUseCase` subtracts `leakRate * dt` every tick, even when the ship is not driven. The maths goes in
+    `FuelConsumptionProcessor.ComputeLeak`, with tests.
+  - Each break applies an Infinite `GE_HullBreach` (Add +X `Attr_FuelLeakRate`) to the **ship's** controller.
+    `ShipBreakageUseCase` keeps the returned `ActiveGameplayEffect` handle per damage point and removes it on repair.
+  - Two breaks give twice the leak, because modifiers stack.
+  - ShipDamage references only the effect asset, never Fuel code. With Fuel disabled, the attribute is absent and
+    nothing drains. Guard this so it doesn't spam the "missing attribute" warning.
+  - GAS gap 6: `AbilitySystemUseCase.RemoveEffect` is private. Add a public `RemoveEffect(actor, handle)`.
+- **Repair tool rack fixture**: uses `IA_TakeRepairTool` → generic `TakeItemInteractionHandler` (from Items), with
+  the item named on the target. It has toggle semantics like `TakeJerryCanInteractionHandler`.
+- **Repairing (ability-driven, same as the net)**:
+  - `GA_RepairShip` (tag `Ability.Repair.Ship`) is granted by `ITEM_RepairTool`, triggered by `Input_Primary`, and
+    uses `OnInputHeld`. It requires `Item.Tool.Repair`, and while active it grants `State.Repairing`.
+  - `ShipRepairUseCase` (server, `AfterHumanoid`) finds the nearest broken point in a reach/facing cone for each
+    player with `State.Repairing` (`RepairTargetProcessor`, tested). It then applies `GE_RepairTick` (+X health per
+    tick, clamped to max). When a point is back above the threshold, it removes `State.Damaged` and publishes
+    `ShipPartRepairedEvent`.
+  - `Input_Primary` is shared with `GA_SwingNet`. There is no clash, because only the held item's abilities are
+    granted, which makes "Primary = use the held tool" the general rule.
+- **HUD**: `ShipDamageHudPresenter` shows "Broken parts: n" through `IHudValues`.
+
+### D. Gameplay cues (sound, VFX, animation, UI feedback)
+
+Today `IEventPublisher` is a server-local domain bus: its only observer is the debug log, and it never crosses the
+network. Presentation polls replicated state (`NetSwingVisualView`, `FuelMotorStatusView`). Keep that split and
+name it:
+
+- **Domain events** (`IEventPublisher`) cover logic, telemetry and tests. They never drive visuals directly.
+- **State cues** are looping and derive from replicated tags or attributes. A generic `TagCueView` (a list of
+  `tag → GameObject/AudioSource/Animator bool`) toggles on `HasTag`. This covers the broken sphere and sparks
+  (`State.Damaged` on the point), the leak hiss (`State.Damaged` count > 0 on the ship), and the repair loop sound
+  and tool animation (`State.Repairing`). It works on every peer and handles late join for free, because tags
+  already replicate. It is also predicted for the owner, because effect tags are predicted.
+- **Burst cues** are one-shot: the break bang, the repair-complete ding, a HUD toast.
+  - `GameplayCueDefinition` (SO, has a catalog id like items and tags) → an optional VFX prefab, audio clip and HUD text.
+  - `GameplayEffectDefinition` gets an optional `ExecuteCue`. `AbilitySystemUseCase.ApplyEffect` fires it
+    through an `IGameplayCueDispatcher`, so any effect can make noise with no feature code.
+  - On the server, `GameplayCueNetworkMediator` (a singleton) sends `ClientRpc(cueId, targetNetworkObjectId,
+    localPos)`, unreliable, and it is not sent to the owner when the owner predicted the same cue.
+  - On each peer, `GameplayCueUseCase` resolves the definition and plays it at the target (in ship-local space,
+    per the ship-local rule).
+  - Late joiners miss bursts by design. Anything that must persist is a state cue.
+
+The slice ships `TagCueView` + the burst pipeline with two cues (`Cue.Ship.Break`, `Cue.Ship.Repaired`). Crude
+assets are fine: the sphere, a Unity primitive particle, and a placeholder clip.
+
+### E. Feedback loop for agentic iteration (built first, grown per slice)
+
+The goal: an agent changes code, then with one shell command gets a machine-readable verdict and evidence
+within about 30 to 90 s, with no human in the Editor. It extends the existing harness (`Assets/Scripts/DevTools/`,
+`.docs/NETWORK_TEST_HARNESS.md`) rather than building a parallel one.
+
+**Tiers.** Climb a tier only when the one below is green.
+
+| Tier | Command | Time | Catches |
+|---|---|---|---|
+| T0 compile | `unity cmd recompile` + check `Library/ScriptAssemblies` / `error CS` | ~10 s | build breaks |
+| T1 logic | `unity cmd run_tests` filtered to `ShipDamage*`, `Repair*`, `Equipment*`, `GameplayCue*` | ~15 s | processors, use cases, binder, cue dispatch |
+| T2 host-only scenario | `unity cmd menu --path "TinCan/Dev/Scenarios/ShipDamage (Host)"` | ~20 s | wiring, installer, GAS assets, server flow |
+| T3 host + client | `.../ShipDamage (Host + Client, Lag100)` | ~60 s | replication, prediction, late join, cues on the remote peer |
+
+**What to build (in `TinCan.DevTools`, inert without flags):**
+1. **Scenarios instead of routes.** `Scenario` = steps + expectations. `BotStep` gains semantic commands next to
+   `BotShipCommand`:
+   - `ForceBreak(socketIndex)` runs on the server through a new `IShipBreakage.ForceBreak`.
+   - `Equip(itemId)` runs on the server through `IEquipment`, so the scenario skips walking to the rack.
+   - `FaceTarget(socketIndex)` is a dev-only server teleport-and-aim to a reach pose.
+   - `WaitUntil(condition, timeout)` makes the loop closed and not time-guessed.
+
+   The existing open-loop `Hold(Primary)` performs the repair itself, so the real input and prediction path is
+   still exercised.
+2. **Scenario `RepairLoop`.** Host `ForceBreak(0)` → client `Equip(RepairTool)` → `FaceTarget(0)` → `Hold(Primary)`
+   until repaired or 10 s → `WaitUntil(sphere hidden on client)`. A variant, `RepairLoopLateJoin`, starts the client after the break.
+3. **Feature telemetry with verdicts.** `ShipDamageTelemetryUseCase` records a timeline on each peer: break,
+   `State.Damaged` seen on the client, sphere visible, leak rate, repair start and end, cue fires, sphere hidden.
+   It writes `Logs/feature-telemetry/ship-damage/latest-{host,client1}.json` containing:
+   - the `timeline`;
+   - `metrics`: replication latency of break and repair, fuel lost while broken, repair duration, cue counts;
+   - `expectations` + `passed: true|false` + `failures[]`. Expectations include: the sphere shows on both peers
+     within 500 ms; the leak is 0 after repair; exactly one break cue and one repaired cue per peer; the net and
+     jerry can are unaffected.
+
+   It also prints a single `[ShipDamage] {json}` Console line at the end, so `unity cmd` log reads can grep it.
+4. **Visual evidence.** At named checkpoints (broken, mid-repair, repaired), `ScenarioCaptureView` writes a
+   `ScreenCapture` PNG from a fixed debug camera aimed at the socket, into the same folder. The agent can open
+   the PNGs to judge cues and the sphere.
+5. **Self-terminating runs.** The scenario ends Play itself when done or on timeout, so an agent run is just
+   `menu` → poll for `latest-*.json` → read. The existing tag cleanup on Play end still applies.
+6. **Fast knobs** for manual and agent tweaks, as launch flags / MPPM tags: `damage:seed=<n>`,
+   `damage:interval=<s>`, `damage:off`. Scenarios force breaks, so the random scheduler stays out of the
+   verdict unless it is under test.
+
+**Each slice ships with its loop.** Items/Equipment adds `EquipCycle` (equip, swap, unequip; abilities granted and
+revoked on host and owner; the net still catches). Damage adds `BreakOnly`. Cues and Repair add `RepairLoop`. A
+slice is done when T1–T3 pass, not when it compiles.
+
+Docs: add a "Scenarios" section to `.docs/NETWORK_TEST_HARNESS.md`, and put the tier table + commands in
+`.docs/TASK_GUIDES.md` as the default verify recipe for new features.
+
+### Toggle behaviour
+Removing `ShipDamageFeatureInstaller` removes the sockets, the rack, the scheduler and the repair use case. Removing
+the Items installer breaks Fuel and FlyingCan after the migration, so Items becomes a foundational installer (low
+`Order`) that those installers depend on.
+
+## Progress log
+
+- 2026-09-26: Step 0 done. The scenario harness is in `Assets/Scripts/DevTools/Scenarios/`, driven by
+  `.tools/verify.ps1`. `NetCatch` passes at every tier: compile, tests (285/285), solo (~4 s), and host + client at
+  Lag100 (~45 s including launch). Hardened against the Editor/MPPM failures hit along the way: the dirty-scene
+  modal, a wedged pipeline, a clone with an empty scene, and MPPM tag-file contention.
+
+## Build order (vertical slices)
+0. **Feedback loop skeleton**: `Scenario` + expectations + report writer + self-terminating run + capture, first
+   proven on an existing feature (a `NetCatch` scenario) so the harness is trusted before new code relies on it.
+   Pure parts (cursor, expectation evaluation) get EditMode tests.
+1. **Tag + item identity**: add `GameplayTagRegistry` (replaces the `FindObjectsOfTypeAll` hack) and `ItemCatalog`. Tests.
+2. **Items/Equipment**: definition, mediator, binder, generic take handler. Migrate the jerry can and the net. Existing
+   Fuel/NetCatch tests stay green, and binder tests are added.
+3. **Ship damage**: fixture + sockets + sphere, scheduler, `GE_ShipDamage`, the `GE_HullBreach` leak (plus
+   `Attr_FuelLeakRate` in Fuel and public `RemoveEffect`), and the HUD. Tests for the processor and the use case.
+3b. **Cues**: `TagCueView`, `GameplayCueDefinition`, `ExecuteCue` on effects, dispatcher + network mediator +
+   use case. Tests cover dispatch from `ApplyEffect` and suppressing the owner echo.
+4. **Repair**: tool item + rack, `GA_RepairShip`, `ShipRepairUseCase`, `RepairTargetProcessor`. Tests.
+5. Docs: add a feature-index row in `CODE_MAP.md`, add Items to `ARCHITECTURE.md` (equipment grants abilities), and
+   retire or point `MaintenanceUseCase`/`ShipRepairPoint` at the new path.
+
+## Files to read first when implementing
+- `Assets/Scripts/Features/Carry/PlayerCarryNetworkMediator.cs`, `CarriedItem.cs`
+- `Assets/Scripts/Features/Airship/Fuel/Minigame/NetCatchUseCase.cs` (template for `ShipRepairUseCase`)
+- `Assets/Scripts/Features/Abilities/AbilitySystemUseCase.cs` (grant/remove, effects)
+- `Assets/Scripts/Network/Infrastructure/ShipModuleNetworkMediator.cs` (template for the damage point)
+- `Assets/Scripts/Features/Airship/Fuel/FuelFeatureInstaller.cs` (installer + fixture template)
+
+## Verification
+- EditMode: `ShipBreakageProcessorTests`, `RepairTargetProcessorTests`, `ShipBreakageUseCaseTests`,
+  `ShipRepairUseCaseTests`, `EquipmentAbilityBinderTests`, `ItemCatalogTests`. The existing Fuel, NetCatch and
+  NetSwingPrediction suites stay green after the Carry migration.
+- `unity cmd` recompile gives no errors. The EditMode suite is green.
+- Automated: `RepairLoop`, `RepairLoopLateJoin`, `EquipCycle` at T3 report `passed: true` on host and client.
+  The capture PNGs show the sphere, and then no sphere.
+- Human playtest (feel only, after automation is green), host + MPPM client:
+  - A sphere appears and is visible to both peers, including a late joiner.
+  - Fuel visibly leaks while parked.
+  - The client takes the tool, holds Primary at the sphere, and the sphere disappears on both peers. The leak stops.
+  - The net and jerry can still work.
+  - Disabling the installer removes everything.
+
+Decisions taken: foundation first (Items/Equipment, with the net and jerry can migrated); repair by holding Primary
+(an ability-driven tool); the first consequence is a fuel leak.

@@ -15,7 +15,7 @@ TinCan.Core.Domain  <--  TinCan.Features  <--  Assembly-CSharp
 | `TinCan.Core.Domain` | `Assets/Scripts/Core/Domain/TinCan.Core.Domain.asmdef` | Contracts, registries, `SimulationUseCase`, `ISimulationTickable`, the GAS vocabulary, `FeatureInstaller`. | NGO runtime, VContainer |
 | `TinCan.Features` | `Assets/Scripts/Features/TinCan.Features.asmdef` | One folder per gameplay concern: processors, use cases, mediators, installers. | Core.Domain, NGO, VContainer |
 | `Assembly-CSharp` | none (Unity default) | `Core/Infrastructure` (composition root), `Network/Infrastructure` (NGO adapters for core actors), `Scripts/UI` (overlay views). | Everything |
-| `TinCan.DevTools` | `Assets/Scripts/DevTools/TinCan.DevTools.asmdef` | Network test harness: latency presets, input bot, movement telemetry. Inert unless its flags are set. | Core.Domain, Features, NGO, UTP, Input System, VContainer |
+| `TinCan.DevTools` | `Assets/Scripts/DevTools/TinCan.DevTools.asmdef` | Network test harness: latency presets, input bot, movement telemetry, feature scenarios (`Scenarios/`). Inert unless its flags are set. | Core.Domain, Features, NGO, UTP, Input System, VContainer |
 | `TinCan.DevTools.Editor` | `Assets/Scripts/DevTools/Editor/` | **TinCan > Dev > Net Harness** menu: assigns MPPM player tags and launches Player 2. Editor only. | none (reflection into MPPM) |
 | `TinCan.Features.Interaction.Editor` | `Assets/Scripts/Features/Interaction/Editor/` | One property drawer (handler dropdown). Editor only. | Features, Core.Domain |
 | `TinCan.Tests.EditMode` | `Assets/Tests/EditMode/` | NUnit tests + `Fakes/`. Editor only. | Core.Domain, Features, DevTools, Tests.Shared |
@@ -127,7 +127,7 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 | Cloud boundary + visuals + atmosphere | `CloudBoundary/` | mixed: boundary is direct (ticked explicitly by the scheduler); submersion atmosphere is installer | `CloudBoundaryUseCase`, `CloudEnvironmentView` (also applies `CloudSubmersionProcessor` output: fog + directional light dimming from the local camera's cloud submersion, client-only, no gameplay effect) | `Settings/CloudBoundaryConfig`, `Settings/CloudVisualProfile`, `Settings/CloudSubmersionConfig`, `Resources/Installers/CloudSubmersionFeatureInstaller` | `CloudBoundary*Tests`, `CloudSubmersionProcessorTests` |
 | Gas pocket challenge | `GasChallenge/` | direct | `GasChallengeUseCase`, `GasPocketVolume` | `Prefabs/Hazards/GasPocket`, `GE_GasPocketExplosion`, scene `cvg_gaspocket_test` | `GasPocketDetonationProcessorTests` |
 | Coordinated events | `Events/` | direct | `EventOrchestratorUseCase`, `ToggleShipTagStation` | `CoordinatedEventDefinition` (no asset yet) | none |
-| Network test harness (dev only) | `Scripts/DevTools/` (own assembly) | installer | `NetworkConditionsUseCase`, `BotRouteUseCase`, `MovementTelemetryUseCase`, `NetHarnessOverlayView` | `Resources/Installers/NetTestHarnessFeatureInstaller` | `NetTestHarnessTests`, `BotRouteUseCaseTests`, `LaunchArgumentsTests` |
+| Network test harness + feature scenarios (dev only) | `Scripts/DevTools/` (own assembly) | installer | `NetworkConditionsUseCase`, `BotRouteUseCase`, `MovementTelemetryUseCase`, `NetHarnessOverlayView`, `Scenarios/ScenarioUseCase` (+ `ScenarioCatalog`, `*ScenarioLibrary`, menu `Editor/ScenarioMenu`, driver `.tools/verify.ps1`) | `Resources/Installers/NetTestHarnessFeatureInstaller` | `NetTestHarnessTests`, `BotRouteUseCaseTests`, `LaunchArgumentsTests`, `ScenarioRunnerTests` |
 | Free camera | `FreeCamera/` | direct | `FreeCameraMovementUseCase`, `FreeCameraTransformView` | | none |
 | Environment helpers | `Environment/` | none needed | `MovingPlatform`, `SimpleOscillator` | | `Tests/Shared/FakeMovingGround` |
 
@@ -225,9 +225,21 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
   source of replays.
 - **Running EditMode tests with a modified scene open** makes the test runner show a modal "Scene(s) Have Been
   Modified" dialog. It blocks the Editor, and every `unity cmd` call times out until someone answers it. Save
-  (or discard) the scene before `unity cmd run_tests`. After Play sessions the flag can be spurious: saving a copy
-  with `EditorSceneManager.SaveScene(scene, "Logs/x.unity", true)` and diffing it against the file shows whether
-  anything really changed.
+  (or discard) the scene before `unity cmd run_tests`. `.tools/verify.ps1` checks for dirty scenes and for this
+  dialog before running.
+- **Edit-mode code must not mark things dirty on enable.** The scene used to turn dirty after every Play session
+  because `CloudAtmosphereDirector` (`[ExecuteAlways]`) called `EditorUtility.SetDirty` on the sun light from
+  `OnEnable`, which runs after every domain reload and Play exit. It now dirties only from `OnValidate`, and it
+  does not re-apply each frame in edit mode.
+- **The cloud renderer renders with a runtime copy of `VolumetricClouds.mat`** (the `runtimeMaterial` edit in
+  `Assets/ThirdParty/VolumetricCloudsURP/VolumetricClouds/VolumetricCloudsURP.cs`). Before, it wrote wind state into
+  the asset every frame, so the `.mat` kept changing in git. Edits to the `.mat` in the Inspector therefore show up
+  only after the feature is recreated (toggle it, or reload). The cloud wind also only moves in Play mode, so the
+  Scene view shows a still sky. If the file was reverted in git while Unity held a stale copy, force a reimport:
+  `AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate)`.
+- **A `unity cmd` call that times out behind a modal can wedge the pipeline** in that Editor: later commands time out
+  even after the dialog is gone, and the pipeline port collects `CLOSE_WAIT` sockets. The Editor process itself is
+  fine. Try focusing the Editor window first (it may wake the pipeline); restarting the Editor recovers it.
 - **`unity recompile` can report `up_to_date` with no errors** when the Editor already failed to compile at startup.
   Confirm the assembly exists in `Library/ScriptAssemblies/`, or search `Editor.log` for `error CS`.
 - `Tests/Shared/FakeMovingGround.cs` uses the namespace `TinCan.Tests.EditMode.Fakes` despite living in

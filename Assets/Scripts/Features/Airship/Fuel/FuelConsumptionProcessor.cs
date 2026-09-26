@@ -21,6 +21,9 @@ namespace TinCan.Features.Airship.Fuel
 
         public float ClampLevel(float level, float capacity) => Mathf.Clamp(level, 0f, Mathf.Max(0f, capacity));
 
+        /// <summary>Fuel lost to leaks this tick; leaks drain whether or not the ship is driven. Never negative.</summary>
+        public float ComputeLeak(float leakRatePerSecond, float deltaTime) => Mathf.Max(0f, leakRatePerSecond) * Mathf.Max(0f, deltaTime);
+
         public bool IsDriven(bool hasPossessor, float throttle) => hasPossessor && Mathf.Abs(throttle) > ThrottleDeadZone;
     }
 }

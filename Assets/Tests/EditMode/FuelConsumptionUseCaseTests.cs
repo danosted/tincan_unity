@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using NUnit.Framework;
+using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Events;
 using TinCan.Features.Abilities;
@@ -114,6 +115,42 @@ namespace TinCan.Tests.EditMode
 
             Assert.That(_tank.Inner.TotalConsumed, Is.EqualTo(1f).Within(0.0001f));
             Assert.That(_tank.Level, Is.EqualTo(99f).Within(0.0001f));
+        }
+
+        [Test]
+        public void Tick_LeakRateOnShip_DrainsWhileParked()
+        {
+            var leak = Create<FuelLeakRateAttribute>();
+            _config.LeakRateAttribute = leak;
+            _controller.SetAttribute(leak, new AttributeValue(2f));
+            _airship.PossessorId = null;
+
+            _useCase.Tick();
+
+            Assert.That(_tank.Inner.TotalConsumed, Is.EqualTo(1f).Within(0.0001f), "2 L/s for 0.5 s, with nobody at the helm.");
+        }
+
+        [Test]
+        public void Tick_LeakAndDriving_Add()
+        {
+            var leak = Create<FuelLeakRateAttribute>();
+            _config.LeakRateAttribute = leak;
+            _controller.SetAttribute(leak, new AttributeValue(2f));
+            Drive(1f);
+
+            _useCase.Tick();
+
+            Assert.That(_tank.Inner.TotalConsumed, Is.EqualTo(2f).Within(0.0001f));
+        }
+
+        [Test]
+        public void Tick_LeakAttributeMissingOnShip_DoesNotDrain()
+        {
+            _config.LeakRateAttribute = Create<FuelLeakRateAttribute>();
+
+            _useCase.Tick();
+
+            Assert.That(_tank.Inner.TotalConsumed, Is.EqualTo(0f));
         }
 
         [Test]

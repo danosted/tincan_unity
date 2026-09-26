@@ -125,7 +125,47 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
-        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle };
+        /// <summary>
+        /// Ship damage end to end, without the repair tool: the server breaks part 0 near the spawn. The subject sees the
+        /// marker, the ship's damaged tag and the HUD line. The server sees the fuel leak (even though nobody drives),
+        /// then restores the part, and both sides see the leak, tag, marker and HUD line go away.
+        /// </summary>
+        public static readonly ScenarioEntry ShipDamage = new(
+            new Scenario.Builder("ShipDamage")
+                .Describe("Break part 0 -> marker, damaged tag, HUD and fuel leak on both peers -> restore -> all clear.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Expect("PointHealthy", "0")
+                    .Expect("LeakRateAtMost", "0")
+                    .Do("RecordFuel")
+                    .Do("BreakPoint", "0"))
+                .Act(s => s
+                    .WaitUntil("PointBroken", 5f, "0")
+                    .WaitUntil("MarkerShown", 3f, "0")
+                    .WaitUntil("ShipHasTag", 3f, "State.Ship.Damaged")
+                    .WaitUntil("PointHasTag", 3f, "0:State.Damaged")
+                    .WaitUntil("HudShows", 3f, "Hull breaches")
+                    .Checkpoint("part-broken")
+                    .WaitUntil("PointHealthy", 30f, "0")
+                    .WaitUntil("MarkerHidden", 3f, "0")
+                    .WaitUntil("ShipLacksTag", 3f, "State.Ship.Damaged")
+                    .WaitUntil("PointLacksTag", 3f, "0:State.Damaged")
+                    .WaitUntil("HudHidden", 3f, "Hull breaches")
+                    .Checkpoint("part-restored"))
+                .Assert(s => s
+                    .WaitUntil("LeakRateAbove", 3f, "0")
+                    .WaitUntil("FuelDroppedBy", 10f, "0.5")
+                    .Wait(3f, "subject observes the break")
+                    .Do("RestorePoint", "0")
+                    .WaitUntil("LeakRateAtMost", 3f, "0")
+                    .Expect("ShipLacksTag", "State.Ship.Damaged")
+                    .Expect("PointHealthy", "0"))
+                .Build(),
+            builder => builder.Register<ShipDamageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle, ShipDamage };
 
         public static string Names => string.Join(", ", All.Select(entry => entry.Scenario.Name));
 

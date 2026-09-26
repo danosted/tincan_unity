@@ -149,6 +149,24 @@ but one side's move was deflected by a collider positioned differently on each s
 player's capsule. Open: the player-vs-player collision decision, and Phase 4 visual smoothing to hide the
 replays.
 
+**Follow-up, 2026-09-26: snapping and deck sliding (one bug).** The server tick carried players with the ship by
+passing `SurfaceDelta` through `CharacterController.Move`, which sweeps the capsule against the ship's own
+colliders. When the ship moved fast or pitched, contacts cut the carry by about half, and the player was dragged
+behind the deck. That showed up as the host's snaps while piloting and as players sliding on a tilted deck.
+`SimulateMovement` now carries rigidly (`IHumanoidMovementView.Carry` plus `Physics.SyncTransforms`), and only the
+player's own motion is collided.
+
+| Metric | Before | After |
+|---|---|---|
+| host snaps while piloting | 46–76 | 0 |
+| client acks matching (DeckWalk) | 74% | 91% |
+| client creep standing on a pitching and banking deck (`Run Tilt Test`) | n/a | 0.0 cm/s |
+
+A second idea was tested and rejected. Pushing the ground-stickiness velocity along the surface normal instead of
+world down caused 42 cm/s of creep and many mispredictions, because the stored ground normal comes from whatever the
+controller last touched. Open design question: ship pitch is unclamped (bank is clamped to 15°); past the player
+slope limit of 45° nobody can stand on the deck.
+
 ### Phase 3: Remote proxies
 - Non-owner clients keep `IsSimulating == false`. They buffer snapshots and interpolate between them in platform-local space, about 2 ticks behind. This replaces `ApplyAttachmentPose` and NetworkTransform with one path, so proxies on the deck stay glued to the ship.
 

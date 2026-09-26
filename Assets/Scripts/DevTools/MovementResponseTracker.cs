@@ -43,6 +43,7 @@ namespace TinCan.DevTools
         public const float SteadyInputTime = 0.3f;
         public const float ReversalMinStep = 0.01f;
         public const float MinStopReferenceSpeed = 0.2f;
+        public const float IdleSettleTime = 0.5f;
 
         private readonly float _maxLegalSpeed;
         private readonly Bucket _still = new();
@@ -77,6 +78,7 @@ namespace TinCan.DevTools
             Vector3 step = sample.LocalPosition - _previous.LocalPosition;
 
             TrackSnapsAndReversals(bucket, sample, step, deltaTime);
+            TrackIdleDrift(bucket, sample, step, deltaTime);
             TrackWindow(sample);
             TrackInputEdges(sample);
             ResolvePending(sample);
@@ -95,7 +97,9 @@ namespace TinCan.DevTools
                 jump = bucket.Jump.Summarise(),
                 snaps = bucket.Snaps,
                 maxSnapM = (float)Math.Round(bucket.MaxSnap, 3),
-                reversals = bucket.Reversals
+                reversals = bucket.Reversals,
+                idleSeconds = (float)Math.Round(bucket.IdleSeconds, 1),
+                idleDriftCmPerS = bucket.IdleSeconds > 0f ? (float)Math.Round(bucket.IdleDrift / bucket.IdleSeconds * 100f, 1) : 0f
             };
         }
 
@@ -128,6 +132,16 @@ namespace TinCan.DevTools
             {
                 bucket.Reversals++;
             }
+        }
+
+        /// <summary>Horizontal creep while standing still (no input for <see cref="IdleSettleTime"/>): deck sliding.</summary>
+        private void TrackIdleDrift(Bucket bucket, MovementSample sample, Vector3 step, float deltaTime)
+        {
+            if (sample.HasMoveInput || sample.IsJumping || sample.Time - _lastInputChange < IdleSettleTime) return;
+            if (_stop != null || _jump != null) return;
+
+            bucket.IdleSeconds += deltaTime;
+            bucket.IdleDrift += Flat(step).magnitude;
         }
 
         private void TrackWindow(MovementSample sample)
@@ -225,6 +239,8 @@ namespace TinCan.DevTools
             public int Snaps;
             public float MaxSnap;
             public int Reversals;
+            public float IdleSeconds;
+            public float IdleDrift;
         }
     }
 
@@ -237,5 +253,7 @@ namespace TinCan.DevTools
         public int snaps;
         public float maxSnapM;
         public int reversals;
+        public float idleSeconds;
+        public float idleDriftCmPerS;
     }
 }

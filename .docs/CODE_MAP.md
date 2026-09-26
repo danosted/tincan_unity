@@ -213,6 +213,9 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
 - **Never compare or simulate player motion on a ship in world space.** Host and client see the ship at different
   poses, so use the platform-local helpers in `Features/HumanoidMovement/HumanoidPrediction.cs`
   (`HumanoidAuthoritativeState.FromWorld`) and the yaw frame in `HumanoidMovementUseCase`.
+- **Never carry a player with its platform through `CharacterController.Move`.** The capsule sweep collides with the
+  ship's own geometry and eats the carry, so players get dragged behind a fast or pitching ship. Use
+  `IHumanoidMovementView.Carry` (a rigid transform move), then collide only the player's own motion.
 - **Players collide with each other**, and both spawn at the same point. With owner prediction a collision
   against another player's interpolated capsule cannot agree on both sides, and the harness shows it as the main
   source of replays.

@@ -269,6 +269,27 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void IdleCreep_AfterSettle_CountsAsDrift()
+        {
+            var driver = new Driver();
+            driver.Step(Vector3.zero, 60);                      // settled, still
+            driver.Step(new Vector3(0.5f, 0f, 0f), 60);         // 1 s of 0.5 m/s creep with no input
+
+            var summary = driver.Tracker.Summarise(false);
+            Assert.That(summary.idleDriftCmPerS, Is.InRange(30f, 36f)); // 0.5 m over 1.5 s (idle counts after 0.5 s settle)
+            Assert.That(summary.idleSeconds, Is.GreaterThan(1.4f));
+        }
+
+        [Test]
+        public void Walking_IsNotDrift()
+        {
+            var driver = new Driver { Moving = true };
+            driver.Step(new Vector3(5f, 0f, 0f), 60);
+
+            Assert.That(driver.Tracker.Summarise(false).idleSeconds, Is.Zero);
+        }
+
+        [Test]
         public void MovingPlatform_GoesToMovingBucket()
         {
             var driver = new Driver { PlatformMoving = true };

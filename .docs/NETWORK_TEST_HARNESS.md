@@ -41,7 +41,10 @@ extra package is needed.
 |---|---|---|
 | `DeckWalk` | client | Starts, stops, strafes, jumps and sprints, three times over (~50 s). |
 | `Pilot` | host | Takes the helm through the server's possession authority, then cruises, turns both ways and brakes (~58 s). The deck moves under the client. |
-| `Idle` | either | Stands still for 30 s: measures drift and snaps. |
+| `PilotTilt` | host | Takes the helm, pitches the deck down and up (Jump/Sprint at the helm), then banks through turns both ways (~40 s). |
+| `Idle` | either | Stands still for 45 s: measures deck creep (`idleDriftCmPerS`) and snaps. |
+
+**TinCan > Dev > Net Harness > Run Tilt Test (Lag100)** runs `PilotTilt` on the host and `Idle` on the client.
 
 ## Running a measurement
 
@@ -89,8 +92,9 @@ the player stands on. Ship motion itself never counts as player motion. Results 
 | `start` | Move input on until the player visibly moves 2 cm. **The "sluggish" number.** | ~40 ms (acceleration), plus up to one tick |
 | `stop` | Move input off until speed visibly halves. | ~175 ms (deceleration) |
 | `jump` | Jump pressed until the player visibly rises 5 cm. | about one tick |
-| `snaps` / `maxSnapM` | Frames that moved faster than any legal motion (teleports, hard corrections). | 0 |
+| `snaps` / `maxSnapM` | Frames that moved faster than any legal motion: teleports, hard corrections, and the player's own 30 Hz steps while sprinting (the render frame is far shorter than a tick). Phase 4 visual smoothing removes the latter. | 0 |
 | `reversals` | Direction flips while input is steady: prediction fighting a correction. | 0 |
+| `idleDriftCmPerS` | Horizontal creep while no input for 0.5 s: sliding on the deck. In walking routes it also picks up the tail of a sprint stop and replays, so read it from the tilt test. | 0 |
 | `avgRttMs` | Transport round trip on a client. UTP estimates it from reliable acks, so it goes stale when the client sends little reliable traffic (the humanoid input stream is unreliable). Trust the preset until this is ack-based. | ~2 × preset send delay |
 | `prediction` (client) | `acks` received; `matches` (prediction within 2 cm); `corrections` (rewind and replay; `meanCorrectionM` is how far the player moved); `snaps` (teleport or large divergence); `ackLatencyMs` (input sent until the server confirms it applied it). | matches ≈ acks; snaps only on spawn or teleport |
 | `serverInputs` (host) | Per remote player: inputs received and consumed, `starved` ticks (no input: the last one repeated), `skipped` (queue overflow), queue depth. | starved ≈ 0 after connect, skipped 0, depth ~1–2 |

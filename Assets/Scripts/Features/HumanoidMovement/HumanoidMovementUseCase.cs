@@ -225,7 +225,7 @@ namespace TinCan.Features.HumanoidMovement
                 ground.IsPlatformSupported = IsOnMovingGround(movement);
                 ground.MovingGroundTransform = VelocityFrame(character.Id);
 
-                IntegrateMotion(character, entries[i].Input, ground, Vector3.zero, TimeService.DeltaTime);
+                IntegrateMotion(character, entries[i].Input, ground, TimeService.DeltaTime);
                 history.Replace(i, CaptureState(character, entries[i].State.Sequence));
             }
         }
@@ -295,8 +295,15 @@ namespace TinCan.Features.HumanoidMovement
             // Rotate character to always face the look direction
             movement.SetRotation(Quaternion.Slerp(movement.Transform.rotation, currentLookRotation, 20f * deltaTime));
 
-            // The magic: Movement = Intentional Movement + Surface Delta (from platform)
-            IntegrateMotion(character, input, ground, ground.SurfaceDelta, deltaTime);
+            // Ride the platform rigidly first: the deck moved by exactly this transform, so sweeping the capsule for it
+            // only lets contacts eat the carry. Then collide the player's own motion.
+            if (ground.SurfaceDelta != Vector3.zero)
+            {
+                movement.Carry(ground.SurfaceDelta);
+                Physics.SyncTransforms();
+            }
+
+            IntegrateMotion(character, input, ground, deltaTime);
 
             ApplyPlatformYaw(character, ground.RotationDelta, isCaptured);
         }
@@ -306,7 +313,7 @@ namespace TinCan.Features.HumanoidMovement
         /// simulation and prediction replay so both step identically. Horizontal momentum is in the yaw frame of
         /// <see cref="GroundData.MovingGroundTransform"/>.
         /// </summary>
-        private void IntegrateMotion(IHumanoidCharacterView character, HumanoidInputState input, GroundData ground, Vector3 extraMotion, float deltaTime)
+        private void IntegrateMotion(IHumanoidCharacterView character, HumanoidInputState input, GroundData ground, float deltaTime)
         {
             var movement = character.Movement;
             Quaternion frameYaw = FrameYaw(ground.MovingGroundTransform);
@@ -347,7 +354,7 @@ namespace TinCan.Features.HumanoidMovement
 
             // 3. Calculate Final Movement
             Vector3 intentionalMotion = (frameYaw * _horizontalVelocities[character.Id] + (Vector3.up * _verticalVelocities[character.Id])) * deltaTime;
-            movement.Move(intentionalMotion + extraMotion);
+            movement.Move(intentionalMotion);
         }
 
         private static void ApplyPlatformYaw(IHumanoidCharacterView character, Quaternion rotationDelta, bool isCaptured)

@@ -15,8 +15,10 @@ TinCan.Core.Domain  <--  TinCan.Features  <--  Assembly-CSharp
 | `TinCan.Core.Domain` | `Assets/Scripts/Core/Domain/TinCan.Core.Domain.asmdef` | Contracts, registries, `SimulationUseCase`, `ISimulationTickable`, the GAS vocabulary, `FeatureInstaller`. | NGO runtime, VContainer |
 | `TinCan.Features` | `Assets/Scripts/Features/TinCan.Features.asmdef` | One folder per gameplay concern: processors, use cases, mediators, installers. | Core.Domain, NGO, VContainer |
 | `Assembly-CSharp` | none (Unity default) | `Core/Infrastructure` (composition root), `Network/Infrastructure` (NGO adapters for core actors), `Scripts/UI` (overlay views). | Everything |
+| `TinCan.DevTools` | `Assets/Scripts/DevTools/TinCan.DevTools.asmdef` | Network test harness: latency presets, input bot, movement telemetry. Inert unless its flags are set. | Core.Domain, Features, NGO, UTP, Input System, VContainer |
+| `TinCan.DevTools.Editor` | `Assets/Scripts/DevTools/Editor/` | **TinCan > Dev > Net Harness** menu: assigns MPPM player tags and launches Player 2. Editor only. | none (reflection into MPPM) |
 | `TinCan.Features.Interaction.Editor` | `Assets/Scripts/Features/Interaction/Editor/` | One property drawer (handler dropdown). Editor only. | Features, Core.Domain |
-| `TinCan.Tests.EditMode` | `Assets/Tests/EditMode/` | NUnit tests + `Fakes/`. Editor only. | Core.Domain, Features, Tests.Shared |
+| `TinCan.Tests.EditMode` | `Assets/Tests/EditMode/` | NUnit tests + `Fakes/`. Editor only. | Core.Domain, Features, DevTools, Tests.Shared |
 | `TinCan.Tests.Shared` | `Assets/Tests/Shared/` | Fakes usable outside Editor-only assemblies. | Core.Domain |
 
 **Consequence:** a class in `Assembly-CSharp` cannot be unit-tested. Put logic in `Features`; keep only things
@@ -98,7 +100,8 @@ that need `NetworkManager`, `UnityTransport` or `UIDocument` in `Assembly-CSharp
 | Possession (who drives what) | `Features/Possession/` (`PossessionUseCase` client side, `ServerPossessionManager` authority, `Infrastructure/PossessionNetworkMediator`). |
 | RPCs and NetworkVariables | Only inside `*NetworkMediator` classes. |
 | Events / logging | `IEventPublisher.Publish` and `LogInfo(source, message)`; observed by `Core/Infrastructure/Events/DebugLogEventObserver.cs`. |
-| Command-line session start | `Features/UI/CommandLineSessionBootstrap.cs`: `-autohost`, `-autojoin [address[:port]]`. |
+| Command-line session start | `Features/UI/CommandLineSessionBootstrap.cs`: `-autohost`, `-autojoin [address[:port]]`, also as MPPM player tags via `Core/Domain/LaunchArguments.cs`. |
+| Simulated latency, input bot, movement telemetry | `DevTools/` ([`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md)); reports in `Logs/net-telemetry/`. |
 | Scripted input for automation | `Core/Domain/ScriptedInput.cs` (`IScriptedInput.Press/Release/Tap`), merged into `UnityInputService`. |
 | The DI wiring | `Core/Infrastructure/ProjectLifetimeScope.cs` for core services and legacy features; `Assets/Resources/Installers/*.asset` for everything newer. |
 
@@ -124,6 +127,7 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 | Cloud boundary + visuals + atmosphere | `CloudBoundary/` | mixed: boundary is direct (ticked explicitly by the scheduler); submersion atmosphere is installer | `CloudBoundaryUseCase`, `CloudEnvironmentView` (also applies `CloudSubmersionProcessor` output: fog + directional light dimming from the local camera's cloud submersion, client-only, no gameplay effect) | `Settings/CloudBoundaryConfig`, `Settings/CloudVisualProfile`, `Settings/CloudSubmersionConfig`, `Resources/Installers/CloudSubmersionFeatureInstaller` | `CloudBoundary*Tests`, `CloudSubmersionProcessorTests` |
 | Gas pocket challenge | `GasChallenge/` | direct | `GasChallengeUseCase`, `GasPocketVolume` | `Prefabs/Hazards/GasPocket`, `GE_GasPocketExplosion`, scene `cvg_gaspocket_test` | `GasPocketDetonationProcessorTests` |
 | Coordinated events | `Events/` | direct | `EventOrchestratorUseCase`, `ToggleShipTagStation` | `CoordinatedEventDefinition` (no asset yet) | none |
+| Network test harness (dev only) | `Scripts/DevTools/` (own assembly) | installer | `NetworkConditionsUseCase`, `BotRouteUseCase`, `MovementTelemetryUseCase`, `NetHarnessOverlayView` | `Resources/Installers/NetTestHarnessFeatureInstaller` | `NetTestHarnessTests`, `BotRouteUseCaseTests`, `LaunchArgumentsTests` |
 | Free camera | `FreeCamera/` | direct | `FreeCameraMovementUseCase`, `FreeCameraTransformView` | | none |
 | Environment helpers | `Environment/` | none needed | `MovingPlatform`, `SimpleOscillator` | | `Tests/Shared/FakeMovingGround` |
 
@@ -206,6 +210,11 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
 - **`ProjectSettings/EditorBuildSettings.asset`** still lists two deleted scenes under `Assets/Scenes/Dev/`.
 - **Standalone builds are blocked** by Visual Scripting AOT stubs referencing Physics 2D (module disabled) and a
   Fantasy Skybox sample terrain that fails to load. Playtesting is Editor + Multiplayer Play Mode for now.
+- **Running EditMode tests with a modified scene open** makes the test runner show a modal "Scene(s) Have Been
+  Modified" dialog. It blocks the Editor, and every `unity cmd` call times out until someone answers it. Save
+  (or discard) the scene before `unity cmd run_tests`.
+- **`unity recompile` can report `up_to_date` with no errors** when the Editor already failed to compile at startup.
+  Confirm the assembly exists in `Library/ScriptAssemblies/`, or search `Editor.log` for `error CS`.
 - `Tests/Shared/FakeMovingGround.cs` uses the namespace `TinCan.Tests.EditMode.Fakes` despite living in
   `TinCan.Tests.Shared`.
 - The three `*.slnx` files at the root are Editor-generated and gitignored. Do not commit them.

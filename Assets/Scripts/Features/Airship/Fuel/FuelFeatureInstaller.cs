@@ -14,7 +14,7 @@ namespace TinCan.Features.Airship.Fuel
     /// The FuelSystem fixture (tank, crate, motor, rack, gauge) is spawned onto every airship at runtime.
     /// </summary>
     [CreateAssetMenu(fileName = "FuelFeatureInstaller", menuName = "TinCan/Features/Fuel Feature Installer")]
-    public class FuelFeatureInstaller : FeatureInstaller
+    public class FuelFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<ShipFixtureDefinition>
     {
         [Tooltip("Networked FuelSystem prefab and where it sits on the ship.")]
         [SerializeField] private ShipFixtureDefinition? _fuelSystemFixture;
@@ -36,7 +36,7 @@ namespace TinCan.Features.Airship.Fuel
             }
         }
 
-        public override IEnumerable<ShipFixtureDefinition> ShipFixtures
+        IEnumerable<ShipFixtureDefinition> FeatureInstaller.IExtension<ShipFixtureDefinition>.Contributions
         {
             get
             {

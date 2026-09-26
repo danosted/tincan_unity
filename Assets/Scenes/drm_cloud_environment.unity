@@ -395,7 +395,7 @@ PrefabInstance:
     - target: {fileID: 8318144274937578961, guid: da32a759790a2154d94d7c933d152774, type: 3}
       propertyPath: _featureProfile
       value: 
-      objectReference: {fileID: 11400000, guid: 9eb7122c181303945ab4af61310ae2fa, type: 2}
+      objectReference: {fileID: 11400000, guid: bbd8a72f86324704880c131edbfb72f8, type: 2}
     - target: {fileID: 8318144274937578961, guid: da32a759790a2154d94d7c933d152774, type: 3}
       propertyPath: _doorInteractionTag
       value: 

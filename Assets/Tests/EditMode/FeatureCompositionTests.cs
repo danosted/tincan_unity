@@ -47,7 +47,6 @@ namespace TinCan.Tests.EditMode
             var catalog = new FeatureInstallerCatalog(new FeatureInstaller?[] { b, null, a, early }!);
 
             Assert.That(catalog.Installers, Is.EqualTo(new[] { early, a, b }));
-            Assert.That(catalog.Fixtures, Is.Empty);
             Assert.That(catalog.NetworkedPrefabs, Is.Empty);
         }
 

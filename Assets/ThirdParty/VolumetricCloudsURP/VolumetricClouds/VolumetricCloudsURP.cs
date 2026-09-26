@@ -256,8 +256,12 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
         else
             Shader.EnableKeyword(VOLUMETRIC_CLOUDS);
 
+        // The passes hold the material they were built with, so a new runtime copy means new passes.
         if (runtimeMaterial == null)
+        {
+            DisposePasses();
             runtimeMaterial = new Material(material) { name = material.name + " (Runtime)", hideFlags = HideFlags.HideAndDontSave };
+        }
 
         if (volumetricCloudsPass == null)
         {
@@ -287,15 +291,21 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
 
     protected override void Dispose(bool disposing)
     {
-        if (volumetricCloudsPass != null)
-            volumetricCloudsPass.Dispose();
-        if (volumetricCloudsAmbientPass != null)
-            volumetricCloudsAmbientPass.Dispose();
-        if (volumetricCloudsShadowsPass != null)
-            volumetricCloudsShadowsPass.Dispose();
-
+        DisposePasses();
         CoreUtils.Destroy(runtimeMaterial);
         runtimeMaterial = null;
+    }
+
+    // TinCan: passes are cleared, not just disposed, so the next Create builds them against the new runtime material.
+    // Keeping them made the shadows pass write to the destroyed copy every frame (MissingReferenceException).
+    private void DisposePasses()
+    {
+        volumetricCloudsPass?.Dispose();
+        volumetricCloudsAmbientPass?.Dispose();
+        volumetricCloudsShadowsPass?.Dispose();
+        volumetricCloudsPass = null;
+        volumetricCloudsAmbientPass = null;
+        volumetricCloudsShadowsPass = null;
     }
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)

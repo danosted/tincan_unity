@@ -29,8 +29,13 @@ namespace TinCan.Features.HumanoidMovement
         public float Sensitivity => _sensitivity;
         public float MaxPitch => _maxPitch;
 
+        // Optional: follow where the body is drawn (interpolated between ticks) rather than the simulated root.
+        private IHumanoidVisualAnchor _anchor;
+
         private void Start()
         {
+            _anchor = GetComponent<IHumanoidVisualAnchor>();
+
             // Initialize from current rotation if pivot exists
             if (_cameraPivot != null)
             {
@@ -65,7 +70,8 @@ namespace TinCan.Features.HumanoidMovement
                 ? transform.rotation * rotationOffset
                 : rotationOffset;
 
-            Vector3 center = transform.position + Vector3.up * _height;
+            Vector3 followed = _anchor != null ? _anchor.VisualPosition : transform.position;
+            Vector3 center = followed + Vector3.up * _height;
             Vector3 position = center - (finalRotation * Vector3.forward * _distance);
 
             _cameraPivot.rotation = finalRotation;

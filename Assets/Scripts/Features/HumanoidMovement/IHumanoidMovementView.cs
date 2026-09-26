@@ -40,6 +40,12 @@ namespace TinCan.Features.HumanoidMovement
         /// </summary>
         void Carry(Vector3 displacement);
 
+        /// <summary>A simulation tick finished: the pose is the new target for drawing (visual interpolation).</summary>
+        void CommitSimulatedPose();
+
+        /// <summary>Prediction moved the body by <paramref name="worldDelta"/> outside a tick; draw it as a fade, not a pop.</summary>
+        void AbsorbCorrection(Vector3 worldDelta);
+
         /// <summary>
         /// Sets the physical rotation of the character body.
         /// </summary>

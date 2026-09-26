@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
@@ -74,6 +75,10 @@ namespace TinCan.Tests.EditMode.Fakes
 
         public void Move(Vector3 motion) => Transform.position += motion;
         public void Carry(Vector3 displacement) => Transform.position += displacement;
+        public int Commits { get; private set; }
+        public List<Vector3> AbsorbedCorrections { get; } = new();
+        public void CommitSimulatedPose() => Commits++;
+        public void AbsorbCorrection(Vector3 worldDelta) => AbsorbedCorrections.Add(worldDelta);
         public void SetRotation(Quaternion rotation) => Transform.rotation = rotation;
         public void SetPose(Vector3 position, Quaternion rotation) => Transform.SetPositionAndRotation(position, rotation);
         public void UpdateGroundData(GroundData data) => _currentGround = data;

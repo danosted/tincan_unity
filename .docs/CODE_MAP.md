@@ -213,6 +213,10 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
 - **Never compare or simulate player motion on a ship in world space.** Host and client see the ship at different
   poses, so use the platform-local helpers in `Features/HumanoidMovement/HumanoidPrediction.cs`
   (`HumanoidAuthoritativeState.FromWorld`) and the yaw frame in `HumanoidMovementUseCase`.
+- **The player's mesh is not on the root.** `NetworkPlayer.prefab` draws the body and carried items from the
+  `Visual` child, which trails the simulated root by up to one tick (see `HumanoidVisualSmoothingView`). Put new
+  player visuals under `Visual`, look them up with `TransformSearch.FindDescendant`, and read the drawn position from
+  `IHumanoidVisualAnchor` rather than `transform.position` when placing cameras or effects.
 - **Never carry a player with its platform through `CharacterController.Move`.** The capsule sweep collides with the
   ship's own geometry and eats the carry, so players get dragged behind a fast or pitching ship. Use
   `IHumanoidMovementView.Carry` (a rigid transform move), then collide only the player's own motion.

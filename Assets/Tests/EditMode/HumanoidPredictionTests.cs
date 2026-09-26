@@ -292,6 +292,28 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void EveryTick_CommitsThePoseForDrawing()
+        {
+            _useCase.Tick();
+            _useCase.Tick();
+
+            Assert.That(_movement.Commits, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void Owner_Correction_IsHandedToTheViewForSmoothing()
+        {
+            MakeOwner();
+            _useCase.Tick();
+            _character.Deliver(Server(1, _movement.Transform.position + new Vector3(0.5f, 0f, 0f)));
+
+            _useCase.Tick();
+
+            Assert.That(_movement.AbsorbedCorrections, Has.Count.EqualTo(1));
+            Assert.That(Vector3.Distance(_movement.AbsorbedCorrections[0], new Vector3(0.5f, 0f, 0f)), Is.LessThan(1e-4f));
+        }
+
+        [Test]
         public void Owner_TeleportEpoch_SnapsToServer()
         {
             MakeOwner();

@@ -108,6 +108,7 @@ namespace TinCan.Features.HumanoidMovement
             _previousInputMasks[character.Id] = input.ActiveInputMask;
 
             SimulateMovement(character, input, isCaptured);
+            character.Movement.CommitSimulatedPose();
 
             // 4. Owner remembers what it predicted for this input; the server reports what it actually did.
             if (isPredictingOwner)
@@ -188,13 +189,16 @@ namespace TinCan.Features.HumanoidMovement
                     Vector3 before = character.Movement.Transform.position;
                     RewindAndReplay(character, server, history);
                     float moved = Vector3.Distance(before, character.Movement.Transform.position);
+                    character.Movement.AbsorbCorrection(character.Movement.Transform.position - before);
                     stats.CorrectionSum += moved;
                     stats.MaxCorrection = Mathf.Max(stats.MaxCorrection, moved);
                     break;
                 case ReconciliationAction.Snap:
                     stats.Acks++;
                     stats.Snaps++;
+                    Vector3 beforeSnap = character.Movement.Transform.position;
                     SnapTo(character, server);
+                    character.Movement.AbsorbCorrection(character.Movement.Transform.position - beforeSnap);
                     history.Clear();
                     _teleportEpochs[character.Id] = server.TeleportEpoch;
                     break;

@@ -19,6 +19,7 @@ namespace TinCan.Features.HumanoidMovement
         [SerializeField] private LayerMask _interactableMask = ~0; // Default: hit everything
 
         private CharacterController _controller;
+        private HumanoidVisualSmoothingView _smoothing; // optional: draws the body between ticks
         private GroundData _currentGround;
         private RaycastHit? _lastGroundHit;
 
@@ -55,6 +56,7 @@ namespace TinCan.Features.HumanoidMovement
         protected void Awake()
         {
             _controller = GetComponent<CharacterController>();
+            _smoothing = GetComponent<HumanoidVisualSmoothingView>();
         }
 
         /// <summary>How far above the capsule's bottom the ground probe starts.</summary>
@@ -100,6 +102,16 @@ namespace TinCan.Features.HumanoidMovement
         public void Move(Vector3 motion)
         {
             _controller.Move(motion);
+        }
+
+        public void CommitSimulatedPose()
+        {
+            if (_smoothing != null) _smoothing.Commit(_currentGround.MovingGroundTransform);
+        }
+
+        public void AbsorbCorrection(Vector3 worldDelta)
+        {
+            if (_smoothing != null) _smoothing.AbsorbCorrection(worldDelta);
         }
 
         public void Carry(Vector3 displacement)

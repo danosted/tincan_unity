@@ -210,9 +210,17 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
 - **`ProjectSettings/EditorBuildSettings.asset`** still lists two deleted scenes under `Assets/Scenes/Dev/`.
 - **Standalone builds are blocked** by Visual Scripting AOT stubs referencing Physics 2D (module disabled) and a
   Fantasy Skybox sample terrain that fails to load. Playtesting is Editor + Multiplayer Play Mode for now.
+- **Never compare or simulate player motion on a ship in world space.** Host and client see the ship at different
+  poses, so use the platform-local helpers in `Features/HumanoidMovement/HumanoidPrediction.cs`
+  (`HumanoidAuthoritativeState.FromWorld`) and the yaw frame in `HumanoidMovementUseCase`.
+- **Players collide with each other**, and both spawn at the same point. With owner prediction a collision
+  against another player's interpolated capsule cannot agree on both sides, and the harness shows it as the main
+  source of replays.
 - **Running EditMode tests with a modified scene open** makes the test runner show a modal "Scene(s) Have Been
   Modified" dialog. It blocks the Editor, and every `unity cmd` call times out until someone answers it. Save
-  (or discard) the scene before `unity cmd run_tests`.
+  (or discard) the scene before `unity cmd run_tests`. After Play sessions the flag can be spurious: saving a copy
+  with `EditorSceneManager.SaveScene(scene, "Logs/x.unity", true)` and diffing it against the file shows whether
+  anything really changed.
 - **`unity recompile` can report `up_to_date` with no errors** when the Editor already failed to compile at startup.
   Confirm the assembly exists in `Library/ScriptAssemblies/`, or search `Editor.log` for `error CS`.
 - `Tests/Shared/FakeMovingGround.cs` uses the namespace `TinCan.Tests.EditMode.Fakes` despite living in

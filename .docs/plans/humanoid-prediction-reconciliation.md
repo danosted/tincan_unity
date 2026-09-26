@@ -95,6 +95,18 @@ a look later but is not client-felt.
 - `SimulationUseCase.Tick` is unchanged in shape. On the server, `HumanoidPlayer.InputState` returns the input dequeued for this tick. On the owner, it returns the locally gathered input. Remote proxies no longer need the input, except for animation, which can come from the snapshot.
 - Jump is already level-based (`IsJumping = triggered || pressed`), so it survives redundancy. Keep it that way.
 
+**Phase 1 result, 2026-09-26, Lag100, same routes:**
+- **Server input stream is healthy.** client1 sent 1357 inputs and the server consumed 1356, each exactly once and in
+  order. 0 skipped; 17 starved ticks (1.2%, mostly while connecting); mean queue depth 1.9, max 3.
+- **Client jumps:** 1 of 3 registered, up from 0 of 3. The input now reaches the server. The remaining misses look
+  like a movement bug, not netcode. In `HumanoidMovementUseCase.ResolveGrounding`, `IsPlatformSupported = !isJumping`
+  on a moving platform, so on the jump tick only `CharacterController.isGrounded` can allow the jump, and that is
+  flaky on a moving deck. Open: fix it, with a test, before or alongside Phase 2.
+- **Felt latency unchanged, as expected:** start p50 195 ms, stop p50 406 ms. Phase 2 addresses it.
+- **Telemetry RTT is stale.** UTP estimates RTT from reliable acks, and the client now sends almost nothing reliable,
+  so the report shows a constant 1298 ms. Phase 2 replaces it with an ack-based RTT (input sequence sent, then
+  acknowledged in the snapshot).
+
 ### Phase 2: Owner prediction + reconciliation (fixes the sluggish feel)
 - Remove `NetworkTransformMediator` from the player: drop it from `HumanoidPlayer`'s `[RequireComponent]` list and from `Assets/Prefabs/NetworkPlayer.prefab`, using the Editor via MCP/CLI rather than YAML. The player's pose is then synced only through snapshots.
 - Extend `HumanoidMovementSnapshot` into the single server→client state and fold `PlayerAttachmentState` into it: `LastProcessedInputSequence`, platform `NetworkObjectReference` + local position/rotation (world pose when unattached), horizontal/vertical velocity, `PreviousInputMask`, and a `TeleportEpoch` byte. The epoch is bumped on `ResetCharacter`, respawn and `CloudBoundaryUseCase` so the owner hard-snaps instead of replaying through a teleport.
@@ -104,6 +116,38 @@ a look later but is not client-felt.
   2. If the error is below a threshold (~2–5 cm, tunable in config), do nothing. This should be the normal case.
   3. Otherwise, set pose and velocities from the snapshot, resolved against the **client's current** ship pose. Then replay the remaining inputs with movement only: no GAS side effects, and ship frame held static during the replay (`SurfaceDelta = 0`).
 - Split `HumanoidMovementUseCase.SimulateMovement` so replay can call the pure movement step without re-running `_abilitySystem.ProcessAbilitySimulation` or platform-pose bookkeeping. Expose the per-actor velocity dicts through a small get/set so reconciliation can restore them.
+
+**Phase 2 as built (2026-09-26), deviations from the list above:**
+- **NetworkTransform kept.** `NetworkTransformMediator.OwnerPredicted` skips `OnUpdate` on the owning client only.
+  Proxies and the ship are unchanged, so Phase 3 stays independent.
+- **Rewind and replay.** A first attempt added the error at ack N to the current state (error offset). It failed:
+  ground stickiness and speed saturation clamp velocities, so errors either got clamped away (a correction on every
+  ack) or accumulated (+22 m/s vertical). Now `RewindAndReplay` restores the server state and re-runs the
+  unacknowledged inputs through `IntegrateMotion`, the step shared with live simulation.
+- **Ship-yaw frame.** `HumanoidInputState.LookRotation` is relative to the yaw of the platform underfoot, and
+  horizontal momentum is stored in that frame. On a turning ship, owner and server otherwise walk in different
+  deck-relative directions, because the owner's ship lags the server's by about RTT plus interpolation.
+- **Per-frame platform carry** (`HumanoidMovementUseCase.CarryWithPlatform`, from `HumanoidPlayer.LateUpdate`). The
+  owner simulates at 30 Hz while its ship is interpolated every frame. `IHumanoidMovementView.Carry` moves the
+  transform without `CharacterController.Move`, which would clear `isGrounded`.
+- **Found and fixed on the way:** the ground probe ended exactly at the resting contact and never hit the deck
+  (`HumanoidControllerView.GroundProbeLength`). The harness now disables the cloud-boundary character reset
+  during bot runs, because the piloted ship sank below the reset depth and respawned the bots every tick.
+
+**Phase 2 result, 2026-09-26, Lag100, same routes (client1, ship moving):**
+
+| Metric | Baseline | Phase 2 |
+|---|---|---|
+| start p50 / p95 | 200 / 398 ms | **33 / 38 ms** |
+| stop p50 | 296 ms | 99 ms |
+| jumps registered | 0 of 3 | **3 of 3**, p50 33 ms |
+| acks matching prediction | n/a | 830 of 1123 (74%); 292 replays (mean 12.5 cm); 1 snap (spawn) |
+| input → server-confirmed | n/a | 169 ms (replaces the stale transport RTT) |
+
+The remaining replays start at about 0.8 onsets per second. At each onset both sides had identical state and input,
+but one side's move was deflected by a collider positioned differently on each side, most likely the other
+player's capsule. Open: the player-vs-player collision decision, and Phase 4 visual smoothing to hide the
+replays.
 
 ### Phase 3: Remote proxies
 - Non-owner clients keep `IsSimulating == false`. They buffer snapshots and interpolate between them in platform-local space, about 2 ticks behind. This replaces `ApplyAttachmentPose` and NetworkTransform with one path, so proxies on the deck stay glued to the ship.

@@ -97,9 +97,15 @@ namespace TinCan.Features.CloudBoundary
             }
         }
 
+        /// <summary>
+        /// When false, characters below the cloud surface are left where they are instead of being teleported back to
+        /// the ship. The network test harness turns it off so a sinking ship does not respawn its bots every tick.
+        /// </summary>
+        public bool CharacterResetEnabled { get; set; } = true;
+
         private void ResetFallenCharacters(IReadOnlyCollection<IAirshipView> airships)
         {
-            if (airships.Count == 0)
+            if (!CharacterResetEnabled || airships.Count == 0)
             {
                 return;
             }

@@ -43,32 +43,30 @@ extra package is needed.
 | `Pilot` | host | Takes the helm through the server's possession authority, then cruises, turns both ways and brakes (~58 s). The deck moves under the client. |
 | `Idle` | either | Stands still for 30 s: measures drift and snaps. |
 
-## One-time setup (Multiplayer Play Mode)
-
-**TinCan > Dev > Net Harness > Apply Host + Client (Lag100)**
-(`DevTools/Editor/NetHarnessPlayerTagsMenu.cs`) does it in one click:
-- It gives **Player 1** (this Editor) `autohost`, `netsim:Lag100`, `bot:Pilot`, and **Player 2** `autojoin`,
-  `netsim:Lag100`, `bot:DeckWalk`.
-- It launches Player 2 if it is not running. After an Editor restart MPPM remembers Player 2 as active but does not
-  launch it until it is activated again, so run the menu once per Editor session.
-
-From the shell:
-
-```bash
-unity cmd menu --path "TinCan/Dev/Net Harness/Apply Host + Client (Lag100)"
-```
-
-**Clear Tags** returns to the manual Start Host menu. MPPM has no public API for tags, so the menu reaches into its
-internals and logs an error if a Unity upgrade moves them. The fallback is by hand: create the tags under **Project
-Settings > Multiplayer > Playmode**, then assign them in **Window > Multiplayer > Multiplayer Play Mode**.
-
 ## Running a measurement
 
-Press Play, or from the shell:
+**TinCan > Dev > Net Harness > Run Host + Client (Lag100)** (`DevTools/Editor/NetHarnessPlayerTagsMenu.cs`), or
+from the shell:
 
 ```bash
-unity cmd editor_play
+unity cmd menu --path "TinCan/Dev/Net Harness/Run Host + Client (Lag100)"
 ```
+
+The menu does four things:
+1. It gives **Player 1** (this Editor) `autohost`, `netsim:Lag100`, `bot:Pilot`, and **Player 2** `autojoin`,
+   `netsim:Lag100`, `bot:DeckWalk`.
+2. It launches Player 2 if it is not running (MPPM does not relaunch it after an Editor restart).
+3. It enters Play.
+4. **When Play ends it removes the tags again**, from the players and from `ProjectSettings/VirtualProjectsConfig.json`.
+   A run interrupted by a crash or restart is cleaned up on the next Editor start. The tags never stay in your
+   normal Play or leak to collaborators through the committed project settings.
+
+**Clear Tags** removes them by hand. MPPM has no public API for tags, so the menu reaches into its internals and logs
+an error if a Unity upgrade moves them. The fallback is by hand: create the tags under **Project Settings >
+Multiplayer > Playmode**, then assign them in **Window > Multiplayer > Multiplayer Play Mode**.
+
+While a bot route runs, the host disables the cloud-boundary character reset (`DevTools/HarnessGameplayOverrides.cs`).
+Otherwise a ship that sinks below the reset depth respawns the bots every tick.
 
 Both peers connect on their own and the bots start. After about a minute each peer writes its report to
 `Logs/net-telemetry/` (git-ignored): a timestamped file plus `latest-host.json` and `latest-client1.json`. The
@@ -93,7 +91,9 @@ the player stands on. Ship motion itself never counts as player motion. Results 
 | `jump` | Jump pressed until the player visibly rises 5 cm. | about one tick |
 | `snaps` / `maxSnapM` | Frames that moved faster than any legal motion (teleports, hard corrections). | 0 |
 | `reversals` | Direction flips while input is steady: prediction fighting a correction. | 0 |
-| `avgRttMs` | Transport round trip on a client. | ~2 × preset send delay |
+| `avgRttMs` | Transport round trip on a client. UTP estimates it from reliable acks, so it goes stale when the client sends little reliable traffic (the humanoid input stream is unreliable). Trust the preset until this is ack-based. | ~2 × preset send delay |
+| `prediction` (client) | `acks` received; `matches` (prediction within 2 cm); `corrections` (rewind and replay; `meanCorrectionM` is how far the player moved); `snaps` (teleport or large divergence); `ackLatencyMs` (input sent until the server confirms it applied it). | matches ≈ acks; snaps only on spawn or teleport |
+| `serverInputs` (host) | Per remote player: inputs received and consumed, `starved` ticks (no input: the last one repeated), `skipped` (queue overflow), queue depth. | starved ≈ 0 after connect, skipped 0, depth ~1–2 |
 
 Latency lines read `p50 / p95 / max (n=samples, timeouts)`. A timeout means no response within 2 s.
 

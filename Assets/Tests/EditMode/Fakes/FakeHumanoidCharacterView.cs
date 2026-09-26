@@ -41,6 +41,12 @@ namespace TinCan.Tests.EditMode.Fakes
         public bool IsControlsEnabled { get; private set; } = true;
         public float GroundProbeDistance { get; set; } = 1f;
 
+        /// <summary>
+        /// What CharacterController.isGrounded would report when the probe hits. On a moving deck the real controller
+        /// often reads false, so set this to false to model a character held up only by the platform.
+        /// </summary>
+        public bool ControllerGrounded { get; set; } = true;
+
         public Transform Transform => _gameObject.transform;
         public GroundData CurrentGround => _currentGround;
         public RaycastHit? LastGroundHit => _lastGroundHit;
@@ -57,7 +63,7 @@ namespace TinCan.Tests.EditMode.Fakes
             if (Physics.Raycast(Transform.position + Vector3.up * 0.1f, Vector3.down, out var hit, GroundProbeDistance, ~0, QueryTriggerInteraction.Ignore))
             {
                 _lastGroundHit = hit;
-                _currentGround.IsGrounded = true;
+                _currentGround.IsGrounded = ControllerGrounded;
             }
             else
             {
@@ -67,6 +73,7 @@ namespace TinCan.Tests.EditMode.Fakes
         }
 
         public void Move(Vector3 motion) => Transform.position += motion;
+        public void Carry(Vector3 displacement) => Transform.position += displacement;
         public void SetRotation(Quaternion rotation) => Transform.rotation = rotation;
         public void SetPose(Vector3 position, Quaternion rotation) => Transform.SetPositionAndRotation(position, rotation);
         public void UpdateGroundData(GroundData data) => _currentGround = data;

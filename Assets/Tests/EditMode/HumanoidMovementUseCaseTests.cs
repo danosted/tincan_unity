@@ -65,6 +65,56 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void Jump_OnMovingPlatform_WithoutControllerGrounded_StillJumps()
+        {
+            _movementView.ControllerGrounded = false;
+            _useCase.Tick(); // settle onto the platform
+            float before = _movementView.Transform.position.y;
+
+            _character.InputState = new HumanoidInputState { IsJumping = true };
+            _useCase.Tick();
+
+            float expectedRise = _movementView.JumpForce * _timeService.DeltaTime;
+            Assert.That(_movementView.Transform.position.y - before, Is.EqualTo(expectedRise).Within(0.001f));
+        }
+
+        [Test]
+        public void Walk_OnRotatedPlatform_MovesRelativeToPlatformYaw()
+        {
+            _platformObject.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+            Physics.SyncTransforms();
+            _useCase.Tick(); // settle onto the platform
+            Vector3 start = _movementView.Transform.position;
+
+            // Look and input relative to the platform: "forward" means the platform's forward (world +X here).
+            _character.InputState = new HumanoidInputState { MovementDirection = Vector3.forward, LookRotation = Quaternion.identity };
+            _useCase.Tick();
+            _useCase.Tick();
+
+            Vector3 moved = _movementView.Transform.position - start;
+            Assert.That(moved.x, Is.GreaterThan(0.05f));
+            Assert.That(Mathf.Abs(moved.z), Is.LessThan(0.001f));
+        }
+
+        [Test]
+        public void CarryWithPlatform_BetweenTicks_FollowsPlatformAndLeavesNoDoubleCarry()
+        {
+            _useCase.Tick(); // caches the platform pose
+            Vector3 start = _movementView.Transform.position;
+
+            var platformMotion = new Vector3(0f, 0f, 0.3f);
+            _platformObject.transform.position += platformMotion;
+            Physics.SyncTransforms();
+
+            _useCase.CarryWithPlatform(_character); // a rendered frame between ticks
+            Assert.That(Vector3.Distance(_movementView.Transform.position, start + platformMotion), Is.LessThan(0.0001f));
+
+            _useCase.Tick(); // the platform has not moved since the carry: nothing left to apply
+            Assert.That(_movementView.CurrentGround.SurfaceDelta.magnitude, Is.LessThan(0.0001f));
+            Assert.That(Vector3.Distance(_movementView.Transform.position, start + platformMotion), Is.LessThan(0.0001f));
+        }
+
+        [Test]
         public void FirstTickOnPlatform_HasNoSurfaceDelta()
         {
             _useCase.Tick();

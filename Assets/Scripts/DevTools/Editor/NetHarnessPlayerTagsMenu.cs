@@ -8,64 +8,137 @@ using UnityEngine;
 namespace TinCan.DevTools.Editor
 {
     /// <summary>
-    /// One-click Multiplayer Play Mode setup for the network test harness (see .docs/NETWORK_TEST_HARNESS.md):
-    /// Player 1 hosts and pilots, Player 2 joins and walks the deck, both under the same latency preset.
-    /// MPPM has no public API for assigning tags, so this goes through its internal
+    /// Runs the network test harness (see .docs/NETWORK_TEST_HARNESS.md) under Multiplayer Play Mode: Player 1 hosts
+    /// and pilots, Player 2 joins and walks the deck. The tags exist only for the run. They are applied when a run
+    /// starts, removed when Play mode ends, and a run interrupted by an Editor restart is cleaned up on the next load.
+    /// So the tags never linger in anyone's normal Play or leak into ProjectSettings/VirtualProjectsConfig.json.
+    /// MPPM has no public API for tags, so this goes through its internal
     /// <c>Unity.Multiplayer.PlayMode.Editor.MultiplayerPlaymode</c> type and fails with a clear message if that moves.
     /// </summary>
+    [InitializeOnLoad]
     public static class NetHarnessPlayerTagsMenu
     {
         private const string Root = "TinCan/Dev/Net Harness/";
         private const string MppmType = "Unity.Multiplayer.PlayMode.Editor.MultiplayerPlaymode, UnityEditor.MultiplayerModule";
+        private const string PendingKey = "TinCan.NetHarness.TagsPending";      // survives Editor restarts
+        private const string SessionKey = "TinCan.NetHarness.RunThisSession";   // survives domain reloads only
 
         public static readonly string[] HostTags = { "autohost", "netsim:Lag100", "bot:Pilot" };
         public static readonly string[] ClientTags = { "autojoin", "netsim:Lag100", "bot:DeckWalk" };
 
-        [MenuItem(Root + "Apply Host + Client (Lag100)")]
-        public static void ApplyLag100() => Apply(HostTags, ClientTags);
+        static NetHarnessPlayerTagsMenu()
+        {
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
 
-        [MenuItem(Root + "Apply Host + Client (no latency)")]
-        public static void ApplyNoLatency() => Apply(
+            // Tags still pending from a previous Editor session (crash or restart mid-run): clean them up.
+            if (EditorPrefs.GetBool(PendingKey) && !SessionState.GetBool(SessionKey, false) &&
+                !EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                EditorApplication.delayCall += () => Clear("leftover from an interrupted run");
+            }
+        }
+
+        [MenuItem(Root + "Run Host + Client (Lag100)")]
+        public static void RunLag100() => Run(HostTags, ClientTags);
+
+        [MenuItem(Root + "Run Host + Client (no latency)")]
+        public static void RunNoLatency() => Run(
             HostTags.Where(tag => !tag.StartsWith("netsim")).ToArray(),
             ClientTags.Where(tag => !tag.StartsWith("netsim")).ToArray());
 
         [MenuItem(Root + "Clear Tags")]
-        public static void Clear() => Apply(Array.Empty<string>(), Array.Empty<string>());
+        public static void ClearMenu() => Clear("cleared by hand");
 
-        private static void Apply(string[] hostTags, string[] clientTags)
+        private static void Run(string[] hostTags, string[] clientTags)
         {
             if (EditorApplication.isPlaying)
             {
-                Debug.LogWarning("[NetHarness] Exit Play mode before changing player tags.");
+                Debug.LogWarning("[NetHarness] Already in Play mode; stop it before starting a run.");
                 return;
             }
 
-            var mppm = Type.GetType(MppmType);
-            if (mppm == null)
-            {
-                Debug.LogError("[NetHarness] Multiplayer Play Mode internals not found; set the tags by hand (see NETWORK_TEST_HARNESS.md).");
-                return;
-            }
+            if (!Apply(hostTags, clientTags)) return;
 
-            object? projectTags = GetStatic(mppm, "PlayerTags");
-            object? playerOne = GetStatic(mppm, "PlayerOne");
-            object? playerTwo = GetStatic(mppm, "PlayerTwo");
-            if (projectTags == null || playerOne == null || playerTwo == null)
-            {
-                Debug.LogError("[NetHarness] Multiplayer Play Mode player API changed; set the tags by hand (see NETWORK_TEST_HARNESS.md).");
-                return;
-            }
+            EditorPrefs.SetBool(PendingKey, true);
+            SessionState.SetBool(SessionKey, true);
+            EditorApplication.EnterPlaymode();
+        }
+
+        private static void OnPlayModeChanged(PlayModeStateChange change)
+        {
+            if (change != PlayModeStateChange.EnteredEditMode || !EditorPrefs.GetBool(PendingKey)) return;
+
+            Clear("run finished");
+        }
+
+        private static void Clear(string reason)
+        {
+            var allTags = HostTags.Concat(ClientTags).Distinct().ToArray();
+            if (!TryGetMppm(out var projectTags, out var playerOne, out var playerTwo)) return;
+
+            SetPlayerTags(playerOne!, Array.Empty<string>());
+            SetPlayerTags(playerTwo!, Array.Empty<string>());
+            foreach (var tag in allTags) RemoveProjectTag(projectTags!, tag);
+
+            EditorPrefs.DeleteKey(PendingKey);
+            SessionState.EraseBool(SessionKey);
+            Debug.Log($"[NetHarness] Player tags cleared ({reason}).");
+        }
+
+        private static bool Apply(string[] hostTags, string[] clientTags)
+        {
+            if (!TryGetMppm(out var projectTags, out var playerOne, out var playerTwo)) return false;
 
             foreach (var tag in hostTags.Concat(clientTags).Distinct())
             {
-                if (!(bool)Invoke(projectTags, "Contains", tag)!) InvokeWithError(projectTags, "Add", tag);
+                if (!(bool)Invoke(projectTags!, "Contains", tag)!) InvokeWithError(projectTags!, "Add", tag);
             }
 
-            SetPlayerTags(playerOne, hostTags);
-            SetPlayerTags(playerTwo, clientTags);
-            if (clientTags.Length > 0) EnsureLaunched(playerTwo);
+            SetPlayerTags(playerOne!, hostTags);
+            SetPlayerTags(playerTwo!, clientTags);
+            if (clientTags.Length > 0) EnsureLaunched(playerTwo!);
 
-            Debug.Log($"[NetHarness] Player 1: [{string.Join(", ", hostTags)}]  Player 2: [{string.Join(", ", clientTags)}].");
+            Debug.Log($"[NetHarness] Run starting. Player 1: [{string.Join(", ", hostTags)}]  Player 2: [{string.Join(", ", clientTags)}]. Tags clear when Play mode ends.");
+            return true;
+        }
+
+        private static bool TryGetMppm(out object? projectTags, out object? playerOne, out object? playerTwo)
+        {
+            projectTags = playerOne = playerTwo = null;
+            var mppm = Type.GetType(MppmType);
+            if (mppm != null)
+            {
+                projectTags = GetStatic(mppm, "PlayerTags");
+                playerOne = GetStatic(mppm, "PlayerOne");
+                playerTwo = GetStatic(mppm, "PlayerTwo");
+            }
+
+            if (projectTags != null && playerOne != null && playerTwo != null) return true;
+
+            Debug.LogError("[NetHarness] Multiplayer Play Mode internals not found or changed; set the tags by hand (see NETWORK_TEST_HARNESS.md).");
+            return false;
+        }
+
+        private static void SetPlayerTags(object player, string[] tags)
+        {
+            InvokeWithError(player, "ClearTags");
+            foreach (var tag in tags) InvokeWithError(player, "AddTag", tag);
+        }
+
+        /// <summary>UnityPlayerTags.Remove(string, out PlayerIdentifier[], out TagError); a tag that is not there is fine.</summary>
+        private static void RemoveProjectTag(object projectTags, string tag)
+        {
+            if (!(bool)Invoke(projectTags, "Contains", tag)!) return;
+
+            var remove = projectTags.GetType().GetMethod("Remove", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (remove == null || remove.GetParameters().Length != 3)
+            {
+                Debug.LogWarning($"[NetHarness] Could not remove project tag '{tag}'; remove it in Project Settings > Multiplayer > Playmode.");
+                return;
+            }
+
+            var parameters = new object?[] { tag, null, null };
+            if (!(bool)remove.Invoke(projectTags, parameters)!) Debug.LogWarning($"[NetHarness] Removing tag '{tag}' failed: {parameters[2]}.");
         }
 
         /// <summary>
@@ -89,12 +162,6 @@ namespace TinCan.DevTools.Editor
             Debug.Log(ok ? "[NetHarness] Launching Player 2." : $"[NetHarness] Player 2 did not launch: {parameters[0]}.");
         }
 
-        private static void SetPlayerTags(object player, string[] tags)
-        {
-            InvokeWithError(player, "ClearTags");
-            foreach (var tag in tags) InvokeWithError(player, "AddTag", tag);
-        }
-
         private static object? GetStatic(Type type, string property) =>
             type.GetProperty(property, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
 
@@ -105,20 +172,14 @@ namespace TinCan.DevTools.Editor
         private static void InvokeWithError(object target, string method, params object[] args)
         {
             var info = target.GetType().GetMethod(method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            if (info == null)
+            if (info == null || info.GetParameters().Length != args.Length + 1)
             {
-                Debug.LogError($"[NetHarness] {target.GetType().Name}.{method} not found.");
+                Debug.LogError($"[NetHarness] {target.GetType().Name}.{method} not found or changed signature.");
                 return;
             }
 
             var parameters = new object?[args.Length + 1];
             Array.Copy(args, parameters, args.Length);
-            if (info.GetParameters().Length != parameters.Length)
-            {
-                Debug.LogError($"[NetHarness] {target.GetType().Name}.{method} has an unexpected signature.");
-                return;
-            }
-
             bool ok = (bool)info.Invoke(target, parameters)!;
             if (!ok) Debug.LogWarning($"[NetHarness] {method}({string.Join(", ", args)}) failed: {parameters[^1]}.");
         }

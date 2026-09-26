@@ -1,10 +1,4 @@
 {
-  "PlayerTags": [
-    "autohost",
-    "netsim:Lag100",
-    "bot:Pilot",
-    "autojoin",
-    "bot:DeckWalk"
-  ],
+  "PlayerTags": [],
   "version": "6000.4.5f1"
 }

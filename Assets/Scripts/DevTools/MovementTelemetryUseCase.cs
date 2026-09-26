@@ -1,6 +1,8 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
@@ -16,7 +18,7 @@ namespace TinCan.DevTools
     /// summary line periodically and writes a JSON report when the bot route completes, or on shutdown if no route
     /// ran. Positions are taken in the local space of the platform the movement layer says the player is on.
     /// </summary>
-    public sealed class MovementTelemetryUseCase : IInitializable, ILateTickable, IDisposable
+    public sealed class MovementTelemetryUseCase : IInitializable, IPostLateTickable, IDisposable
     {
         private const string LogSource = "NetTelemetry";
         private const float MaxLegalSpeed = 20f;
@@ -67,7 +69,7 @@ namespace TinCan.DevTools
             _overlay = NetHarnessOverlayView.Create(DescribeLive);
         }
 
-        public void LateTick()
+        public void PostLateTick()
         {
             if (!_options.TelemetryEnabled || _written || !_network.IsActive) return;
 
@@ -142,6 +144,27 @@ namespace TinCan.DevTools
             _rttSamples++;
         }
 
+        private List<ServerInputSummary> ServerInputs()
+        {
+            var summaries = new List<ServerInputSummary>();
+            if (!_network.IsServer) return summaries;
+
+            foreach (var actor in _registry.GetActors<IHumanoidCharacterView>())
+            {
+                if (actor is not IBufferedInputSource buffered || buffered.InputBufferStats.Ticks == 0) continue;
+
+                ulong? owner = ((IPossessable)actor).OwnerId;
+                summaries.Add(ServerInputSummary.From(owner.HasValue ? $"client{owner.Value}" : actor.Id.ToString(), buffered.InputBufferStats));
+            }
+
+            return summaries;
+        }
+
+        private PredictionSummary Prediction() =>
+            _registry.GetLocalPlayerActor<IHumanoidCharacterView>() is IPredictedHumanoid predicted
+                ? PredictionSummary.From(predicted.PredictionStats)
+                : default;
+
         private string Role => _network.IsHost ? "host" : _network.IsServer ? "server" : $"client{_network.LocalClientId}";
 
         private string DescribeLive()
@@ -153,7 +176,9 @@ namespace TinCan.DevTools
                    $"ship still  start {still.start}\n            stop {still.stop}  jump {still.jump}\n" +
                    $"            snaps {still.snaps} (max {still.maxSnapM:0.00} m)  reversals {still.reversals}\n" +
                    $"ship moving start {moving.start}\n            stop {moving.stop}  jump {moving.jump}\n" +
-                   $"            snaps {moving.snaps} (max {moving.maxSnapM:0.00} m)  reversals {moving.reversals}";
+                   $"            snaps {moving.snaps} (max {moving.maxSnapM:0.00} m)  reversals {moving.reversals}" +
+                   string.Concat(ServerInputs().Select(input => $"\nserver input {input}")) +
+                   (_network.IsServer ? string.Empty : $"\n{Prediction()}");
         }
 
         private void WriteReport()
@@ -175,7 +200,9 @@ namespace TinCan.DevTools
                 avgRttMs = _rttSamples > 0 ? (float)Math.Round(_rttSum / _rttSamples, 1) : 0f,
                 maxRttMs = _rttMax,
                 shipStill = _tracker.Summarise(false),
-                shipMoving = _tracker.Summarise(true)
+                shipMoving = _tracker.Summarise(true),
+                serverInputs = ServerInputs(),
+                prediction = Prediction()
             };
 
             string json = JsonUtility.ToJson(report, true);

@@ -26,7 +26,7 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(InteractorControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
-    public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView, TinCan.Features.Airship.IBuilder
+    public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView, IBufferedInputSource, IPredictedHumanoid, TinCan.Features.Airship.IBuilder
     {
         public override bool IsSimulating => IsSpawned && (IsServer || IsOwner);
 
@@ -53,32 +53,155 @@ namespace TinCan.Network.Infrastructure
         [SerializeField] private MaxHealthAttribute? _maxHealthAttribute;
         [SerializeField] private List<AbilityDefinition>? _startingAbilities;
 
-        private readonly NetworkVariable<HumanoidInputState> _netInputState = new NetworkVariable<HumanoidInputState>(
-            writePerm: NetworkVariableWritePermission.Owner);
+        // Each send repeats the last few inputs, so any RedundantInputs - 1 consecutive lost packets lose nothing.
+        private const int RedundantInputs = 4;
+
         private readonly NetworkVariable<PlayerAttachmentState> _attachmentState = new NetworkVariable<PlayerAttachmentState>(
             writePerm: NetworkVariableWritePermission.Server);
+        private readonly HumanoidInputBuffer _inputBuffer = new();
+        private readonly Queue<HumanoidInputState> _recentInputs = new();
+        private HumanoidInputState _localInput;
+        private HumanoidInputState _serverInput;
 
         // IHumanoidCharacterView Implementation
         public IHumanoidMovementView Movement => _movement;
         public IOrbitalLookView Look => _look;
         public PlayerAttachmentState AttachmentState => _attachmentState.Value;
+        public HumanoidInputBufferStats InputBufferStats => _inputBuffer.Stats;
+        private uint LastProcessedSequence => IsOwner ? _localInput.Sequence : _inputBuffer.LastConsumedSequence;
 
+        /// <summary>
+        /// Owner: the input gathered this tick, stamped with a sequence and streamed to the server.
+        /// Server (remote owner): the input consumed from the buffer for this tick. Proxies do not simulate.
+        /// </summary>
         public HumanoidInputState InputState
         {
-            get => _netInputState.Value;
+            get => IsOwner ? _localInput : _serverInput;
             set
             {
                 if (!IsOwner) return;
 
                 value.Sequence = ++_nextInputSequence;
-                _netInputState.Value = value;
+                _localInput = value;
+                if (!IsServer) SendInput(value);
             }
         }
+
+        public void AdvanceInput()
+        {
+            if (!IsSpawned || !IsServer || IsOwner) return;
+
+            _serverInput = _inputBuffer.Consume();
+        }
+
+        private void SendInput(HumanoidInputState input)
+        {
+            if (!IsSpawned) return;
+
+            _recentInputs.Enqueue(input);
+            while (_recentInputs.Count > RedundantInputs) _recentInputs.Dequeue();
+            _inputSendTimes[input.Sequence] = Time.realtimeSinceStartup;
+            SubmitInputsServerRpc(_recentInputs.ToArray());
+        }
+
+        [Rpc(SendTo.Server, Delivery = RpcDelivery.Unreliable)]
+        private void SubmitInputsServerRpc(HumanoidInputState[] inputs, RpcParams rpcParams = default)
+        {
+            if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
+
+            _inputBuffer.Receive(inputs);
+        }
+
+        // IPredictedHumanoid: the owner predicts; the server reports what it did with each input.
+        private readonly Dictionary<uint, float> _inputSendTimes = new();
+        private HumanoidAuthoritativeState _pendingServerState;
+        private bool _hasPendingServerState;
+        private uint _newestServerSequence;
+
+        public bool IsLocallyPredicted => IsSpawned && IsOwner && !IsServer;
+        public bool PublishesAuthoritativeState => IsSpawned && IsServer && !IsOwner;
+        public HumanoidPredictionStats PredictionStats { get; } = new();
+
+        public bool TryTakeAuthoritativeState(out HumanoidAuthoritativeState state)
+        {
+            state = _pendingServerState;
+            if (!_hasPendingServerState) return false;
+
+            _hasPendingServerState = false;
+            return true;
+        }
+
+        public void PublishAuthoritativeState(in HumanoidAuthoritativeState state)
+        {
+            if (!PublishesAuthoritativeState) return;
+
+            // Express the state relative to the platform's NetworkObject, which the owner can resolve.
+            var platformObject = state.Platform != null ? state.Platform.GetComponentInParent<NetworkObject>() : null;
+            bool hasPlatform = platformObject != null && platformObject.IsSpawned;
+            var wire = HumanoidAuthoritativeState.FromWorld(
+                state.Sequence, state.TeleportEpoch, hasPlatform ? platformObject!.transform : null,
+                state.WorldPosition, state.WorldHorizontalVelocity, state.VerticalVelocity);
+
+            ReceiveAuthoritativeStateClientRpc(new HumanoidMovementSnapshot
+            {
+                Sequence = wire.Sequence,
+                TeleportEpoch = wire.TeleportEpoch,
+                HasPlatform = hasPlatform,
+                Platform = hasPlatform ? new NetworkObjectReference(platformObject!) : default,
+                LocalPosition = wire.LocalPosition,
+                LocalHorizontalVelocity = wire.LocalHorizontalVelocity,
+                VerticalVelocity = wire.VerticalVelocity
+            });
+        }
+
+        [Rpc(SendTo.Owner, Delivery = RpcDelivery.Unreliable)]
+        private void ReceiveAuthoritativeStateClientRpc(HumanoidMovementSnapshot snapshot)
+        {
+            if (IsServer || snapshot.Sequence < _newestServerSequence) return; // unreliable: drop reordered snapshots
+
+            Transform? platform = null;
+            if (snapshot.HasPlatform)
+            {
+                if (!snapshot.Platform.TryGet(out NetworkObject platformObject)) return;
+                platform = platformObject.transform;
+            }
+
+            _newestServerSequence = snapshot.Sequence;
+            _pendingServerState = new HumanoidAuthoritativeState(snapshot.Sequence, snapshot.TeleportEpoch, platform,
+                snapshot.LocalPosition, snapshot.LocalHorizontalVelocity, snapshot.VerticalVelocity);
+            _hasPendingServerState = true;
+            RecordAckLatency(snapshot.Sequence);
+        }
+
+        /// <summary>Time from sending an input to hearing the server applied it: round trip plus the server's input buffer.</summary>
+        private void RecordAckLatency(uint sequence)
+        {
+            if (_inputSendTimes.TryGetValue(sequence, out float sentAt))
+            {
+                PredictionStats.AddAckLatency((Time.realtimeSinceStartup - sentAt) * 1000f);
+            }
+
+            _ackedSequences.Clear();
+            foreach (var sent in _inputSendTimes.Keys)
+            {
+                if (sent <= sequence) _ackedSequences.Add(sent);
+            }
+            foreach (var acked in _ackedSequences) _inputSendTimes.Remove(acked);
+        }
+
+        private readonly List<uint> _ackedSequences = new();
+        private HumanoidMovementUseCase? _movementUseCase;
 
         [Inject]
         public void InjectPlayerSpawner(INetworkPlayerSpawner spawner)
         {
             _spawner = spawner;
+        }
+
+        [Inject]
+        public void InjectMovement(HumanoidMovementUseCase movementUseCase)
+        {
+            _movementUseCase = movementUseCase;
         }
 
         public GameplayTagContainer ActiveTags => _abilitySync.ActiveTags;
@@ -113,27 +236,19 @@ namespace TinCan.Network.Infrastructure
                 _abilitySync.GrantAbility(ability);
             }
 
-            _netInputState.OnValueChanged += OnInputStateChanged;
+            // The owner predicts its own motion; transform sync keeps driving everyone else.
+            GetComponent<NetworkTransformMediator>().OwnerPredicted = true;
+
             _spawner.NotifyPlayerSpawned(gameObject, OwnerClientId, IsOwner);
         }
 
-        public override void OnNetworkDespawn()
-        {
-            _netInputState.OnValueChanged -= OnInputStateChanged;
-            base.OnNetworkDespawn();
-        }
-
-        private void OnInputStateChanged(HumanoidInputState previous, HumanoidInputState current)
-        {
-            if (!IsOwner)
-            {
-                InputState = current;
-            }
-        }
-
+        // DefaultExecutionOrder(-100): runs after NGO has moved the interpolated ship (PreLateUpdate) and before the
+        // camera follows the player (ThirdPersonLookView.LateUpdate).
         private void LateUpdate()
         {
             if (!IsSpawned) return;
+
+            if (IsLocallyPredicted) _movementUseCase?.CarryWithPlatform(this);
 
             if (IsServer)
             {
@@ -171,12 +286,12 @@ namespace TinCan.Network.Infrastructure
                     Platform = new NetworkObjectReference(platformObject),
                     LocalPosition = platformObject.transform.InverseTransformPoint(transform.position),
                     LocalRotation = Quaternion.Inverse(platformObject.transform.rotation) * transform.rotation,
-                    LastProcessedInputSequence = _netInputState.Value.Sequence
+                    LastProcessedInputSequence = LastProcessedSequence
                 }
                 : new PlayerAttachmentState
                 {
                     IsAttached = false,
-                    LastProcessedInputSequence = _netInputState.Value.Sequence
+                    LastProcessedInputSequence = LastProcessedSequence
                 };
         }
 

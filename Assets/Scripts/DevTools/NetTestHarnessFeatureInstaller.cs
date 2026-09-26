@@ -26,7 +26,8 @@ namespace TinCan.DevTools
             builder.Register<HarnessSession>(Lifetime.Singleton);
             builder.Register<NetworkConditionsUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>();
             builder.Register<BotRouteUseCase>(Lifetime.Singleton).As<ITickable>();
-            builder.Register<MovementTelemetryUseCase>(Lifetime.Singleton).As<IInitializable>().As<ILateTickable>();
+            builder.Register<HarnessGameplayOverrides>(Lifetime.Singleton).As<IInitializable>();
+            builder.Register<MovementTelemetryUseCase>(Lifetime.Singleton).As<IInitializable>().As<IPostLateTickable>();
         }
     }
 }

@@ -8,7 +8,7 @@ namespace TinCan.DevTools
     /// <summary>Live harness readout for human playtests. F3 toggles it. Created at runtime by the telemetry use case.</summary>
     public sealed class NetHarnessOverlayView : MonoBehaviour
     {
-        private static readonly Rect Area = new(10f, 10f, 520f, 170f);
+        private static readonly Rect Area = new(10f, 10f, 560f, 210f);
 
         private Func<string>? _text;
         private bool _visible = true;

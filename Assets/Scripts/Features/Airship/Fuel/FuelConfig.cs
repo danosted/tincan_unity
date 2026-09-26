@@ -27,6 +27,9 @@ namespace TinCan.Features.Airship.Fuel
 
         [Tooltip("The item a player holds while carrying a jerry can (taken from the crate, poured into the motor).")]
         public TinCan.Features.Items.ItemDefinition? JerryCanItem;
+
+        [Tooltip("Attribute on the ship holding the current leak rate (litres per second, base 0). Hull breaches raise it; the tank drains it even while parked.")]
+        public TinCan.Features.Abilities.FuelLeakRateAttribute? LeakRateAttribute;
         [Tooltip("Slice 1 stopgap: the motor refuels on interact without a jerry can. Turn off once the carry loop exists.")]
         public bool DebugFreeRefuel = true;
 

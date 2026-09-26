@@ -207,6 +207,27 @@ the Items installer breaks Fuel and FlyingCan after the migration, so Items beco
   - Also fixed: the tag database now refreshes inside the import callback. `delayCall` never ran in a background
     Editor.
 
+- 2026-09-26: Step 3 done.
+  - `Features/Airship/Damage/`: 5 sockets in a `ShipDamageSockets` fixture, with an orange emissive sphere marker.
+    Socket 0 is in view from the spawn point.
+  - `ShipBreakageUseCase` breaks at random (first after 45 s, then every 40–90 s, at most 2 broken; switched off for
+    scripted runs).
+  - Each broken part holds one `GE_HullBreach` on the ship: +0.25 L/s `Attr_FuelLeakRate`, which Fuel drains even
+    while parked, and `State.Ship.Damaged`. There is also the HUD line "Hull breaches: n".
+  - `ShipDamageFeatureInstaller` is listed in `Profile_FuelSandbox`.
+  - (Corrected the same day) The first version kept point health in a plain replicated float, justified by an actor-Id
+    collision between ability mediators. On review that was wrong: `AbilityNetworkMediator.Id` resolves
+    `GetComponentInParent<IActor>()`, which finds the mediator itself first, so each socket has its own Id. Points
+    are now GAS actors as section C planned:
+    - each socket has an `AbilityNetworkMediator` and a `HealthAttributeSet` (`Attr_Health`, `Attr_MaxHealth`);
+    - breaking, restoring and (step 4) repairing are effects (`GE_ShipPartBreak`, `GE_ShipPartRestore`);
+    - each broken part also carries `GE_ShipPartBroken` (`State.Damaged`).
+  - The marker is toggled by the point itself. `TagCueView` (step 3b) can take this over later.
+  - Scenario `ShipDamage` passes solo and host + client: the break replicates in ~1.3 s at Lag100, the fuel drops
+    0.5 L in 2 s while parked, and everything clears on restore. It also checks the part's own `State.Damaged` tag.
+    Tests at 316/316, and the other scenarios still pass.
+  - Harness: `verify.ps1` now checks network prefab hashes between host and clones.
+
 ## Build order (vertical slices)
 0. **Feedback loop skeleton**: `Scenario` + expectations + report writer + self-terminating run + capture, first
    proven on an existing feature (a `NetCatch` scenario) so the harness is trusted before new code relies on it.

@@ -53,6 +53,7 @@ namespace TinCan.Features.Airship.Fuel
 
                 var controller = (airship as IShipState)?.Controller;
                 Burn(airship, tank, tank.Config, controller);
+                Leak(tank, tank.Config, controller);
                 UpdateStall(airship, tank, tank.Config, controller);
             }
         }
@@ -67,6 +68,16 @@ namespace TinCan.Features.Airship.Fuel
             if (drain <= 0f) return;
 
             tank.Consume(drain);
+        }
+
+        // Leaks drain even while parked. The rate is an attribute on the ship, raised by other features' effects.
+        private void Leak(IFuelTank tank, FuelConfig config, IAbilityControllerBase? controller)
+        {
+            if (controller == null || config.LeakRateAttribute == null || tank.IsEmpty) return;
+            if (!controller.TryGetAttribute(config.LeakRateAttribute, out var rate)) return;
+
+            float leak = _processor.ComputeLeak(rate.CurrentValue, _timeService.DeltaTime);
+            if (leak > 0f) tank.Consume(leak);
         }
 
         private void UpdateStall(IAirshipView airship, IFuelTank tank, FuelConfig config, IAbilityControllerBase? controller)

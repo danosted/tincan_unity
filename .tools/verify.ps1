@@ -246,9 +246,32 @@ function Sync-CloneScenes {
     }
 }
 
+# NGO refuses a client whose network prefab hashes differ from the host's ("NetworkConfig mismatch"), which a scenario
+# only shows as "no subject player". A clone reads prefabs from disk while the host may hold a newer in-memory hash
+# (for example right after a prefab was created from a scene object), so compare them before a host + client run.
+function Confirm-NetworkPrefabsMatch {
+    $code = 'var sb = new System.Text.StringBuilder(); foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:Prefab", new[] { "Assets" })) { var path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid); var go = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path); var no = go != null ? go.GetComponent<Unity.Netcode.NetworkObject>() : null; if (no != null) sb.Append(path).Append("=").Append(no.PrefabIdHash).Append(";"); } return sb.ToString();'
+    $hostPrefabs = (Invoke-Unity @("eval", "--code", $code) 60).result
+    if (-not $hostPrefabs) { return }
+
+    $clones = & unity status 2>$null | Select-String "Library[\\/]VP[\\/]" | ForEach-Object {
+        ($_.ToString() -split "\t|\s{2,}") | Where-Object { $_ -match "Library[\\/]VP[\\/]" } | Select-Object -First 1
+    }
+    foreach ($clone in $clones) {
+        $clonePrefabs = (Invoke-Unity @("eval", "--project-path", $clone, "--code", $code) 60).result
+        if (-not $clonePrefabs -or $clonePrefabs -eq $hostPrefabs) { continue }
+
+        $hostSet = $hostPrefabs -split ";" | Where-Object { $_ }
+        $cloneSet = $clonePrefabs -split ";" | Where-Object { $_ }
+        $diff = Compare-Object $hostSet $cloneSet | ForEach-Object { "$($_.SideIndicator -replace '<=','host' -replace '=>','clone'): $($_.InputObject)" }
+        Stop-Unusable ("network prefab hashes differ between host and clone $(Split-Path $clone -Leaf); the client would be refused (NetworkConfig mismatch). " +
+            "Re-save the prefab on the host (PrefabUtility.LoadPrefabContents + SaveAsPrefabAsset) so disk matches memory:`n  " + ($diff -join "`n  "))
+    }
+}
+
 function Invoke-Scenario([string]$mode) {
     Confirm-ScenesClean
-    if ($mode -eq "Duo") { Sync-CloneScenes }
+    if ($mode -eq "Duo") { Sync-CloneScenes; Confirm-NetworkPrefabsMatch }
     $status = Invoke-Unity @("editor_status") 15
     if ($status.playMode -and $status.playMode -ne "stopped") {
         Invoke-Unity @("editor_stop") 30 | Out-Null

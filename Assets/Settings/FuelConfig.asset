@@ -19,6 +19,7 @@ MonoBehaviour:
   JerryCanLitres: 25
   InitialSupply: 1
   JerryCanItem: {fileID: 11400000, guid: e7e80d4df040f794b8e4629467b40e24, type: 2}
+  LeakRateAttribute: {fileID: 11400000, guid: 5bb552c377bacfa42904e93b0c6fe9c8, type: 2}
   DebugFreeRefuel: 0
   StallWhenEmpty: 1
   BoostActiveTag: {fileID: 11400000, guid: 525daa4b9da694d4398b7264e73a1586, type: 2}

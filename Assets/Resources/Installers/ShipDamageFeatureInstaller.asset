@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 873fea95807d1a94e831419b928646c2, type: 3}
+  m_Name: ShipDamageFeatureInstaller
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Airship.Damage.ShipDamageFeatureInstaller
+  _config: {fileID: 11400000, guid: bf6057e839a28f946ab13f88c63ad107, type: 2}
+  _socketsFixture: {fileID: 11400000, guid: 10e29ac9821bc6444a44a79ea96cf1be, type: 2}

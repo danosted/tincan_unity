@@ -1,0 +1,39 @@
+#nullable enable
+using TinCan.Features.Abilities;
+using UnityEngine;
+
+namespace TinCan.Features.Airship.Damage
+{
+    /// <summary>Tunables for random breakage on the ship. Assigned on the ShipDamage installer and injected.</summary>
+    [CreateAssetMenu(fileName = "ShipDamageConfig", menuName = "TinCan/Airship/Ship Damage Config")]
+    public class ShipDamageConfig : ScriptableObject
+    {
+        [Tooltip("Parts break on their own. Scenarios switch this off and break parts on purpose.")]
+        public bool AutoBreak = true;
+
+        [Tooltip("Seconds after the ship first simulates before anything can break.")]
+        [Min(0f)] public float FirstBreakDelay = 45f;
+
+        [Tooltip("Seconds between breaks, picked uniformly in this range.")]
+        [Min(1f)] public float MinInterval = 40f;
+        [Min(1f)] public float MaxInterval = 90f;
+
+        [Tooltip("No new break while this many parts are already broken.")]
+        [Min(1)] public int MaxBroken = 2;
+
+        [Tooltip("0 picks a new seed each session; any other value makes the break order repeatable.")]
+        public int Seed;
+
+        [Tooltip("Infinite effect applied to the ship per broken part (e.g. +fuel leak, grants State.Ship.Damaged). Removed on repair.")]
+        public GameplayEffectDefinition? HullBreachEffect;
+
+        [Tooltip("Infinite effect on the part itself while it is broken (grants State.Damaged, for cues and repair targeting). Removed on repair.")]
+        public GameplayEffectDefinition? PartBrokenEffect;
+
+        [Tooltip("Instant effect that breaks a part (sets its health to 0).")]
+        public GameplayEffectDefinition? BreakEffect;
+
+        [Tooltip("Instant effect that fully restores a part (health to max). Used by scenarios and debug tools; players repair with the tool.")]
+        public GameplayEffectDefinition? RestoreEffect;
+    }
+}

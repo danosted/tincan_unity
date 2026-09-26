@@ -118,6 +118,12 @@ namespace TinCan.Features.Airship.Fuel
             {
                 _attributes.SetLevel(_processor.ClampLevel(_config.InitialLevel, _config.Capacity));
             }
+
+            // The leak rate lives on the ship so any feature's effect can raise it (hull breaches); base 0.
+            if (IsServer && _config.LeakRateAttribute != null && !controller.TryGetAttribute(_config.LeakRateAttribute, out _))
+            {
+                controller.SetAttribute(_config.LeakRateAttribute, new AttributeValue(0f));
+            }
         }
     }
 }

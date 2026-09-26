@@ -204,6 +204,9 @@ namespace TinCan.Features.Abilities
             abilities.Add(new AbilitySpec(definition));
         }
 
+        public bool HasAbility(IAbilityControllerBase actor, AbilityDefinition definition) =>
+            _actorAbilities.TryGetValue(actor.Id, out var abilities) && abilities.Any(a => a.Definition == definition);
+
         public void RemoveAbility(IAbilityControllerBase actor, AbilityDefinition definition)
         {
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
@@ -369,10 +372,11 @@ namespace TinCan.Features.Abilities
             }
         }
 
-        private void RemoveEffect(IAbilityControllerBase actor, ActiveGameplayEffect effect)
+        /// <summary>Removes one applied effect (the handle <see cref="ApplyEffect"/> returned); a stale handle is ignored.</summary>
+        public void RemoveEffect(IAbilityControllerBase actor, ActiveGameplayEffect effect)
         {
             if (!_activeEffects.TryGetValue(actor.Id, out var effects)) return;
-            effects.Remove(effect);
+            if (!effects.Remove(effect)) return;
 
             var grantedEffectTags = effects.SelectMany(e => e.Definition.GrantedTags).ToList();
 

@@ -45,7 +45,9 @@ namespace TinCan.DevTools.Scenarios
 
         private Phase _phase = Phase.WaitingForSession;
         private ScenarioRole _role;
-        private ScenarioRunner? _runner;
+        // One lane per role this peer plays: a client plays the subject, a host plays the server, and a solo host plays
+        // both at once so phases can interact exactly as they do across the network.
+        private readonly List<ScenarioRunner> _lanes = new();
         private DateTime _startedUtc;
         private float _phaseStart;
         private string _directory = string.Empty;
@@ -99,9 +101,9 @@ namespace TinCan.DevTools.Scenarios
 
         public void Dispose()
         {
-            if (_phase != Phase.Running || _runner == null) return;
+            if (_phase != Phase.Running) return;
 
-            _runner.Abort("play mode ended before the scenario finished");
+            foreach (var lane in _lanes) lane.Abort("play mode ended before the scenario finished");
             WriteReport();
         }
 
@@ -119,7 +121,15 @@ namespace TinCan.DevTools.Scenarios
             _startedUtc = DateTime.UtcNow;
             _timeline.Start(Now);
             _timeline.Add("start", Scenario.Name, true, $"role {_role} ({RoleName}), mode {Mode}, netsim {_options.NetworkPreset ?? "none"}");
-            _runner = new ScenarioRunner(Scenario.StepsFor(_role), this, _timeline);
+            if (_role == ScenarioRole.Solo)
+            {
+                _lanes.Add(new ScenarioRunner(Scenario.StepsFor(ScenarioRole.Server), this, _timeline, "server"));
+                _lanes.Add(new ScenarioRunner(Scenario.StepsFor(ScenarioRole.Subject), this, _timeline, "subject"));
+            }
+            else
+            {
+                _lanes.Add(new ScenarioRunner(Scenario.StepsFor(_role), this, _timeline));
+            }
             _phase = Phase.Running;
             _events.LogInfo(LogSource, $"'{Scenario.Name}' started as {_role} ({RoleName}): {Scenario.Description}");
         }
@@ -127,9 +137,12 @@ namespace TinCan.DevTools.Scenarios
         private void Run()
         {
             _timeline.SetTime(Now);
-            if (_timeline.Elapsed > Scenario.TimeoutSeconds) _runner!.Abort($"scenario timeout ({Scenario.TimeoutSeconds:0} s)");
-            _runner!.Tick(_timeline.Elapsed);
-            if (!_runner.IsDone) return;
+            foreach (var lane in _lanes)
+            {
+                if (_timeline.Elapsed > Scenario.TimeoutSeconds) lane.Abort($"scenario timeout ({Scenario.TimeoutSeconds:0} s)");
+                lane.Tick(_timeline.Elapsed);
+            }
+            if (!_lanes.All(lane => lane.IsDone)) return;
 
             WriteReport();
             _phaseStart = Now;
@@ -193,7 +206,7 @@ namespace TinCan.DevTools.Scenarios
 
         private void WriteReport()
         {
-            var runner = _runner!;
+            bool passed = _lanes.All(lane => lane.Status == ScenarioStatus.Passed);
             var report = new ScenarioReport
             {
                 scenario = Scenario.Name,
@@ -202,11 +215,11 @@ namespace TinCan.DevTools.Scenarios
                 preset = _options.NetworkPreset ?? "none",
                 startedUtc = _startedUtc.ToString("o"),
                 durationS = (float)Math.Round(_timeline.Elapsed, 2),
-                status = runner.Status.ToString(),
-                passed = runner.Status == ScenarioStatus.Passed,
-                failures = runner.Failures.ToList(),
-                expectations = runner.Expectations.ToList(),
-                checkpoints = runner.Captures.ToList(),
+                status = (passed ? ScenarioStatus.Passed : ScenarioStatus.Failed).ToString(),
+                passed = passed,
+                failures = _lanes.SelectMany(lane => lane.Failures).ToList(),
+                expectations = _lanes.SelectMany(lane => lane.Expectations).ToList(),
+                checkpoints = _lanes.SelectMany(lane => lane.Captures).ToList(),
                 timeline = _timeline.Entries.ToList()
             };
 

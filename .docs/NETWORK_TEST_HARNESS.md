@@ -151,8 +151,9 @@ A scenario (`ScenarioCatalog.cs`) has three phases:
   exercised. It checks what that peer sees (`WaitUntil`, `Expect`) and takes screenshots (`Checkpoint`).
 - **Assert** runs on the server and checks the authoritative outcome.
 
-A solo run plays all three phases on the host. A host + client run plays Arrange and Assert on the host and Act on
-the client. Phases synchronise through replicated state (`WaitUntil`), never through fixed waits. A failed `Do` or
+A host + client run plays Arrange then Assert on the host (the *server lane*) and Act on the client (the *subject
+lane*). A solo run plays both lanes side by side on the host, so the phases interact exactly as they do across the
+network. Its report prefixes each line with `server:` or `subject:`. Phases synchronise through replicated state (`WaitUntil`), never through fixed waits. A failed `Do` or
 a timed-out `WaitUntil` aborts the run. A failed `Expect` is recorded and the run continues, so one report lists
 every broken expectation.
 

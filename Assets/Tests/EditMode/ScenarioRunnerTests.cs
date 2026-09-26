@@ -176,7 +176,6 @@ namespace TinCan.Tests.EditMode
             .Assert(s => s.Do("C"))
             .Build();
 
-        [TestCase(ScenarioRole.Solo, "A,B,C")]
         [TestCase(ScenarioRole.Server, "A,C")]
         [TestCase(ScenarioRole.Subject, "B")]
         public void StepsFor_ComposesPhasesPerRole(ScenarioRole role, string expected)

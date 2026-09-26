@@ -4,7 +4,7 @@ using NUnit.Framework;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Features.Airship.Fuel;
-using TinCan.Features.Carry;
+using TinCan.Features.Items;
 using TinCan.Features.Interaction;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
@@ -35,7 +35,9 @@ namespace TinCan.Tests.EditMode
         private FuelConfig _config = null!;
         private FakeFuelTank _tank = null!;
         private FakeFillPort _port = null!;
-        private FakeCarrierActor _player = null!;
+        private FakeEquipmentActor _player = null!;
+        private ItemDefinition _can = null!;
+        private ItemDefinition _net = null!;
 
         [SetUp]
         public void SetUp()
@@ -45,13 +47,21 @@ namespace TinCan.Tests.EditMode
             _config = ScriptableObject.CreateInstance<FuelConfig>();
             _config.JerryCanLitres = 25f;
             _config.DebugFreeRefuel = true;
+            _can = ItemDefinition.Create(1, "ITEM_JerryCan");
+            _net = ItemDefinition.Create(2, "ITEM_CatchingNet");
+            _config.JerryCanItem = _can;
             _tank = new FakeFuelTank { Level = 50f, Capacity = 100f, Config = _config };
             _port = new FakeFillPort { Tank = _tank };
-            _player = new FakeCarrierActor();
+            _player = new FakeEquipmentActor();
         }
 
         [TearDown]
-        public void TearDown() => Object.DestroyImmediate(_config);
+        public void TearDown()
+        {
+            Object.DestroyImmediate(_config);
+            Object.DestroyImmediate(_can);
+            Object.DestroyImmediate(_net);
+        }
 
         [Test]
         public void Handle_DebugRefuelEnabled_EmptyHanded_AddsOneJerryCan()
@@ -77,12 +87,12 @@ namespace TinCan.Tests.EditMode
         public void Handle_CarryingACan_PoursItAndEmptiesHands()
         {
             _config.DebugFreeRefuel = false;
-            _player.Carried = CarriedItem.JerryCan;
+            _player.Held = _can;
 
             _handler.Handle(Context(_player, _port));
 
             Assert.That(_tank.Level, Is.EqualTo(75f));
-            Assert.That(_player.Carried, Is.EqualTo(CarriedItem.None));
+            Assert.That(_player.Held, Is.Null);
             Assert.That(_events.Events, Has.Exactly(1).TypeOf<FuelRefilledEvent>());
         }
 
@@ -90,27 +100,27 @@ namespace TinCan.Tests.EditMode
         public void Handle_CarryingACanIntoAFullTank_KeepsTheCan()
         {
             _tank.Level = 100f;
-            _player.Carried = CarriedItem.JerryCan;
+            _player.Held = _can;
 
             _handler.Handle(Context(_player, _port));
 
-            Assert.That(_player.Carried, Is.EqualTo(CarriedItem.JerryCan));
+            Assert.That(_player.Held, Is.SameAs(_can));
             Assert.That(_events.Events, Has.None.TypeOf<FuelRefilledEvent>());
         }
 
         [Test]
         public void Handle_CarryingSomethingElse_DoesNotRefuelEvenWithDebugOn()
         {
-            _player.Carried = CarriedItem.Net;
+            _player.Held = _net;
 
             _handler.Handle(Context(_player, _port));
 
             Assert.That(_tank.Level, Is.EqualTo(50f));
-            Assert.That(_player.Carried, Is.EqualTo(CarriedItem.Net));
+            Assert.That(_player.Held, Is.SameAs(_net));
         }
 
         [Test]
-        public void Handle_RequesterWithoutCarrier_UsesDebugPathOnly()
+        public void Handle_RequesterWithoutEquipment_UsesDebugPathOnly()
         {
             _handler.Handle(Context(new PlainActor(), _port));
             Assert.That(_tank.Level, Is.EqualTo(75f));

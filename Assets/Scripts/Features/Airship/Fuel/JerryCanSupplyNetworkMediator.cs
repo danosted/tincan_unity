@@ -27,6 +27,7 @@ namespace TinCan.Features.Airship.Fuel
 
         public InteractionDefinition Definition => _interactionDefinition!;
         public int Count => _count.Value;
+        public TinCan.Features.Items.ItemDefinition? Item => GetComponentInParent<IFuelTank>()?.Config?.JerryCanItem;
 
         private void Awake()
         {

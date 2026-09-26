@@ -1,23 +1,41 @@
 #nullable enable
 using NUnit.Framework;
+using TinCan.Features.Airship.Fuel.Minigame;
 using TinCan.Features.Carry;
 using TinCan.Features.Interaction;
+using TinCan.Features.Items;
 using TinCan.Tests.EditMode.Fakes;
+using UnityEngine;
 
 namespace TinCan.Tests.EditMode
 {
     public class TakeNetInteractionHandlerTests
     {
         private TakeNetInteractionHandler _handler = null!;
+        private FlyingCanConfig _config = null!;
         private FakeNetRack _rack = null!;
-        private FakeCarrierActor _player = null!;
+        private FakeEquipmentActor _player = null!;
+        private ItemDefinition _net = null!;
+        private ItemDefinition _can = null!;
 
         [SetUp]
         public void SetUp()
         {
-            _handler = new TakeNetInteractionHandler(new FakeEventPublisher());
+            _net = ItemDefinition.Create(2, "ITEM_CatchingNet");
+            _can = ItemDefinition.Create(1, "ITEM_JerryCan");
+            _config = ScriptableObject.CreateInstance<FlyingCanConfig>();
+            _config.NetItem = _net;
+            _handler = new TakeNetInteractionHandler(new FakeEventPublisher(), _config);
             _rack = new FakeNetRack();
-            _player = new FakeCarrierActor();
+            _player = new FakeEquipmentActor();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Object.DestroyImmediate(_config);
+            Object.DestroyImmediate(_net);
+            Object.DestroyImmediate(_can);
         }
 
         [Test]
@@ -25,27 +43,37 @@ namespace TinCan.Tests.EditMode
         {
             _handler.Handle(new InteractionContext(_player, _rack, null!));
 
-            Assert.That(_player.Carried, Is.EqualTo(CarriedItem.Net));
+            Assert.That(_player.Held, Is.SameAs(_net));
         }
 
         [Test]
-        public void Handle_CarryingNet_ReturnsIt()
+        public void Handle_HoldingNet_ReturnsIt()
         {
-            _player.Carried = CarriedItem.Net;
+            _player.Held = _net;
 
             _handler.Handle(new InteractionContext(_player, _rack, null!));
 
-            Assert.That(_player.Carried, Is.EqualTo(CarriedItem.None));
+            Assert.That(_player.Held, Is.Null);
         }
 
         [Test]
-        public void Handle_CarryingJerryCan_IsRefused()
+        public void Handle_HoldingJerryCan_IsRefused()
         {
-            _player.Carried = CarriedItem.JerryCan;
+            _player.Held = _can;
 
             _handler.Handle(new InteractionContext(_player, _rack, null!));
 
-            Assert.That(_player.Carried, Is.EqualTo(CarriedItem.JerryCan));
+            Assert.That(_player.Held, Is.SameAs(_can));
+        }
+
+        [Test]
+        public void Handle_ConfigWithoutNetItem_HandsOutNothing()
+        {
+            _config.NetItem = null;
+
+            _handler.Handle(new InteractionContext(_player, _rack, null!));
+
+            Assert.That(_player.Held, Is.Null);
         }
 
         [Test]
@@ -53,7 +81,7 @@ namespace TinCan.Tests.EditMode
         {
             _handler.Handle(new InteractionContext(_player, new FakeJerryCanSupply(), null!));
 
-            Assert.That(_player.Carried, Is.EqualTo(CarriedItem.None));
+            Assert.That(_player.Held, Is.Null);
         }
     }
 }

@@ -240,7 +240,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bea9a128da82acc45899384dfba0c566, type: 2}
   - {fileID: 11400000, guid: 4612436d5493f7648a8e835455dbb5dd, type: 2}
   - {fileID: 11400000, guid: 7ad3bd62fdedf794b87a380844716e24, type: 2}
-  - {fileID: 11400000, guid: 70d0f151a693fc143b9fb2147a14dd8d, type: 2}
 --- !u!114 &917994041440066554
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -267,7 +266,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Carry.PlayerCarryNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
-  _carryingNetTag: {fileID: 11400000, guid: 645a9df9691d5514aa320b45b5be7fed, type: 2}
 --- !u!114 &1084010879778581604
 MonoBehaviour:
   m_ObjectHideFlags: 0

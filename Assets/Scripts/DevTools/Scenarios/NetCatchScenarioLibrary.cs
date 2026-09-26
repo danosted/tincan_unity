@@ -7,7 +7,7 @@ using TinCan.Core.Domain.Networking;
 using TinCan.Features.Airship;
 using TinCan.Features.Airship.Fuel;
 using TinCan.Features.Airship.Fuel.Minigame;
-using TinCan.Features.Carry;
+using TinCan.Features.Items;
 using UnityEngine;
 
 namespace TinCan.DevTools.Scenarios
@@ -61,14 +61,15 @@ namespace TinCan.DevTools.Scenarios
         {
             if (!_network.IsServer) return ScenarioCheck.Fail("server-only command");
 
-            var carrier = CarrierLocator.Resolve(_subject.Resolve());
-            if (carrier == null) return ScenarioCheck.Fail("subject has no carrier");
-            if (carrier.Carried == CarriedItem.Net) return ScenarioCheck.Pass("already carrying a net");
-            if (carrier.IsCarrying) carrier.TryDrop();
+            var equipment = EquipmentLocator.Resolve(_subject.Resolve());
+            if (equipment == null) return ScenarioCheck.Fail("subject has no equipment");
+            if (_config.NetItem == null) return ScenarioCheck.Fail("FlyingCanConfig has no NetItem");
+            if (equipment.IsHolding(_config.NetItem)) return ScenarioCheck.Pass("already holding the net");
+            if (!equipment.IsEmptyHanded) equipment.TryUnequip();
 
-            return carrier.TryPickUp(CarriedItem.Net)
+            return equipment.TryEquip(_config.NetItem)
                 ? ScenarioCheck.Pass("net given")
-                : ScenarioCheck.Fail($"pick-up refused while carrying {carrier.Carried}");
+                : ScenarioCheck.Fail($"equip refused while holding {equipment.Held?.name ?? "nothing"}");
         }
 
         private ScenarioCheck SpawnCan()

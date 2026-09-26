@@ -122,16 +122,21 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
 
         private VolumetricClouds? _clouds;
 
-        private void OnEnable() => Apply(markDirty: true);
+        // OnEnable runs after every domain reload, Play exit and scene reload, so it must not mark anything dirty:
+        // that made the scene look modified after every Play session and blocked tests behind a save dialog.
+        // Only a real Inspector edit (OnValidate) marks the targets dirty.
+        private void OnEnable() => Apply(markDirty: false);
 
         private void OnValidate() => Apply(markDirty: true);
 
-        // Reapplied every frame (not just on Inspector change) because
-        // VolumetricCloudsVolumeEditor fights back: it re-forces several fields to the
-        // selected preset's values whenever its own Inspector redraws. Marking the targets
-        // dirty every frame would falsely show the scene as having unsaved changes even when
-        // nothing actually changed, so that only happens from OnEnable/OnValidate.
-        private void Update() => Apply(markDirty: false);
+        // In Play, reapplied every frame so the network-synced wind time reaches the renderer feature. Edit mode does
+        // not simulate: values apply on enable and on Inspector edits, and the preset is forced to Custom on the first
+        // apply, so VolumetricCloudsVolumeEditor no longer resets them.
+        private void Update()
+        {
+            if (!Application.isPlaying) return;
+            Apply(markDirty: false);
+        }
 
         private void Apply(bool markDirty)
         {

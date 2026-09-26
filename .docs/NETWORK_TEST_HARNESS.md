@@ -1,5 +1,9 @@
 # Network test harness
 
+Two tools share this harness. **Routes and telemetry** measure how movement feels to a remote player. **Scenarios**
+(see [below](#scenarios-feature-tests-in-the-live-game)) check that a feature works on host and client, and give a
+verdict an agent can read.
+
 A host has zero latency to itself, so a bug in how a *remote* client feels (sluggish movement, rubber-banding)
 cannot be seen by pressing Play and Start Host. The harness reproduces a remote client in the Editor, plays a
 fixed input route with a bot, and writes numbers you can compare between changes.
@@ -102,6 +106,81 @@ the player stands on. Ship motion itself never counts as player motion. Results 
 Latency lines read `p50 / p95 / max (n=samples, timeouts)`. A timeout means no response within 2 s.
 
 The host's own player is local, so its numbers are the floor. The client's numbers are what a remote player feels.
+
+## Scenarios: feature tests in the live game
+
+Routes measure movement. **Scenarios check that a feature works**, on host and client, and give a pass or fail
+verdict that an agent can read without a human watching. Code: `Assets/Scripts/DevTools/Scenarios/`.
+
+**One command** runs the tiers, cheapest first, and stops at the first red one:
+
+```powershell
+.\.tools\verify.ps1 -Scenario NetCatch                  # compile, EditMode tests, solo run, host + client run
+.\.tools\verify.ps1 -Scenario NetCatch -UpTo Solo -TestFilter Scenario
+```
+
+| Tier | What runs | Typical time | Catches |
+|---|---|---|---|
+| Compile | `unity cmd recompile` | ~10 s | build breaks |
+| Tests | `unity cmd run_tests --mode EditMode` (optional `-TestFilter`) | ~10 s | processor, use case and handler logic |
+| Solo | menu **TinCan > Dev > Scenarios > *X* (Host)** | ~15 s | wiring, installers, assets, server flow |
+| Duo | menu **TinCan > Dev > Scenarios > *X* (Host + Client, Lag100)** | ~40 s | replication, prediction, what the remote player sees |
+
+Exit code 0 means every tier passed, 1 means a tier failed, and 2 means the Editor was not usable (busy, timed
+out, or a modal dialog is open). The script guards against the MPPM and Editor failures seen in practice:
+
+- It stops on a blocking dialog such as "Scene(s) Have Been Modified" instead of hanging.
+- If an open scene is marked modified, the script stops before Unity can raise its save dialog. Pass
+  `-SaveDirtyScenes` to save it first. Play sessions no longer mark the scene dirty on their own (see the cloud
+  entry in the `CODE_MAP.md` traps), so a dirty scene now means a real unsaved edit.
+- A wedged pipeline is woken by focusing the Editor window. With `-RestartEditor`, the script also uses
+  `unity close --force` and `unity open` as a last resort, which discards unsaved changes.
+- A clone that came back from a relaunch with an empty scene gets the host's scene opened before a host + client
+  run. Otherwise it "plays" nothing and never joins.
+
+The menu also waits for Player 2 to report `Launched` before entering Play, and retries MPPM's tag file when a clone
+holds it.
+
+### Anatomy
+
+A scenario (`ScenarioCatalog.cs`) has three phases:
+
+- **Arrange** runs on the server and sets up the world around the *subject*: it spawns, equips or breaks things
+  through `Do(...)` commands. The subject is the client's player, or the host's own player in a solo run.
+- **Act** runs on the subject's peer through real input (`Hold`, `Tap`), so prediction and replication are
+  exercised. It checks what that peer sees (`WaitUntil`, `Expect`) and takes screenshots (`Checkpoint`).
+- **Assert** runs on the server and checks the authoritative outcome.
+
+A solo run plays all three phases on the host. A host + client run plays Arrange and Assert on the host and Act on
+the client. Phases synchronise through replicated state (`WaitUntil`), never through fixed waits. A failed `Do` or
+a timed-out `WaitUntil` aborts the run. A failed `Expect` is recorded and the run continues, so one report lists
+every broken expectation.
+
+Commands and probes come from `IScenarioLibrary` classes, one per feature (`NetCatchScenarioLibrary.cs`), plus
+`CommonScenarioLibrary` (`SubjectReady`, `SubjectHasTag`, `SubjectLacksTag`). The catalog entry registers its
+libraries only when that scenario runs, so a library's feature dependencies are resolved only then.
+
+### Output
+
+`Logs/feature-telemetry/<Scenario>/` (git-ignored) contains:
+
+| File | Content |
+|---|---|
+| `latest-summary.json` | **Read this first.** Overall `passed`, and each peer's status, failures and report path. The host writes it once every client has reported, or after 20 s, in which case a missing client counts as a failure. |
+| `latest-<role>.json` | One peer's full report: status, failures, expectations, checkpoint paths and a `timeline`. The timeline interleaves steps with every domain event published on that peer (`ScenarioEventRecorder`), plus warnings and errors. |
+| `<role>/NN-<checkpoint>.png` | Screenshots from the latest run only. |
+
+The Console gets `[Scenario]` lines and a final `[Scenario] SUMMARY {json}`. Play mode ends by itself about 1 s
+after the summary is written. Flags, also usable as MPPM player tags: `scenario:<name>` and `scenariomode:solo`.
+
+### Adding a scenario for a feature slice
+
+1. Put the commands and probes the feature needs in a new `IScenarioLibrary` under `DevTools/Scenarios/`.
+   - Commands act on the server through the feature's own interfaces.
+   - Probes read state that is replicated to the peer running them.
+2. Add a `ScenarioEntry` to `ScenarioCatalog` and list it in `All`.
+3. Add a `(Host)` and a `(Host + Client, Lag100)` menu pair in `DevTools/Editor/ScenarioMenu.cs`.
+4. The slice is done when `.\.tools\verify.ps1 -Scenario <Name>` exits 0.
 
 ## Extending
 

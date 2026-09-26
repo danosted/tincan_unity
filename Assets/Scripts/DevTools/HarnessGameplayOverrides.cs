@@ -6,7 +6,7 @@ using VContainer.Unity;
 namespace TinCan.DevTools
 {
     /// <summary>
-    /// Gameplay rules the harness suspends while a bot route runs, so measurements see steady play rather than
+    /// Gameplay rules the harness suspends while a bot route or scenario runs, so measurements see steady play rather than
     /// resets. Today that is the cloud-boundary character reset: the piloted ship can sink below the reset depth,
     /// and the respawn teleport would then fire every tick.
     /// </summary>
@@ -25,10 +25,10 @@ namespace TinCan.DevTools
 
         public void Initialize()
         {
-            if (_options.BotRoute == null) return;
+            if (!_options.IsScripted) return;
 
             _cloudBoundary.CharacterResetEnabled = false;
-            _events.LogInfo("NetHarness", "Cloud-boundary character reset disabled for the bot run.");
+            _events.LogInfo("NetHarness", "Cloud-boundary character reset disabled for the scripted run.");
         }
     }
 }

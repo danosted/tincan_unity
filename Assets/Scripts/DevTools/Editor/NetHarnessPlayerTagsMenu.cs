@@ -22,12 +22,19 @@ namespace TinCan.DevTools.Editor
         private const string MppmType = "Unity.Multiplayer.PlayMode.Editor.MultiplayerPlaymode, UnityEditor.MultiplayerModule";
         private const string PendingKey = "TinCan.NetHarness.TagsPending";      // survives Editor restarts
         private const string SessionKey = "TinCan.NetHarness.RunThisSession";   // survives domain reloads only
+        private const double LaunchTimeoutSeconds = 180;
+        private const int MaxWriteAttempts = 6;
+
+        private static bool IsClone => Application.dataPath.Replace('\\', '/').Contains("/Library/VP/");
 
         public static readonly string[] HostTags = { "autohost", "netsim:Lag100", "bot:Pilot" };
         public static readonly string[] ClientTags = { "autojoin", "netsim:Lag100", "bot:DeckWalk" };
 
         static NetHarnessPlayerTagsMenu()
         {
+            // MPPM clones compile this too, but they share EditorPrefs with the main Editor and must not manage tags.
+            if (IsClone) return;
+
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
 
             // Tags still pending from a previous Editor session (crash or restart mid-run): clean them up.
@@ -54,7 +61,8 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "Clear Tags")]
         public static void ClearMenu() => Clear("cleared by hand");
 
-        private static void Run(string[] hostTags, string[] clientTags)
+        /// <summary>Applies the tags to Player 1 (host) and Player 2 (client), launches Player 2 if it has tags, and enters Play.</summary>
+        public static void Run(string[] hostTags, string[] clientTags)
         {
             if (EditorApplication.isPlaying)
             {
@@ -66,7 +74,40 @@ namespace TinCan.DevTools.Editor
 
             EditorPrefs.SetBool(PendingKey, true);
             SessionState.SetBool(SessionKey, true);
+
+            // Entering Play before Player 2's Editor is up leaves the host waiting for a client that never joins.
+            if (clientTags.Length > 0 && !IsPlayerTwoLaunched())
+            {
+                WaitForPlayerTwoThenPlay();
+                return;
+            }
+
             EditorApplication.EnterPlaymode();
+        }
+
+        private static void WaitForPlayerTwoThenPlay()
+        {
+            double deadline = EditorApplication.timeSinceStartup + LaunchTimeoutSeconds;
+            Debug.Log($"[NetHarness] Waiting for Player 2 to launch before entering Play (up to {LaunchTimeoutSeconds:0} s).");
+
+            void Poll()
+            {
+                bool launched = IsPlayerTwoLaunched();
+                if (!launched && EditorApplication.timeSinceStartup < deadline) return;
+
+                EditorApplication.update -= Poll;
+                if (!launched) Debug.LogWarning("[NetHarness] Player 2 did not launch in time; entering Play anyway.");
+                EditorApplication.EnterPlaymode();
+            }
+
+            EditorApplication.update += Poll;
+        }
+
+        private static bool IsPlayerTwoLaunched()
+        {
+            if (!TryGetMppm(out _, out _, out var playerTwo)) return false;
+            var state = playerTwo!.GetType().GetProperty("PlayerState", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(playerTwo);
+            return state?.ToString() == "Launched";
         }
 
         private static void OnPlayModeChanged(PlayModeStateChange change)
@@ -93,7 +134,8 @@ namespace TinCan.DevTools.Editor
 
         /// <summary>Tags this menu owns; anything else a developer created by hand is left alone.</summary>
         private static bool IsHarnessTag(string tag) =>
-            tag is "autohost" or "autojoin" or "telemetry" || tag.StartsWith("netsim:") || tag.StartsWith("bot:");
+            tag is "autohost" or "autojoin" or "telemetry" || tag.StartsWith("netsim:") || tag.StartsWith("bot:") ||
+            tag.StartsWith("scenario:") || tag.StartsWith("scenariomode:");
 
         private static bool Apply(string[] hostTags, string[] clientTags)
         {
@@ -190,8 +232,21 @@ namespace TinCan.DevTools.Editor
 
             var parameters = new object?[args.Length + 1];
             Array.Copy(args, parameters, args.Length);
-            bool ok = (bool)info.Invoke(target, parameters)!;
-            if (!ok) Debug.LogWarning($"[NetHarness] {method}({string.Join(", ", args)}) failed: {parameters[^1]}.");
+
+            // MPPM persists tags to Library/VP/SystemData.json, which a clone may be writing at the same moment.
+            for (int attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    bool ok = (bool)info.Invoke(target, parameters)!;
+                    if (!ok) Debug.LogWarning($"[NetHarness] {method}({string.Join(", ", args)}) failed: {parameters[^1]}.");
+                    return;
+                }
+                catch (TargetInvocationException exception) when (exception.InnerException is System.IO.IOException && attempt < MaxWriteAttempts)
+                {
+                    System.Threading.Thread.Sleep(100 * attempt);
+                }
+            }
         }
     }
 }

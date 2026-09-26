@@ -55,6 +55,9 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
     private const string shaderName = "Hidden/Sky/VolumetricClouds";
     private const string VOLUMETRIC_CLOUDS = "VOLUMETRIC_CLOUDS";
     private const string VISUAL_ENVIRONMENT_DYNAMIC_SKY = "VISUAL_ENVIRONMENT_DYNAMIC_SKY";
+    // TinCan: the passes write wind and per-frame state into their material every frame. Rendering with a runtime
+    // copy keeps that churn out of the VolumetricClouds.mat asset (and out of git).
+    private Material runtimeMaterial;
     private VolumetricCloudsPass volumetricCloudsPass;
     private VolumetricCloudsAmbientPass volumetricCloudsAmbientPass;
     private VolumetricCloudsShadowsPass volumetricCloudsShadowsPass;
@@ -253,9 +256,12 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
         else
             Shader.EnableKeyword(VOLUMETRIC_CLOUDS);
 
+        if (runtimeMaterial == null)
+            runtimeMaterial = new Material(material) { name = material.name + " (Runtime)", hideFlags = HideFlags.HideAndDontSave };
+
         if (volumetricCloudsPass == null)
         {
-            volumetricCloudsPass = new(material, resolutionScale);
+            volumetricCloudsPass = new(runtimeMaterial, resolutionScale);
             volumetricCloudsPass.renderPassEvent = RenderPassEvent.BeforeRenderingTransparents; // Use camera previous matrix to do reprojection
         }
         else
@@ -268,13 +274,13 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
 
         if (volumetricCloudsAmbientPass == null)
         {
-            volumetricCloudsAmbientPass = new(material);
+            volumetricCloudsAmbientPass = new(runtimeMaterial);
             volumetricCloudsAmbientPass.renderPassEvent = RenderPassEvent.BeforeRenderingTransparents - 1;
         }
 
         if (volumetricCloudsShadowsPass == null)
         {
-            volumetricCloudsShadowsPass = new(material);
+            volumetricCloudsShadowsPass = new(runtimeMaterial);
             volumetricCloudsShadowsPass.renderPassEvent = RenderPassEvent.BeforeRendering;
         }
     }
@@ -287,6 +293,9 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
             volumetricCloudsAmbientPass.Dispose();
         if (volumetricCloudsShadowsPass != null)
             volumetricCloudsShadowsPass.Dispose();
+
+        CoreUtils.Destroy(runtimeMaterial);
+        runtimeMaterial = null;
     }
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
@@ -607,7 +616,8 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
                 deltaTime = 0.0f;
 
         #if UNITY_EDITOR
-            if (UnityEditor.EditorApplication.isPaused)
+            // TinCan: the wind only moves in Play mode; edit mode shows a still sky.
+            if (UnityEditor.EditorApplication.isPaused || !Application.isPlaying)
                 deltaTime = 0.0f;
         #endif
 

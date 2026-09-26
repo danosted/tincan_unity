@@ -4,7 +4,18 @@ Short recipes keyed by what you want to do. Each one says which files to open, t
 real example in the repo to copy from. For a whole new feature use
 [`TUTORIAL_NEW_FEATURE.md`](TUTORIAL_NEW_FEATURE.md); for the layout see [`CODE_MAP.md`](CODE_MAP.md).
 
-Verification commands assume the Editor is open and `unity status` reports `ready`:
+Verification commands assume the Editor is open and `unity status` reports `ready`.
+
+**Default verify loop for feature work.** Run it after every change, not only at the end:
+
+```powershell
+.\.tools\verify.ps1 -Scenario <Name>     # compile -> EditMode tests -> solo scenario -> host+client scenario
+.\.tools\verify.ps1 -UpTo Tests          # no scenario yet: compile + tests only
+```
+
+It stops at the first red tier and prints why. Exit code 2 means the Editor was blocked (for example by a modal
+dialog), not that the code failed. Give every feature slice a scenario; see "Scenarios" in
+[`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md). The individual commands:
 
 ```bash
 unity cmd recompile && unity cmd recompile_status

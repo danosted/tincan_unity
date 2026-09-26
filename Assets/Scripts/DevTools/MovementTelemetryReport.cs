@@ -104,12 +104,15 @@ namespace TinCan.DevTools
         /// </summary>
         public static string TelemetryDirectory() => TelemetryDirectory(Application.dataPath);
 
-        public static string TelemetryDirectory(string dataPath)
+        public static string TelemetryDirectory(string dataPath) =>
+            Path.Combine(ProjectRoot(dataPath), "Logs", "net-telemetry").Replace('\\', '/');
+
+        /// <summary>The main project folder, also when called from an MPPM clone under <c>Library/VP/&lt;id&gt;</c>.</summary>
+        public static string ProjectRoot(string dataPath)
         {
             string root = Path.GetFullPath(Path.Combine(dataPath, "..")).Replace('\\', '/');
             int clone = root.IndexOf("/Library/VP/", StringComparison.OrdinalIgnoreCase);
-            if (clone >= 0) root = root.Substring(0, clone);
-            return Path.Combine(root, "Logs", "net-telemetry").Replace('\\', '/');
+            return clone >= 0 ? root.Substring(0, clone) : root;
         }
     }
 }

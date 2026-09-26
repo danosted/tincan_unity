@@ -1,4 +1,5 @@
 #nullable enable
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using TinCan.Core.Domain;
@@ -121,10 +122,11 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
         [ColorUsage(false, true)] [SerializeField] private Color _sunColor = Color.white;
 
         private VolumetricClouds? _clouds;
+        private bool _changed;
 
         // OnEnable runs after every domain reload, Play exit and scene reload, so it must not mark anything dirty:
         // that made the scene look modified after every Play session and blocked tests behind a save dialog.
-        // Only a real Inspector edit (OnValidate) marks the targets dirty.
+        // Only OnValidate marks the targets dirty, and only for values that actually changed (it also runs on reloads).
         private void OnEnable() => Apply(markDirty: false);
 
         private void OnValidate() => Apply(markDirty: true);
@@ -165,7 +167,12 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
             // VolumetricCloudsVolumeEditor re-forces bottomAltitude/altitudeRange (and several
             // other fields) back to the selected preset's hardcoded values every time its
             // Inspector redraws, unless the preset is Custom. Force Custom so our values stick.
-            _clouds.cloudPreset = VolumetricClouds.CloudPresets.Custom;
+            _changed = false;
+            if (_clouds.cloudPreset != VolumetricClouds.CloudPresets.Custom)
+            {
+                _clouds.cloudPreset = VolumetricClouds.CloudPresets.Custom;
+                _changed = true;
+            }
 
             Set(_clouds.state, _cloudsEnabled);
             Set(_clouds.localClouds, _localClouds);
@@ -202,7 +209,7 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
             Set(_clouds.temporalAccumulationFactor, _temporalAccumulationFactor);
 
 #if UNITY_EDITOR
-            if (markDirty)
+            if (markDirty && _changed)
             {
                 EditorUtility.SetDirty(_clouds);
                 EditorUtility.SetDirty(_cloudsProfile);
@@ -217,6 +224,7 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
                 return;
             }
 
+            bool changed = !Mathf.Approximately(_rendererFeature.ResolutionScale, _resolutionScale) || _rendererFeature.UpscaleMode != _upscaleMode;
             _rendererFeature.ResolutionScale = _resolutionScale;
             _rendererFeature.UpscaleMode = _upscaleMode;
             // Null when ITimeService hasn't been injected (Edit mode, or not yet built) or no
@@ -224,7 +232,7 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
             _rendererFeature.TimeOverride = _timeService?.Time;
 
 #if UNITY_EDITOR
-            if (markDirty)
+            if (markDirty && changed)
             {
                 EditorUtility.SetDirty(_rendererFeature);
             }
@@ -238,57 +246,27 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
                 return;
             }
 
+            bool changed = !Mathf.Approximately(_sunLight.intensity, _sunIntensity) || _sunLight.color != _sunColor;
             _sunLight.intensity = _sunIntensity;
             _sunLight.color = _sunColor;
 
 #if UNITY_EDITOR
-            if (markDirty)
+            if (markDirty && changed)
             {
                 EditorUtility.SetDirty(_sunLight);
             }
 #endif
         }
 
-        private static void Set(BoolParameter parameter, bool value)
+        // Records whether anything actually changed, so the targets are marked dirty only for real edits. Unity calls
+        // OnValidate on every domain reload too; dirtying unconditionally made the scene look modified after each recompile.
+        private void Set<T>(VolumeParameter<T> parameter, T value)
         {
-            parameter.value = value;
-            parameter.overrideState = true;
-        }
+            if (parameter.overrideState && EqualityComparer<T>.Default.Equals(parameter.value, value)) return;
 
-        private static void Set(ClampedFloatParameter parameter, float value)
-        {
             parameter.value = value;
             parameter.overrideState = true;
-        }
-
-        private static void Set(MinFloatParameter parameter, float value)
-        {
-            parameter.value = value;
-            parameter.overrideState = true;
-        }
-
-        private static void Set(FloatParameter parameter, float value)
-        {
-            parameter.value = value;
-            parameter.overrideState = true;
-        }
-
-        private static void Set(ClampedIntParameter parameter, int value)
-        {
-            parameter.value = value;
-            parameter.overrideState = true;
-        }
-
-        private static void Set(TextureParameter parameter, Texture? value)
-        {
-            parameter.value = value;
-            parameter.overrideState = true;
-        }
-
-        private static void Set(Vector4Parameter parameter, Vector4 value)
-        {
-            parameter.value = value;
-            parameter.overrideState = true;
+            _changed = true;
         }
     }
 }

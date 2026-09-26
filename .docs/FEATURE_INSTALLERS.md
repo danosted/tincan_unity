@@ -107,6 +107,11 @@ profile's own installer list, de-duplicates installers listed more than once, an
 profile that (in)directly includes itself is simply visited once). Compose by listing base profiles under
 `_includes` and only the feature-specific installers under the profile's own list.
 
+**A new installer does nothing in a profiled scene until a profile lists it.** The main scene
+(`drm_cloud_environment`) uses `Profile_FuelSandbox`, which includes `Profile_Base`. Put shared infrastructure,
+such as `GameplayTagsFeatureInstaller`, in `Profile_Base`, and gameplay features in the experience profile. This
+is also how a feature is switched on or off: add it to a profile or remove it.
+
 ## Merging Unity YAML
 
 Prefabs, scenes and assets merge far better with Unity's own merge tool. `.gitattributes` marks them with

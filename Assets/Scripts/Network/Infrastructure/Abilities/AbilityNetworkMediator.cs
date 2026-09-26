@@ -19,6 +19,7 @@ namespace TinCan.Network.Infrastructure.Abilities
     public class AbilityNetworkMediator : NetworkMediator, IAbilityControllerBase
     {
         private AbilitySystemUseCase _abilitySystem = null!; // Injected
+        private IGameplayTagRegistry? _tagRegistry; // Injected when the gameplay tags installer is active
         private GameplayTagContainer _activeTags = new GameplayTagContainer(null);
         private readonly HashSet<string> _clientActiveTagNames = new();
         private readonly HashSet<string> _predictedEffectTagNames = new();
@@ -75,9 +76,11 @@ namespace TinCan.Network.Infrastructure.Abilities
         }
 
         [Inject]
-        public void Construct(AbilitySystemUseCase abilitySystem)
+        public void Construct(AbilitySystemUseCase abilitySystem, IObjectResolver resolver)
         {
             _abilitySystem = abilitySystem;
+            // Optional: registered by GameplayTagsFeatureInstaller, which can be switched off.
+            _tagRegistry = resolver.TryResolve<IGameplayTagRegistry>(out var registry) ? registry : null;
         }
 
         // IAbilityController Implementation
@@ -137,34 +140,31 @@ namespace TinCan.Network.Infrastructure.Abilities
         [ServerRpc]
         private void RequestTagChangeServerRpc(string tagName, bool add)
         {
-            // To find the tag object on the server, we need a reference.
-            // For now, we'll search for it in the ProjectLifetimeScope's known tags.
-            // This is a temporary solution until we have a proper GameplayTagRegistry.
-            var scope = UnityEngine.Object.FindAnyObjectByType<TinCan.Core.Infrastructure.ProjectLifetimeScope>();
-            if (scope == null) return;
-
-            // We need to find the tag. We can't easily iterate all tags on the scope without reflection
-            // or if they are in a list. But we know _buildingTag is there.
-
-            // For now, let's just handle the build mode tag specifically if it matches.
-            // This is a bit hacky but works for the current requirement.
-
-            // A better way: Use Resources.FindObjectsOfTypeAll (only in editor or if tag is in Resources)
-            // Or just have a registry.
-
-            // Let's try to find it by name in all loaded GameplayTags
-            var allTags = Resources.FindObjectsOfTypeAll<GameplayTag>();
-            foreach (var tag in allTags)
+            if (!TryResolveTag(tagName, out var tag))
             {
-                if (tag.name == tagName)
-                {
-                    if (add) AddTag(tag);
-                    else RemoveTag(tag);
-                    return;
-                }
+                Debug.LogWarning($"[AbilityNetworkMediator] Server could not find tag with name: {tagName}");
+                return;
             }
 
-            Debug.LogWarning($"[AbilityNetworkMediator] Server could not find tag with name: {tagName}");
+            if (add) AddTag(tag);
+            else RemoveTag(tag);
+        }
+
+        // Tags arrive by name. The registry (GameplayTagsFeatureInstaller) is the source of truth; without it, fall
+        // back to scanning loaded tag assets, which only finds tags something has already loaded.
+        private bool TryResolveTag(string tagName, out GameplayTag tag)
+        {
+            if (_tagRegistry != null) return _tagRegistry.TryGet(tagName, out tag);
+
+            foreach (var candidate in Resources.FindObjectsOfTypeAll<GameplayTag>())
+            {
+                if (candidate.name != tagName) continue;
+                tag = candidate;
+                return true;
+            }
+
+            tag = null!;
+            return false;
         }
 
         public void GrantAbility(IAbilityDefinition definition)

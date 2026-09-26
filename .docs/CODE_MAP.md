@@ -88,7 +88,8 @@ that need `NetworkManager`, `UnityTransport` or `UIDocument` in `Assembly-CSharp
 |---|---|
 | A tunable number | The `*Config.asset` in `Assets/Settings/`; the fields are declared in the matching `*Config.cs`. |
 | "Press E on a thing" | Target: a `NetworkBehaviour : IInteractionTarget` (`MotorFillPortNetworkMediator.cs`). Behaviour: an `IInteractionHandler`. Link: `Assets/Interactions/IA_*.asset`. Chain: `Features/Interaction/InteractorControllerView.cs` (raycast), `InteractivityUseCase`, `NetworkMediator.RequestInteraction` RPC, `InteractionOrchestrator`, handler. |
-| An ability, effect or tag | Assets under `Assets/Abilities/`; runtime in `Features/Abilities/AbilitySystemUseCase.cs`; per-actor state in `Network/Infrastructure/Abilities/AbilityNetworkMediator.cs`. |
+| An ability, effect or tag | Assets under `Assets/Abilities/`; runtime in `Features/Abilities/AbilitySystemUseCase.cs`; per-actor state in `Network/Infrastructure/Abilities/AbilityNetworkMediator.cs`. Tags resolve by name through `IGameplayTagRegistry`, built from `Assets/Abilities/GameplayTagDatabase.asset`, which lists every tag asset automatically. |
+| An item (id, held visual, granted abilities) | `Features/Items/ItemDefinition.cs` (`ITEM_*` assets, positive unique `Id`), looked up through `ItemCatalog`. |
 | An input that triggers an ability | `Assets/Abilities/Inputs/Input_*.asset` bound in `DefaultInputBindingConfig.asset`; becomes a bit in `HumanoidInputState.ActiveInputMask` so it is predicted and replayed. |
 | Starting abilities | `_startingAbilities` on `NetworkPlayer.prefab` (`HumanoidPlayer`) and `Airship_Prefab.prefab` (`AirshipNetworkMediator`). Shared assets; edit with care. |
 | A HUD number | `IHudValues` (`Features/UI/IHudValues.cs`) written by a `*Presenter`; rendered by `Scripts/UI/HudOverlayView.cs`. |
@@ -122,7 +123,7 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 | Humanoid movement + look | `HumanoidMovement/` | direct | `HumanoidMovementUseCase`, `PlayerLookUseCase`, `HumanoidControllerView`, `Network/Infrastructure/HumanoidPlayer` | `Prefabs/NetworkPlayer`, `Attr_MoveSpeed`, `Attr_JumpForce`, `Attr_Stamina`, `GA_Sprint`, `GE_SprintBuff` | `HumanoidMovement*Tests`, `SimulationUseCaseTests` |
 | Possession | `Possession/` | direct | `PossessionUseCase`, `ServerPossessionManager`, `PossessionInputController`, `Infrastructure/PossessionNetworkMediator` | `Prefabs/Singletons/PossessionMediator` | none |
 | Interaction system | `Interaction/` | direct (core) | `InteractivityUseCase`, `InteractionOrchestrator`, `InteractionHandlerRegistry`, `VehicleBoardingUseCase`, `MaintenanceUseCase` | `Assets/Interactions/*` | `AirshipInteractionInvestigationTests` |
-| Abilities (GAS-like) | `Abilities/` | direct (core) | `AbilitySystemUseCase`, `Network/Infrastructure/Abilities/AbilityNetworkMediator` | `Assets/Abilities/**` | `HealthAttributeSetTests`, `InstantGameplayEffectTests` |
+| Abilities (GAS-like) | `Abilities/` | direct (core); tag registry via installer (Order -20, `Profile_Base`) | `AbilitySystemUseCase`, `Network/Infrastructure/Abilities/AbilityNetworkMediator`, `GameplayTagRegistry` | `Assets/Abilities/**`, `Abilities/GameplayTagDatabase`, `Resources/Installers/GameplayTagsFeatureInstaller` | `HealthAttributeSetTests`, `InstantGameplayEffectTests`, `GameplayTagRegistryTests`; scenario `TagRequest` |
 | Build mode + ship modules | `Network/Infrastructure/BuildModeUseCase.cs`, `ModuleSpawningService.cs`, `ShipModule*NetworkMediator.cs` | direct | `BuildModeUseCase`, `ModulePlacementUseCase` | `Prefabs/Modules/Cannon_Module`, `Prefabs/Singletons/BuildPlacementMediator`, `GA_BuildMode`, `State.Building`, `IA_RepairModule`, `IA_DamageModule` | none |
 | Cloud boundary + visuals + atmosphere | `CloudBoundary/` | mixed: boundary is direct (ticked explicitly by the scheduler); submersion atmosphere is installer | `CloudBoundaryUseCase`, `CloudEnvironmentView` (also applies `CloudSubmersionProcessor` output: fog + directional light dimming from the local camera's cloud submersion, client-only, no gameplay effect) | `Settings/CloudBoundaryConfig`, `Settings/CloudVisualProfile`, `Settings/CloudSubmersionConfig`, `Resources/Installers/CloudSubmersionFeatureInstaller` | `CloudBoundary*Tests`, `CloudSubmersionProcessorTests` |
 | Gas pocket challenge | `GasChallenge/` | direct | `GasChallengeUseCase`, `GasPocketVolume` | `Prefabs/Hazards/GasPocket`, `GE_GasPocketExplosion`, scene `cvg_gaspocket_test` | `GasPocketDetonationProcessorTests` |
@@ -229,8 +230,9 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
   dialog before running.
 - **Edit-mode code must not mark things dirty on enable.** The scene used to turn dirty after every Play session
   because `CloudAtmosphereDirector` (`[ExecuteAlways]`) called `EditorUtility.SetDirty` on the sun light from
-  `OnEnable`, which runs after every domain reload and Play exit. It now dirties only from `OnValidate`, and it
-  does not re-apply each frame in edit mode.
+  `OnEnable`, which runs after every domain reload and Play exit. `OnValidate` also runs on every domain reload,
+  so it now marks a target dirty only when a value actually changed. The director no longer re-applies each frame
+  in edit mode.
 - **The cloud renderer renders with a runtime copy of `VolumetricClouds.mat`** (the `runtimeMaterial` edit in
   `Assets/ThirdParty/VolumetricCloudsURP/VolumetricClouds/VolumetricCloudsURP.cs`). Before, it wrote wind state into
   the asset every frame, so the `.mat` kept changing in git. Edits to the `.mat` in the Inspector therefore show up

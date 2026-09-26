@@ -65,7 +65,8 @@ namespace TinCan.Core.Infrastructure
             _features = _featureProfile != null
                 ? FeatureInstallerCatalog.LoadFromProfile(_featureProfile)
                 : FeatureInstallerCatalog.LoadFromResources();
-            builder.RegisterInstance(_features).AsSelf().As<IShipFixtureCatalog>();
+            builder.RegisterInstance(_features).AsSelf();
+            builder.Register<ShipFixtureCatalog>(Lifetime.Singleton).As<IShipFixtureCatalog>();
             builder.Register<ShipFixtureSpawningUseCase>(Lifetime.Singleton).As<IInitializable>().As<ITickable>();
 
             // Register Configs

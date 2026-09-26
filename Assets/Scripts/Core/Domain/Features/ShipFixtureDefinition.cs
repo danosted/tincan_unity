@@ -17,8 +17,4 @@ namespace TinCan.Core.Domain.Features
         public Vector3 LocalEulerAngles;
     }
 
-    public interface IShipFixtureCatalog
-    {
-        IReadOnlyList<ShipFixtureDefinition> Fixtures { get; }
-    }
 }

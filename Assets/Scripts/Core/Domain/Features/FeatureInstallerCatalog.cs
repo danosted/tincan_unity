@@ -7,26 +7,21 @@ using UnityEngine;
 namespace TinCan.Core.Domain.Features
 {
     /// <summary>
-    /// The set of feature installers found for this build, in a deterministic order, plus everything they contribute.
+    /// The set of feature installers found for this build, in a deterministic order, plus their networked prefabs.
+    /// Domain-specific contributions (e.g. ship fixtures) are read from <see cref="Installers"/> by their own
+    /// dedicated catalog rather than surfaced here, so this type stays a general-purpose view of the installer set.
     /// </summary>
-    public sealed class FeatureInstallerCatalog : IShipFixtureCatalog
+    public sealed class FeatureInstallerCatalog
     {
         public const string ResourcesFolder = "Installers";
 
         public FeatureInstallerCatalog(IEnumerable<FeatureInstaller> installers)
         {
-            var _installers = installers;
-            if (!_installers.Any())
-            {
-                _installers = Resources.LoadAll<FeatureInstaller>(ResourcesFolder);
-            }
-            Installers = Sort(_installers);
-            Fixtures = Installers.SelectMany(i => i.ShipFixtures).Where(f => f != null).ToList();
+            Installers = Sort(installers);
             NetworkedPrefabs = Installers.SelectMany(i => i.NetworkedPrefabs).Where(p => p != null).Distinct().ToList();
         }
 
         public IReadOnlyList<FeatureInstaller> Installers { get; }
-        public IReadOnlyList<ShipFixtureDefinition> Fixtures { get; }
         public IReadOnlyList<GameObject> NetworkedPrefabs { get; }
 
         /// <summary>Loads every FeatureInstaller asset under any Resources/Installers folder.</summary>

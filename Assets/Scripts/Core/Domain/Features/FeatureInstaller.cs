@@ -8,9 +8,9 @@ namespace TinCan.Core.Domain.Features
 {
     /// <summary>
     /// One asset per feature, discovered from <c>Resources/Installers</c>. It owns the feature's config references,
-    /// registers the feature's services in the container, lists the networked prefabs the feature spawns at runtime,
-    /// and lists the fixtures it wants spawned on every airship. Adding a feature therefore touches no shared file:
-    /// no field on ProjectLifetimeScope, no line in the network prefab list, no child in the airship prefab.
+    /// registers the feature's services in the container, and lists the networked prefabs the feature spawns at
+    /// runtime. Adding a feature therefore touches no shared file: no field on ProjectLifetimeScope, no line in the
+    /// network prefab list, no child in the airship prefab.
     /// </summary>
     public abstract class FeatureInstaller : ScriptableObject
     {
@@ -23,10 +23,19 @@ namespace TinCan.Core.Domain.Features
         /// <summary>Prefabs with a NetworkObject that this feature instantiates itself; registered with NGO and the DI interceptor.</summary>
         public virtual IEnumerable<GameObject> NetworkedPrefabs => Enumerable.Empty<GameObject>();
 
-        /// <summary>Fixtures spawned as child NetworkObjects of every airship once it exists on the server.</summary>
-        public virtual IEnumerable<ShipFixtureDefinition> ShipFixtures => Enumerable.Empty<ShipFixtureDefinition>();
-
         /// <summary>Hook after the container is built, for wiring that needs resolved services.</summary>
         public virtual void OnContainerBuilt(IObjectResolver container) { }
+
+        /// <summary>
+        /// Opt-in capability for an installer that contributes a domain-specific payload beyond the universal
+        /// members above (e.g. <see cref="ShipFixtureDefinition"/>). The owning system's own catalog (e.g. a
+        /// ship-fixture catalog) discovers contributors with
+        /// <c>Installers.OfType&lt;FeatureInstaller.IExtension&lt;TContribution&gt;&gt;()</c> instead of every
+        /// installer inheriting an unrelated virtual member.
+        /// </summary>
+        public interface IExtension<out TContribution>
+        {
+            IEnumerable<TContribution> Contributions { get; }
+        }
     }
 }

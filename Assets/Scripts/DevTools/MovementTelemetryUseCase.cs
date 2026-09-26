@@ -112,7 +112,8 @@ namespace TinCan.DevTools
         private MovementSample Sample(IHumanoidCharacterView player, float now)
         {
             var movement = player.Movement;
-            Vector3 world = movement.Transform.position;
+            // Measure what is drawn: the interpolated visual when the player has one, else the simulated root.
+            Vector3 world = movement.Transform.TryGetComponent<IHumanoidVisualAnchor>(out var anchor) ? anchor.VisualPosition : movement.Transform.position;
             Transform? platform = movement.CurrentGround.MovingGroundTransform;
 
             bool frameChanged = platform != _platform;

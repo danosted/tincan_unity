@@ -170,7 +170,27 @@ slope limit of 45° nobody can stand on the deck.
 ### Phase 3: Remote proxies
 - Non-owner clients keep `IsSimulating == false`. They buffer snapshots and interpolate between them in platform-local space, about 2 ticks behind. This replaces `ApplyAttachmentPose` and NetworkTransform with one path, so proxies on the deck stay glued to the ship.
 
-### Phase 4: Visual smoothing
+### Phase 4: Visual smoothing (done 2026-09-26)
+
+**As built:**
+- `NetworkPlayer.prefab` gained one child, `Visual`, which holds the mesh and the carried-item visuals (`Carry_JerryCan`,
+  `Carry_Net`). The root keeps the CharacterController, collider and simulation.
+- `HumanoidVisualSmoothingView` draws `Visual` each frame from `HumanoidVisualInterpolation` (pure, tested).
+  - It blends between the last two tick poses in the local space of the platform underfoot, re-expressed against
+    the platform's current pose.
+  - A prediction replay becomes a fading offset (`CorrectionFadeTime`, 100 ms). Teleport-sized jumps and platform
+    changes reset instead of streaking. Humanoids not simulated locally are drawn at the root.
+- `HumanoidMovementUseCase` calls `IHumanoidMovementView.CommitSimulatedPose` after each live tick and
+  `AbsorbCorrection` after a replay or snap.
+- The camera (`ThirdPersonLookView`) and telemetry follow the drawn pose through `IHumanoidVisualAnchor`.
+- Carry visuals are found with `TransformSearch.FindDescendant` now that they sit under `Visual`.
+
+**Result, Lag100, client on the moving ship:**
+- Rendered snaps dropped from 307 to 1: the remaining 30 Hz steps and correction pops are gone.
+- Start p50 25 ms and jump p50 11 ms. The drawn pose trails the simulation by up to one tick, which these include.
+- Tilt test: 0 creep, 0 snaps.
+
+**Original Phase 4 notes:**
 - Render the owner's mesh and camera pivot from a visual transform. It is interpolated between the previous and current tick poses (platform-local) using the tick fraction. A reconciliation correction goes into a visual offset that decays over ~100 ms. `ThirdPersonLookView` follows the visual.
 - Try `TickRate` 60 after this and measure bandwidth. It is cheap if snapshots stay small.
 

@@ -1,4 +1,5 @@
 #nullable enable
+using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
 using UnityEngine;
@@ -23,7 +24,7 @@ namespace TinCan.Features.Carry
 
         private void Awake()
         {
-            _net = transform.Find(NetVisualName);
+            _net = transform.FindDescendant(NetVisualName);
             if (_net != null) _restRotation = _net.localRotation;
             _controller = GetComponent<IAbilityControllerBase>();
         }

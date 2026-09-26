@@ -1,4 +1,5 @@
 #nullable enable
+using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
 using Unity.Netcode;
@@ -30,8 +31,8 @@ namespace TinCan.Features.Carry
 
         private void Awake()
         {
-            _jerryCanVisual = transform.Find(JerryCanVisualName)?.gameObject;
-            _netVisual = transform.Find(NetVisualName)?.gameObject;
+            _jerryCanVisual = transform.FindDescendant(JerryCanVisualName)?.gameObject;
+            _netVisual = transform.FindDescendant(NetVisualName)?.gameObject;
         }
 
         public override void OnNetworkSpawn()

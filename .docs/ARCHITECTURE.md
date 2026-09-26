@@ -37,6 +37,9 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
   - The owner compares it with its prediction for the same input (`HumanoidReconciliationProcessor`). Within 2 cm
     it keeps its prediction. Otherwise `HumanoidMovementUseCase.RewindAndReplay` restores the server state and
     re-runs the unacknowledged inputs. On a teleport (`TeleportEpoch`, bumped by `ResetCharacter`) it snaps.
+  - **Drawing is separate from simulation.** The player's root moves at the tick rate. Its `Visual` child is drawn
+    by `HumanoidVisualSmoothingView`, interpolated between ticks in ship space, with replay corrections faded out.
+    The camera follows the visual.
   - **Ship-local rule:** player state is always compared in the local space of the platform underfoot, and
     movement is simulated in that platform's yaw frame (input look and momentum). Each peer sees the ship at a
     different pose, so world-space comparison or world-space momentum desyncs on a moving or turning ship.

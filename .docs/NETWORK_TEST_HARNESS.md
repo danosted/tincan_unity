@@ -92,7 +92,7 @@ the player stands on. Ship motion itself never counts as player motion. Results 
 | `start` | Move input on until the player visibly moves 2 cm. **The "sluggish" number.** | ~40 ms (acceleration), plus up to one tick |
 | `stop` | Move input off until speed visibly halves. | ~175 ms (deceleration) |
 | `jump` | Jump pressed until the player visibly rises 5 cm. | about one tick |
-| `snaps` / `maxSnapM` | Frames that moved faster than any legal motion: teleports, hard corrections, and the player's own 30 Hz steps while sprinting (the render frame is far shorter than a tick). Phase 4 visual smoothing removes the latter. | 0 |
+| `snaps` / `maxSnapM` | Frames where the **drawn** body (the interpolated `Visual`) moved faster than any legal motion: teleports, the spawn fall, and any correction or tick step the smoothing failed to hide. | 0 outside spawn and teleports |
 | `reversals` | Direction flips while input is steady: prediction fighting a correction. | 0 |
 | `idleDriftCmPerS` | Horizontal creep while no input for 0.5 s: sliding on the deck. In walking routes it also picks up the tail of a sprint stop and replays, so read it from the tilt test. | 0 |
 | `avgRttMs` | Transport round trip on a client. UTP estimates it from reliable acks, so it goes stale when the client sends little reliable traffic (the humanoid input stream is unreliable). Trust the preset until this is ack-based. | ~2 × preset send delay |

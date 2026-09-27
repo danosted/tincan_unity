@@ -1,4 +1,5 @@
 #nullable enable
+using Unity.Collections;
 using Unity.Netcode;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
@@ -13,18 +14,21 @@ using TinCan.Core.Domain;
 namespace TinCan.Network.Infrastructure.Abilities
 {
     /// <summary>
-    /// NGO Mediator for the Ability System.
-    /// Syncs tags and handles state synchronization for abilities.
+    /// NGO Mediator for the Ability System: replicates one GAS actor's tags and attributes. Tags travel as a
+    /// server-written set of names, so a late joiner receives the whole set with the spawn. On a client,
+    /// <see cref="HasTag"/> combines that set with the owner's pending tag requests and predicted effect tags
+    /// (<see cref="ClientTagState"/>).
     /// </summary>
     public class AbilityNetworkMediator : NetworkMediator, IAbilityControllerBase
     {
         private AbilitySystemUseCase _abilitySystem = null!; // Injected
         private IGameplayTagRegistry? _tagRegistry; // Injected when the gameplay tags installer is active
         private GameplayTagContainer _activeTags = new GameplayTagContainer(null);
-        private readonly HashSet<string> _clientActiveTagNames = new();
-        private readonly HashSet<string> _predictedEffectTagNames = new();
+        private readonly ClientTagState _clientTags = new();
+        private readonly List<string> _replicatedTagScratch = new();
         private readonly Dictionary<Type, IAttributeSet> _attributeSets = new();
         private NetworkList<NetworkedAttribute> _networkedAttributes = null!; // Initialized in Awake
+        private NetworkList<FixedString64Bytes> _replicatedTags = null!; // Initialized in Awake; written by the server only
 
         // Shadow dictionary for local prediction and fast access
         private readonly Dictionary<int, AttributeValue> _localAttributes = new();
@@ -46,11 +50,14 @@ namespace TinCan.Network.Infrastructure.Abilities
         private void Awake()
         {
             _networkedAttributes = new NetworkList<NetworkedAttribute>();
+            _replicatedTags = new NetworkList<FixedString64Bytes>();
         }
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             _networkedAttributes.OnListChanged += OnNetworkedAttributesChanged;
+            _replicatedTags.OnListChanged += OnReplicatedTagsChanged;
+            if (!IsServer) RefreshReplicatedTags(); // a late joiner receives the whole set with the spawn
 
             // Initialize local attributes if joining as a late client
             foreach (var attr in _networkedAttributes)
@@ -62,9 +69,22 @@ namespace TinCan.Network.Infrastructure.Abilities
         public override void OnNetworkDespawn()
         {
             _networkedAttributes.OnListChanged -= OnNetworkedAttributesChanged;
-            _clientActiveTagNames.Clear();
-            _predictedEffectTagNames.Clear();
+            _replicatedTags.OnListChanged -= OnReplicatedTagsChanged;
+            _clientTags.Clear();
             base.OnNetworkDespawn();
+        }
+
+        private void OnReplicatedTagsChanged(NetworkListEvent<FixedString64Bytes> changeEvent)
+        {
+            if (!IsServer) RefreshReplicatedTags();
+        }
+
+        // Few tags per actor: rebuilding the whole view is simpler than tracking each list event kind.
+        private void RefreshReplicatedTags()
+        {
+            _replicatedTagScratch.Clear();
+            foreach (var name in _replicatedTags) _replicatedTagScratch.Add(name.ToString());
+            _clientTags.SetReplicated(_replicatedTagScratch);
         }
 
         private void OnNetworkedAttributesChanged(NetworkListEvent<NetworkedAttribute> changeEvent)
@@ -91,20 +111,20 @@ namespace TinCan.Network.Infrastructure.Abilities
             if (tag == null) return false;
             if (IsServer) return _activeTags.HasTag(tag);
 
-            // Client-side fallback check using synchronized strings
-            return _clientActiveTagNames.Contains(tag.name) || _predictedEffectTagNames.Contains(tag.name);
+            // Clients match by name, without the server's parent-tag matching.
+            return _clientTags.Has(tag.name);
         }
 
         public void AddEffectTag(GameplayTag tag)
         {
             if (IsServer) AddTag(tag);
-            else if (IsOwner) _predictedEffectTagNames.Add(tag.name);
+            else if (IsOwner) _clientTags.AddPredicted(tag.name);
         }
 
         public void RemoveEffectTag(GameplayTag tag)
         {
             if (IsServer) RemoveTag(tag);
-            else if (IsOwner) _predictedEffectTagNames.Remove(tag.name);
+            else if (IsOwner) _clientTags.RemovePredicted(tag.name);
         }
 
         public void AddTag(GameplayTag tag)
@@ -112,12 +132,12 @@ namespace TinCan.Network.Infrastructure.Abilities
             if (IsServer)
             {
                 _activeTags.AddTag(tag);
-                SyncTagsClientRpc(tag.name, true);
+                var name = ToWireName(tag);
+                if (!_replicatedTags.Contains(name)) _replicatedTags.Add(name);
             }
             else if (IsOwner)
             {
-                // Optimistically add locally
-                _clientActiveTagNames.Add(tag.name);
+                _clientTags.AddOptimistic(tag.name);
                 RequestTagChangeServerRpc(tag.name, true);
             }
         }
@@ -127,14 +147,24 @@ namespace TinCan.Network.Infrastructure.Abilities
             if (IsServer)
             {
                 _activeTags.RemoveTag(tag);
-                SyncTagsClientRpc(tag.name, false);
+                _replicatedTags.Remove(ToWireName(tag));
             }
             else if (IsOwner)
             {
-                // Optimistically remove locally
-                _clientActiveTagNames.Remove(tag.name);
+                _clientTags.RemoveOptimistic(tag.name);
                 RequestTagChangeServerRpc(tag.name, false);
             }
+        }
+
+        private FixedString64Bytes ToWireName(GameplayTag tag)
+        {
+            if (System.Text.Encoding.UTF8.GetByteCount(tag.name) > FixedString64Bytes.UTF8MaxLengthInBytes)
+            {
+                Debug.LogError($"[AbilityNetworkMediator] Tag name '{tag.name}' is longer than {FixedString64Bytes.UTF8MaxLengthInBytes} bytes and cannot replicate intact.", this);
+            }
+            var name = new FixedString64Bytes();
+            name.CopyFromTruncated(tag.name);
+            return name;
         }
 
         [ServerRpc]
@@ -283,23 +313,6 @@ namespace TinCan.Network.Infrastructure.Abilities
             {
                 _abilitySystem.SendGameplayEvent(eventData);
             }
-        }
-
-        [ClientRpc]
-        private void SyncTagsClientRpc(string tagName, bool added)
-        {
-            if (IsServer) return; // Server already has authoritative state in _activeTags
-
-            if (added)
-            {
-                _clientActiveTagNames.Add(tagName);
-            }
-            else
-            {
-                _clientActiveTagNames.Remove(tagName);
-            }
-
-            Debug.Log($"[AbilitySystem] Tag {tagName} {(added ? "added" : "removed")} on client.");
         }
     }
 }

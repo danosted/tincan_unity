@@ -22,6 +22,7 @@ Every flag works on a build's command line or as a **Multiplayer Play Mode playe
 |---|---|---|
 | `autohost` | `-autohost` | Start Host on launch (`Features/UI/CommandLineSessionBootstrap.cs`). |
 | `autojoin` | `-autojoin [address[:port]]` | Join on launch; defaults to `127.0.0.1:7777`. |
+| `joindelay:<s>` | `-joindelay <seconds>` | With `autojoin`: join that many seconds after launch instead of at once (late-join checks). |
 | `netsim:<preset>` | `-netsim <preset>` | Delay, jitter and loss on this peer's outgoing packets (see presets). |
 | `bot:<route>` | `-bot <route>` | Play a scripted input route once the local player exists. Implies `telemetry`. |
 | `telemetry` | `-telemetry` | Measure the local player and write a report. |
@@ -160,8 +161,13 @@ a timed-out `WaitUntil` aborts the run. A failed `Expect` is recorded and the ru
 every broken expectation.
 
 Commands and probes come from `IScenarioLibrary` classes, one per feature (`NetCatchScenarioLibrary.cs`), plus
-`CommonScenarioLibrary` (`SubjectReady`, `SubjectHasTag`, `SubjectLacksTag`). The catalog entry registers its
+`CommonScenarioLibrary` (`SubjectReady`, `SubjectHasTag`, `SubjectLacksTag`, `NoRemotePlayers`). The catalog entry registers its
 libraries only when that scenario runs, so a library's feature dependencies are resolved only then.
+
+**Late join.** `.JoinLate(seconds)` on the builder makes the host + client menu give the client
+`joindelay:<seconds>`. The server lane starts as soon as the host's player exists, so its first Arrange steps run
+while no client is connected; `Expect("NoRemotePlayers")` after them proves the ordering, and fails loudly if the delay
+was too short. The client then checks what it joined into. `ShipDamageLateJoin` is the example.
 
 ### Output
 
@@ -212,7 +218,7 @@ move the subject.
 | Area scene | Profile adds | Scenarios |
 |---|---|---|
 | `Test_Core` | nothing | TagRequest, EquipCycle |
-| `Test_ShipDamage` | Fuel, ShipDamage | ShipDamage, RepairLoop, AimPitch, InteractRack |
+| `Test_ShipDamage` | Fuel, ShipDamage | ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack |
 | `Test_NetCatch` | Fuel, FlyingCan | NetCatch |
 
 **The scenes are generated.** `DevTools/Editor/TestRangeSceneBuilder.cs` (**TinCan > Dev > Test Range > Rebuild

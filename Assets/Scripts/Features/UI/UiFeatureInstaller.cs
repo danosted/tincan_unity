@@ -22,7 +22,7 @@ namespace TinCan.Features.UI
         {
             builder.Register<MenuCommandRegistry>(Lifetime.Singleton).As<IMenuCommandRegistry>();
             builder.Register<MenuUseCase>(Lifetime.Singleton).As<IMenuSystem>();
-            builder.Register<CommandLineSessionBootstrap>(Lifetime.Singleton).As<IStartable>();
+            builder.Register<CommandLineSessionBootstrap>(Lifetime.Singleton).As<IStartable>().As<ITickable>();
             builder.Register<HudUseCase>(Lifetime.Singleton).As<IHudValues>();
             builder.Register<StartHostMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
             builder.Register<JoinGameMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();

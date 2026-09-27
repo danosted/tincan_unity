@@ -42,10 +42,66 @@ namespace TinCan.Tests.EditMode
         public void Start_AutoJoinArgs_ConnectsOnce()
         {
             var network = new FakeNetworkService();
-            var bootstrap = new CommandLineSessionBootstrap(network, new FakeEventPublisher());
+            var bootstrap = new CommandLineSessionBootstrap(network, new FakeEventPublisher(), new FakeTimeService());
 
             // Environment args are the test runner's; this only checks Start is safe to call.
             Assert.DoesNotThrow(() => bootstrap.Start());
+        }
+
+        [Test]
+        public void TryParse_JoinDelay()
+        {
+            Assert.That(CommandLineSessionBootstrap.TryParse(new[] { "game.exe", "-autojoin", "-joindelay", "8.5" }, out var request), Is.True);
+            Assert.That(request.Kind, Is.EqualTo(SessionRequestKind.Join));
+            Assert.That(request.DelaySeconds, Is.EqualTo(8.5f));
+        }
+
+        [Test]
+        public void TryParse_InvalidOrMissingJoinDelay_JoinsAtOnce()
+        {
+            CommandLineSessionBootstrap.TryParse(new[] { "game.exe", "-autojoin", "-joindelay", "soon" }, out var invalid);
+            CommandLineSessionBootstrap.TryParse(new[] { "game.exe", "-autojoin" }, out var missing);
+            Assert.That(invalid.DelaySeconds, Is.EqualTo(0f));
+            Assert.That(missing.DelaySeconds, Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void Begin_JoinWithoutDelay_ConnectsImmediately()
+        {
+            var network = new FakeNetworkService();
+            var bootstrap = new CommandLineSessionBootstrap(network, new FakeEventPublisher(), new FakeTimeService());
+
+            bootstrap.Begin(new[] { "-autojoin" });
+
+            Assert.That(network.StartClientCalls, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Begin_JoinWithDelay_ConnectsOnceAfterTheDelay()
+        {
+            var network = new FakeNetworkService();
+            var time = new FakeTimeService { DeltaTime = 1f };
+            var bootstrap = new CommandLineSessionBootstrap(network, new FakeEventPublisher(), time);
+
+            bootstrap.Begin(new[] { "-autojoin", "-joindelay", "2.5" });
+            bootstrap.Tick();
+            bootstrap.Tick();
+            Assert.That(network.StartClientCalls, Is.EqualTo(0), "still waiting after 2 s");
+
+            bootstrap.Tick();
+            bootstrap.Tick();
+            Assert.That(network.StartClientCalls, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Begin_HostIgnoresJoinDelay()
+        {
+            var network = new FakeNetworkService();
+            var bootstrap = new CommandLineSessionBootstrap(network, new FakeEventPublisher(), new FakeTimeService());
+
+            bootstrap.Begin(new[] { "-autohost", "-joindelay", "5" });
+
+            Assert.That(network.StartHostCalls, Is.EqualTo(1));
         }
     }
 }

@@ -17,16 +17,19 @@ namespace TinCan.DevTools.Scenarios
         public float TimeoutSeconds { get; }
         /// <summary>The scene the scenario runs in (a project path, see <see cref="TestScenes"/>); null runs it in whatever scene is open.</summary>
         public string? ScenePath { get; }
+        /// <summary>Seconds a host + client run holds the client back before it joins (0: at once), for late-join checks. Solo runs ignore it.</summary>
+        public float ClientJoinDelaySeconds { get; }
         public IReadOnlyList<ScenarioStep> Arrange { get; }
         public IReadOnlyList<ScenarioStep> Act { get; }
         public IReadOnlyList<ScenarioStep> Assert { get; }
 
-        private Scenario(string name, string description, float timeoutSeconds, string? scenePath, IReadOnlyList<ScenarioStep> arrange, IReadOnlyList<ScenarioStep> act, IReadOnlyList<ScenarioStep> assert)
+        private Scenario(string name, string description, float timeoutSeconds, string? scenePath, float clientJoinDelaySeconds, IReadOnlyList<ScenarioStep> arrange, IReadOnlyList<ScenarioStep> act, IReadOnlyList<ScenarioStep> assert)
         {
             Name = name;
             Description = description;
             TimeoutSeconds = timeoutSeconds;
             ScenePath = scenePath;
+            ClientJoinDelaySeconds = clientJoinDelaySeconds;
             Arrange = arrange;
             Act = act;
             Assert = assert;
@@ -45,6 +48,7 @@ namespace TinCan.DevTools.Scenarios
             private string _description = string.Empty;
             private float _timeout = 60f;
             private string? _scenePath;
+            private float _clientJoinDelay;
             private readonly ScenarioSteps _arrange = new();
             private readonly ScenarioSteps _act = new();
             private readonly ScenarioSteps _assert = new();
@@ -69,6 +73,13 @@ namespace TinCan.DevTools.Scenarios
                 return this;
             }
 
+            /// <summary>The client joins this many seconds after launch, so the server acts before it is connected.</summary>
+            public Builder JoinLate(float seconds)
+            {
+                _clientJoinDelay = seconds;
+                return this;
+            }
+
             public Builder Arrange(Action<ScenarioSteps> steps)
             {
                 steps(_arrange);
@@ -87,7 +98,7 @@ namespace TinCan.DevTools.Scenarios
                 return this;
             }
 
-            public Scenario Build() => new(_name, _description, _timeout, _scenePath, _arrange.ToArray(), _act.ToArray(), _assert.ToArray());
+            public Scenario Build() => new(_name, _description, _timeout, _scenePath, _clientJoinDelay, _arrange.ToArray(), _act.ToArray(), _assert.ToArray());
         }
     }
 }

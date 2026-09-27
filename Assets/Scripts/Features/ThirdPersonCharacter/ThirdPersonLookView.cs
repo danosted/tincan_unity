@@ -94,7 +94,20 @@ namespace TinCan.Features.HumanoidMovement
                 IsActive = true;
                 _cameraPivot.gameObject.SetActive(true);
                 Camera.enabled = true;
+                EnsureAudioListener();
             }
+        }
+
+        // The ears go with the camera the local player looks through. Scenes hold no camera (it lives on what you
+        // possess), so without this nothing hears gameplay cue sounds and Unity warns every frame. Unpossessing
+        // deactivates the pivot, which switches its listener off, so only one is ever active.
+        private void EnsureAudioListener()
+        {
+            if (!_cameraPivot.TryGetComponent<AudioListener>(out var listener))
+            {
+                listener = _cameraPivot.gameObject.AddComponent<AudioListener>();
+            }
+            listener.enabled = true;
         }
 
         public void OnUnpossessed()

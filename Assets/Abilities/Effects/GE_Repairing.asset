@@ -17,3 +17,5 @@ MonoBehaviour:
   Modifiers: []
   GrantedTags:
   - {fileID: 11400000, guid: 7540705d2a90a204b8f8be49902ba07a, type: 2}
+  Cues:
+  - {fileID: 11400000, guid: a6ac4bde7f895d04f8f0f56131d815d4, type: 2}

@@ -59,6 +59,20 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
     case on the server finds the target and performs the world effect (`NetCatchUseCase`).
   - Plan: `.docs/plans/ship-damage-repair.md`.
 
+- **Gameplay cues are presentation; domain events are logic.** `IEventPublisher` events are server-local (logic,
+  telemetry, tests) and never drive visuals. Sound, VFX and HUD feedback are **gameplay cues**:
+  - **Identity:** a cue is a `Cue.*` gameplay tag. Gameplay logic never reads `Cue.*` tags (a convention, kept by
+    review).
+  - **Source:** effects declare cues (`GameplayEffectDefinition.Cues`), and the duration type picks the kind.
+    - A Duration or Infinite effect puts its cue tags on the target while it is active. That makes a **state cue**:
+      it replicates with the tags, reaches late joiners, and is predicted on the owner.
+    - An Instant effect fires a **burst**: once on every peer, through an unreliable RPC on the target's
+      `AbilityNetworkMediator`, never twice for a predicting owner. Late joiners miss bursts by design.
+  - **Handlers:** what a cue does is composed. A feature contributes `GameplayCueNotify` assets (action lists:
+    `SpawnPrefab`, `PlaySound`, `HudToast`) through `FeatureInstaller.IExtension<GameplayCueNotify>`. Components in the
+    target's own hierarchy can implement `IGameplayCueHandler` (`ToggleObjectCueHandler`).
+  - **Runtime:** `GameplayCuesFeatureInstaller`, in `Features/Abilities/Cues/`. Plan: `.docs/plans/gameplay-cues.md`.
+
 ### 4. Possession & Interaction Flow
 The game relies heavily on dynamic possession (e.g., leaving a humanoid body to fly a free-camera, or boarding an airship).
 - **IPossessable:** Implemented by entities that can be owned by a player (e.g., Humanoid, Airship).

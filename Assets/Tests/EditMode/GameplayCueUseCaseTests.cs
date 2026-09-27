@@ -6,6 +6,7 @@ using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Cues;
 using TinCan.Core.Domain.Features;
 using TinCan.Features.Abilities.Cues;
+using TinCan.Features.Abilities.Cues.Actions;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 using VContainer;
@@ -31,6 +32,7 @@ namespace TinCan.Tests.EditMode
         private FakeActorRegistry _actors = null!;
         private FakeSessionNetworkService _network = null!;
         private GameplayCueUseCase _cues = null!;
+        private RecordingCuePresenter _presenter = null!;
 
         [SetUp]
         public void SetUp()
@@ -38,13 +40,17 @@ namespace TinCan.Tests.EditMode
             _broken = Create<GameplayTag>();
             _unlisted = Create<GameplayTag>();
             var installer = Create<CueInstaller>();
-            installer.Notifies.Add(Notify(_broken));
+            var notify = Notify(_broken);
+            typeof(GameplayCueNotify).GetField("_onActive", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .SetValue(notify, new List<GameplayCueAction?> { new HudToastCueAction { Text = "Broken", Seconds = 1f } });
+            installer.Notifies.Add(notify);
+            _presenter = new RecordingCuePresenter();
 
             _abilities = new FakeAbilityRegistry();
             _actors = new FakeActorRegistry();
             _network = new FakeSessionNetworkService { IsServer = true, IsClient = true };
             var catalog = new GameplayCueCatalog(new FeatureInstallerCatalog(new FeatureInstaller[] { installer }));
-            _cues = new GameplayCueUseCase(_abilities, _actors, _network, catalog, new GameplayCueStateTracker());
+            _cues = new GameplayCueUseCase(_abilities, _actors, _network, catalog, new GameplayCueStateTracker(), _presenter);
             _cues.Initialize();
             _cues.CueHandled += (kind, cueEvent) => _handled.Add((kind, cueEvent));
         }
@@ -81,6 +87,17 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void CatalogNotifies_RunWithTheEdge()
+        {
+            var part = Register(new FakeAbilityController());
+            part.AddTag(_broken);
+
+            _cues.Tick();
+
+            Assert.That(_presenter.Calls, Is.EqualTo(new[] { "hud Broken 1" }));
+        }
+
+        [Test]
         public void ActorJoiningWithTheCue_GetsActiveOnItsFirstFrame()
         {
             var part = new FakeAbilityController();
@@ -105,6 +122,7 @@ namespace TinCan.Tests.EditMode
             _cues.Tick();
 
             Assert.That(_handled, Has.Count.EqualTo(1), "only the Active edge; teardown is not a removal");
+            Assert.That(_presenter.Calls, Does.Contain("release actor"), "held presentation goes back to the pool");
         }
 
         [Test]

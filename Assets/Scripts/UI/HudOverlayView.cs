@@ -61,7 +61,9 @@ namespace TinCan.UI
             _panel.Clear();
             foreach (var pair in _hud.All)
             {
-                _panel.Add(new Label($"{pair.Key}: {pair.Value}") { style = { fontSize = 20 } });
+                // A value-less line (a cue toast such as "Part repaired") shows the key alone.
+                string text = string.IsNullOrEmpty(pair.Value) ? pair.Key : $"{pair.Key}: {pair.Value}";
+                _panel.Add(new Label(text) { style = { fontSize = 20 } });
             }
         }
     }

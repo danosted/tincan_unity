@@ -24,6 +24,7 @@ namespace TinCan.Features.Abilities.Cues
             builder.Register<GameplayCueCatalog>(Lifetime.Singleton);
             builder.Register<GameplayCueStateTracker>(Lifetime.Singleton);
             builder.Register<GameplayCueDispatchProcessor>(Lifetime.Singleton);
+            builder.Register<GameplayCuePresenter>(Lifetime.Singleton).As<IGameplayCuePresenter>().As<ITickable>();
             builder.Register<GameplayCueUseCase>(Lifetime.Singleton)
                 .As<IGameplayCuePlayer>().As<IGameplayCueFeed>().As<ITickable>().As<IInitializable>();
             builder.Register<GameplayCueDispatcher>(Lifetime.Singleton).As<IGameplayCueDispatcher>();

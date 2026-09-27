@@ -138,12 +138,19 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("ShipHasTag", 3f, "State.Ship.Damaged")
                     .WaitUntil("PointHasTag", 3f, "0:State.Damaged")
                     .WaitUntil("HudShows", 3f, "Hull breaches")
+                    .WaitUntil("CueActive", 3f, "Cue.Ship.Part.Broken")
+                    .WaitUntil("CueActive", 3f, "Cue.Ship.Leak")
+                    .WaitUntil("CueCount", 3f, "Cue.Ship.Part.Break:Execute:1")
                     .Checkpoint("part-broken")
                     .WaitUntil("PointHealthy", 30f, "0")
                     .WaitUntil("MarkerHidden", 3f, "0")
                     .WaitUntil("ShipLacksTag", 3f, "State.Ship.Damaged")
                     .WaitUntil("PointLacksTag", 3f, "0:State.Damaged")
                     .WaitUntil("HudHidden", 3f, "Hull breaches")
+                    .WaitUntil("CueInactive", 3f, "Cue.Ship.Leak")
+                    .WaitUntil("CueCount", 3f, "Cue.Ship.Part.Broken:Removed:1")
+                    .WaitUntil("HudShows", 3f, "Part repaired")
+                    .Expect("CueCount", "Cue.Ship.Part.Break:Execute:1")
                     .Checkpoint("part-restored"))
                 .Assert(s => s
                     .WaitUntil("LeakRateAbove", 3f, "0")
@@ -152,7 +159,9 @@ namespace TinCan.DevTools.Scenarios
                     .Do("RestorePoint", "0")
                     .WaitUntil("LeakRateAtMost", 3f, "0")
                     .Expect("ShipLacksTag", "State.Ship.Damaged")
-                    .Expect("PointHealthy", "0"))
+                    .Expect("PointHealthy", "0")
+                    .WaitUntil("CueCount", 3f, "Cue.Ship.Part.Broken:Removed:1")
+                    .Expect("CueCount", "Cue.Ship.Part.Break:Execute:1"))
                 .Build(),
             builder => builder.Register<ShipDamageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
@@ -186,9 +195,13 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("PointHealthy", 3f, "0")
                     .WaitUntil("MarkerHidden", 3f, "0")
                     .WaitUntil("SubjectLacksTag", 3f, "State.Repairing")
+                    .WaitUntil("CueInactive", 3f, "Cue.Player.Repairing")
+                    .Expect("CueCount", "Cue.Player.Repairing:Active:1")
+                    .WaitUntil("CueCount", 3f, "Cue.Ship.Part.Broken:Removed:1")
                     .Checkpoint("repaired"))
                 .Assert(s => s
                     .WaitUntil("SubjectHasTag", 15f, "State.Repairing")
+                    .WaitUntil("CueActive", 3f, "Cue.Player.Repairing")
                     .WaitUntil("PointHealthy", 12f, "0")
                     .WaitUntil("LeakRateAtMost", 3f, "0")
                     .Expect("ShipLacksTag", "State.Ship.Damaged")
@@ -223,6 +236,8 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("MarkerShown", 3f, "0")
                     .WaitUntil("PointHasTag", 3f, "0:State.Damaged")
                     .WaitUntil("ShipHasTag", 3f, "State.Ship.Damaged")
+                    .WaitUntil("CueActive", 3f, "Cue.Ship.Part.Broken")
+                    .WaitUntil("CueActive", 3f, "Cue.Ship.Leak")
                     .Checkpoint("late-join-broken"))
                 .Assert(s => s
                     .Wait(5f, "subject checks what it joined into")

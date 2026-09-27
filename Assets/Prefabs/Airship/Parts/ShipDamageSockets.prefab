@@ -137,6 +137,7 @@ GameObject:
   - component: {fileID: 9038711810313338826}
   - component: {fileID: 6781492728258854275}
   - component: {fileID: 6380010430645115291}
+  - component: {fileID: 2602783299427856174}
   m_Layer: 0
   m_Name: Marker
   m_TagString: Untagged
@@ -216,6 +217,19 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2602783299427856174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4395319698144419578}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1eae0eed45473fd48bad0d1943b138f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Abilities.Cues.Handlers.ToggleObjectCueHandler
+  _cue: {fileID: 11400000, guid: e5b96cfcfc313344bb96ba005fdfbf0b, type: 2}
 --- !u!1 &5009627549043873105
 GameObject:
   m_ObjectHideFlags: 0
@@ -227,6 +241,7 @@ GameObject:
   - component: {fileID: 4334536212564781383}
   - component: {fileID: 2647691599169903456}
   - component: {fileID: 4432258007058328138}
+  - component: {fileID: 3502867170449975299}
   m_Layer: 0
   m_Name: Marker
   m_TagString: Untagged
@@ -306,6 +321,19 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3502867170449975299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5009627549043873105}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1eae0eed45473fd48bad0d1943b138f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Abilities.Cues.Handlers.ToggleObjectCueHandler
+  _cue: {fileID: 11400000, guid: e5b96cfcfc313344bb96ba005fdfbf0b, type: 2}
 --- !u!1 &5230167246932614863
 GameObject:
   m_ObjectHideFlags: 0
@@ -505,6 +533,7 @@ GameObject:
   - component: {fileID: 5989800502065621643}
   - component: {fileID: 9040016660050256986}
   - component: {fileID: 5351774092219166303}
+  - component: {fileID: 3930391721109249022}
   m_Layer: 0
   m_Name: Marker
   m_TagString: Untagged
@@ -584,6 +613,19 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3930391721109249022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6101566906347539697}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1eae0eed45473fd48bad0d1943b138f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Abilities.Cues.Handlers.ToggleObjectCueHandler
+  _cue: {fileID: 11400000, guid: e5b96cfcfc313344bb96ba005fdfbf0b, type: 2}
 --- !u!1 &6148839190304243766
 GameObject:
   m_ObjectHideFlags: 0
@@ -595,6 +637,7 @@ GameObject:
   - component: {fileID: 5407645393213340059}
   - component: {fileID: 8137926228216828562}
   - component: {fileID: 3182408973587897062}
+  - component: {fileID: 7595917685656596413}
   m_Layer: 0
   m_Name: Marker
   m_TagString: Untagged
@@ -674,6 +717,19 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &7595917685656596413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6148839190304243766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1eae0eed45473fd48bad0d1943b138f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Abilities.Cues.Handlers.ToggleObjectCueHandler
+  _cue: {fileID: 11400000, guid: e5b96cfcfc313344bb96ba005fdfbf0b, type: 2}
 --- !u!1 &6665648649830468793
 GameObject:
   m_ObjectHideFlags: 0
@@ -748,6 +804,7 @@ GameObject:
   - component: {fileID: 1539389454612308097}
   - component: {fileID: 2672910911578358209}
   - component: {fileID: 383084396993771321}
+  - component: {fileID: 2341594819016335573}
   m_Layer: 0
   m_Name: Marker
   m_TagString: Untagged
@@ -827,3 +884,16 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2341594819016335573
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7771077548048845535}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1eae0eed45473fd48bad0d1943b138f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Abilities.Cues.Handlers.ToggleObjectCueHandler
+  _cue: {fileID: 11400000, guid: e5b96cfcfc313344bb96ba005fdfbf0b, type: 2}

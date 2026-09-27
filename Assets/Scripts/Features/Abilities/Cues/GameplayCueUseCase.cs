@@ -65,7 +65,7 @@ namespace TinCan.Features.Abilities.Cues
 
         public void Tick()
         {
-            // A player registers twice (HumanoidPlayer and its ability mediator share one Id): observe each actor once.
+            // The registry holds one controller per Id (AbilityControllerSelection); this guard stays in case it doesn't.
             _seenThisTick.Clear();
             foreach (var controller in _abilities.AllControllers)
             {

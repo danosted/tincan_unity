@@ -84,7 +84,7 @@ namespace TinCan.Network.Infrastructure
             var tickSystem = _networkManager.NetworkTickSystem;
             if (tickSystem == null) return;
 
-            _timeService.BeginSimulationTick(tickSystem.TickRate);
+            _timeService.BeginSimulationTick(tickSystem.LocalTime.Tick, tickSystem.TickRate);
             try
             {
                 _airshipMovement.Tick();

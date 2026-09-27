@@ -129,7 +129,7 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 | Humanoid movement + look | `HumanoidMovement/` | direct | `HumanoidMovementUseCase`, `PlayerLookUseCase`, `HumanoidControllerView`, `Network/Infrastructure/HumanoidPlayer` | `Prefabs/NetworkPlayer`, `Attr_MoveSpeed`, `Attr_JumpForce`, `Attr_Stamina`, `GA_Sprint`, `GE_SprintBuff` | `HumanoidMovement*Tests`, `SimulationUseCaseTests` |
 | Possession | `Possession/` | direct | `PossessionUseCase`, `ServerPossessionManager`, `PossessionInputController`, `Infrastructure/PossessionNetworkMediator` | `Prefabs/Singletons/PossessionMediator` | none |
 | Interaction system | `Interaction/` | direct (core); targeting path via installer (`InteractionFeatureInstaller`, `Profile_Base`) | `InteractInputUseCase`, `InteractivityUseCase` (legacy RPC path, silent while the installer is active), `InteractionOrchestrator`, `InteractionHandlerRegistry`, `VehicleBoardingUseCase`, `MaintenanceUseCase` | `Assets/Interactions/*` | `AirshipInteractionInvestigationTests`, `InteractInputUseCaseTests`; scenario `InteractRack` |
-| Abilities (GAS-like) | `Abilities/` | direct (core); tag registry via installer (Order -20, `Profile_Base`) | `AbilitySystemUseCase`, `Network/Infrastructure/Abilities/AbilityNetworkMediator`, `GameplayTagRegistry` | `Assets/Abilities/**`, `Abilities/GameplayTagDatabase`, `Resources/Installers/GameplayTagsFeatureInstaller` | `HealthAttributeSetTests`, `InstantGameplayEffectTests`, `GameplayTagRegistryTests`; scenario `TagRequest` |
+| Abilities (GAS-like) | `Abilities/` | direct (core); tag registry via installer (Order -20, `Profile_Base`) | `AbilitySystemUseCase`, `Network/Infrastructure/Abilities/AbilityNetworkMediator`, `GameplayTagRegistry` | `Assets/Abilities/**`, `Abilities/GameplayTagDatabase`, `Resources/Installers/GameplayTagsFeatureInstaller` | `HealthAttributeSetTests`, `InstantGameplayEffectTests`, `GameplayTagRegistryTests`, `GasTickTimingTests`; scenario `TagRequest` |
 | Build mode + ship modules | `Network/Infrastructure/BuildModeUseCase.cs`, `ModuleSpawningService.cs`, `ShipModule*NetworkMediator.cs` | direct | `BuildModeUseCase`, `ModulePlacementUseCase` | `Prefabs/Modules/Cannon_Module`, `Prefabs/Singletons/BuildPlacementMediator`, `GA_BuildMode`, `State.Building`, `IA_RepairModule`, `IA_DamageModule` | none |
 | Cloud boundary + visuals + atmosphere | `CloudBoundary/` | mixed: boundary is direct (ticked explicitly by the scheduler); submersion atmosphere is installer | `CloudBoundaryUseCase`, `CloudEnvironmentView` (also applies `CloudSubmersionProcessor` output: fog + directional light dimming from the local camera's cloud submersion, client-only, no gameplay effect) | `Settings/CloudBoundaryConfig`, `Settings/CloudVisualProfile`, `Settings/CloudSubmersionConfig`, `Resources/Installers/CloudSubmersionFeatureInstaller` | `CloudBoundary*Tests`, `CloudSubmersionProcessorTests` |
 | Gas pocket challenge | `GasChallenge/` | direct | `GasChallengeUseCase`, `GasPocketVolume` | `Prefabs/Hazards/GasPocket`, `GE_GasPocketExplosion`, scene `cvg_gaspocket_test` | `GasPocketDetonationProcessorTests` |
@@ -203,6 +203,12 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
   does not follow `SceneView.LookAt` until it repaints: the capture then renders from the old camera pose (often the
   origin). Set `sceneView.camera.transform` yourself before capturing, and check debug lines in the live Scene view.
   The capture also saves relative to `Assets/`; move the file out so it does not become an asset.
+
+- **GAS time is ticks, not seconds.** Compare `ITimeService.Tick` values from the same peer only (each peer counts its
+  own), and convert authored seconds with `GameplayTicks.FromSeconds`. `ITimeService.Time` is still the server clock
+  estimate for everything else. A player has two ability controllers with one `Id` (`HumanoidPlayer` and its
+  `AbilityNetworkMediator`); only `HumanoidPlayer` is registered, and the mediator takes its `Id` only while
+  `HumanoidPlayer` comes first on `NetworkPlayer.prefab`.
 
 - **Held-state input bits need a key held across a tick.** Input masks sample *held* keys when a tick gathers input
   (`UnityInputService.GetActiveInputMask`); there is no latch. A normal tap (80–150 ms) outlasts a tick; an

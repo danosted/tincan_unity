@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using TinCan.Core.Domain.Abilities.Tags;
 
 namespace TinCan.Features.Abilities
 {
@@ -12,6 +13,8 @@ namespace TinCan.Features.Abilities
     /// server's set changes that tag, since that change is the server's answer;</item>
     /// <item>the owner's predicted effect tags, which the owner's own simulation adds and removes.</item>
     /// </list>
+    /// Queries match like the server's <see cref="GameplayTagContainer"/>: a held tag matches the query tag or any of
+    /// its parents.
     /// </summary>
     public sealed class ClientTagState
     {
@@ -25,6 +28,31 @@ namespace TinCan.Features.Abilities
             _predicted.Contains(name) ||
             _optimisticAdds.Contains(name) ||
             (_replicated.Contains(name) && !_optimisticRemoves.Contains(name));
+
+        /// <summary>
+        /// True when a held tag is <paramref name="query"/> or its child (<see cref="GameplayTag.IsChildOf"/>), the server's rule.
+        /// Held tags are known by name, so they resolve through <paramref name="registry"/>; without one, only the exact
+        /// name matches.
+        /// </summary>
+        public bool Has(GameplayTag query, IGameplayTagRegistry? registry)
+        {
+            if (Has(query.name)) return true;
+            if (registry == null) return false;
+
+            return AnyChildOf(_predicted, query, registry)
+                || AnyChildOf(_optimisticAdds, query, registry)
+                || AnyChildOf(_replicated, query, registry, except: _optimisticRemoves);
+        }
+
+        private static bool AnyChildOf(HashSet<string> names, GameplayTag query, IGameplayTagRegistry registry, HashSet<string>? except = null)
+        {
+            foreach (var name in names)
+            {
+                if (except != null && except.Contains(name)) continue;
+                if (registry.TryGet(name, out var held) && held.IsChildOf(query)) return true;
+            }
+            return false;
+        }
 
         /// <summary>Replaces the server's set. Every tag whose presence changed drops its optimistic entry.</summary>
         public void SetReplicated(IEnumerable<string> names)

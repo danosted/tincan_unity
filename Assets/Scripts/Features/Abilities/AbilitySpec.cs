@@ -1,18 +1,16 @@
-using System;
 using System.Collections.Generic;
 using TinCan.Core.Domain.Abilities.Tags;
-using UnityEngine;
 
 namespace TinCan.Features.Abilities
 {
     /// <summary>
-    /// Runtime state of a granted ability.
+    /// Runtime state of a granted ability. Times are simulation ticks (<see cref="GameplayTicks"/>).
     /// </summary>
     public class AbilitySpec
     {
         public AbilityDefinition Definition { get; }
-        public float LastActivatedTime { get; set; }
-        public float StartTime { get; set; }
+        public int? LastActivatedTick { get; private set; } // null until the first activation: no cooldown yet
+        public int StartTick { get; private set; }
         public bool IsActive { get; set; }
         public HashSet<GameplayTag> ActiveWindowTags { get; } = new();
         public ActiveGameplayEffect AppliedActiveEffect { get; set; }
@@ -23,17 +21,17 @@ namespace TinCan.Features.Abilities
             Definition = definition;
         }
 
-        public bool IsOnCooldown(float currentTime)
+        public bool IsOnCooldown(int currentTick, int tickRate)
         {
-            if (Definition.CooldownEffect == null) return false;
-            return currentTime < LastActivatedTime + Definition.CooldownEffect.DurationSeconds;
+            if (Definition.CooldownEffect == null || LastActivatedTick == null) return false;
+            return currentTick < LastActivatedTick.Value + GameplayTicks.FromSeconds(Definition.CooldownEffect.DurationSeconds, tickRate);
         }
 
-        public void Activate(float currentTime)
+        public void Activate(int currentTick)
         {
             IsActive = true;
-            StartTime = currentTime;
-            LastActivatedTime = currentTime;
+            StartTick = currentTick;
+            LastActivatedTick = currentTick;
             ActiveWindowTags.Clear();
         }
     }

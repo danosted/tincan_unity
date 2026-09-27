@@ -115,8 +115,8 @@ namespace TinCan.Network.Infrastructure.Abilities
             if (tag == null) return false;
             if (IsServer) return _activeTags.HasTag(tag);
 
-            // Clients match by name, without the server's parent-tag matching.
-            return _clientTags.Has(tag.name);
+            // Same rule as the server (parent tags match); held names resolve through the tag registry.
+            return _clientTags.Has(tag, _tagRegistry);
         }
 
         public void AddEffectTag(GameplayTag tag)

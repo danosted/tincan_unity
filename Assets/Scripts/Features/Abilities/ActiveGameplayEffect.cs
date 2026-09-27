@@ -1,31 +1,29 @@
-using System;
-using UnityEngine;
-
 namespace TinCan.Features.Abilities
 {
     /// <summary>
-    /// Runtime state of an active gameplay effect.
+    /// Runtime state of an active gameplay effect. A Duration effect lasts a whole number of simulation ticks
+    /// (<see cref="GameplayTicks"/>), counted from the tick it was applied on.
     /// </summary>
     public class ActiveGameplayEffect
     {
         public GameplayEffectDefinition Definition { get; }
-        public float StartTime { get; }
-        public float ExpiryTime { get; }
+        public int StartTick { get; }
+        public int ExpiryTick { get; }
 
-        public ActiveGameplayEffect(GameplayEffectDefinition definition, float currentTime)
+        public ActiveGameplayEffect(GameplayEffectDefinition definition, int currentTick, int tickRate)
         {
             Definition = definition;
-            StartTime = currentTime;
-            ExpiryTime = definition.DurationType == DurationType.Duration
-                ? currentTime + definition.DurationSeconds
-                : float.MaxValue;
+            StartTick = currentTick;
+            ExpiryTick = definition.DurationType == DurationType.Duration
+                ? currentTick + GameplayTicks.FromSeconds(definition.DurationSeconds, tickRate)
+                : int.MaxValue;
         }
 
-        public bool IsExpired(float currentTime)
+        public bool IsExpired(int currentTick)
         {
             if (Definition.DurationType == DurationType.Instant) return true;
             if (Definition.DurationType == DurationType.Infinite) return false;
-            return currentTime >= ExpiryTime;
+            return currentTick >= ExpiryTick;
         }
     }
 }

@@ -4,6 +4,7 @@ using UnityEngine;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Targeting;
+using TinCan.Features.Abilities;
 using TinCan.Features.Interaction;
 using VContainer;
 
@@ -60,7 +61,8 @@ namespace TinCan.Core.Infrastructure
                 _interactorRegistry.Register(interactor);
             }
 
-            var abilityControllers = root.GetComponentsInChildren<IAbilityControllerBase>(true);
+            // One controller per actor, or GAS ticks the actor twice.
+            var abilityControllers = AbilityControllerSelection.OnePerActor(root.GetComponentsInChildren<IAbilityControllerBase>(true));
             foreach (var controller in abilityControllers)
             {
                 _abilityRegistry.Register(controller);

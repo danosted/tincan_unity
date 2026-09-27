@@ -118,11 +118,16 @@ verdict that an agent can read without a human watching. Code: `Assets/Scripts/D
 ```powershell
 .\.tools\verify.ps1 -Scenario NetCatch                  # compile, EditMode tests, solo run, host + client run
 .\.tools\verify.ps1 -Scenario NetCatch -UpTo Solo -TestFilter Scenario
+.\.tools\verify.ps1 -Scenario NetCatch,RepairLoop    # a batch: compile and tests once, then each scenario
+.\.tools\verify.ps1 -All                               # every scenario in ScenarioCatalog
 ```
+
+In a batch a failing scenario does not stop the others (its Duo is skipped when Solo failed); a table at the end
+lists every result. Run `-All` before committing a change that touches shared code.
 
 | Tier | What runs | Typical time | Catches |
 |---|---|---|---|
-| Compile | `unity cmd recompile` | ~10 s | build breaks |
+| Compile | `AssetDatabase.Refresh`, then the Editor's compile state; errors from `recompile_status` | ~10 s unchanged | build breaks, including scripts broken before the run |
 | Tests | `unity cmd run_tests --mode EditMode` (optional `-TestFilter`) | ~10 s | processor, use case and handler logic |
 | Solo | menu **TinCan > Dev > Scenarios > *X* (Host)** | ~15 s | wiring, installers, assets, server flow |
 | Duo | menu **TinCan > Dev > Scenarios > *X* (Host + Client, Lag100)** | ~40 s | replication, prediction, what the remote player sees |
@@ -240,6 +245,8 @@ check in the POC scene.
 
 | Symptom | Cause and fix |
 |---|---|
+| Scenarios take about a minute each instead of 10-25 s, `Main thread operation timed out after 5000ms` in the Console, or the client sometimes never joins | A long-lived Editor (a day of domain reloads and Play sessions; 3+ GB per Editor) slows everything. Restart the Editor and its clone from Unity Hub. Measured: InteractRack solo 57 s → 9 s, host + client 60 s → 23 s after a restart. The timeout lines themselves are harmless: a CLI poll landed while the main thread was busy. |
+| `verify.ps1` stops with "Unity Hub is not running" or "no Unity Editor is open" | The Editor waits on the Hub (for example a terms dialog after an update), or no Editor is open. Start the Hub, answer its dialog yourself, open the project, rerun. |
 | Solo passes, host + client: `until SubjectReady timed out`, client report missing | The clone ran an old copy of the scene. Clones do not reload a scene that changed on disk; `verify.ps1` reopens it in each clone. From the menu, reopen the scene in Player 2 by hand. |
 | `VContainerException ... CloudEnvironmentView` | The area profile lacks `CloudSubmersionFeatureInstaller`. Include `Profile_Test_Core`. |
 | No ship, players stand on the grey fall catcher | The scene's scope has no profile, so the test-range installer did not register the ship. Run Rebuild Scenes. |

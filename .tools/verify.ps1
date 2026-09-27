@@ -4,7 +4,8 @@ One-command feedback loop for a feature: compile, EditMode tests, then live scen
 
 .DESCRIPTION
 Tiers, cheapest first (see .docs/NETWORK_TEST_HARNESS.md, "Scenarios"):
-  Compile  unity cmd recompile, then fail on any compiler error.
+  Compile  AssetDatabase.Refresh (imports edits made outside the Editor, compiles if scripts changed), then fail on
+           any compiler error (including scripts that were already broken before the run).
   Tests    unity cmd run_tests --mode EditMode (optionally filtered).
   Solo     TinCan/Dev/Scenarios/<Scenario> (Host): the host plays every phase against its own player.
   Duo      TinCan/Dev/Scenarios/<Scenario> (Host + Client, Lag100): arrange/assert on the host, act on a lagged client.
@@ -12,10 +13,17 @@ Tiers, cheapest first (see .docs/NETWORK_TEST_HARNESS.md, "Scenarios"):
 A scenario tier triggers the menu, waits for Logs/feature-telemetry/<Scenario>/latest-summary.json (written by the
 host once every peer reported; Play mode then ends by itself), prints the verdict and the checkpoint screenshots.
 
+Several scenarios (a list, or -All) form a batch: Compile and Tests run once, then Solo and Duo per scenario. A
+failing scenario does not stop the batch (its Duo is skipped when Solo failed); a table at the end lists every result.
+
 Exit code: 0 all requested tiers passed, 1 a tier failed, 2 the Editor was not usable (busy, modal dialog, timeout).
 
 .PARAMETER Scenario
-Scenario name from DevTools/Scenarios/ScenarioCatalog.cs. Required for the Solo and Duo tiers.
+Scenario name(s) from DevTools/Scenarios/ScenarioCatalog.cs, comma-separated. Required for the Solo and Duo tiers
+unless -All is given.
+
+.PARAMETER All
+Run every scenario in ScenarioCatalog as one batch.
 
 .PARAMETER UpTo
 Last tier to run: Compile, Tests, Solo or Duo (default: Duo when a scenario is given, else Tests).
@@ -38,13 +46,16 @@ Faster when running several verifies in a row; the next run then skips the scene
 .EXAMPLE
 .\.tools\verify.ps1 -Scenario NetCatch
 .\.tools\verify.ps1 -Scenario NetCatch -UpTo Solo -TestFilter Scenario
+.\.tools\verify.ps1 -Scenario NetCatch,RepairLoop
+.\.tools\verify.ps1 -All
 .\.tools\verify.ps1 -UpTo Tests
 #>
 
 #Requires -Version 7.0
 
 param(
-    [string]$Scenario,
+    [string[]]$Scenario = @(),
+    [switch]$All,
     [ValidateSet("Compile", "Tests", "Solo", "Duo")]
     [string]$UpTo,
     [string]$TestFilter,
@@ -57,8 +68,9 @@ param(
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $Tiers = @("Compile", "Tests", "Solo", "Duo")
-if (-not $UpTo) { $UpTo = if ($Scenario) { "Duo" } else { "Tests" } }
-if (($UpTo -in @("Solo", "Duo")) -and -not $Scenario) { throw "-Scenario is required for the $UpTo tier." }
+$Scenario = @($Scenario | ForEach-Object { $_ -split "," } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+if (-not $UpTo) { $UpTo = if ($Scenario.Count -gt 0 -or $All) { "Duo" } else { "Tests" } }
+if (($UpTo -in @("Solo", "Duo")) -and $Scenario.Count -eq 0 -and -not $All) { throw "-Scenario or -All is required for the $UpTo tier." }
 
 function Invoke-Unity {
     param([string[]]$Arguments, [int]$Timeout = 60)
@@ -87,7 +99,7 @@ function Wait-EditorReady([int]$Seconds = 120) {
         $modal = Get-UnityModal
         if ($modal) { return $modal }
         if (Test-EditorReady) { return $null }
-        Start-Sleep -Seconds 2
+        Start-Sleep -Seconds 3
     }
     return "editor not ready after $Seconds s"
 }
@@ -118,11 +130,24 @@ function Invoke-FocusEditor {
     [TinCanVerify.Focus]::SetForegroundWindow($handle) | Out-Null
 }
 
+# Causes outside the Editor that focusing cannot fix: no Editor open, or no Unity Hub. Without the Hub the Editor keeps
+# retrying its Hub connection on the main thread and every pipeline command times out; a Hub dialog (for example
+# updated terms) also keeps the Editor from starting. Terms are for the developer to accept, never this script.
+function Get-EnvironmentProblem {
+    if (-not (Get-MainEditorProcessId)) { return "no Unity Editor is open for this project. Open it from Unity Hub." }
+    if (-not (Get-Process -Name "Unity Hub" -ErrorAction SilentlyContinue)) {
+        return "Unity Hub is not running, so the Editor stalls waiting for it. Start Unity Hub (accept any dialog it shows), then rerun."
+    }
+    return $null
+}
+
 # Recovery ladder: wait, focus the window, and only with -RestartEditor close (discarding unsaved changes) and reopen.
 function Restore-Editor {
     $modal = Wait-EditorReady 20
     if (-not $modal) { return $null }
     if ($modal -like "modal*") { return $modal }
+    $problem = Get-EnvironmentProblem
+    if ($problem) { return $problem }
 
     Write-Tier "Editor" "note" "pipeline not answering; focusing the Editor window"
     Invoke-FocusEditor
@@ -179,30 +204,46 @@ function Confirm-ScenesClean {
     Write-Tier "Editor" "note" "saved modified scene(s): $names (check git diff)"
 }
 
+# Refresh imports what changed on disk (recompile alone does not) and compiles only if scripts changed, so an unchanged
+# tree passes in seconds. Errors come from the Editor's compile state, so scripts broken in an earlier run still fail.
 function Invoke-Compile {
-    Invoke-Unity @("recompile") 60 | Out-Null
-    # Right after the request the status can read "idle" before compilation starts; keep polling through it and
-    # accept a lasting idle (nothing to compile) as success.
-    $deadline = (Get-Date).AddSeconds(300)
-    $idleSince = $null
-    do {
-        Start-Sleep -Seconds 2
-        $status = Invoke-Unity @("recompile_status") 15
-        if ($status.status -eq "idle") { if (-not $idleSince) { $idleSince = Get-Date } } else { $idleSince = $null }
-        $settled = $status.status -in @("completed", "up_to_date", "failed") -or ($idleSince -and ((Get-Date) - $idleSince).TotalSeconds -ge 20)
-    } while (-not $settled -and (Get-Date) -lt $deadline)
+    $clock = [Diagnostics.Stopwatch]::StartNew()
+    Invoke-Unity @("eval", "--code", 'UnityEditor.AssetDatabase.Refresh(); return "ok";') 120 | Out-Null
 
-    if ($status.status -notin @("completed", "up_to_date", "idle")) {
-        Stop-Unusable "recompile did not complete (status '$($status.status)'): $($status.raw)"
+    # A compile triggered by the refresh starts on a later Editor update, and while it runs (and during the domain
+    # reload) the pipeline may not answer. Wait for two quiet readings in a row; an unanswered status counts as busy.
+    $deadline = (Get-Date).AddSeconds(300)
+    $quiet = 0
+    while ($quiet -lt 2 -and (Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds 3
+        $status = Invoke-Unity @("editor_status") 15
+        $busy = -not $status.status -or $status.compiling -or $status.domainReloadInProgress
+        $quiet = if ($busy) { 0 } else { $quiet + 1 }
     }
-    $errors = @($status.errors | Where-Object { $_ })
-    if ($status.failed -or $errors.Count -gt 0) {
-        Write-Tier "Compile" "FAIL" "$($errors.Count) error(s)"
-        $errors | Select-Object -First 15 | ForEach-Object { Write-Host "  $_" }
-        return $false
+    if ($quiet -lt 2) { Stop-Unusable "Editor still compiling after 300 s" }
+
+    # The Editor's own flag also covers a compile that failed in an earlier run (unchanged broken scripts do not recompile).
+    $result = $null
+    for ($try = 0; $try -lt 5 -and $result -notin @("ok", "failed"); $try++) {
+        if ($try -gt 0) { Start-Sleep -Seconds 3 }
+        $result = (Invoke-Unity @("eval", "--code", 'return UnityEditor.EditorUtility.scriptCompilationFailed ? "failed" : "ok";') 30).result
     }
-    Write-Tier "Compile" "PASS"
-    return $true
+    if ($result -eq "ok") {
+        Write-Tier "Compile" "PASS" "$([int]$clock.Elapsed.TotalSeconds) s"
+        return $true
+    }
+    if ($result -ne "failed") { Stop-Unusable "could not read the compile state from the Editor" }
+
+    # Messages: the last compilation's result, else the Console. Never call recompile here: it answers "up to date"
+    # and forgets the errors.
+    $errors = @((Invoke-Unity @("recompile_status") 15).errors | Where-Object { $_ })
+    if ($errors.Count -eq 0) {
+        $console = Invoke-Unity @("console", "--level", "error") 30
+        $errors = @($console.entries | ForEach-Object { $_.message } | Where-Object { $_ -match "error CS\d+" } | Select-Object -Unique)
+    }
+    Write-Tier "Compile" "FAIL" $(if ($errors.Count -gt 0) { "$($errors.Count) error(s)" } else { "compilation failed; see the Unity Console" })
+    $errors | Select-Object -First 15 | ForEach-Object { Write-Host "  $_" }
+    return $false
 }
 
 function Invoke-Tests {
@@ -234,15 +275,22 @@ function Invoke-Tests {
 # MPPM clones can come back from a relaunch with an empty untitled scene. They then "play" nothing and never join,
 # so before a host + client run, open the host's active scene in every clone. A clone that already has it open reopens
 # it too: clones do not reload a scene that changed on disk (for example after Rebuild Scenes), and would run the stale one.
+# The clone list is read once per run: each `unity status` costs about 1.5 s.
+function Get-ClonePaths {
+    if ($null -eq $script:ClonePaths) {
+        $script:ClonePaths = @(& unity status 2>$null | Select-String "Library[\\/]VP[\\/]" | ForEach-Object {
+            ($_.ToString() -split "\t|\s{2,}") | Where-Object { $_ -match "Library[\\/]VP[\\/]" } | Select-Object -First 1
+        })
+    }
+    return $script:ClonePaths
+}
+
 function Sync-CloneScenes {
     $main = Invoke-Unity @("list_open_scenes") 20
     $mainScene = @($main.scenes | Where-Object { $_.isActive })[0].path
     if (-not $mainScene) { return }
 
-    $clones = & unity status 2>$null | Select-String "Library[\\/]VP[\\/]" | ForEach-Object {
-        ($_.ToString() -split "\t|\s{2,}") | Where-Object { $_ -match "Library[\\/]VP[\\/]" } | Select-Object -First 1
-    }
-    foreach ($clone in $clones) {
+    foreach ($clone in Get-ClonePaths) {
         $scenes = Invoke-Unity @("list_open_scenes", "--project-path", $clone) 20
         $active = @($scenes.scenes | Where-Object { $_.isActive })[0].path
         Invoke-Unity @("open_scene", "--project-path", $clone, "--path", $mainScene) 60 | Out-Null
@@ -254,15 +302,15 @@ function Sync-CloneScenes {
 # NGO refuses a client whose network prefab hashes differ from the host's ("NetworkConfig mismatch"), which a scenario
 # only shows as "no subject player". A clone reads prefabs from disk while the host may hold a newer in-memory hash
 # (for example right after a prefab was created from a scene object), so compare them before a host + client run.
+# Prefabs do not change during a run, so a batch checks once.
 function Confirm-NetworkPrefabsMatch {
+    if ($script:PrefabsChecked) { return }
+    $script:PrefabsChecked = $true
     $code = 'var sb = new System.Text.StringBuilder(); foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:Prefab", new[] { "Assets" })) { var path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid); var go = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path); var no = go != null ? go.GetComponent<Unity.Netcode.NetworkObject>() : null; if (no != null) sb.Append(path).Append("=").Append(no.PrefabIdHash).Append(";"); } return sb.ToString();'
     $hostPrefabs = (Invoke-Unity @("eval", "--code", $code) 60).result
     if (-not $hostPrefabs) { return }
 
-    $clones = & unity status 2>$null | Select-String "Library[\\/]VP[\\/]" | ForEach-Object {
-        ($_.ToString() -split "\t|\s{2,}") | Where-Object { $_ -match "Library[\\/]VP[\\/]" } | Select-Object -First 1
-    }
-    foreach ($clone in $clones) {
+    foreach ($clone in Get-ClonePaths) {
         $clonePrefabs = (Invoke-Unity @("eval", "--project-path", $clone, "--code", $code) 60).result
         if (-not $clonePrefabs -or $clonePrefabs -eq $hostPrefabs) { continue }
 
@@ -277,10 +325,10 @@ function Confirm-NetworkPrefabsMatch {
 # Each scenario names its test-range scene (Scenario.ScenePath, see .docs/NETWORK_TEST_HARNESS.md "Test range"). Open it
 # in the main Editor before the run, so the clone sync below copies it and the menu has nothing to switch. The scene
 # that was open first is reopened when the script finishes.
-function Open-ScenarioScene {
-    $code = 'return TinCan.DevTools.Scenarios.ScenarioCatalog.TryGet("{0}", out var e) ? (e.Scenario.ScenePath ?? "") : "?";' -f $Scenario
+function Open-ScenarioScene([string]$name) {
+    $code = 'return TinCan.DevTools.Scenarios.ScenarioCatalog.TryGet("{0}", out var e) ? (e.Scenario.ScenePath ?? "") : "?";' -f $name
     $path = (Invoke-Unity @("eval", "--code", $code) 30).result
-    if ($path -eq "?") { Stop-Unusable "unknown scenario '$Scenario' (see DevTools/Scenarios/ScenarioCatalog.cs)" }
+    if ($path -eq "?") { Stop-Unusable "unknown scenario '$name' (see DevTools/Scenarios/ScenarioCatalog.cs)" }
     if (-not $path) { return }
 
     $open = Invoke-Unity @("list_open_scenes") 20
@@ -288,7 +336,7 @@ function Open-ScenarioScene {
     if ($active -eq $path) { return }
     if (-not $script:ReturnScene) { $script:ReturnScene = $active }
     Invoke-Unity @("open_scene", "--path", $path) 60 | Out-Null
-    Write-Tier "Editor" "note" "opened $path for $Scenario"
+    Write-Tier "Editor" "note" "opened $path for $name"
 }
 
 function Restore-StartScene {
@@ -297,9 +345,9 @@ function Restore-StartScene {
     Write-Tier "Editor" "note" "reopened $script:ReturnScene"
 }
 
-function Invoke-Scenario([string]$mode) {
+function Invoke-Scenario([string]$Scenario, [string]$mode) {
     Confirm-ScenesClean
-    Open-ScenarioScene
+    Open-ScenarioScene $Scenario
     if ($mode -eq "Duo") { Sync-CloneScenes; Confirm-NetworkPrefabsMatch }
     $status = Invoke-Unity @("editor_status") 15
     if ($status.playMode -and $status.playMode -ne "stopped") {
@@ -346,16 +394,34 @@ function Invoke-Scenario([string]$mode) {
 $modal = Restore-Editor
 if ($modal) { Stop-Unusable $modal }
 
-$exitCode = 0
-foreach ($tier in $Tiers) {
-    $ok = switch ($tier) {
-        "Compile" { Invoke-Compile }
-        "Tests" { Invoke-Tests }
-        "Solo" { Invoke-Scenario "Solo" }
-        "Duo" { Invoke-Scenario "Duo" }
-    }
-    if (-not $ok) { $exitCode = 1; break }
-    if ($tier -eq $UpTo) { break }
+$lastTier = [array]::IndexOf($Tiers, $UpTo)
+
+if ($All) {
+    # Grouped by test-range scene: each scene switch costs 15-20 s.
+    $names = (Invoke-Unity @("eval", "--code", 'return string.Join(",", System.Linq.Enumerable.Select(System.Linq.Enumerable.OrderBy(TinCan.DevTools.Scenarios.ScenarioCatalog.Entries, e => e.Scenario.ScenePath ?? ""), e => e.Scenario.Name));') 30).result
+    if (-not $names) { Stop-Unusable "could not read ScenarioCatalog.Names" }
+    $Scenario = @($names -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+}
+
+# Compile and Tests run once, however many scenarios follow.
+if (-not (Invoke-Compile)) { exit 1 }
+if ($lastTier -ge 1 -and -not (Invoke-Tests)) { exit 1 }
+if ($lastTier -lt 2) { exit 0 }
+
+$results = @()
+foreach ($name in $Scenario) {
+    $solo = if (Invoke-Scenario $name "Solo") { "PASS" } else { "FAIL" }
+    $duo = if ($lastTier -lt 3) { "-" } elseif ($solo -eq "FAIL") { "skipped" } elseif (Invoke-Scenario $name "Duo") { "PASS" } else { "FAIL" }
+    $results += [pscustomobject]@{ Scenario = $name; Solo = $solo; Duo = $duo }
 }
 Restore-StartScene
-exit $exitCode
+
+$failed = @($results | Where-Object { $_.Solo -eq "FAIL" -or $_.Duo -in @("FAIL", "skipped") })
+if ($results.Count -gt 1) {
+    Write-Host ""
+    foreach ($row in $results) {
+        $state = if ($failed -contains $row) { "FAIL" } else { "PASS" }
+        Write-Tier "Batch" $state ("{0,-20} solo {1,-7} duo {2}" -f $row.Scenario, $row.Solo, $row.Duo)
+    }
+}
+exit $(if ($failed.Count -gt 0) { 1 } else { 0 })

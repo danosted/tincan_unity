@@ -16,11 +16,14 @@ The canonical description is `.docs/NETWORK_TEST_HARNESS.md` ("Scenarios" and "T
    - Add `-UpTo Solo` while iterating, then run the full ladder once at the end.
    - Add `-TestFilter <Fragment>` to narrow the EditMode tier.
    - Use `.\.tools\verify.ps1 -UpTo Tests` when there is no scenario yet.
+   - For a change to shared code, run every scenario as one batch: `.\.tools\verify.ps1 -All -SaveDirtyScenes`
+     (compile and tests run once; never loop over `verify.ps1` per scenario).
    - The script opens the scenario's test-range scene, syncs the MPPM clone, and restores the starting scene.
 3. **Read the exit code:** 0 means every tier passed, 1 means a tier failed, and 2 means the Editor was blocked (a
    modal or a wedged pipeline). An exit of 2 says nothing about the code.
 4. **Triage a failure by tier:**
-   - **Compile:** fix the errors, and run `unity cmd recompile_status` to confirm.
+   - **Compile:** fix the errors and rerun `.\.tools\verify.ps1 -UpTo Compile`. Do not call `unity cmd recompile` to
+     check: when nothing changed it answers "up to date" and forgets the errors.
    - **Tests:** read the failing test's message and fix the code, not the test, unless the test is wrong.
    - **Solo/Duo:**
      - Open `Logs/feature-telemetry/<Name>/latest-summary.json` first, then the failing peer's `latest-<role>.json`.

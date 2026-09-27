@@ -60,7 +60,7 @@ namespace TinCan.Features.Targeting
             definition.Source is AimSource.EyeAim or AimSource.CameraAim;
 
         /// <summary>Inside the definition's shape, measured from <paramref name="source"/> along the origin's facing.</summary>
-        public bool IsInside(in TargetingOrigin origin, Vector3 source, TargetingDefinition definition, Vector3 point)
+        public bool IsInside(in TargetingOrigin origin, Vector3 source, TargetingDefinition definition, Vector3 point, float? hitDistance = null)
         {
             Vector3 offset = point - source;
             switch (definition.Shape)
@@ -73,8 +73,9 @@ namespace TinCan.Features.Targeting
                     return horizontal <= definition.HorizontalAngle * 0.5f &&
                            Mathf.Abs(vertical - ReferenceElevation(origin, definition)) <= definition.VerticalAngle * 0.5f;
                 default:
-                    // Ray candidates come from physics hits already along the ray; only the range applies.
-                    return offset.sqrMagnitude <= definition.Range * definition.Range;
+                    // Ray candidates come from physics hits along the ray; the range applies to where the ray hit them, not
+                    // to their pivot (a tall trigger volume is hit well before its pivot on the deck).
+                    return (hitDistance ?? offset.magnitude) <= definition.Range;
             }
         }
 
@@ -88,7 +89,7 @@ namespace TinCan.Features.Targeting
 
             foreach (var candidate in candidates)
             {
-                if (!IsInside(origin, source, definition, candidate.Point)) continue;
+                if (!IsInside(origin, source, definition, candidate.Point, candidate.HitDistance)) continue;
 
                 Vector3 offset = candidate.Point - source;
                 float distance = offset.magnitude;

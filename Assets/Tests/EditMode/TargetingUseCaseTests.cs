@@ -19,7 +19,6 @@ namespace TinCan.Tests.EditMode
     {
         private sealed class FakeTargetable : ITargetable
         {
-            public Guid TargetId { get; } = Guid.NewGuid();
             public Vector3 AimPoint { get; set; }
             public bool IsTargetable { get; set; } = true;
             public IAbilityControllerBase? Controller { get; set; }

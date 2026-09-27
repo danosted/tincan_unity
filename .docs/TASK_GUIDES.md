@@ -57,8 +57,8 @@ unity cmd console --level error
   `builder.Register<MyHandler>(Lifetime.Singleton).As<IInteractionHandler>();`
 - Asset: **Assets > Create > TinCan > Interactions > Interaction Definition**, save as
   `Assets/Interactions/IA_<Verb>.asset`, pick the handler from the dropdown.
-- Prefab: add the target component and a collider at chest height (the interaction ray starts 1.5 m above the
-  player pivot, 3 m range), assign the `IA_` asset.
+- Prefab: add the target component and a collider at chest height (the interaction ray starts at the
+  player's eye, `HumanoidControllerView` Eye Height 0.7 m above the capsule-centre pivot, so about 1.7 m above the feet; 3 m range), assign the `IA_` asset.
 
 **Verify:** a handler test (copy `Assets/Tests/EditMode/PourFuelInteractionHandlerTests.cs`); then Play, Start
 Host, walk up, press E, watch the console for your `LogInfo` line.
@@ -112,6 +112,9 @@ actor changes. Persistent values (fuel level) live in `BaseValue`.
 4. **Act on the result** in the feature's server use case:
    `ITargetingService.TryAcquire(new HumanoidTargeter(player), ability.Targeting, out var result)`, then apply
    effects to `result.Target`. Example: `ShipRepairUseCase`. The owner can run the same query to predict prompts.
+
+**See it:** turn on **TinCan > Dev > Targeting > Draw All Queries**: every query draws its shape and result for a frame
+(green hit, red miss) in the Scene view. The interaction prompt always draws its own `TD_Interact` ray.
 
 **Verify:** `TargetingProcessorTests` covers the shape maths; test your use case with the real `TargetingUseCase`
 and a `TargetableRegistry` (`ShipRepairUseCaseTests`). In play, a scenario probe that calls the service (as

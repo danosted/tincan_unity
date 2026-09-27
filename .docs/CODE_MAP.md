@@ -87,9 +87,9 @@ that need `NetworkManager`, `UnityTransport` or `UIDocument` in `Assembly-CSharp
 | X | Look at |
 |---|---|
 | A tunable number | The `*Config.asset` in `Assets/Settings/`; the fields are declared in the matching `*Config.cs`. |
-| "Press E on a thing" | Target: a `NetworkBehaviour : IInteractionTarget` (`MotorFillPortNetworkMediator.cs`). Behaviour: an `IInteractionHandler`. Link: `Assets/Interactions/IA_*.asset`. Chain: `Features/Interaction/InteractorControllerView.cs` (raycast), `InteractivityUseCase`, `NetworkMediator.RequestInteraction` RPC, `InteractionOrchestrator`, handler. |
+| "Press E on a thing" | Target: a `NetworkBehaviour : IInteractionTarget` (`MotorFillPortNetworkMediator.cs`). Behaviour: an `IInteractionHandler`. Link: `Assets/Interactions/IA_*.asset`. Chain: the Interact input bit, `InteractInputUseCase` (server; acquires with `Assets/Targeting/TD_Interact`: a level 3 m ray, first hit, stopped by solid non-targets), `InteractionOrchestrator`, handler. The prompt is `InteractorControllerView.CurrentTarget` (same query). A target needs a collider the ray can hit (a trigger volume at eye height works). |
 | An ability, effect or tag | Assets under `Assets/Abilities/`; runtime in `Features/Abilities/AbilitySystemUseCase.cs`; per-actor state in `Network/Infrastructure/Abilities/AbilityNetworkMediator.cs`. Tags resolve by name through `IGameplayTagRegistry`, built from `Assets/Abilities/GameplayTagDatabase.asset`, which lists every tag asset automatically. |
-| What an actor aims at (targeting) | `Features/Targeting/` (`ITargetingService.TryAcquire`, `TargetingDefinition` assets in `Assets/Targeting/`); contracts in `Core/Domain/Targeting/`. Make something targetable by implementing `ITargetable` on a component in a spawned hierarchy. |
+| What an actor aims at (targeting) | `Features/Targeting/` (`ITargetingService.TryAcquire`, `TargetingDefinition` assets in `Assets/Targeting/`); contracts in `Core/Domain/Targeting/`. Make something targetable by implementing `ITargetable` on a component in a spawned hierarchy. **See what it sees:** the player's interaction gizmo draws `TD_Interact` live (ray, source, target; green hit, red miss); **TinCan > Dev > Targeting > Draw All Queries** draws every query (repair scans, server included) with `TargetingGizmos`. The switch is a flag file in the main project's `Library/` shared with MPPM clones (EditorPrefs are not shared). Scene view, or Game view with Gizmos on. |
 | An item (id, held visual, granted abilities) | `Features/Items/ItemDefinition.cs` (`ITEM_*` assets, positive unique `Id`), looked up through `ItemCatalog`. |
 | An input that triggers an ability | `Assets/Abilities/Inputs/Input_*.asset` bound in `DefaultInputBindingConfig.asset`; becomes a bit in `HumanoidInputState.ActiveInputMask` so it is predicted and replayed. |
 | Starting abilities | `_startingAbilities` on `NetworkPlayer.prefab` (`HumanoidPlayer`) and `Airship_Prefab.prefab` (`AirshipNetworkMediator`). Abilities that come from a held item (for example `GA_SwingNet` from the net) belong on the `ITEM_*` asset, not here. Shared assets; edit with care. |
@@ -125,7 +125,7 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 | Airship door | `Airship/PhysicalParts/AirshipDoor.cs` | direct (handler at the end of `Configure`) | `AirshipDoor`, `DoorInteractionHandler` | `IA_ToggleDoor`, `Interaction.Toggle.Door` | none |
 | Humanoid movement + look | `HumanoidMovement/` | direct | `HumanoidMovementUseCase`, `PlayerLookUseCase`, `HumanoidControllerView`, `Network/Infrastructure/HumanoidPlayer` | `Prefabs/NetworkPlayer`, `Attr_MoveSpeed`, `Attr_JumpForce`, `Attr_Stamina`, `GA_Sprint`, `GE_SprintBuff` | `HumanoidMovement*Tests`, `SimulationUseCaseTests` |
 | Possession | `Possession/` | direct | `PossessionUseCase`, `ServerPossessionManager`, `PossessionInputController`, `Infrastructure/PossessionNetworkMediator` | `Prefabs/Singletons/PossessionMediator` | none |
-| Interaction system | `Interaction/` | direct (core) | `InteractivityUseCase`, `InteractionOrchestrator`, `InteractionHandlerRegistry`, `VehicleBoardingUseCase`, `MaintenanceUseCase` | `Assets/Interactions/*` | `AirshipInteractionInvestigationTests` |
+| Interaction system | `Interaction/` | direct (core); targeting path via installer (`InteractionFeatureInstaller`, `Profile_Base`) | `InteractInputUseCase`, `InteractivityUseCase` (legacy RPC path, silent while the installer is active), `InteractionOrchestrator`, `InteractionHandlerRegistry`, `VehicleBoardingUseCase`, `MaintenanceUseCase` | `Assets/Interactions/*` | `AirshipInteractionInvestigationTests`, `InteractInputUseCaseTests`; scenario `InteractRack` |
 | Abilities (GAS-like) | `Abilities/` | direct (core); tag registry via installer (Order -20, `Profile_Base`) | `AbilitySystemUseCase`, `Network/Infrastructure/Abilities/AbilityNetworkMediator`, `GameplayTagRegistry` | `Assets/Abilities/**`, `Abilities/GameplayTagDatabase`, `Resources/Installers/GameplayTagsFeatureInstaller` | `HealthAttributeSetTests`, `InstantGameplayEffectTests`, `GameplayTagRegistryTests`; scenario `TagRequest` |
 | Build mode + ship modules | `Network/Infrastructure/BuildModeUseCase.cs`, `ModuleSpawningService.cs`, `ShipModule*NetworkMediator.cs` | direct | `BuildModeUseCase`, `ModulePlacementUseCase` | `Prefabs/Modules/Cannon_Module`, `Prefabs/Singletons/BuildPlacementMediator`, `GA_BuildMode`, `State.Building`, `IA_RepairModule`, `IA_DamageModule` | none |
 | Cloud boundary + visuals + atmosphere | `CloudBoundary/` | mixed: boundary is direct (ticked explicitly by the scheduler); submersion atmosphere is installer | `CloudBoundaryUseCase`, `CloudEnvironmentView` (also applies `CloudSubmersionProcessor` output: fog + directional light dimming from the local camera's cloud submersion, client-only, no gameplay effect) | `Settings/CloudBoundaryConfig`, `Settings/CloudVisualProfile`, `Settings/CloudSubmersionConfig`, `Resources/Installers/CloudSubmersionFeatureInstaller` | `CloudBoundary*Tests`, `CloudSubmersionProcessorTests` |
@@ -190,6 +190,15 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
 `NetCatchUseCaseTests.cs`; tune horizon visibility and catch approach feel with a host/client playtest.
 
 ## Legacy, oddities and traps
+
+- **`unity cmd capture_scene_view` does not show gizmos or `Debug.DrawLine`**, and a background Editor's Scene view camera
+  does not follow `SceneView.LookAt` until it repaints: the capture then renders from the old camera pose (often the
+  origin). Set `sceneView.camera.transform` yourself before capturing, and check debug lines in the live Scene view.
+  The capture also saves relative to `Assets/`; move the file out so it does not become an asset.
+
+- **Held-state input bits need a key held across a tick.** Input masks sample *held* keys when a tick gathers input
+  (`UnityInputService.GetActiveInputMask`); there is no latch. A normal tap (80–150 ms) outlasts a tick; an
+  inhumanly short one can be missed. This applies to Interact and the ability inputs alike. Scenarios hold for 0.3 s.
 
 - **Empty scaffold folders** (only `.gitkeep`): `Core/Application`, `Core/Presentation`, `Player`, `Utils`,
   `Features/Airship/Infrastructure`. Nothing is missing; they are leftovers from an initial folder layout.

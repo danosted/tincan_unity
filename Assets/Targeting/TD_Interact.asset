@@ -10,19 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f2a4eae0ac11e524ab9b8185b670baa2, type: 3}
-  m_Name: TD_RepairScan
+  m_Name: TD_Interact
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Targeting.TargetingDefinition
   Source: 2
   SourceOffset: {x: 0, y: 0, z: 0}
-  Shape: 1
+  Shape: 0
   Range: 3
   Radius: 0
   HorizontalAngle: 100
   VerticalAngle: 120
-  RequiredTags:
-  - {fileID: 11400000, guid: 0cab1c73b0063d142b2c209e107f1bcf, type: 2}
+  RequiredTags: []
   BlockedTags: []
-  Selection: 0
+  Selection: 2
   RequireLineOfSight: 0
   BlockingMask:
     serializedVersion: 2

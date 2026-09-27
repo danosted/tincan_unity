@@ -26,6 +26,12 @@ namespace TinCan.Features.HumanoidMovement
         float LookPitch { get; }
 
         /// <summary>
+        /// Height of the eyes above the body root, along the body's up. The root is the capsule's centre, not the feet,
+        /// so this is small (about 0.7 for a 2 m capsule). Targeting aims from here.
+        /// </summary>
+        float EyeHeight { get; }
+
+        /// <summary>
         /// Raw sensing data from the physical world.
         /// </summary>
         RaycastHit? LastGroundHit { get; }

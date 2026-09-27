@@ -159,6 +159,18 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void Ray_MeasuresRangeToTheHit_NotToThePivot()
+        {
+            var ray = Definition(TargetShape.Ray, TargetSelection.FirstHit);
+            ray.Range = 3f;
+            Vector3 source = _processor.SourcePoint(_origin, ray);
+            // A tall volume whose pivot sits on the deck 3.2 m away, but the ray met its side at 2.8 m.
+            var candidates = new List<TargetCandidate> { new(0, new Vector3(0f, 0f, 3.2f), hitDistance: 2.8f) };
+
+            Assert.That(_processor.TrySelect(_origin, source, ray, candidates, out _), Is.True);
+        }
+
+        [Test]
         public void NoCandidates_SelectsNothing()
         {
             Assert.That(Select(Definition(TargetShape.Cone)), Is.EqualTo(-1));

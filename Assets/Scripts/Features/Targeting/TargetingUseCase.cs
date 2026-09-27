@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
@@ -38,6 +39,7 @@ namespace TinCan.Features.Targeting
     public class TargetingUseCase : ITargetingService
     {
         private const int MaxRayHits = 16;
+        private const float DebugLineSeconds = 0.1f;
 
         private readonly ITargetableRegistry _targetables;
         private readonly TargetingProcessor _processor;
@@ -63,10 +65,12 @@ namespace TinCan.Features.Targeting
             if (definition.Shape == TargetShape.Ray) GatherRayHits(origin, source, definition);
             else GatherRegistered(source, definition);
 
-            if (!_processor.TrySelect(origin, source, definition, _candidates, out var selection)) return false;
+            bool acquired = _processor.TrySelect(origin, source, definition, _candidates, out var selection);
+            if (acquired) result = new TargetResult(_pool[selection.Index], selection.Distance, selection.HorizontalAngle);
 
-            result = new TargetResult(_pool[selection.Index], selection.Distance, selection.HorizontalAngle);
-            return true;
+            // Queries often run on the network tick, not every frame; hold the lines long enough to bridge ticks.
+            if (TargetingDebug.DrawAllQueries) TargetingGizmos.DrawDebug(origin, definition, acquired ? result.Target : null, DebugLineSeconds);
+            return acquired;
         }
 
         private void GatherRegistered(Vector3 source, TargetingDefinition definition)
@@ -89,10 +93,20 @@ namespace TinCan.Features.Targeting
                 ? Physics.SphereCastNonAlloc(ray, definition.Radius, _hits, definition.Range, ~0, QueryTriggerInteraction.Collide)
                 : Physics.RaycastNonAlloc(ray, _hits, definition.Range, ~0, QueryTriggerInteraction.Collide);
 
+            // Walk the hits nearest first. A solid collider that is not a target stops the ray (a wall, another player),
+            // as the old interaction ray did; triggers that are not targets (volumes the player stands in) are passed.
+            // A ray finds targets by their colliders, so it does not need the registry (fixtures register late).
+            Array.Sort(_hits, 0, count, HitDistanceComparer.Instance);
             for (int i = 0; i < count; i++)
             {
                 var targetable = _hits[i].collider.GetComponentInParent<ITargetable>();
-                if (targetable == null || !Registered(targetable) || !Accepts(targetable, definition)) continue;
+                if (targetable == null)
+                {
+                    if (_hits[i].collider.isTrigger) continue;
+                    break;
+                }
+
+                if (!Accepts(targetable, definition)) continue;
                 if (definition.RequireLineOfSight && IsBlocked(source, targetable.AimPoint, definition.BlockingMask)) continue;
 
                 _candidates.Add(new TargetCandidate(_pool.Count, targetable.AimPoint, _hits[i].distance));
@@ -100,13 +114,10 @@ namespace TinCan.Features.Targeting
             }
         }
 
-        private bool Registered(ITargetable targetable)
+        private sealed class HitDistanceComparer : IComparer<RaycastHit>
         {
-            foreach (var known in _targetables.All)
-            {
-                if (ReferenceEquals(known, targetable)) return true;
-            }
-            return false;
+            public static readonly HitDistanceComparer Instance = new();
+            public int Compare(RaycastHit a, RaycastHit b) => a.distance.CompareTo(b.distance);
         }
 
         private static bool Accepts(ITargetable targetable, TargetingDefinition definition)

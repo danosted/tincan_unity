@@ -23,7 +23,10 @@ namespace TinCan.Features.Targeting
 
     public enum TargetShape
     {
-        /// <summary>Physics ray (or sphere cast with Radius > 0) along the aim; only targetables with colliders are hit.</summary>
+        /// <summary>
+        /// Physics ray (or sphere cast with Radius > 0) along the aim. Finds targetables by their colliders (the registry is
+        /// not needed); stops at the first solid collider that is not a target. Range is measured to the hit.
+        /// </summary>
         Ray,
         /// <summary>Everything within Range inside the horizontal and vertical angles around the aim. Forgiving; no colliders needed.</summary>
         Cone,

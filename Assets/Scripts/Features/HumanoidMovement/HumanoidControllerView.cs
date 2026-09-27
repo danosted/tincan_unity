@@ -16,6 +16,8 @@ namespace TinCan.Features.HumanoidMovement
         [SerializeField] private float _sprintMultiplier = 1.8f;
         [SerializeField] private float _jumpForce = 8f;
         [SerializeField] private float _gravity = 20f;
+        [Tooltip("Eye height above the body root (the capsule centre, not the feet). Targeting aims from here.")]
+        [SerializeField] private float _eyeHeight = 0.7f;
         [SerializeField] private LayerMask _interactableMask = ~0; // Default: hit everything
 
         private CharacterController _controller;
@@ -52,6 +54,8 @@ namespace TinCan.Features.HumanoidMovement
                 return lookView != null ? Quaternion.Euler(0, lookView.Yaw, 0) : transform.rotation;
             }
         }
+
+        public float EyeHeight => _eyeHeight;
 
         public float LookPitch
         {

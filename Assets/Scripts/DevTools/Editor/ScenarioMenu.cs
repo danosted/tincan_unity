@@ -50,6 +50,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "AimPitch (Host + Client, Lag100)")]
         public static void AimPitchDuo() => RunDuo("AimPitch", "Lag100");
 
+        [MenuItem(Root + "InteractRack (Host)")]
+        public static void InteractRackSolo() => RunSolo("InteractRack");
+
+        [MenuItem(Root + "InteractRack (Host + Client, Lag100)")]
+        public static void InteractRackDuo() => RunDuo("InteractRack", "Lag100");
+
         public static void RunSolo(string scenario) =>
             NetHarnessPlayerTagsMenu.Run(new[] { "autohost", $"scenario:{scenario}", "scenariomode:solo" }, Array.Empty<string>());
 

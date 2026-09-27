@@ -194,8 +194,8 @@ because it needs Fuel). If a reference is missing, degrade to "feature off" with
 `Assets/Prefabs/Airship/Parts/BallastSystem.prefab`, modelled on `FuelSystem.prefab`:
 - Root: `NetworkObject` with `AutoObjectParentSync` and `SyncOwnerTransformWhenParented` on, **no**
   `NetworkTransform`; `BallastTankNetworkMediator` with the config assigned.
-- Child `BallastValve`: mesh + collider at chest height (the interaction ray starts 1.5 m above the player
-  pivot, 3 m range; short props need a tall `InteractVolume` trigger child), `BallastValveNetworkMediator`.
+- Child `BallastValve`: mesh + collider at chest height (the interaction ray starts at the player's eye, about
+  1.7 m above the feet, 3 m range; short props need a tall `InteractVolume` trigger child), `BallastValveNetworkMediator`.
 - Everything authored in ship-local coordinates. Measured deck heights in ship space: bow deck y = -1.82,
   mid deck -3.49, cabin floor -3.88, aft top deck 0.98.
 

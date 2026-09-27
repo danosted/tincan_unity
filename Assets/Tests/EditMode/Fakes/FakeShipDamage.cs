@@ -45,7 +45,6 @@ namespace TinCan.Tests.EditMode.Fakes
         public bool IsBroken => Health01 < 1f;
         public Transform? Transform => transform;
         public IAbilityControllerBase? Controller => _controller;
-        public System.Guid TargetId { get; } = System.Guid.NewGuid();
         public Vector3 AimPoint => transform.position;
         public bool IsTargetable => true;
         public FakeAbilityController FakeController => _controller;

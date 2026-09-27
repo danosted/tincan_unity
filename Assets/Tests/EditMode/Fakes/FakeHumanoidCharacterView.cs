@@ -41,6 +41,7 @@ namespace TinCan.Tests.EditMode.Fakes
         public float Gravity { get; set; } = 0f;
         public Quaternion LookRotation { get; set; } = Quaternion.identity;
         public float LookPitch { get; set; }
+        public float EyeHeight { get; set; } = 0.7f;
         public bool IsControlsEnabled { get; private set; } = true;
         public float GroundProbeDistance { get; set; } = 1f;
 

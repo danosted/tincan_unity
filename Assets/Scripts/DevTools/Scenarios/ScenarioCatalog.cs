@@ -209,13 +209,14 @@ namespace TinCan.DevTools.Scenarios
             });
 
         /// <summary>
-        /// Aim pitch travels in the input: the subject stands behind broken part 0 (about 25 degrees below its eye) and
-        /// turns its camera. Looking level, a narrow EyeAim scan misses the part; looking down 25 degrees, it finds it,
-        /// on the subject's own peer and on the server, which only knows the pitch from the replicated input.
+        /// Aim pitch travels in the input: the subject stands behind broken part 0, which floats at about eye height, and
+        /// turns its camera. Looking 30 degrees down, a narrow EyeAim scan misses the part; looking level, it finds it,
+        /// on the subject's own peer and on the server, which only knows the pitch from the replicated input. The server
+        /// checks both poses in order, so it cannot pass on the default pitch of 0.
         /// </summary>
         public static readonly ScenarioEntry AimPitch = new(
             new Scenario.Builder("AimPitch")
-                .Describe("Look level -> EyeAim scan misses part 0; look down 25 deg -> it hits, on the owner and on the server.")
+                .Describe("Look down 30 deg -> EyeAim scan misses part 0; look level -> it hits, on the owner and on the server.")
                 .Timeout(90f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
@@ -226,16 +227,20 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("PointBroken", 5f, "0")
                     .Wait(0.5f, "teleport settles; facing follows the look input again")
                     .WaitUntil("SubjectFacesPoint", 5f, "0")
+                    .Do("SetSubjectPitch", "30")
+                    .WaitUntil("SubjectAimPitch", 3f, "30")
+                    .Expect("EyeScanMisses", "0")
+                    .Checkpoint("looking-down")
+                    .Wait(3f, "hold the pose while the server checks")
                     .Do("SetSubjectPitch", "0")
                     .WaitUntil("SubjectAimPitch", 3f, "0")
-                    .Expect("EyeScanMisses", "0")
-                    .Do("SetSubjectPitch", "25")
-                    .WaitUntil("SubjectAimPitch", 3f, "25")
                     .Expect("EyeScanHits", "0")
-                    .Checkpoint("looking-down")
+                    .Checkpoint("looking-level")
                     .Wait(3f, "hold the pose while the server checks"))
                 .Assert(s => s
-                    .WaitUntil("SubjectAimPitch", 20f, "25")
+                    .WaitUntil("SubjectAimPitch", 20f, "30")
+                    .Expect("EyeScanMisses", "0")
+                    .WaitUntil("SubjectAimPitch", 10f, "0")
                     .Expect("EyeScanHits", "0"))
                 .Build(),
             builder =>
@@ -244,7 +249,44 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle, ShipDamage, RepairLoop, AimPitch };
+        /// <summary>
+        /// Interaction through targeting, with the real key: the subject stands by the repair tool rack and turns its
+        /// camera to it; its prompt (TD_Interact on its own peer) shows the rack. It presses Interact (a predicted input
+        /// bit): the server, acquiring the target itself from that tick's pose, hands out the tool; a second press puts it
+        /// back. No client-chosen target is involved.
+        /// </summary>
+        public static readonly ScenarioEntry InteractRack = new(
+            new Scenario.Builder("InteractRack")
+                .Describe("Face the tool rack -> prompt shows it -> press Interact -> server gives the tool -> press again -> returned.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Expect("SubjectHolds", "none")
+                    .Do("PlaceSubjectNear", "RepairToolRack"))
+                .Act(s => s
+                    .WaitUntil("SubjectNear", 45f, "RepairToolRack")
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceObject", "RepairToolRack")
+                    .WaitUntil("InteractTargetIs", 5f, "RepairToolRack")
+                    .Checkpoint("facing-rack")
+                    .Hold(0.3f, ActionNames.Interact)
+                    .WaitUntil("SubjectHolds", 5f, "ITEM_RepairTool")
+                    .Wait(0.5f, "let go")
+                    .Hold(0.3f, ActionNames.Interact)
+                    .WaitUntil("SubjectHolds", 5f, "none"))
+                .Assert(s => s
+                    .WaitUntil("SubjectHolds", 20f, "ITEM_RepairTool")
+                    .Expect("InteractTargetIs", "RepairToolRack")
+                    .WaitUntil("SubjectHolds", 10f, "none"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle, ShipDamage, RepairLoop, AimPitch, InteractRack };
 
         public static string Names => string.Join(", ", All.Select(entry => entry.Scenario.Name));
 

@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: RepairToolRackFixture
   m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Features.ShipFixtureDefinition
   Prefab: {fileID: 4439447283869017771, guid: cea35ff18497ce546adb4022d82b4915, type: 3}
-  LocalPosition: {x: -3, y: -2.4, z: 1}
+  LocalPosition: {x: -3, y: -3.49, z: 1}
   LocalEulerAngles: {x: 0, y: 90, z: 0}

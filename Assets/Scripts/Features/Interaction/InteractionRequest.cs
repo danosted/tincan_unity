@@ -1,6 +1,9 @@
 #nullable enable
 using System;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Abilities;
+using TinCan.Core.Domain.Targeting;
+using UnityEngine;
 
 namespace TinCan.Features.Interaction
 {
@@ -37,11 +40,21 @@ namespace TinCan.Features.Interaction
     }
 
     /// <summary>
-    /// Adapter contract for a world object with a configured interaction binding.
+    /// Adapter contract for a world object with a configured interaction binding. Every interaction target is also a
+    /// targeting target: the default members below aim at the component's transform, count it while it is active, and
+    /// expose the nearest GAS controller for tag filters. So interacting is "targeting with TD_Interact", and no
+    /// target component needs its own targeting code.
     /// </summary>
-    public interface IInteractionTarget : IInteractable
+    public interface IInteractionTarget : IInteractable, ITargetable
     {
         InteractionDefinition Definition { get; }
+
+        Vector3 ITargetable.AimPoint => this is Component component && component != null ? component.transform.position : default;
+
+        bool ITargetable.IsTargetable => this is Behaviour behaviour && behaviour != null && behaviour.isActiveAndEnabled;
+
+        IAbilityControllerBase? ITargetable.Controller =>
+            this is Component component && component != null ? component.GetComponentInParent<IAbilityControllerBase>() : null;
     }
 
     public interface IInteractionTargetResolver

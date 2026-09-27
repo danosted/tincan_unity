@@ -69,7 +69,10 @@ namespace TinCan.Tests.EditMode.Fakes
             return actor != null;
         }
 
-        public TActor GetLocalPlayerActor<TActor>() where TActor : IActor => default;
+        /// <summary>The local player, for tests of owner-side logic; null by default.</summary>
+        public IActor LocalPlayer { get; set; }
+
+        public TActor GetLocalPlayerActor<TActor>() where TActor : IActor => LocalPlayer is TActor local ? local : default;
 
         public void Register(IActor actor) => _actors.Add(actor);
         public void Unregister(IActor actor)

@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using TinCan.Core.Domain.Features;
+using TinCan.Features.Interaction;
 using UnityEngine;
 using VContainer;
 
@@ -26,6 +27,7 @@ namespace TinCan.Features.Items
 
             builder.RegisterInstance(catalog);
             builder.Register<EquipmentAbilityBinder>(Lifetime.Singleton);
+            builder.Register<TakeItemInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
         }
     }
 }

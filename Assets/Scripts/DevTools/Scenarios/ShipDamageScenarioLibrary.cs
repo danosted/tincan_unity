@@ -8,7 +8,9 @@ using TinCan.Core.Domain.Networking;
 using TinCan.Features.Airship;
 using TinCan.Features.Airship.Damage;
 using TinCan.Features.Airship.Fuel;
+using TinCan.Features.HumanoidMovement;
 using TinCan.Features.UI;
+using UnityEngine;
 using VContainer;
 
 namespace TinCan.DevTools.Scenarios
@@ -25,15 +27,30 @@ namespace TinCan.DevTools.Scenarios
         private readonly IShipBreakage _breakage;
         private readonly IHudValues _hud;
         private readonly IGameplayTagRegistry? _tags;
+        private readonly ScenarioSubject _subject;
+        private readonly IHumanoidRespawnService _respawn;
+        private readonly ShipDamageConfig _config;
+        private readonly RepairTargetProcessor _targets;
+
+        // Where PlaceSubjectAtPoint stands the subject: this far behind the part along the way the subject already faces
+        // (facing follows the look input every tick, so a teleport cannot turn a player), with its feet this far below
+        // the marker (markers float at chest height above the deck).
+        private const float StandOff = 1.5f;
+        private const float FeetBelowMarker = 0.8f;
 
         private float? _fuelBaseline;
 
-        public ShipDamageScenarioLibrary(INetworkService network, IActorRegistry actors, IShipBreakage breakage, IHudValues hud, IObjectResolver resolver)
+        public ShipDamageScenarioLibrary(INetworkService network, IActorRegistry actors, IShipBreakage breakage, IHudValues hud,
+            ScenarioSubject subject, IHumanoidRespawnService respawn, ShipDamageConfig config, RepairTargetProcessor targets, IObjectResolver resolver)
         {
             _network = network;
             _actors = actors;
             _breakage = breakage;
             _hud = hud;
+            _subject = subject;
+            _respawn = respawn;
+            _config = config;
+            _targets = targets;
             _tags = resolver.TryResolve<IGameplayTagRegistry>(out var tags) ? tags : null;
         }
 
@@ -41,11 +58,13 @@ namespace TinCan.DevTools.Scenarios
         {
             new ScenarioCommand("BreakPoint", index => ServerOnly(() => _breakage.TryBreak(int.Parse(index)), $"part {index} broken")),
             new ScenarioCommand("RestorePoint", index => ServerOnly(() => _breakage.TryRestore(int.Parse(index)), $"part {index} restored")),
-            new ScenarioCommand("RecordFuel", _ => RecordFuel())
+            new ScenarioCommand("RecordFuel", _ => RecordFuel()),
+            new ScenarioCommand("PlaceSubjectAtPoint", PlaceSubject)
         };
 
         public IEnumerable<ScenarioProbe> Probes => new[]
         {
+            new ScenarioProbe("SubjectFacesPoint", FacesPoint),
             new ScenarioProbe("PointBroken", index => CheckPoint(index, broken: true)),
             new ScenarioProbe("PointHealthy", index => CheckPoint(index, broken: false)),
             new ScenarioProbe("MarkerShown", index => CheckMarker(index, shown: true)),
@@ -64,6 +83,40 @@ namespace TinCan.DevTools.Scenarios
                 ? ScenarioCheck.Fail($"{key}: {value}")
                 : ScenarioCheck.Pass($"no '{key}' on the HUD"))
         };
+
+        /// <summary>
+        /// Server: teleports the subject in front of the part, through the respawn service (the owner snaps). It keeps the
+        /// subject's current facing, because a player's facing follows its look input every tick.
+        /// </summary>
+        private ScenarioCheck PlaceSubject(string index)
+        {
+            if (!_network.IsServer) return ScenarioCheck.Fail("server-only command");
+            var subject = _subject.Resolve();
+            var point = Point(index)?.Transform;
+            var ship = Ship()?.Transform;
+            if (subject == null || point == null || ship == null) return ScenarioCheck.Fail("no subject, part or ship");
+
+            var body = subject.Movement.Transform;
+            Vector3 facing = Vector3.ProjectOnPlane(body.forward, ship.up).normalized;
+            Vector3 stand = point.position - facing * StandOff - ship.up * FeetBelowMarker;
+            _respawn.ResetCharacter(subject, stand, body.rotation);
+            return ScenarioCheck.Pass($"subject placed {StandOff} m behind part {index}");
+        }
+
+        /// <summary>Would the repair use case target this part from where the subject stands on this peer?</summary>
+        private ScenarioCheck FacesPoint(string index)
+        {
+            var body = _subject.Body;
+            var point = Point(index);
+            if (body == null || point?.Transform == null) return ScenarioCheck.Fail("no subject body or part");
+
+            Vector3 offset = point.Transform.position - body.position;
+            float angle = Vector3.Angle(new Vector3(body.forward.x, 0f, body.forward.z), new Vector3(offset.x, 0f, offset.z));
+            var parts = new[] { (point.Index, point.Transform.position, true) };
+            bool targeted = _targets.FindTarget(body.position, body.forward, parts, _config.RepairReach, _config.RepairConeDegrees) == point.Index;
+            string detail = $"distance {offset.magnitude:0.00} m (reach {_config.RepairReach}), angle {angle:0} deg (cone {_config.RepairConeDegrees})";
+            return targeted ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
 
         private ScenarioCheck ServerOnly(Func<bool> action, string success)
         {

@@ -228,6 +228,24 @@ the Items installer breaks Fuel and FlyingCan after the migration, so Items beco
     Tests at 316/316, and the other scenarios still pass.
   - Harness: `verify.ps1` now checks network prefab hashes between host and clones.
 
+- 2026-09-26: Step 4 done: the repair loop is playable.
+  - `ITEM_RepairTool` (id 3) is taken from the `RepairToolRack` fixture, using the generic `ItemRackNetworkMediator`
+    + `TakeItemInteractionHandler` + `IA_TakeRepairTool`.
+  - Holding the tool grants `GA_RepairShip` (tag `Ability.Repair.Ship`). Holding Primary keeps `State.Repairing` on
+    the player through `GE_Repairing`, predicted from the input bit.
+  - `ShipRepairUseCase` (server) applies `GE_RepairTick` (+6 health, capped at max) every 0.25 s to the broken part
+    in front. The part is whole in ~4 s.
+  - Target: the nearest broken part within 2.5 m, inside a 100° horizontal cone. Facing follows the look input, so
+    you repair what you look at.
+  - Socket 0 moved to 3.2 m in front of the spawn.
+  - Scenario `RepairLoop` (the dev command `PlaceSubjectAtPoint` stands the subject behind the part, because both
+    players share one spawn) passes solo and host + client: 17 repair ticks, then the leak, tags and marker clear.
+    Tests at 333/333, and all five scenarios pass.
+  - **Not covered by a scenario:** taking the tool from the rack with E through the real interaction raycast. Only
+    the handler is unit-tested. The rack's position (port side, near the spawn) needs a playtest.
+  - Found: a teleport cannot turn a player (facing follows the look input every tick). Scenario placement keeps the
+    subject's facing.
+
 ## Build order (vertical slices)
 0. **Feedback loop skeleton**: `Scenario` + expectations + report writer + self-terminating run + capture, first
    proven on an existing feature (a `NetCatch` scenario) so the harness is trusted before new code relies on it.

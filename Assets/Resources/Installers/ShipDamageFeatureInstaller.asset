@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Airship.Damage.ShipDamageFeatureInstaller
   _config: {fileID: 11400000, guid: bf6057e839a28f946ab13f88c63ad107, type: 2}
   _socketsFixture: {fileID: 11400000, guid: 10e29ac9821bc6444a44a79ea96cf1be, type: 2}
+  _toolRackFixture: {fileID: 11400000, guid: 3ac0ad539300a704a95b080ce4f1359e, type: 2}

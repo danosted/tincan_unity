@@ -22,3 +22,8 @@ MonoBehaviour:
   PartBrokenEffect: {fileID: 11400000, guid: 12c8e757835cebc41b0b2452a30b2256, type: 2}
   BreakEffect: {fileID: 11400000, guid: ccc165ba211f7e6458091824b69d79c3, type: 2}
   RestoreEffect: {fileID: 11400000, guid: d20b73c7c67a2ed409c507bfdc7d5efb, type: 2}
+  RepairingTag: {fileID: 11400000, guid: 7540705d2a90a204b8f8be49902ba07a, type: 2}
+  RepairEffect: {fileID: 11400000, guid: 8d3fb3903820fff46bc7a5cae130cd47, type: 2}
+  RepairInterval: 0.25
+  RepairReach: 2.5
+  RepairConeDegrees: 100

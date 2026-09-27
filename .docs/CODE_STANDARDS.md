@@ -44,6 +44,10 @@ For where code goes, see [`CODE_MAP.md`](./CODE_MAP.md); for the design rules, [
 - Processors, use cases and interaction handlers ship with an EditMode test in `Assets/Tests/EditMode/`.
 - Use the hand-written fakes in `Assets/Tests/EditMode/Fakes/`; add one when an interface has none. No mocking framework.
 - Views keep their math in a `public static` function and test that.
+- `Assets/Tests/EditMode/ArchitectureRulesTests.cs` checks the rules that can be checked: naming, global lookups in
+  `Features`, registrations in `ProjectLifetimeScope`, a test per processor/use case/handler, `#nullable enable`, no
+  `#region` or coroutines. Known offenders sit in `ArchitectureRulesBaseline.cs`. Remove an entry when you fix it; never
+  add one without the developer's agreement.
 
 ## Related Documents
 

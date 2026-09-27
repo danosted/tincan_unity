@@ -35,7 +35,8 @@ namespace TinCan.Core.Domain.Targeting
     /// <summary>
     /// Where an actor aims from, in world space on this peer. Built from simulated state that owner and server share
     /// (the body pose follows the replicated input), so both peers run the same query and the server's answer is
-    /// authoritative. <see cref="AimPitch"/> is null until pitch travels in the input.
+    /// authoritative. <see cref="AimPitch"/> comes from the replicated input (degrees, positive looks down); null for
+    /// targeters without one. <see cref="OrbitHeight"/> is where a third-person camera looks through, above the body.
     /// </summary>
     public readonly struct TargetingOrigin
     {
@@ -43,18 +44,27 @@ namespace TinCan.Core.Domain.Targeting
         public readonly Quaternion BodyRotation;
         public readonly float EyeHeight;
         public readonly float? AimPitch;
+        public readonly float OrbitHeight;
 
-        public TargetingOrigin(Vector3 bodyPosition, Quaternion bodyRotation, float eyeHeight, float? aimPitch = null)
+        public TargetingOrigin(Vector3 bodyPosition, Quaternion bodyRotation, float eyeHeight, float? aimPitch = null, float orbitHeight = 0f)
         {
             BodyPosition = bodyPosition;
             BodyRotation = bodyRotation;
             EyeHeight = eyeHeight;
             AimPitch = aimPitch;
+            OrbitHeight = orbitHeight;
         }
 
         public Vector3 Up => BodyRotation * Vector3.up;
         public Vector3 Eye => BodyPosition + Up * EyeHeight;
         public Vector3 Forward => BodyRotation * Vector3.forward;
+        public Vector3 OrbitCentre => BodyPosition + Up * OrbitHeight;
+
+        /// <summary>The body's facing pitched by the aim (level when there is no pitch).</summary>
+        public Vector3 AimDirection => BodyRotation * Quaternion.Euler(AimPitch ?? 0f, 0f, 0f) * Vector3.forward;
+
+        /// <summary>Elevation of the aim above the body's horizontal plane, in degrees (up is positive).</summary>
+        public float AimElevation => -(AimPitch ?? 0f);
     }
 
     /// <summary>Something that aims: a player, later AI or a ship turret.</summary>

@@ -11,8 +11,14 @@ namespace TinCan.Features.Targeting
         /// <summary>From the eye, along the body's facing (yaw only; facing follows the look input).</summary>
         BodyForward,
         /// <summary>From a point in body space (for example a net head in front of the player), along the body's facing.</summary>
-        BodyOffset
-        // EyeAim and CameraAim (with pitch) arrive once pitch travels in the input; see .docs/plans/targeting-subsystem.md.
+        BodyOffset,
+        /// <summary>From the eye, along the aim: the body's facing pitched by the replicated look pitch.</summary>
+        EyeAim,
+        /// <summary>
+        /// From the third-person camera's orbit centre, along the aim: what sits under the camera's view centre. Starts
+        /// at the orbit centre rather than the camera itself, so rigging behind the player is never picked.
+        /// </summary>
+        CameraAim
     }
 
     public enum TargetShape

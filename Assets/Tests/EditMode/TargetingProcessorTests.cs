@@ -121,6 +121,44 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void EyeAim_CentresTheConeOnThePitch()
+        {
+            var narrow = Definition(TargetShape.Cone);
+            narrow.Source = AimSource.EyeAim;
+            narrow.VerticalAngle = 16f;
+            Vector3 below = new(0f, 0.8f, 1.5f); // 25 degrees below the eye
+
+            var level = new TargetingOrigin(Vector3.zero, Quaternion.identity, 1.5f, aimPitch: 0f);
+            var down = new TargetingOrigin(Vector3.zero, Quaternion.identity, 1.5f, aimPitch: 25f);
+            var candidates = new List<TargetCandidate> { new(0, below) };
+
+            Assert.That(_processor.TrySelect(level, level.Eye, narrow, candidates, out _), Is.False, "Looking level misses a part 25 deg below.");
+            Assert.That(_processor.TrySelect(down, down.Eye, narrow, candidates, out _), Is.True, "Looking down 25 deg (positive pitch) finds it.");
+        }
+
+        [Test]
+        public void BodyForward_IgnoresPitch()
+        {
+            var narrow = Definition(TargetShape.Cone);
+            narrow.VerticalAngle = 16f;
+            var down = new TargetingOrigin(Vector3.zero, Quaternion.identity, 1.5f, aimPitch: 25f);
+            var candidates = new List<TargetCandidate> { new(0, new Vector3(0f, 0.8f, 1.5f)) };
+
+            Assert.That(_processor.TrySelect(down, down.Eye, narrow, candidates, out _), Is.False);
+        }
+
+        [Test]
+        public void CameraAim_StartsAtTheOrbitCentre_AndFollowsThePitch()
+        {
+            var camera = Definition(TargetShape.Ray);
+            camera.Source = AimSource.CameraAim;
+            var origin = new TargetingOrigin(new Vector3(1f, 0f, 0f), Quaternion.identity, 1.5f, aimPitch: 90f, orbitHeight: 0.4f);
+
+            Assert.That(_processor.SourcePoint(origin, camera), Is.EqualTo(new Vector3(1f, 0.4f, 0f)));
+            Assert.That(Vector3.Dot(_processor.Direction(origin, camera), Vector3.down), Is.GreaterThan(0.999f), "Pitch 90 looks straight down.");
+        }
+
+        [Test]
         public void NoCandidates_SelectsNothing()
         {
             Assert.That(Select(Definition(TargetShape.Cone)), Is.EqualTo(-1));

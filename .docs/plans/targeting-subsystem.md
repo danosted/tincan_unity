@@ -168,3 +168,18 @@ optional feature). Recommendation: the installer owns it and the orchestrator re
     `ShipDamage` still pass.
   - Behaviour change to playtest: reach is now measured from the eye (1.5 m up), not from the feet. The vertical
     limit is ±60°.
+- 2026-09-27: Roadmap slice 1 (aim pitch) done.
+  - `HumanoidInputState.LookPitch` (degrees, positive down) is captured from `IOrbitalLookView.Pitch` via
+    `IHumanoidMovementView.LookPitch`. It is serialized with the input, so it is predicted, buffered and replayed.
+  - `TargetingOrigin` gained `AimPitch` (from `InputState`) and `OrbitHeight` (`IOrbitalLookView.OrbitHeight`), plus
+    `AimDirection` and `AimElevation`.
+  - New aim sources: `EyeAim` and `CameraAim` (from the orbit centre). The processor centres a cone's vertical angle
+    on the aim, and rays follow it.
+  - Tests: pitch capture, pitch serialization, pitched cone, `BodyForward` ignoring pitch, and the `CameraAim` source
+    and direction. 348/348.
+  - Scenario `AimPitch`: the client looks level and a narrow `EyeAim` scan misses part 0; at 25° down it hits the
+    part at 1.65 m. The server, knowing the pitch only from the input stream, gets the same hit. All six scenarios
+    pass.
+  - Not done: the pitch is a full float (4 bytes on each of the 4 inputs per packet). It could be quantized to a
+    short if bandwidth matters. `CameraAim` has no consumer yet, since there is no crosshair UI and the current
+    camera orbits the feet (`height = 0`).

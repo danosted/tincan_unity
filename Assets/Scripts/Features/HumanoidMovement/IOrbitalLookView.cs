@@ -14,6 +14,9 @@ namespace TinCan.Features.HumanoidMovement
         float Sensitivity { get; }
         float MaxPitch { get; }
 
+        /// <summary>Height of the orbit centre above the body root; the camera looks through it (targeting CameraAim).</summary>
+        float OrbitHeight { get; }
+
         Camera Camera { get; }
 
         void ApplyLook(float pitch, float yaw);

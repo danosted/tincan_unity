@@ -208,7 +208,43 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipDamageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle, ShipDamage, RepairLoop };
+        /// <summary>
+        /// Aim pitch travels in the input: the subject stands behind broken part 0 (about 25 degrees below its eye) and
+        /// turns its camera. Looking level, a narrow EyeAim scan misses the part; looking down 25 degrees, it finds it,
+        /// on the subject's own peer and on the server, which only knows the pitch from the replicated input.
+        /// </summary>
+        public static readonly ScenarioEntry AimPitch = new(
+            new Scenario.Builder("AimPitch")
+                .Describe("Look level -> EyeAim scan misses part 0; look down 25 deg -> it hits, on the owner and on the server.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("BreakPoint", "0")
+                    .Do("PlaceSubjectAtPoint", "0"))
+                .Act(s => s
+                    .WaitUntil("PointBroken", 5f, "0")
+                    .Wait(0.5f, "teleport settles; facing follows the look input again")
+                    .WaitUntil("SubjectFacesPoint", 5f, "0")
+                    .Do("SetSubjectPitch", "0")
+                    .WaitUntil("SubjectAimPitch", 3f, "0")
+                    .Expect("EyeScanMisses", "0")
+                    .Do("SetSubjectPitch", "25")
+                    .WaitUntil("SubjectAimPitch", 3f, "25")
+                    .Expect("EyeScanHits", "0")
+                    .Checkpoint("looking-down")
+                    .Wait(3f, "hold the pose while the server checks"))
+                .Assert(s => s
+                    .WaitUntil("SubjectAimPitch", 20f, "25")
+                    .Expect("EyeScanHits", "0"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<ShipDamageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle, ShipDamage, RepairLoop, AimPitch };
 
         public static string Names => string.Join(", ", All.Select(entry => entry.Scenario.Name));
 

@@ -44,8 +44,20 @@ namespace TinCan.Features.Targeting
         public Vector3 SourcePoint(in TargetingOrigin origin, TargetingDefinition definition) => definition.Source switch
         {
             AimSource.BodyOffset => origin.BodyPosition + origin.BodyRotation * definition.SourceOffset,
+            AimSource.CameraAim => origin.OrbitCentre,
             _ => origin.Eye
         };
+
+        /// <summary>The direction a ray follows: the pitched aim for Eye/CameraAim, the body's level facing otherwise.</summary>
+        public Vector3 Direction(in TargetingOrigin origin, TargetingDefinition definition) =>
+            UsesPitch(definition) ? origin.AimDirection : origin.Forward;
+
+        /// <summary>The elevation a cone's vertical angle is centred on: the aim's for pitched sources, level otherwise.</summary>
+        public float ReferenceElevation(in TargetingOrigin origin, TargetingDefinition definition) =>
+            UsesPitch(definition) ? origin.AimElevation : 0f;
+
+        private static bool UsesPitch(TargetingDefinition definition) =>
+            definition.Source is AimSource.EyeAim or AimSource.CameraAim;
 
         /// <summary>Inside the definition's shape, measured from <paramref name="source"/> along the origin's facing.</summary>
         public bool IsInside(in TargetingOrigin origin, Vector3 source, TargetingDefinition definition, Vector3 point)
@@ -58,7 +70,8 @@ namespace TinCan.Features.Targeting
                 case TargetShape.Cone:
                     if (offset.sqrMagnitude > definition.Range * definition.Range) return false;
                     var (horizontal, vertical) = Angles(origin, offset);
-                    return horizontal <= definition.HorizontalAngle * 0.5f && Mathf.Abs(vertical) <= definition.VerticalAngle * 0.5f;
+                    return horizontal <= definition.HorizontalAngle * 0.5f &&
+                           Mathf.Abs(vertical - ReferenceElevation(origin, definition)) <= definition.VerticalAngle * 0.5f;
                 default:
                     // Ray candidates come from physics hits already along the ray; only the range applies.
                     return offset.sqrMagnitude <= definition.Range * definition.Range;

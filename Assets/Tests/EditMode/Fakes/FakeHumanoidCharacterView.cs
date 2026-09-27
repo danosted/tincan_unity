@@ -20,6 +20,7 @@ namespace TinCan.Tests.EditMode.Fakes
         public float Yaw { get; set; }
         public float Sensitivity => 1f;
         public float MaxPitch => 90f;
+        public float OrbitHeight { get; set; }
         public Camera Camera => null;
         public void ApplyLook(float pitch, float yaw) { }
     }
@@ -39,6 +40,7 @@ namespace TinCan.Tests.EditMode.Fakes
         public float JumpForce { get; set; } = 8f;
         public float Gravity { get; set; } = 0f;
         public Quaternion LookRotation { get; set; } = Quaternion.identity;
+        public float LookPitch { get; set; }
         public bool IsControlsEnabled { get; private set; } = true;
         public float GroundProbeDistance { get; set; } = 1f;
 

@@ -77,18 +77,21 @@ build placement and weapons are *uses* of targeting, not separate aiming systems
 - **Contracts** (`Core/Domain/Targeting/`):
   - `ITargetable`: an aim point, `IsTargetable`, and an optional GAS controller for tag filters.
   - `ITargetableRegistry`.
-  - `ITargeter` + `TargetingOrigin`: body pose, eye height, and an optional aim pitch.
+  - `ITargeter` + `TargetingOrigin`: body pose, eye height, aim pitch and orbit height.
 - **Registration:** `ActorOrchestrator` registers every `ITargetable` in a spawned hierarchy, like interactors. It
   resolves the registry optionally, because the Targeting installer can be switched off.
 - **Queries are data:** a `TargetingDefinition` (`Assets/Targeting/TD_*`) chooses an aim source (`BodyForward`,
-  `BodyOffset`), a shape (`Cone` for forgiving close scans, `Sphere`, a physics `Ray`), gameplay-tag filters on the
+  `BodyOffset`, `EyeAim`, `CameraAim`), a shape (`Cone` for forgiving close scans, `Sphere`, a physics `Ray`), gameplay-tag filters on the
   target, a selection rule and optional line of sight. Several aim models coexist; each context picks its own.
   `AbilityDefinition.Targeting` links an ability to one.
 - **Authority:** `ITargetingService.TryAcquire` runs on any peer from simulated state (the body pose follows the
   replicated input). The owner uses it to predict; the server's answer is authoritative. The server never trusts a
   client-chosen target.
-- **Not yet:** aim pitch is not in the input (the camera's pitch stays on the owner), so there is no pitched or
-  camera aim. The roadmap is in `.docs/plans/targeting-subsystem.md`.
+- **Aim pitch travels in the input:** `HumanoidInputState.LookPitch`, in degrees, positive looks down. It is captured
+  from the orbital camera and predicted, sent and replayed with the rest of the input. `EyeAim` (from the eye) and
+  `CameraAim` (from the camera's orbit centre, so rigging behind the player is never picked) follow the pitched aim.
+  A cone's vertical angle is centred on it; `BodyForward` stays level. The roadmap is in
+  `.docs/plans/targeting-subsystem.md`.
 
 ### 7. Feature composition
 A feature is one folder under `Assets/Scripts/Features/` plus one `FeatureInstaller` asset under

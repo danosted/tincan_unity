@@ -84,7 +84,7 @@ namespace TinCan.Features.Targeting
 
         private void GatherRayHits(in TargetingOrigin origin, Vector3 source, TargetingDefinition definition)
         {
-            var ray = new Ray(source, origin.Forward);
+            var ray = new Ray(source, _processor.Direction(origin, definition));
             int count = definition.Radius > 0f
                 ? Physics.SphereCastNonAlloc(ray, definition.Radius, _hits, definition.Range, ~0, QueryTriggerInteraction.Collide)
                 : Physics.RaycastNonAlloc(ray, _hits, definition.Range, ~0, QueryTriggerInteraction.Collide);

@@ -53,6 +53,15 @@ namespace TinCan.Features.HumanoidMovement
             }
         }
 
+        public float LookPitch
+        {
+            get
+            {
+                var lookView = GetComponent<IOrbitalLookView>();
+                return lookView != null ? lookView.Pitch : 0f;
+            }
+        }
+
         protected void Awake()
         {
             _controller = GetComponent<CharacterController>();

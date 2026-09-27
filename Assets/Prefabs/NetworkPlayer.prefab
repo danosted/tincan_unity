@@ -109,6 +109,7 @@ MonoBehaviour:
   _sprintMultiplier: 1.8
   _jumpForce: 8
   _gravity: 20
+  _eyeHeight: 0.7
   _interactableMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -230,7 +231,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.HumanoidPlayer
   ShowTopMostFoldoutHeaderGroup: 1
-  _selectedModulePrefab: {fileID: 2084250224356171082, guid: fd433d6689aad314caa0c6811c337d1d, type: 3}
+  _selectedModulePrefab: {fileID: 0}
   _moveSpeedAttribute: {fileID: 11400000, guid: a3969ba58e30bf14991f1248364d7cf8, type: 2}
   _jumpForceAttribute: {fileID: 11400000, guid: dffb50361639b754e9c2c8497cf425f9, type: 2}
   _staminaAttribute: {fileID: 11400000, guid: 6076f295bb68c884bb94e8c0c73a1226, type: 2}
@@ -238,7 +239,6 @@ MonoBehaviour:
   _maxHealthAttribute: {fileID: 11400000, guid: 83839a02dfc640d40b46055a7a50bf6f, type: 2}
   _startingAbilities:
   - {fileID: 11400000, guid: bea9a128da82acc45899384dfba0c566, type: 2}
-  - {fileID: 11400000, guid: 4612436d5493f7648a8e835455dbb5dd, type: 2}
   - {fileID: 11400000, guid: 7ad3bd62fdedf794b87a380844716e24, type: 2}
 --- !u!114 &917994041440066554
 MonoBehaviour:

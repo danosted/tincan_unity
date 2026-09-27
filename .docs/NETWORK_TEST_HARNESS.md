@@ -218,7 +218,7 @@ move the subject.
 
 | Area scene | Profile adds | Scenarios |
 |---|---|---|
-| `Test_Core` | nothing | TagRequest, EquipCycle |
+| `Test_Core` | nothing | EquipCycle |
 | `Test_ShipDamage` | Fuel, ShipDamage | ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack |
 | `Test_NetCatch` | Fuel, FlyingCan | NetCatch |
 

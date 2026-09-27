@@ -72,17 +72,5 @@ namespace TinCan.Network.Infrastructure
             _netIsActive.Value = false;
             _netEventIndex.Value = -1;
         }
-
-        /// <summary>
-        /// Debug RPC to trigger an event from any client (if permitted).
-        /// </summary>
-        [Rpc(SendTo.Server)]
-        public void TriggerEventRpc(int index)
-        {
-            if (index >= 0 && index < _definitions.Count)
-            {
-                _orchestrator.TriggerEvent(_definitions[index]);
-            }
-        }
     }
 }

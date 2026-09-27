@@ -42,31 +42,6 @@ namespace TinCan.DevTools.Scenarios
             builder => builder.Register<NetCatchScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
         /// <summary>
-        /// Tag identity over the network: the subject toggles build mode, which on a client asks the server to add
-        /// <c>State.Building</c> by name (AbilityNetworkMediator.RequestTagChangeServerRpc). The server must resolve
-        /// the name through the tag registry and replicate the tag. Solo runs cover the local path only.
-        /// </summary>
-        public static readonly ScenarioEntry TagRequest = new(
-            new Scenario.Builder("TagRequest")
-                .InScene(TestScenes.Core)
-                .Describe("Subject enters build mode; the server resolves State.Building by name through the tag registry.")
-                .Timeout(90f)
-                .Arrange(s => s
-                    .WaitUntil("SubjectReady", 45f)
-                    .Wait(1.5f, "settle after spawn")
-                    .Expect("TagRegistryActive"))
-                .Act(s => s
-                    .WaitUntil("SubjectLacksTag", 5f, "State.Building")
-                    .Tap(ActionNames.BuildMode, 0.3f)
-                    .WaitUntil("SubjectHasTag", 3f, "State.Building")
-                    .Checkpoint("build-mode-on"))
-                .Assert(s => s
-                    .WaitUntil("SubjectHasTag", 10f, "State.Building")
-                    .Expect("SubjectHasTag", "State.Building"))
-                .Build(),
-            _ => { });
-
-        /// <summary>
         /// Items grant and revoke abilities on the right peers. The server hands the subject the net. The subject sees
         /// it replicate, gets GA_SwingNet granted locally (prediction) and swings. The server sees the swing, swaps the
         /// net for a jerry can, and checks that the swing ability and net tag are gone while starting abilities survive.
@@ -326,7 +301,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

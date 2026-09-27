@@ -45,7 +45,7 @@ go-ahead. Evidence was gathered read-only at `5424351`.
      but the first despawn unregisters everything while the other is still live.
    - **Fix:** a slim base that only carries identity and hands its hierarchy to the orchestrator once per
      `NetworkObject` (for example the root mediator only). Possession and interaction become opt-in components.
-3. **Server trusts the client in three RPCs.**
+3. **Server trusts the client in three RPCs.** **Done (2026-09-27, `trust-fixes.md`): build mode removed, the tag RPC and the event trigger deleted.**
    - `AbilityNetworkMediator.RequestTagChangeServerRpc`: any owner can add any tag to itself. Only build mode uses it.
    - `BuildPlacementNetworkMediator.RequestPlacementServerRpc(prefabName, …)`: the server instantiates any loaded
      GameObject found by name through `Resources.FindObjectsOfTypeAll<GameObject>()`. That is slow and unvalidated.

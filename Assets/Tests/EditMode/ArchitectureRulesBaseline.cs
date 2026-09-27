@@ -30,14 +30,13 @@ namespace TinCan.Tests.EditMode
         };
 
         /// <summary>Registration calls in <c>ProjectLifetimeScope.cs</c> (review B5).</summary>
-        public const int ProjectLifetimeScopeRegistrationLimit = 52;
+        public const int ProjectLifetimeScopeRegistrationLimit = 50;
 
         /// <summary>Processors, use cases and interaction handlers no test file mentions (review C13).</summary>
         public static readonly string[] UntestedTypes =
         {
             "ActivateAbilityInteractionHandler",
             "AirshipMovementUseCase",
-            "BuildModeUseCase",
             "DoorInteractionHandler",
             "EventOrchestratorUseCase",
             "FreeCameraMovementProcessor",
@@ -46,7 +45,6 @@ namespace TinCan.Tests.EditMode
             "GasChallengeUseCase",
             "InteractivityUseCase",
             "MaintenanceUseCase",
-            "ModulePlacementUseCase",
             "NetworkConditionsUseCase",
             "PlayerLookUseCase",
             "PossessionInteractionHandler",
@@ -56,6 +54,6 @@ namespace TinCan.Tests.EditMode
         };
 
         /// <summary>Scripts under <c>Assets/Scripts</c> without <c>#nullable enable</c> (review C12).</summary>
-        public const int FilesWithoutNullableLimit = 120;
+        public const int FilesWithoutNullableLimit = 115;
     }
 }

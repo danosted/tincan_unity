@@ -244,6 +244,7 @@ rebase on `origin/main`, PR to `danosted/tincan_unity` main with the file list a
 - [ ] Every server write is behind `IsServer`; clients only read.
 - [ ] No file in the "Do NOT touch" list changed (`git diff --stat main` to confirm).
 - [ ] Installer asset exists under `Assets/Resources/Installers/` and all its references are assigned.
+- [ ] A scenario for the slice runs in its test-range area scene, and `.\.tools\verify.ps1 -Scenario <Name>` exits 0.
 - [ ] Verified on host and one virtual client, including a late join.
 - [ ] Feature index row added.
 

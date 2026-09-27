@@ -14,8 +14,9 @@ Verification commands assume the Editor is open and `unity status` reports `read
 ```
 
 It stops at the first red tier and prints why. Exit code 2 means the Editor was blocked (for example by a modal
-dialog), not that the code failed. Give every feature slice a scenario; see "Scenarios" in
-[`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md). The individual commands:
+dialog), not that the code failed. Give every feature slice a scenario that runs in its test-range area scene; see
+"Scenarios" and "Test range" in [`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md). Agents: the `verify-feature` and
+`add-scenario` skills (`.claude/skills/`, `.github/prompts/`) are the procedures. The individual commands:
 
 ```bash
 unity cmd recompile && unity cmd recompile_status

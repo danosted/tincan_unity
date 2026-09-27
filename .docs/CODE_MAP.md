@@ -16,7 +16,7 @@ TinCan.Core.Domain  <--  TinCan.Features  <--  Assembly-CSharp
 | `TinCan.Features` | `Assets/Scripts/Features/TinCan.Features.asmdef` | One folder per gameplay concern: processors, use cases, mediators, installers. | Core.Domain, NGO, VContainer |
 | `Assembly-CSharp` | none (Unity default) | `Core/Infrastructure` (composition root), `Network/Infrastructure` (NGO adapters for core actors), `Scripts/UI` (overlay views). | Everything |
 | `TinCan.DevTools` | `Assets/Scripts/DevTools/TinCan.DevTools.asmdef` | Network test harness: latency presets, input bot, movement telemetry, feature scenarios (`Scenarios/`). Inert unless its flags are set. | Core.Domain, Features, NGO, UTP, Input System, VContainer |
-| `TinCan.DevTools.Editor` | `Assets/Scripts/DevTools/Editor/` | **TinCan > Dev > Net Harness** menu: assigns MPPM player tags and launches Player 2. Editor only. | none (reflection into MPPM) |
+| `TinCan.DevTools.Editor` | `Assets/Scripts/DevTools/Editor/` | **TinCan > Dev > Net Harness** menu: assigns MPPM player tags and launches Player 2. Scenario menus, the test-range scene builder and scene switching. Editor only. | Features, DevTools (and reflection into MPPM) |
 | `TinCan.Features.Interaction.Editor` | `Assets/Scripts/Features/Interaction/Editor/` | One property drawer (handler dropdown). Editor only. | Features, Core.Domain |
 | `TinCan.Tests.EditMode` | `Assets/Tests/EditMode/` | NUnit tests + `Fakes/`. Editor only. | Core.Domain, Features, DevTools, Tests.Shared |
 | `TinCan.Tests.Shared` | `Assets/Tests/Shared/` | Fakes usable outside Editor-only assemblies. | Core.Domain |
@@ -61,6 +61,7 @@ that need `NetworkManager`, `UnityTransport` or `UIDocument` in `Assembly-CSharp
 | `Assets/Prefabs/Hazards/`, `Modules/` | | `FlyingJerryCan`, `GasPocket`; `Cannon_Module` (build mode). |
 | `Assets/Models/<Group>/<Asset>/` | | Imported art (FBX + textures + the shipped `manifest.json`/`INTEGRATION.md`), one folder per asset: `ShipComponents/FuelGauge/fuel_gauge.fbx`. Raw models never go in scenes directly; wrap them in a prefab under `Assets/Prefabs/`. |
 | `Assets/Scenes/` | | `drm_cloud_environment` (main, build index 0), `cvg_airship_default`, `cheesed_scene`, `cvg_gaspocket_test`. Scenes are nearly empty on purpose; gameplay spawns at runtime. |
+| `Assets/Scenes/Test/`, `Assets/Prefabs/Test/`, `Assets/Settings/FeatureProfiles/Test/` | TinCan > Dev > Test Range > Rebuild Scenes | The test range scenario runs use: generated area scenes (`Test_Core`, `Test_ShipDamage`, `Test_NetCatch`), the bare `TestShip_Prefab`, and one feature profile per area. Do not edit the scenes by hand; see [`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md#test-range). |
 
 ## Naming glossary
 
@@ -104,6 +105,7 @@ that need `NetworkManager`, `UnityTransport` or `UIDocument` in `Assembly-CSharp
 | Events / logging | `IEventPublisher.Publish` and `LogInfo(source, message)`; observed by `Core/Infrastructure/Events/DebugLogEventObserver.cs`. |
 | Command-line session start | `Features/UI/CommandLineSessionBootstrap.cs`: `-autohost`, `-autojoin [address[:port]]`, also as MPPM player tags via `Core/Domain/LaunchArguments.cs`. |
 | Simulated latency, input bot, movement telemetry | `DevTools/` ([`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md)); reports in `Logs/net-telemetry/`. |
+| Feature scenarios and the scenes they run in | `DevTools/Scenarios/ScenarioCatalog.cs` (`.InScene(TestScenes.X)`), scenes built by `DevTools/Editor/TestRangeSceneBuilder.cs`; driver `.tools/verify.ps1`; agent procedures `.claude/skills/verify-feature`, `add-scenario`. |
 | Scripted input for automation | `Core/Domain/ScriptedInput.cs` (`IScriptedInput.Press/Release/Tap`), merged into `UnityInputService`. |
 | The DI wiring | `Core/Infrastructure/ProjectLifetimeScope.cs` for core services and legacy features; `Assets/Resources/Installers/*.asset` for everything newer. |
 
@@ -190,6 +192,11 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
 `NetCatchUseCaseTests.cs`; tune horizon visibility and catch approach feel with a host/client playtest.
 
 ## Legacy, oddities and traps
+
+- **A test-range scene only has what its profile loads.** A station, installer or service missing from a scenario usually
+  means its installer is not in that area's profile (`Assets/Settings/FeatureProfiles/Test/`). The scope also needs
+  `CloudSubmersionFeatureInstaller` for the cloud view it resolves from the scene. Assets loaded in an Editor script
+  before `EditorSceneManager.NewScene` are unloaded by it; load them after.
 
 - **`unity cmd capture_scene_view` does not show gizmos or `Debug.DrawLine`**, and a background Editor's Scene view camera
   does not follow `SceneView.LookAt` until it repaints: the capture then renders from the old camera pose (often the

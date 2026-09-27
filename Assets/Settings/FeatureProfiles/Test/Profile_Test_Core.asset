@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b62658fcf13b7ef42bfb877bd9a0014e, type: 3}
+  m_Name: Profile_Test_Core
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Features.FeatureProfile
+  _includes: []
+  _installers:
+  - {fileID: 11400000, guid: 2b442204bf01ffa468d014705c78fda2, type: 2}
+  - {fileID: 11400000, guid: 982c03912c946534ca0dea802dff9dd9, type: 2}
+  - {fileID: 11400000, guid: 6d663c8d3981fce45876794f9112e0aa, type: 2}
+  - {fileID: 11400000, guid: a7b6e22f9ad830446a0fdf0dd840f7c1, type: 2}
+  - {fileID: 11400000, guid: c4eaf0b5fe6321944a2cb7da82864118, type: 2}
+  - {fileID: 11400000, guid: 9ee399534ace59b409b6ad79a47a3380, type: 2}
+  - {fileID: 11400000, guid: f6eef7212cc7a01419ca96d485eb0611, type: 2}
+  - {fileID: 11400000, guid: 65cb9ab2d259ef94f9ee6b582882a417, type: 2}

@@ -2,7 +2,8 @@
     "name": "TinCan.DevTools.Editor",
     "rootNamespace": "TinCan.DevTools.Editor",
     "references": [
-        "TinCan.Features"
+        "TinCan.Features",
+        "TinCan.DevTools"
     ],
     "includePlatforms": [
         "Editor"

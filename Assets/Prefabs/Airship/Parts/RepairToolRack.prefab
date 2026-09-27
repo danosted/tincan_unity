@@ -191,6 +191,7 @@ GameObject:
   - component: {fileID: 8053181639563099900}
   - component: {fileID: 4950663644983184601}
   - component: {fileID: 261709065905583444}
+  - component: {fileID: 5780442070560914647}
   m_Layer: 0
   m_Name: RepairToolRack
   m_TagString: Untagged
@@ -257,6 +258,19 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _interactionDefinition: {fileID: 11400000, guid: aa42560c09c267645ad94af02f02f93c, type: 2}
   _item: {fileID: 11400000, guid: b2b592841a1ed8c46bd9e9e6394b1a46, type: 2}
+--- !u!114 &5780442070560914647
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4439447283869017771}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ac9e3c6af9bdef45bed08cb1c4ee6b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Entities.EntityNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &5502055517871073373
 GameObject:
   m_ObjectHideFlags: 0

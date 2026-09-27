@@ -3,6 +3,7 @@ using System;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Attributes;
+using TinCan.Core.Domain.Entities;
 using Unity.Netcode;
 using UnityEngine;
 using VContainer;
@@ -25,7 +26,8 @@ namespace TinCan.Features.Airship.Fuel
         private IActorOrchestrator _orchestrator = null!;
         private readonly FuelConsumptionProcessor _processor = new();
 
-        public Guid Id { get; } = Guid.NewGuid();
+        private ActorIdentity? _identity;
+        public Guid Id => (_identity ??= new ActorIdentity(this)).Id;
         public bool IsSimulating => IsSpawned;
         public string ModuleName => "FuelSystem";
 
@@ -40,7 +42,6 @@ namespace TinCan.Features.Airship.Fuel
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            _orchestrator.RegisterHierarchy(gameObject);
             TryBindToParentShip();
         }
 
@@ -53,7 +54,6 @@ namespace TinCan.Features.Airship.Fuel
         public override void OnNetworkDespawn()
         {
             OnDetachedFromShip();
-            _orchestrator.UnregisterHierarchy(gameObject);
             base.OnNetworkDespawn();
         }
 

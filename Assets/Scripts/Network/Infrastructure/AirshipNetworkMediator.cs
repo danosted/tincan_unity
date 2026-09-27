@@ -21,9 +21,18 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(AirshipControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
+    [RequireComponent(typeof(TinCan.Features.Possession.Infrastructure.PossessableNetworkMediator))]
     public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Features.FreeCamera.IHasOrbitalCamera, IShipState
     {
         public override bool IsSimulating => IsSpawned && IsServer;
+
+        // IPossessable, forwarded to the possession component (the helm is taken through possession).
+        private TinCan.Features.Possession.Infrastructure.PossessableNetworkMediator _possession;
+        private TinCan.Features.Possession.Infrastructure.PossessableNetworkMediator Possession =>
+            _possession ??= GetComponent<TinCan.Features.Possession.Infrastructure.PossessableNetworkMediator>();
+        public ulong? PossessorId => Possession.PossessorId;
+        public bool CanPossess(ulong playerId) => Possession.CanPossess(playerId);
+        public void AuthoritativeSetPossessor(ulong? playerId) => Possession.AuthoritativeSetPossessor(playerId);
 
         private AirshipControllerView _view;
         private AbilityNetworkMediator _abilitySync;
@@ -105,11 +114,6 @@ namespace TinCan.Network.Infrastructure
             foreach (var ability in _startingAbilities ?? new System.Collections.Generic.List<AbilityDefinition>())
             {
                 _abilitySync.GrantAbility(ability);
-            }
-
-            if (Registry != null)
-            {
-                Registry.Register(this);
             }
         }
 

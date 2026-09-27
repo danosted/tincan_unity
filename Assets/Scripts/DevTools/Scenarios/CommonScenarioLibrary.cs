@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities.Tags;
+using TinCan.Core.Domain.Entities;
 using TinCan.Core.Domain.Networking;
 using TinCan.Features.HumanoidMovement;
+using UnityEngine;
 using VContainer;
 
 namespace TinCan.DevTools.Scenarios
@@ -17,6 +19,7 @@ namespace TinCan.DevTools.Scenarios
         private readonly IActorRegistry _registry;
         private readonly INetworkService _network;
         private readonly IGameplayTagRegistry? _tags;
+        private readonly IEntityRegistry _entities;
 
         public CommonScenarioLibrary(ScenarioSubject subject, IActorRegistry registry, INetworkService network, IObjectResolver resolver)
         {
@@ -24,6 +27,7 @@ namespace TinCan.DevTools.Scenarios
             _registry = registry;
             _network = network;
             _tags = resolver.TryResolve<IGameplayTagRegistry>(out var tagRegistry) ? tagRegistry : null;
+            _entities = resolver.Resolve<IActorOrchestrator>().Entities;
         }
 
         public IEnumerable<ScenarioCommand> Commands => Array.Empty<ScenarioCommand>();
@@ -38,8 +42,28 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("TagRegistryActive", _ => _tags != null
                 ? ScenarioCheck.Pass($"{_tags.All.Count} tags registered")
                 : ScenarioCheck.Fail("no IGameplayTagRegistry registered (GameplayTagsFeatureInstaller missing or unassigned)")),
-            new ScenarioProbe("NoRemotePlayers", _ => CheckNoRemotePlayers())
+            new ScenarioProbe("NoRemotePlayers", _ => CheckNoRemotePlayers()),
+            new ScenarioProbe("EntitiesIdentified", _ => CheckEntitiesIdentified())
         };
+
+        /// <summary>
+        /// Every registered entity has its id on this peer (on a client: the server's, replicated with the spawn), and the
+        /// subject player's actor id is its entity's id. On a late joiner this proves identity is the same as the host's.
+        /// </summary>
+        private ScenarioCheck CheckEntitiesIdentified()
+        {
+            var entities = _entities.All.ToList();
+            if (entities.Count == 0) return ScenarioCheck.Fail("no entities registered");
+            if (entities.Any(entity => entity.EntityId == Guid.Empty)) return ScenarioCheck.Fail("an entity is registered without an id");
+
+            var subject = _subject.Resolve();
+            if (subject == null) return ScenarioCheck.Fail("no subject player");
+            var subjectEntity = (subject as Component)?.GetComponentInParent<IEntity>();
+            if (subjectEntity == null) return ScenarioCheck.Fail("the subject player has no entity");
+            return subject.Id == subjectEntity.EntityId
+                ? ScenarioCheck.Pass($"{entities.Count} entities with ids; subject {subject.Id}")
+                : ScenarioCheck.Fail($"subject id {subject.Id} differs from its entity id {subjectEntity.EntityId}");
+        }
 
         /// <summary>
         /// No player owned by another peer exists here yet. On the server of a late-join run, this proves the arrange steps

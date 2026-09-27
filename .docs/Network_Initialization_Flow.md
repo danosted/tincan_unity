@@ -48,8 +48,9 @@ sequenceDiagram
         NPS->>NO: SpawnAsPlayerObject(clientId)
         NPS->>NPS: NotifyPlayerSpawned()
 
-        NO->>NMd: OnNetworkSpawn()
-        NMd->>AO: RegisterHierarchy(gameObject)
+        NO->>NMd: OnNetworkSpawn() on every behaviour
+        NO->>NMd: EntityNetworkMediator.OnNetworkPostSpawn()
+        NMd->>AO: RegisterEntity(entity)
 
     else Client Connecting
         Note over LS, NMd: Phase 3: Client Initialization (Connecting to Server)
@@ -70,7 +71,8 @@ sequenceDiagram
         NPI-->>NM: return NetworkObject component
 
         Note over NM, NMd: NGO completes spawn setup
-        NM->>NMd: OnNetworkSpawn()
-        NMd->>AO: RegisterHierarchy(gameObject)
+        NM->>NMd: OnNetworkSpawn() on every behaviour (the entity id arrives with the spawn)
+        NM->>NMd: EntityNetworkMediator.OnNetworkPostSpawn()
+        NMd->>AO: RegisterEntity(entity)
     end
 ```

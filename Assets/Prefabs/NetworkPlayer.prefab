@@ -21,6 +21,8 @@ GameObject:
   - component: {fileID: 1601514522859419083}
   - component: {fileID: 1084010879778581604}
   - component: {fileID: 3574082794056373377}
+  - component: {fileID: 6575494352221018595}
+  - component: {fileID: 5898305752945997388}
   m_Layer: 0
   m_Name: NetworkPlayer
   m_TagString: Untagged
@@ -168,10 +170,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1fcbc9b5762199b41ac83954557150f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Interaction.InteractorControllerView
-  _interactionRange: 3
-  _interactableMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
 --- !u!114 &112455933561736211
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -231,7 +229,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.HumanoidPlayer
   ShowTopMostFoldoutHeaderGroup: 1
-  _selectedModulePrefab: {fileID: 0}
   _moveSpeedAttribute: {fileID: 11400000, guid: a3969ba58e30bf14991f1248364d7cf8, type: 2}
   _jumpForceAttribute: {fileID: 11400000, guid: dffb50361639b754e9c2c8497cf425f9, type: 2}
   _staminaAttribute: {fileID: 11400000, guid: 6076f295bb68c884bb94e8c0c73a1226, type: 2}
@@ -294,6 +291,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.HumanoidMovement.HumanoidVisualSmoothingView
   _visualRoot: {fileID: 3457892920003599080}
+--- !u!114 &6575494352221018595
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 925472637626500556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7746cfe97be1c946aa01b555c31493b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Possession.Infrastructure.PossessableNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &5898305752945997388
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 925472637626500556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ac9e3c6af9bdef45bed08cb1c4ee6b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Entities.EntityNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &936697166532474458
 GameObject:
   m_ObjectHideFlags: 0

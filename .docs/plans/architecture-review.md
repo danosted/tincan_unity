@@ -37,7 +37,7 @@ go-ahead. Evidence was gathered read-only at `5424351`.
      - Effect duration becomes a tick count taken from the simulation tick.
      - Ticked actors are found by capability (`ISimulatedActor` on the actor), not by the type of the registered
        component.
-2. **`NetworkMediator` base class does too much** (`Network/Infrastructure/NetworkMediator.cs`).
+2. **`NetworkMediator` base class does too much** **Done (2026-09-27, `network-entities.md`: entities own identity and registration; possession is a component).** (`Network/Infrastructure/NetworkMediator.cs`).
    - Every subclass (the ability mediator, fixtures, repair points, flying cans) becomes an `IPossessable` and an
      `IInteractionRequester`, and carries a possessor `NetworkVariable`, the legacy `RequestInteractionServerRpc`, and
      a `RegisterHierarchy` call.
@@ -103,7 +103,7 @@ go-ahead. Evidence was gathered read-only at `5424351`.
 13. **Untested logic:** `AirshipMovementUseCase`, `ModulePlacementUseCase`, `EventOrchestratorUseCase`,
     `GasChallengeUseCase`, `PossessionUseCase`, `PlayerLookUseCase`, `VehicleBoardingUseCase`, the free camera
     processors, and `BuildModeUseCase`.
-14. **Dead or legacy code:** `MaintenanceUseCase`, the legacy interaction RPC, `ShipRepairPoint`/`ShipDamagePoint` on
+14. **Dead or legacy code:** **Mostly done (2026-09-27): `MaintenanceUseCase`, the legacy interaction RPC and the legacy ship points are gone; `PossessionCameraResponder` and the scaffold folders remain.** `MaintenanceUseCase`, the legacy interaction RPC, `ShipRepairPoint`/`ShipDamagePoint` on
     `Airship_Prefab` (already the planned cleanup slice), `PossessionCameraResponder` (unused), and the scaffold
     folders.
 15. **String-typed links:** interaction handlers stored as type names, menu `CommandId` strings, HUD keys. Covered by

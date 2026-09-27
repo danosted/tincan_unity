@@ -514,6 +514,7 @@ GameObject:
   - component: {fileID: 7283159652351264036}
   - component: {fileID: 7635036115663642224}
   - component: {fileID: 2667137858786326226}
+  - component: {fileID: 7265025246091500193}
   m_Layer: 0
   m_Name: FuelSystem
   m_TagString: Untagged
@@ -580,6 +581,19 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _fuelAttribute: {fileID: 11400000, guid: 85d9565941f915b46a18fdcb928ad2e8, type: 2}
   _config: {fileID: 11400000, guid: 66df888f2fbb5d641b97c93caa703952, type: 2}
+--- !u!114 &7265025246091500193
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7885543958958279758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ac9e3c6af9bdef45bed08cb1c4ee6b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Entities.EntityNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &7888531304476503357
 GameObject:
   m_ObjectHideFlags: 0

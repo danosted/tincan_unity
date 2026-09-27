@@ -40,6 +40,7 @@ namespace TinCan.Tests.EditMode
         private RecordingAbilityRegistry _abilities = null!;
         private IActorOrchestrator _orchestrator = null!;
         private FuelTankNetworkMediator _tank = null!;
+        private FakeEntity _entity = null!;
         private FuelConfig _config = null!;
         private GameplayAttribute _fuel = null!;
 
@@ -51,7 +52,9 @@ namespace TinCan.Tests.EditMode
             // Infrastructure is in Assembly-CSharp; mirror the existing mediator tests' reflection boundary.
             var type = Type.GetType("TinCan.Core.Infrastructure.ActorOrchestrator, Assembly-CSharp", true)!;
             _orchestrator = (IActorOrchestrator)Activator.CreateInstance(type, _actors, new InteractorRegistry(), _abilities)!;
-            _tank = CreateObject("Fuel fixture").AddComponent<FuelTankNetworkMediator>();
+            var fixture = CreateObject("Fuel fixture");
+            _entity = fixture.AddComponent<FakeEntity>();
+            _tank = fixture.AddComponent<FuelTankNetworkMediator>();
             _tank.Construct(_orchestrator);
             _config = ScriptableObject.CreateInstance<FuelConfig>();
             _fuel = AssetDatabase.LoadAssetAtPath<GameplayAttribute>(
@@ -75,12 +78,13 @@ namespace TinCan.Tests.EditMode
             child.transform.SetParent(_tank.transform);
             var controller = AddAbilityController(child);
 
-            _tank.OnNetworkSpawn();
+            _orchestrator.RegisterEntity(_entity);
 
             Assert.That(_actors.GetActors<IShipModule>(), Does.Contain(_tank));
+            Assert.That(_tank.Id, Is.EqualTo(_entity.EntityId), "The tank on the entity's root has the entity's id.");
             Assert.That(_abilities.Controllers, Does.Contain(controller));
 
-            _tank.OnNetworkDespawn();
+            _orchestrator.UnregisterEntity(_entity);
 
             Assert.That(_actors.AllActors, Is.Empty);
             Assert.That(_abilities.Controllers, Is.Empty);
@@ -99,7 +103,6 @@ namespace TinCan.Tests.EditMode
             Assert.That(first.Modules, Is.Empty);
             Assert.That(second.Modules, Is.EqualTo(new[] { _tank }));
 
-            _orchestrator.UnregisterHierarchy(_tank.gameObject);
             _orchestrator.UnregisterShipModule(_tank);
             Assert.That(second.Modules, Is.Empty);
         }

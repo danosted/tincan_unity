@@ -35,6 +35,8 @@ namespace TinCan.Tests.EditMode
         private static readonly Regex Coroutine =
             new(@"\b(Start|Stop)Coroutine\b|\bnew\s+(WaitForSeconds\w*|WaitForEndOfFrame|WaitForFixedUpdate|WaitUntil|WaitWhile)\b");
         private static readonly Regex TestedSuffix = new(@"(Processor|UseCase|InteractionHandler)$");
+        private static readonly Regex EntityRegistration = new(@"\.(Register|Unregister)Entity\(");
+        private static readonly Regex NewGuid = new(@"\bGuid\.NewGuid\(");
 
         [Test]
         public void NetworkBehaviours_EndInNetworkMediator()
@@ -108,6 +110,41 @@ namespace TinCan.Tests.EditMode
                 nameof(ArchitectureRulesBaseline.FilesWithoutNullableLimit),
                 "scripts without #nullable enable",
                 "Every script starts with #nullable enable (CODE_STANDARDS.md §4). Add it to the new file.");
+        }
+
+        [Test]
+        public void NetworkedPrefabs_HaveExactlyOneEntity()
+        {
+            var offenders = new List<string>();
+            foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:Prefab", new[] { "Assets" }))
+            {
+                var path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (prefab == null || prefab.GetComponent<NetworkObject>() == null) continue;
+
+                int entities = prefab.GetComponentsInChildren<TinCan.Features.Entities.EntityNetworkMediator>(true).Length;
+                bool onRoot = prefab.GetComponent<TinCan.Features.Entities.EntityNetworkMediator>() != null;
+                if (entities != 1 || !onRoot) offenders.Add($"{path} ({entities} entities, on root: {onRoot})");
+            }
+
+            Assert.That(offenders, Is.Empty,
+                "Every networked prefab has one EntityNetworkMediator on its root: it owns the id and registers the object "
+                + "(ARCHITECTURE.md, \"Entities\"). Add one:\n  " + string.Join("\n  ", offenders));
+        }
+
+        [Test]
+        public void OnlyEntitiesRegister_AndOnlyEntityIdsMakeIds()
+        {
+            var registering = Sources("Scripts")
+                .Where(s => !s.Path.EndsWith("/EntityNetworkMediator.cs") && EntityRegistration.IsMatch(WithoutCommentLines(s.Text)))
+                .Select(s => s.Path);
+            var makingIds = Sources("Scripts")
+                .Where(s => !s.Path.EndsWith("/Entities/EntityIds.cs") && NewGuid.IsMatch(WithoutCommentLines(s.Text)))
+                .Select(s => s.Path);
+
+            Assert.That(registering.Concat(makingIds), Is.Empty,
+                "Only EntityNetworkMediator registers (RegisterEntity), and ids come from entities: an actor takes its id "
+                + "from ActorIdentity, a new id from EntityIds.New() (ARCHITECTURE.md, \"Entities\").");
         }
 
         [Test]

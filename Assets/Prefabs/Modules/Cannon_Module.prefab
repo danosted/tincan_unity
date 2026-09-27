@@ -65,6 +65,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3219567235672412077, guid: 78a33966cc5639b4387c905a99a39d65, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5443035925040800629}
+    - targetCorrespondingSourceObject: {fileID: 3219567235672412077, guid: 78a33966cc5639b4387c905a99a39d65, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6844822035583261812}
   m_SourcePrefab: {fileID: 100100000, guid: 78a33966cc5639b4387c905a99a39d65, type: 3}
 --- !u!1 &2084250224356171082 stripped
 GameObject:
@@ -128,3 +131,16 @@ MonoBehaviour:
   _maxHealth: 150
   _brokenThreshold: 0.1
   _interactionDefinition: {fileID: 11400000, guid: de849c71415cb8b41962b9c79d2a168a, type: 2}
+--- !u!114 &6844822035583261812
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2084250224356171082}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ac9e3c6af9bdef45bed08cb1c4ee6b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Entities.EntityNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1

@@ -101,7 +101,7 @@ actor changes. Persistent values (fuel level) live in `BaseValue`.
 **When:** the ability acts on something the player aims at (repair a part, later: catch, hit, pick up).
 
 1. **Make the thing targetable:** implement `ITargetable` on a component in its spawned hierarchy (the aim point,
-   plus its GAS `Controller` if you want to filter by tags). `ActorOrchestrator` registers it. Never self-register.
+   plus its GAS `Controller` if you want to filter by tags). Its entity registers it. Never self-register.
    Example: `ShipDamagePointNetworkMediator`.
 2. **Describe the query:** **TinCan > Targeting > Targeting Definition** in `Assets/Targeting/` (`TD_*`).
    - Pick the aim source and shape. A `Cone` is forgiving for close scans; a `Ray` is precise but needs colliders.
@@ -166,7 +166,8 @@ both peers. Exact counts catch doubled bursts. Then listen and look in a host + 
 
 **Touch:**
 - Prefab under `Assets/Prefabs/Airship/Parts/` with one root `NetworkObject` (`AutoObjectParentSync` and
-  `SyncOwnerTransformWhenParented` on, no `NetworkTransform`), authored in ship-local coordinates. Put every part
+  `SyncOwnerTransformWhenParented` on, no `NetworkTransform`) and one `EntityNetworkMediator` next to it, authored in
+  ship-local coordinates. Put every part
   of the feature inside it: `FuelSystem.prefab` holds tank, crate, motor, gauge and net rack.
 - Root component: a `NetworkBehaviour` that implements `IShipModule` and binds to the ship in both
   `OnNetworkSpawn` and `OnNetworkObjectParentChanged` (copy `FuelTankNetworkMediator.cs`).

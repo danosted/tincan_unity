@@ -36,20 +36,6 @@ namespace TinCan.Network.Infrastructure.Abilities
         // Shadow dictionary for local prediction and fast access
         private readonly Dictionary<int, AttributeValue> _localAttributes = new();
 
-        // Implement IActor to return the parent's ID, solving the identity mismatch
-        public override Guid Id
-        {
-            get
-            {
-                var parentActor = GetComponentInParent<IActor>();
-                if (parentActor != null && (object)parentActor != this)
-                {
-                    return parentActor.Id;
-                }
-                return base.Id;
-            }
-        }
-
         private void Awake()
         {
             _networkedAttributes = new NetworkList<NetworkedAttribute>();

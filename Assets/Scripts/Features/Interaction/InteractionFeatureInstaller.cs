@@ -10,9 +10,9 @@ namespace TinCan.Features.Interaction
 {
     /// <summary>
     /// Interaction through targeting: the Interact key is a predicted input bit, and <see cref="InteractInputUseCase"/>
-    /// acquires the target on the server with TD_Interact. The owner's prompt (InteractorControllerView) and the legacy
-    /// E-press path (InteractivityUseCase) switch to it when this installer is active. Without it, interaction falls back to
-    /// the old client-chosen target RPC. The core interaction services are still registered in ProjectLifetimeScope.
+    /// acquires the target on the server with TD_Interact; the owner's prompt (InteractorControllerView) runs the same
+    /// query. This is the only interaction path: without this installer nothing can be interacted with. The core
+    /// interaction services are still registered in ProjectLifetimeScope.
     /// </summary>
     [CreateAssetMenu(fileName = "InteractionFeatureInstaller", menuName = "TinCan/Features/Interaction Feature Installer")]
     public class InteractionFeatureInstaller : FeatureInstaller

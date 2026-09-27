@@ -39,7 +39,8 @@ namespace TinCan.Features.FreeCamera
         public float CurrentPitch { get; set; }
         public float CurrentYaw { get; set; }
 
-        public Guid Id { get; } = Guid.NewGuid();
+        private TinCan.Core.Domain.Entities.ActorIdentity _identity; // local-only: no entity, so a local id
+        public Guid Id => (_identity ??= new TinCan.Core.Domain.Entities.ActorIdentity(this)).Id;
 
         public bool IsSimulating => IsActive;
         public ulong? PossessorId { get; private set; }

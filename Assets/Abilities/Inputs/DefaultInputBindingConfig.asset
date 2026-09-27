@@ -19,3 +19,5 @@ MonoBehaviour:
     UnityActionName: BuildMode
   - InputType: {fileID: 11400000, guid: 228c6f632dea57046a0b40d23fb4e13d, type: 2}
     UnityActionName: AbilityPrimary
+  - InputType: {fileID: 11400000, guid: bff3306d7cef08f4497bfc5f839ba352, type: 2}
+    UnityActionName: Interact

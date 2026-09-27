@@ -30,19 +30,19 @@ namespace TinCan.Features.Interaction
         {
             if (!_actorRegistry.TryGetActor(request.RequesterActorId, out var requester) ||
                 !_targetResolver.TryResolve(request.TargetId, out var target) ||
-                target is not IInteractionTarget interactionTarget ||
-                interactionTarget.Definition == null ||
-                !_handlerRegistry.TryGetHandler(
-                    interactionTarget.Definition.HandlerType,
-                    out var handler))
+                target is not IInteractionTarget interactionTarget)
             {
                 return;
             }
 
-            handler.Handle(new InteractionContext(
-                requester,
-                target,
-                interactionTarget.Definition));
+            HandleInteraction(requester, interactionTarget);
+        }
+
+        public void HandleInteraction(IActor requester, IInteractionTarget target)
+        {
+            if (target.Definition == null || !_handlerRegistry.TryGetHandler(target.Definition.HandlerType, out var handler)) return;
+
+            handler.Handle(new InteractionContext(requester, target, target.Definition));
         }
 
         public void HandleExit()

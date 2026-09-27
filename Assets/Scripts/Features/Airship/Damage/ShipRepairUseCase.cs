@@ -51,10 +51,22 @@ namespace TinCan.Features.Airship.Damage
             _config = config;
         }
 
+        /// <summary>
+        /// On a client: the broken part the local player is predicted to be repairing (same query as the server, no effect
+        /// applied). For feedback such as highlighting; the server's own query decides what is actually repaired.
+        /// </summary>
+        public IShipDamagePoint? PredictedTarget { get; private set; }
+
         public void Tick()
         {
             var targeting = _config.RepairAbility?.Targeting;
-            if (!_network.IsServer || _config.RepairingTag == null || _config.RepairEffect == null || targeting == null) return;
+            if (_config.RepairingTag == null || _config.RepairEffect == null || targeting == null) return;
+
+            if (!_network.IsServer)
+            {
+                PredictLocalTarget(targeting);
+                return;
+            }
 
             foreach (var player in _actors.GetActors<IHumanoidCharacterView>())
             {
@@ -72,6 +84,17 @@ namespace TinCan.Features.Airship.Damage
 
                 Advance(player, point);
             }
+        }
+
+        // The owner predicts: its repairing tag is predicted from the held input, so it can run the same query the server
+        // will, on the same input. Only the local player; proxies are the server's business.
+        private void PredictLocalTarget(TargetingDefinition targeting)
+        {
+            var local = _actors.GetLocalPlayerActor<IHumanoidCharacterView>();
+            PredictedTarget = local != null && local.HasTag(_config.RepairingTag!) &&
+                              _targeting.TryAcquire(new HumanoidTargeter(local), targeting, out var result)
+                ? result.Target as IShipDamagePoint
+                : null;
         }
 
         private void Advance(IHumanoidCharacterView player, IShipDamagePoint point)

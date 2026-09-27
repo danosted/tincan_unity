@@ -1,3 +1,5 @@
+using TinCan.Core.Domain;
+
 namespace TinCan.Features.Interaction
 {
     /// <summary>
@@ -6,6 +8,9 @@ namespace TinCan.Features.Interaction
     public interface IInteractionOrchestrator
     {
         void HandleInteraction(InteractionRequest request);
+
+        /// <summary>Server: the requester interacts with a target the server acquired itself (no network id round-trip).</summary>
+        void HandleInteraction(IActor requester, IInteractionTarget target);
         void HandleExit();
     }
 }

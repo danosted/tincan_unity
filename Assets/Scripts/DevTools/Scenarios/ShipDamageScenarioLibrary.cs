@@ -34,10 +34,8 @@ namespace TinCan.DevTools.Scenarios
         private readonly ITargetingService _targeting;
 
         // Where PlaceSubjectAtPoint stands the subject: this far behind the part along the way the subject already faces
-        // (facing follows the look input every tick, so a teleport cannot turn a player), with its feet this far below
-        // the marker (markers float at chest height above the deck).
+        // (facing follows the look input every tick, so a teleport cannot turn a player), standing on the deck below.
         private const float StandOff = 1.5f;
-        private const float FeetBelowMarker = 0.8f;
 
         private float? _fuelBaseline;
 
@@ -99,7 +97,8 @@ namespace TinCan.DevTools.Scenarios
 
             var body = subject.Movement.Transform;
             Vector3 facing = Vector3.ProjectOnPlane(body.forward, ship.up).normalized;
-            Vector3 stand = point.position - facing * StandOff - ship.up * FeetBelowMarker;
+            Vector3 stand = point.position - facing * StandOff;
+            stand = ScenarioPlacement.OnGround(body, stand, ship.up);
             _respawn.ResetCharacter(subject, stand, body.rotation);
             return ScenarioCheck.Pass($"subject placed {StandOff} m behind part {index}");
         }

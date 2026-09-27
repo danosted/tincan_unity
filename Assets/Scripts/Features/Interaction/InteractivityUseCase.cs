@@ -1,3 +1,4 @@
+using VContainer;
 using VContainer.Unity;
 using TinCan.Core.Domain;
 using UnityEngine;
@@ -13,6 +14,7 @@ namespace TinCan.Features.Interaction
     {
         private readonly IInputService _inputService;
         private readonly PossessionUseCase _possessionUseCase;
+        private readonly bool _serverTargeted;
 
         public InteractivityUseCase(
             IInputService inputService,
@@ -22,9 +24,18 @@ namespace TinCan.Features.Interaction
             _possessionUseCase = possessionUseCase;
         }
 
+        // When InteractionFeatureInstaller is active, Interact is a predicted input bit and the server acquires the target
+        // itself (InteractInputUseCase). This legacy path, which sends a client-chosen target, then stays silent.
+        [Inject]
+        public InteractivityUseCase(IInputService inputService, PossessionUseCase possessionUseCase, IObjectResolver resolver)
+            : this(inputService, possessionUseCase)
+        {
+            _serverTargeted = resolver.TryResolve<InteractionTargetingSettings>(out _);
+        }
+
         public void Tick()
         {
-            if (!_inputService.WasActionTriggered(ActionNames.Interact)) return;
+            if (_serverTargeted || !_inputService.WasActionTriggered(ActionNames.Interact)) return;
 
             HandleWorldInteraction();
         }

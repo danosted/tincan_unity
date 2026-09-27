@@ -34,7 +34,6 @@ namespace TinCan.Features.Airship.Damage
         public IAbilityControllerBase? Controller => _controller;
 
         // ITargetable: aim at the marker; the repair tool filters on State.Damaged, so a healthy part is never picked.
-        public Guid TargetId { get; } = Guid.NewGuid();
         public Vector3 AimPoint => _marker != null ? _marker.transform.position : transform.position;
         public bool IsTargetable => IsSpawned;
 

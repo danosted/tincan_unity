@@ -130,6 +130,41 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void OnAClient_PredictsTheLocalPlayersTarget_WithoutRepairing()
+        {
+            Break(_points[0], 0f);
+            _player.AddTag(_repairing);
+            _actors.LocalPlayer = _player;
+            var client = new ShipRepairUseCase(new ClientNetwork(), _actors, _time, _events, _abilities,
+                new TargetingUseCase(_targetables, new TargetingProcessor()), _config);
+
+            client.Tick();
+
+            Assert.That(client.PredictedTarget, Is.SameAs(_points[0]));
+            Assert.That(_points[0].Health01, Is.EqualTo(0f), "Only the server applies repair effects.");
+
+            _player.RemoveTag(_repairing);
+            client.Tick();
+            Assert.That(client.PredictedTarget, Is.Null);
+        }
+
+        private sealed class ClientNetwork : TinCan.Core.Domain.Networking.INetworkService
+        {
+            public TinCan.Core.Domain.Networking.NetworkState State => TinCan.Core.Domain.Networking.NetworkState.Client;
+            public bool IsActive => true;
+            public bool IsServer => false;
+            public bool IsClient => true;
+            public bool IsHost => false;
+            public ulong LocalClientId => 1;
+            public void SetPlayerPrefab(GameObject prefab) { }
+            public void SetConnection(string address, ushort port) { }
+            public void StartHost() { }
+            public void StartServer() { }
+            public void StartClient() { }
+            public void Shutdown() { }
+        }
+
+        [Test]
         public void PartWithoutTheDamagedTag_IsNotTargeted()
         {
             _points[0].SetHealth01(0f);

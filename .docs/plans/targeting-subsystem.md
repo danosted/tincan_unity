@@ -106,6 +106,13 @@ Constraints found in the code:
 5. **GAS auto-acquire** on activation, plus `ActivationRequiredTagsOnTarget` evaluated on the acquired target.
 6. **Debug view:** a DevTools overlay showing each player's shapes and current targets. Scenario probe
    `SubjectTargets(TD, id)`.
+7. **Flexible origins (future, when the actor model grows parts):** today every humanoid aims from one point, the
+   body plus `EyeHeight` (and the orbit centre for `CameraAim`). A fuller actor with a head, hands and body will want
+   queries from different parts: a scan from the head, a tool reach from the hand, a melee sweep from the body. A
+   likely shape: the targeter exposes named sockets, the definition names one (for example an `AimSource.Socket` with
+   a socket id), and the targeter resolves it. Sockets must come from state that owner and server share (the
+   simulated pose and the input, not a client-only animated bone), or the server's recompute drifts from the
+   owner's prediction. Not needed until the actor model exists.
 
 ## Build order (slice 1), each step green on `.\.tools\verify.ps1`
 0. Ship-damage step 4 was committed by the developer (`7fbac1b`) before this slice. Ship-damage leftovers (3b cues,
@@ -183,3 +190,56 @@ optional feature). Recommendation: the installer owns it and the orchestrator re
   - Not done: the pitch is a full float (4 bytes on each of the 4 inputs per packet). It could be quantized to a
     short if bandwidth matters. `CameraAim` has no consumer yet, since there is no crosshair UI and the current
     camera orbits the feet (`height = 0`).
+- 2026-09-27: Roadmap slice 2 (interaction on targeting) done. The developer chose input-bit interaction over
+  keeping the RPC with validation.
+  - Interact is a predicted input bit (`Input_Interact`, bound in `DefaultInputBindingConfig`).
+  - `InteractInputUseCase` (server, `AfterHumanoid`) acquires with `TD_Interact` on the press tick and calls the new
+    `IInteractionOrchestrator.HandleInteraction(requester, target)`.
+  - The prompt (`InteractorControllerView`) runs the same query. The legacy `InteractivityUseCase` RPC path stays
+    silent while `InteractionFeatureInstaller` (in `Profile_Base`) is active.
+  - Every `IInteractionTarget` is an `ITargetable` through default interface members; `TargetId` was dropped as
+    unused.
+  - Rays now find targetables by collider (no registry needed; fixtures register late), measure range to the hit,
+    and stop at the first solid non-target.
+  - Tests: `InteractInputUseCaseTests` (edge, once per press, re-press, nothing in reach, non-interaction target,
+    unassigned bit) and a ray-range test. 355/355.
+  - Scenario `InteractRack`: face the tool rack, the prompt shows `RepairToolRack(Clone)`, a real Interact press
+    makes the server hand out the tool, and a second press returns it. It passes solo and host + client, with exactly
+    one server interaction per press. All seven scenarios pass.
+  - Not done: `NetworkMediator.RequestInteractionServerRpc` still exists for the fallback path. Remove it once the
+    installer is permanent. `TD_Interact` is a level ray for parity; switch it to `EyeAim` if you want to aim E up
+    and down.
+- 2026-09-27: Debug view (roadmap item 6, partly).
+  - `TargetingGizmos` builds the lines for a query: the source cross; the shape (ray, cone edges and arcs around the
+    aim, or sphere rings); and a line and cross to the target. Green for a hit, red for a miss; tested in
+    `TargetingGizmosTests`.
+  - `InteractorControllerView` draws its live `TD_Interact` query again, both as Debug lines and in `OnDrawGizmos`,
+    reconnecting the old interaction gizmo.
+  - **TinCan > Dev > Targeting > Draw All Queries** (off by default) makes `TargetingUseCase` draw
+    every query, including the server's repair scans.
+  - Still open from item 6: a DevTools overlay and a `SubjectTargets` scenario probe.
+- 2026-09-27: Debug view fixes after the developer's playtest ("no cone when repairing; the toggle changes nothing").
+  - **Tick-rate queries were one-frame lines.** The repair scan runs on the network tick (~30 Hz), and a zero-duration
+    `Debug.DrawLine` lasts one frame, so the cone showed in about one frame in six. Service-drawn queries now hold for
+    0.1 s. The per-frame interaction gizmo keeps one-frame lines.
+  - **MPPM clones do not share EditorPrefs,** so the toggle never reached Player 2. It is now a flag file in the main
+    project's Library (`TargetingDebug.FlagPath`, `Library/TinCanDev/DrawAllTargetingQueries`) that every virtual
+    player reads. `TinCan.DevTools.Editor` now references `TinCan.Features`.
+  - **The owner predicts its repair target.** On a client, `ShipRepairUseCase` runs the repair query for the local
+    player while `State.Repairing` is on and applies no effect. It exposes `PredictedTarget` for future feedback, and
+    it is what draws Player 2's cone.
+  - `TargetingDebug.LastDrawn(definition)` records what was drawn, so tooling can check it (debug lines cannot be
+    read back).
+  - Verified in a host + client `RepairLoop`: both peers drew `TD_RepairScan`.
+- 2026-09-27: Eye height fixed after the developer's playtest ("the origin sits high above the player").
+  - The targeter used a fixed 1.5 m, inherited from the old interaction ray, which assumed the root was at the feet.
+    The root is the capsule centre (height 2, centre 0), so the eye sat 2.5 m above the feet.
+  - The eye height is now per character: `IHumanoidMovementView.EyeHeight`, a field on `HumanoidControllerView`
+    (default 0.7, measured from the root; about 1.7 m above the feet). `HumanoidTargeter` reads it.
+  - Scenario placement drops the subject onto the deck (`DevTools/Scenarios/ScenarioPlacement.cs`: a downward ray, plus
+    the capsule's root-to-feet offset) instead of computing feet from the marker. Keeping the current height failed in
+    host + client, where the server's copy of the client body was not grounded when the command ran.
+  - `RepairToolRackFixture` moved down to the deck (ship-local y -3.49, was -2.40, which floated about 1.1 m).
+  - `AimPitch` rewritten: the marker now sits at about eye height, so the scan misses at 30 deg down and hits looking
+    level.
+  - The origin is still one point per character. Roadmap item 7 covers per-part origins.

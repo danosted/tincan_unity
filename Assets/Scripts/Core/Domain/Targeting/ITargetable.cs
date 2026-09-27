@@ -13,8 +13,6 @@ namespace TinCan.Core.Domain.Targeting
     /// </summary>
     public interface ITargetable
     {
-        Guid TargetId { get; }
-
         /// <summary>World-space point that shapes measure against (a part's marker, an object's centre).</summary>
         Vector3 AimPoint { get; }
 

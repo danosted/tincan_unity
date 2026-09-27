@@ -62,7 +62,16 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
 The game relies heavily on dynamic possession (e.g., leaving a humanoid body to fly a free-camera, or boarding an airship).
 - **IPossessable:** Implemented by entities that can be owned by a player (e.g., Humanoid, Airship).
 - **Possession authority:** `ServerPossessionManager` (`IPossessionAuthority`) assigns ownership on the server; `PossessionUseCase` (`IPossessionState`) is the client-side view; `PossessionNetworkMediator` carries the RPCs.
-- **InteractivityUseCase:** A global `ITickable` that listens for the Interact input. It uses an `IInteractorRegistry` to find what the player is looking at, and routes the request through the requester's `NetworkMediator` to the server-side `InteractionOrchestrator`, which picks the `IInteractionHandler` named by the target's `InteractionDefinition`.
+- **Interaction is targeting plus an input bit:**
+  - Interact is a predicted input bit (`Input_Interact`). On the tick a player's simulated input first has it pressed,
+    `InteractInputUseCase` (server) acquires the target with `TD_Interact` from that tick's pose. It then calls
+    `InteractionOrchestrator.HandleInteraction(requester, target)`, which picks the `IInteractionHandler` named by the
+    target's `InteractionDefinition`.
+  - The owner's prompt (`InteractorControllerView.CurrentTarget`) runs the same query, so both agree and no client ever
+    names a target.
+  - Every `IInteractionTarget` is an `ITargetable` through default members.
+  - Without `InteractionFeatureInstaller`, the legacy path applies: `InteractivityUseCase` sends the client-chosen
+    target through `NetworkMediator.RequestInteraction`.
 
 ### 5. ECS-Lite & Orchestrated Registries
 Instead of tight coupling and hardcoded subsystem checks, we utilize an ECS-lite compositional pattern based around Registries:
@@ -77,7 +86,8 @@ build placement and weapons are *uses* of targeting, not separate aiming systems
 - **Contracts** (`Core/Domain/Targeting/`):
   - `ITargetable`: an aim point, `IsTargetable`, and an optional GAS controller for tag filters.
   - `ITargetableRegistry`.
-  - `ITargeter` + `TargetingOrigin`: body pose, eye height, aim pitch and orbit height.
+  - `ITargeter` + `TargetingOrigin`: body pose, eye height, aim pitch and orbit height. A humanoid's eye height is
+    `IHumanoidMovementView.EyeHeight` (tuned on the player prefab, measured from the root, which is the capsule centre).
 - **Registration:** `ActorOrchestrator` registers every `ITargetable` in a spawned hierarchy, like interactors. It
   resolves the registry optionally, because the Targeting installer can be switched off.
 - **Queries are data:** a `TargetingDefinition` (`Assets/Targeting/TD_*`) chooses an aim source (`BodyForward`,

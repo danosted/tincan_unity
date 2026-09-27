@@ -282,7 +282,8 @@ unity cmd editor_stop
      the Editor, not as raw YAML
    - edits to `ProjectLifetimeScope.cs` or `NetworkSimulationScheduler.cs` (should be rare now; ask why)
    - `#nullable enable`, `NetworkMediator` suffix, `IsServer` guards on every write
-4. Tests: new `*Tests.cs` next to new classes? Run them.
+4. Tests: new `*Tests.cs` next to new classes? Run them. A failure in `ArchitectureRulesTests` names the broken rule
+   and the fix; a changed `ArchitectureRulesBaseline.cs` needs a reason (entries may only be removed).
 5. Feature index: is there a row in [`CODE_MAP.md`](CODE_MAP.md#feature-index)? If not, add it as part of review.
 6. Playtest host + virtual client using the loop the change describes. AI sessions verify with scripted input on
    the host only; client feel, late join and placement are usually still open.

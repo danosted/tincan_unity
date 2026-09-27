@@ -265,7 +265,7 @@ function Confirm-NetworkPrefabsMatch {
         $cloneSet = $clonePrefabs -split ";" | Where-Object { $_ }
         $diff = Compare-Object $hostSet $cloneSet | ForEach-Object { "$($_.SideIndicator -replace '<=','host' -replace '=>','clone'): $($_.InputObject)" }
         Stop-Unusable ("network prefab hashes differ between host and clone $(Split-Path $clone -Leaf); the client would be refused (NetworkConfig mismatch). " +
-            "Re-save the prefab on the host (PrefabUtility.LoadPrefabContents + SaveAsPrefabAsset) so disk matches memory:`n  " + ($diff -join "`n  "))
+            "On the host, EditorUtility.SetDirty(prefab) + AssetDatabase.SaveAssets() writes the in-memory hash to disk:`n  " + ($diff -join "`n  "))
     }
 }
 

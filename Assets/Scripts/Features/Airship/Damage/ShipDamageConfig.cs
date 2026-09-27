@@ -35,5 +35,20 @@ namespace TinCan.Features.Airship.Damage
 
         [Tooltip("Instant effect that fully restores a part (health to max). Used by scenarios and debug tools; players repair with the tool.")]
         public GameplayEffectDefinition? RestoreEffect;
+
+        [Header("Repairing (the repair tool)")]
+        [Tooltip("Tag a player carries while the repair ability is active (granted by GA_RepairShip's active effect).")]
+        public TinCan.Core.Domain.Abilities.Tags.GameplayTag? RepairingTag;
+
+        [Tooltip("Instant effect applied to the targeted part every RepairInterval while repairing (adds health, clamped to max).")]
+        public GameplayEffectDefinition? RepairEffect;
+
+        [Min(0.05f)] public float RepairInterval = 0.25f;
+
+        [Tooltip("How far from the player's feet a part can be repaired, in metres.")]
+        [Min(0.5f)] public float RepairReach = 2.5f;
+
+        [Tooltip("Full width of the horizontal cone in front of the player that counts as facing a part.")]
+        [Range(10f, 360f)] public float RepairConeDegrees = 100f;
     }
 }

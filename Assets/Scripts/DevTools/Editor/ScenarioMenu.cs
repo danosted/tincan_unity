@@ -38,6 +38,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "ShipDamage (Host + Client, Lag100)")]
         public static void ShipDamageDuo() => RunDuo("ShipDamage", "Lag100");
 
+        [MenuItem(Root + "RepairLoop (Host)")]
+        public static void RepairLoopSolo() => RunSolo("RepairLoop");
+
+        [MenuItem(Root + "RepairLoop (Host + Client, Lag100)")]
+        public static void RepairLoopDuo() => RunDuo("RepairLoop", "Lag100");
+
         public static void RunSolo(string scenario) =>
             NetHarnessPlayerTagsMenu.Run(new[] { "autohost", $"scenario:{scenario}", "scenariomode:solo" }, Array.Empty<string>());
 

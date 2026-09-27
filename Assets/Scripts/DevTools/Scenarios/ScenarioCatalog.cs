@@ -165,7 +165,50 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<ShipDamageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
-        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle, ShipDamage };
+        /// <summary>
+        /// The whole repair loop with real input: the server breaks part 0, hands the subject the repair tool and stands it
+        /// next to the part (players share one spawn point, so the client would otherwise stand on the host's head). The subject gets GA_RepairShip granted locally, holds Primary, and the server —
+        /// seeing State.Repairing from the replicated input — repairs the part it faces until it is whole. Both sides
+        /// then see the part healthy, the marker gone and the leak stopped.
+        /// </summary>
+        public static readonly ScenarioEntry RepairLoop = new(
+            new Scenario.Builder("RepairLoop")
+                .Describe("Break part 0 -> give the repair tool -> hold Primary facing it -> part whole, leak stopped, on both peers.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("BreakPoint", "0")
+                    .Do("EquipSubject", "ITEM_RepairTool")
+                    .Do("PlaceSubjectAtPoint", "0"))
+                .Act(s => s
+                    .WaitUntil("SubjectHolds", 5f, "ITEM_RepairTool")
+                    .WaitUntil("SubjectHasAbility", 3f, "GA_RepairShip")
+                    .WaitUntil("SubjectHasTag", 3f, "State.Carrying.RepairTool")
+                    .WaitUntil("PointBroken", 5f, "0")
+                    .Wait(0.5f, "teleport settles; facing follows the look input again")
+                    .WaitUntil("SubjectFacesPoint", 5f, "0")
+                    .Expect("SubjectVisualShown", "Carry_RepairTool")
+                    .Checkpoint("tool-ready")
+                    .Hold(6f, ActionNames.AbilityPrimary)
+                    .WaitUntil("PointHealthy", 3f, "0")
+                    .WaitUntil("MarkerHidden", 3f, "0")
+                    .WaitUntil("SubjectLacksTag", 3f, "State.Repairing")
+                    .Checkpoint("repaired"))
+                .Assert(s => s
+                    .WaitUntil("SubjectHasTag", 15f, "State.Repairing")
+                    .WaitUntil("PointHealthy", 12f, "0")
+                    .WaitUntil("LeakRateAtMost", 3f, "0")
+                    .Expect("ShipLacksTag", "State.Ship.Damaged")
+                    .Expect("PointLacksTag", "0:State.Damaged"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipDamageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle, ShipDamage, RepairLoop };
 
         public static string Names => string.Join(", ", All.Select(entry => entry.Scenario.Name));
 

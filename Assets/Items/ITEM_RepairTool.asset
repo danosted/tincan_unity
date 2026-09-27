@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d378242545e1de147a8466045c6d7f9d, type: 3}
+  m_Name: ITEM_RepairTool
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Items.ItemDefinition
+  _id: 3
+  _displayName: Repair tool
+  _visualName: Carry_RepairTool
+  _grantedAbilities:
+  - {fileID: 11400000, guid: 13c99e26664fd6b40892ea4711510510, type: 2}
+  _equippedEffect: {fileID: 11400000, guid: da751990765f7fb4484af8ec5d468641, type: 2}

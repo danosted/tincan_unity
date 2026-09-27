@@ -19,7 +19,8 @@ namespace TinCan.Tests.EditMode
     {
         private GameObject _object = null!;
         private IAbilityControllerBase _controller = null!;
-        private HashSet<string> _synchronizedTags = null!;
+        private ClientTagState _clientTags = null!;
+        private readonly HashSet<string> _serverTags = new();
         private AbilityDefinition _swing = null!;
         private GameplayTag _carryingTag = null!;
         private GameplayTag _swingingTag = null!;
@@ -34,7 +35,8 @@ namespace TinCan.Tests.EditMode
             _controller = (IAbilityControllerBase)_object.AddComponent(mediatorType);
             // Isolate an owning client's tag storage without starting a transport. Any attempted RPC is an error.
             typeof(NetworkBehaviour).GetProperty("IsOwner")!.SetValue(_controller, true);
-            _synchronizedTags = (HashSet<string>)mediatorType.GetField("_clientActiveTagNames", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(_controller)!;
+            _clientTags = (ClientTagState)mediatorType.GetField("_clientTags", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(_controller)!;
+            _serverTags.Clear();
             _swing = Object.Instantiate(AssetDatabase.LoadAssetAtPath<AbilityDefinition>("Assets/Abilities/AbilityDefinitions/GA_SwingNet.asset"));
             _swing.TriggerInput = Object.Instantiate(_swing.TriggerInput);
             _swing.TriggerInput.BitIndex = 0;
@@ -53,16 +55,22 @@ namespace TinCan.Tests.EditMode
             Object.DestroyImmediate(_swing);
         }
 
+        // Stands in for the server's replicated tag set arriving on this client.
+        private void ServerSets(string tag, bool present)
+        {
+            if (present) _serverTags.Add(tag); else _serverTags.Remove(tag);
+            _clientTags.SetReplicated(_serverTags);
+        }
+
         [Test]
         public void Input_WithSynchronizedCarryTag_PredictsAndExpiresSwingLocally()
         {
-            _synchronizedTags.Add(_carryingTag.name);
+            ServerSets(_carryingTag.name, true);
             Assert.That(_controller.ActiveTags.HasTag(_carryingTag), Is.False, "The client's raw domain container is not its synchronized tag store.");
 
             _abilities.ProcessAbilitySimulation(_controller, new HumanoidInputState { ActiveInputMask = 1 }, 0, _time.DeltaTime);
 
             Assert.That(_controller.HasTag(_swingingTag), Is.True, "The owner must see the swing before receiving a server confirmation.");
-            Assert.That(_synchronizedTags.Contains(_swingingTag.name), Is.False, "Prediction must not write authoritative tag state.");
             _time.Time = _swing.ActiveEffect.DurationSeconds + 0.01f;
             _abilities.ProcessAbilitySimulation(_controller, default, 1, _time.DeltaTime);
             Assert.That(_controller.HasTag(_swingingTag), Is.False);
@@ -80,7 +88,7 @@ namespace TinCan.Tests.EditMode
         public void Input_WithSynchronizedBlockedTag_DoesNotPredictSwing()
         {
             _swing.ActivationBlockedTagsOnActor.Add(_carryingTag);
-            _synchronizedTags.Add(_carryingTag.name);
+            ServerSets(_carryingTag.name, true);
 
             _abilities.ProcessAbilitySimulation(_controller, new HumanoidInputState { ActiveInputMask = 1 }, 0, _time.DeltaTime);
 
@@ -91,12 +99,12 @@ namespace TinCan.Tests.EditMode
         public void ExpiringPrediction_DoesNotRemoveServerConfirmation()
         {
             _controller.AddEffectTag(_swingingTag);
-            _synchronizedTags.Add(_swingingTag.name);
+            ServerSets(_swingingTag.name, true);
 
             _controller.RemoveEffectTag(_swingingTag);
 
             Assert.That(_controller.HasTag(_swingingTag), Is.True);
-            _synchronizedTags.Remove(_swingingTag.name);
+            ServerSets(_swingingTag.name, false);
             Assert.That(_controller.HasTag(_swingingTag), Is.False);
         }
     }

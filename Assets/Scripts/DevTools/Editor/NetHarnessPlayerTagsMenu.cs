@@ -135,7 +135,7 @@ namespace TinCan.DevTools.Editor
         /// <summary>Tags this menu owns; anything else a developer created by hand is left alone.</summary>
         private static bool IsHarnessTag(string tag) =>
             tag is "autohost" or "autojoin" or "telemetry" || tag.StartsWith("netsim:") || tag.StartsWith("bot:") ||
-            tag.StartsWith("scenario:") || tag.StartsWith("scenariomode:");
+            tag.StartsWith("scenario:") || tag.StartsWith("scenariomode:") || tag.StartsWith("joindelay:");
 
         private static bool Apply(string[] hostTags, string[] clientTags)
         {

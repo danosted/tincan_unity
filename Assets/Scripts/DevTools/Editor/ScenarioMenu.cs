@@ -1,5 +1,7 @@
 #nullable enable
 using System;
+using System.Globalization;
+using TinCan.DevTools.Scenarios;
 using UnityEditor;
 
 namespace TinCan.DevTools.Editor
@@ -44,6 +46,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "RepairLoop (Host + Client, Lag100)")]
         public static void RepairLoopDuo() => RunDuo("RepairLoop", "Lag100");
 
+        [MenuItem(Root + "ShipDamageLateJoin (Host)")]
+        public static void ShipDamageLateJoinSolo() => RunSolo("ShipDamageLateJoin");
+
+        [MenuItem(Root + "ShipDamageLateJoin (Host + Client, Lag100)")]
+        public static void ShipDamageLateJoinDuo() => RunDuo("ShipDamageLateJoin", "Lag100");
+
         [MenuItem(Root + "AimPitch (Host)")]
         public static void AimPitchSolo() => RunSolo("AimPitch");
 
@@ -66,9 +74,14 @@ namespace TinCan.DevTools.Editor
         {
             if (!ScenarioSceneSwitcher.OpenFor(scenario)) return;
             string[] netsim = preset == null ? Array.Empty<string>() : new[] { $"netsim:{preset}" };
+            // A late-join scenario holds the client back, so the host's arrange steps run before it connects.
+            float joinDelay = ScenarioCatalog.TryGet(scenario, out var entry) ? entry.Scenario.ClientJoinDelaySeconds : 0f;
+            string[] join = joinDelay > 0f
+                ? new[] { "autojoin", $"joindelay:{joinDelay.ToString(CultureInfo.InvariantCulture)}", $"scenario:{scenario}" }
+                : new[] { "autojoin", $"scenario:{scenario}" };
             NetHarnessPlayerTagsMenu.Run(
                 Concat(new[] { "autohost", $"scenario:{scenario}" }, netsim),
-                Concat(new[] { "autojoin", $"scenario:{scenario}" }, netsim));
+                Concat(join, netsim));
         }
 
         private static string[] Concat(string[] first, string[] second)

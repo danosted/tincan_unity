@@ -201,6 +201,37 @@ namespace TinCan.DevTools.Scenarios
             });
 
         /// <summary>
+        /// Late join sees gameplay tags: the host breaks part 0 while no client is connected (the client joins after a
+        /// delay), so the part's State.Damaged and the ship's State.Ship.Damaged were set before the client existed. The
+        /// joining client must see both tags, not only the replicated health and marker. Solo runs check the host only.
+        /// </summary>
+        public static readonly ScenarioEntry ShipDamageLateJoin = new(
+            new Scenario.Builder("ShipDamageLateJoin")
+                .InScene(TestScenes.ShipDamage)
+                .Describe("Host breaks part 0 before the client joins -> the late client sees the part's and ship's damage tags.")
+                .Timeout(90f)
+                .JoinLate(12f)
+                .Arrange(s => s
+                    .WaitUntil("PointHealthy", 20f, "0")
+                    .Do("BreakPoint", "0")
+                    .WaitUntil("PointHasTag", 3f, "0:State.Damaged")
+                    .WaitUntil("ShipHasTag", 3f, "State.Ship.Damaged")
+                    .Expect("NoRemotePlayers")
+                    .WaitUntil("SubjectReady", 60f))
+                .Act(s => s
+                    .WaitUntil("PointBroken", 10f, "0")
+                    .WaitUntil("MarkerShown", 3f, "0")
+                    .WaitUntil("PointHasTag", 3f, "0:State.Damaged")
+                    .WaitUntil("ShipHasTag", 3f, "State.Ship.Damaged")
+                    .Checkpoint("late-join-broken"))
+                .Assert(s => s
+                    .Wait(5f, "subject checks what it joined into")
+                    .Expect("PointHasTag", "0:State.Damaged")
+                    .Expect("ShipHasTag", "State.Ship.Damaged"))
+                .Build(),
+            builder => builder.Register<ShipDamageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        /// <summary>
         /// Aim pitch travels in the input: the subject stands behind broken part 0, which floats at about eye height, and
         /// turns its camera. Looking 30 degrees down, a narrow EyeAim scan misses the part; looking level, it finds it,
         /// on the subject's own peer and on the server, which only knows the pitch from the replicated input. The server
@@ -280,7 +311,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle, ShipDamage, RepairLoop, AimPitch, InteractRack };
+        private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

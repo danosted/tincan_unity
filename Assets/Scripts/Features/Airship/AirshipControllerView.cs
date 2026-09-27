@@ -45,9 +45,9 @@ namespace TinCan.Features.Airship
 
         public bool IsControlsEnabled { get; private set; } = false;
 
-        // Implement IActor required by IHasOrbitalCamera. For a NetworkBehaviour this would usually come from the base class.
-        // Assuming this is a simple MonoBehaviour for now, we'll provide an ID.
-        public Guid Id { get; } = Guid.NewGuid();
+        // IActor (required by IHasOrbitalCamera): the ship entity's id, shared with the ship's mediators.
+        private TinCan.Core.Domain.Entities.ActorIdentity _identity;
+        public Guid Id => (_identity ??= new TinCan.Core.Domain.Entities.ActorIdentity(this)).Id;
         public bool IsSimulating => true;
 
         public IOrbitalLookView Look => _look;

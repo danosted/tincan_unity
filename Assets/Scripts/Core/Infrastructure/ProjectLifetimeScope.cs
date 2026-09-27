@@ -131,7 +131,6 @@ namespace TinCan.Core.Infrastructure
                 entryPoints.Add<PlayerLookUseCase>();
                 entryPoints.Add<VehicleBoardingUseCase>().As<IVehicleBoardingUseCase>();
                 entryPoints.Add<PossessionInputController>();
-                entryPoints.Add<InteractivityUseCase>();
                 builder.Register<ScriptedInput>(Lifetime.Singleton).AsSelf().As<IScriptedInput>().As<ILateTickable>();
                 builder.Register<InputGate>(Lifetime.Singleton);
                 entryPoints.Add<UnityInputService>().As<IInputService>();
@@ -195,12 +194,6 @@ namespace TinCan.Core.Infrastructure
                             manager.Subscribe();
                         }
                     });
-                // Find and inject all "Complete" NetworkMediator actors (e.g. FreeCamera) to ensure they have their Registry reference
-                foreach (var character in FindObjectsByType<NetworkMediator>(FindObjectsInactive.Exclude))
-                {
-                    // Injection handles dependency resolution
-                    container.InjectGameObject(character.gameObject);
-                }
 
                 // Feature-owned networked prefabs: registered with NGO at runtime (no DefaultNetworkPrefabs edits)
                 // and with the DI interceptor so instances are injected on every peer.

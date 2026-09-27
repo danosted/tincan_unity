@@ -13,6 +13,7 @@ using TinCan.Features.Abilities;
 using TinCan.Features.Abilities.Cues;
 using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Network.Infrastructure.Abilities;
+using TinCan.Features.Possession.Infrastructure;
 using System.Collections.Generic;
 
 namespace TinCan.Network.Infrastructure
@@ -27,9 +28,17 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(InteractorControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
+    [RequireComponent(typeof(PossessableNetworkMediator))]
     public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView, IBufferedInputSource, IPredictedHumanoid, IGameplayCueRelay
     {
         public override bool IsSimulating => IsSpawned && (IsServer || IsOwner);
+
+        // IPossessable, forwarded to the possession component.
+        private PossessableNetworkMediator? _possession;
+        private PossessableNetworkMediator Possession => _possession ??= GetComponent<PossessableNetworkMediator>();
+        public ulong? PossessorId => Possession.PossessorId;
+        public bool CanPossess(ulong playerId) => Possession.CanPossess(playerId);
+        public void AuthoritativeSetPossessor(ulong? playerId) => Possession.AuthoritativeSetPossessor(playerId);
 
         private HumanoidControllerView _movement = null!;
         private ThirdPersonLookView _look = null!;

@@ -69,7 +69,8 @@ that need `NetworkManager`, `UnityTransport` or `UIDocument` in `Assembly-CSharp
 |---|---|---|---|---|---|
 | `*Processor` | Pure calculation, no state, no Unity objects. | `Lifetime.Transient` or static | Features | Always | `Features/Airship/Fuel/FuelConsumptionProcessor.cs` |
 | `*UseCase` | Orchestration: reads registries, calls processors, writes through mediators. | `ITickable`, `ISimulationTickable`, `IInitializable` | Features | Usually | `Features/Airship/Fuel/FuelConsumptionUseCase.cs` |
-| `*NetworkMediator` | Thin NGO adapter; implements a domain interface; `NetworkVariable`s and RPCs; `IsServer` guards on writes. | Unity/NGO | Features (new) or `Network/Infrastructure` (legacy) | Via the interface it implements | `Features/Airship/Fuel/FuelTankNetworkMediator.cs` |
+| `*NetworkMediator` | Thin NGO adapter; implements a domain interface; `NetworkVariable`s and RPCs; `IsServer` guards on writes. Takes its actor id from `ActorIdentity`; never registers itself. | Unity/NGO | Features (new) or `Network/Infrastructure` (legacy) | Via the interface it implements | `Features/Airship/Fuel/FuelTankNetworkMediator.cs` |
+| Entity | One per networked object (`EntityNetworkMediator`): the stable id and the only registrar. | Unity/NGO | `Features/Entities/` | `EntityTests`, rules | `Features/Entities/EntityNetworkMediator.cs` |
 | `*View` | MonoBehaviour that renders or reads input; `IInjectedView` if it sits in a scene/prefab and wants DI. | Unity | Features or `Scripts/UI` | Static math only | `Features/Airship/Fuel/FuelGaugeView.cs` |
 | `*Presenter` | `ITickable` that pushes a value into `IHudValues`. | `ITickable` | Features | Yes | `Features/Airship/Fuel/FuelHudPresenter.cs` |
 | `*Config` | ScriptableObject of tunables. | asset | Features + `Assets/Settings` | n/a | `Features/Airship/Fuel/FuelConfig.cs` |
@@ -128,7 +129,7 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 | Airship door | `Airship/PhysicalParts/AirshipDoor.cs` | direct (handler at the end of `Configure`) | `AirshipDoor`, `DoorInteractionHandler` | `IA_ToggleDoor`, `Interaction.Toggle.Door` | none |
 | Humanoid movement + look | `HumanoidMovement/` | direct | `HumanoidMovementUseCase`, `PlayerLookUseCase`, `HumanoidControllerView`, `Network/Infrastructure/HumanoidPlayer` | `Prefabs/NetworkPlayer`, `Attr_MoveSpeed`, `Attr_JumpForce`, `Attr_Stamina`, `GA_Sprint`, `GE_SprintBuff` | `HumanoidMovement*Tests`, `SimulationUseCaseTests` |
 | Possession | `Possession/` | direct | `PossessionUseCase`, `ServerPossessionManager`, `PossessionInputController`, `Infrastructure/PossessionNetworkMediator` | `Prefabs/Singletons/PossessionMediator` | none |
-| Interaction system | `Interaction/` | direct (core); targeting path via installer (`InteractionFeatureInstaller`, `Profile_Base`) | `InteractInputUseCase`, `InteractivityUseCase` (legacy RPC path, silent while the installer is active), `InteractionOrchestrator`, `InteractionHandlerRegistry`, `VehicleBoardingUseCase`, `MaintenanceUseCase` | `Assets/Interactions/*` | `AirshipInteractionInvestigationTests`, `InteractInputUseCaseTests`; scenario `InteractRack` |
+| Interaction system | `Interaction/` | direct (core); targeting path via installer (`InteractionFeatureInstaller`, `Profile_Base`) | `InteractInputUseCase` (the only interaction path), `InteractionOrchestrator`, `InteractionHandlerRegistry`, `VehicleBoardingUseCase` | `Assets/Interactions/*` | `AirshipInteractionInvestigationTests`, `InteractInputUseCaseTests`; scenario `InteractRack` |
 | Abilities (GAS-like) | `Abilities/` | direct (core); tag registry via installer (Order -20, `Profile_Base`) | `AbilitySystemUseCase`, `Network/Infrastructure/Abilities/AbilityNetworkMediator`, `GameplayTagRegistry` | `Assets/Abilities/**`, `Abilities/GameplayTagDatabase`, `Resources/Installers/GameplayTagsFeatureInstaller` | `HealthAttributeSetTests`, `InstantGameplayEffectTests`, `GameplayTagRegistryTests`, `GasTickTimingTests` |
 | Ship modules (build mode removed 2026-09-27, `plans/trust-fixes.md`) | `Network/Infrastructure/ModuleSpawningService.cs`, `ShipModule*NetworkMediator.cs` | direct | `ModuleSpawningService` (also spawns fixtures) | `Prefabs/Modules/Cannon_Module`, `IA_RepairModule`, `IA_DamageModule` | none |
 | Cloud boundary + visuals + atmosphere | `CloudBoundary/` | mixed: boundary is direct (ticked explicitly by the scheduler); submersion atmosphere is installer | `CloudBoundaryUseCase`, `CloudEnvironmentView` (also applies `CloudSubmersionProcessor` output: fog + directional light dimming from the local camera's cloud submersion, client-only, no gameplay effect) | `Settings/CloudBoundaryConfig`, `Settings/CloudVisualProfile`, `Settings/CloudSubmersionConfig`, `Resources/Installers/CloudSubmersionFeatureInstaller` | `CloudBoundary*Tests`, `CloudSubmersionProcessorTests` |
@@ -207,8 +208,11 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
 - **GAS time is ticks, not seconds.** Compare `ITimeService.Tick` values from the same peer only (each peer counts its
   own), and convert authored seconds with `GameplayTicks.FromSeconds`. `ITimeService.Time` is still the server clock
   estimate for everything else. A player has two ability controllers with one `Id` (`HumanoidPlayer` and its
-  `AbilityNetworkMediator`); only `HumanoidPlayer` is registered, and the mediator takes its `Id` only while
-  `HumanoidPlayer` comes first on `NetworkPlayer.prefab`.
+  `AbilityNetworkMediator`, sharing the entity's id); only `HumanoidPlayer` is registered.
+
+- **A networked prefab needs an `EntityNetworkMediator` on its root.** Without it nothing on the object is registered,
+  and its actors have no shared id. Actor ids on child objects are derived from the object path, so renaming a child
+  changes its id (matters once worlds are saved).
 
 - **Held-state input bits need a key held across a tick.** Input masks sample *held* keys when a tick gathers input
   (`UnityInputService.GetActiveInputMask`); there is no latch. A normal tap (80–150 ms) outlasts a tick; an

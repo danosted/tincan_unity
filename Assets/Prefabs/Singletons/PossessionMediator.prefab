@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 3552952446293254755}
   - component: {fileID: -2358907340979071904}
   - component: {fileID: -3473299731858553792}
+  - component: {fileID: 3592120770873201308}
   m_Layer: 0
   m_Name: PossessionMediator
   m_TagString: Untagged
@@ -70,4 +71,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3dc4ca6abdbf85a4796c258a636cc45e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Possession.Infrastructure.PossessionApi
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3592120770873201308
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7436285547912372809}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ac9e3c6af9bdef45bed08cb1c4ee6b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Entities.EntityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1

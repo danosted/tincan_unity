@@ -213,11 +213,13 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("ShipHasTag", 3f, "State.Ship.Damaged")
                     .WaitUntil("CueActive", 3f, "Cue.Ship.Part.Broken")
                     .WaitUntil("CueActive", 3f, "Cue.Ship.Leak")
+                    .Expect("EntitiesIdentified")
                     .Checkpoint("late-join-broken"))
                 .Assert(s => s
                     .Wait(5f, "subject checks what it joined into")
                     .Expect("PointHasTag", "0:State.Damaged")
-                    .Expect("ShipHasTag", "State.Ship.Damaged"))
+                    .Expect("ShipHasTag", "State.Ship.Damaged")
+                    .Expect("EntitiesIdentified"))
                 .Build(),
             builder => builder.Register<ShipDamageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 

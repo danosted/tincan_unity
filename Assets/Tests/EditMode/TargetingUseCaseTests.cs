@@ -156,7 +156,7 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void ActorOrchestrator_RegistersAndUnregistersTargetablesInAHierarchy()
+        public void ActorOrchestrator_RegistersAnEntitysTargetablesOnce_AndNotThoseOfAChildEntity()
         {
             var registry = new TargetableRegistry();
             // Infrastructure lives in Assembly-CSharp; same reflection boundary as FuelFixtureRegistrationTests.
@@ -171,12 +171,18 @@ namespace TinCan.Tests.EditMode
             _created.Add(ship);
             var points = FakeShipDamage.AttachPoints(ship, 2, health, maxHealth);
 
-            orchestrator.RegisterHierarchy(ship);
-            orchestrator.RegisterHierarchy(points[0].gameObject);
-            Assert.That(registry.All, Is.EquivalentTo(points), "Registered once each, even when reached from two hierarchies.");
+            var shipEntity = ship.AddComponent<FakeEntity>();
+            var fixture = points[1].gameObject.AddComponent<FakeEntity>(); // a fixture parented under the ship
 
-            orchestrator.UnregisterHierarchy(ship);
-            Assert.That(registry.All, Is.Empty);
+            orchestrator.RegisterEntity(shipEntity);
+            orchestrator.RegisterEntity(shipEntity);
+            Assert.That(registry.All, Is.EqualTo(new[] { points[0] }), "Once, and without the child entity's targetable.");
+
+            orchestrator.RegisterEntity(fixture);
+            Assert.That(registry.All, Is.EquivalentTo(points));
+
+            orchestrator.UnregisterEntity(shipEntity);
+            Assert.That(registry.All, Is.EqualTo(new[] { points[1] }), "The fixture stays registered while it lives.");
         }
     }
 }

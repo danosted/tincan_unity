@@ -96,8 +96,9 @@ instead (see `JerryCanSupplyNetworkMediator.cs` for the `NetworkVariable` + `OnV
 `BallastTankNetworkMediator.cs` from `Fuel/FuelTankNetworkMediator.cs`:
 `NetworkBehaviour, IBallastTank, IShipModule`. Keep these parts exactly:
 - `[SerializeField] BallastConfig? _config` (the fixture-scoped config style).
-- Inject `IActorOrchestrator`; call `RegisterHierarchy(gameObject)` in `OnNetworkSpawn` and
-  `UnregisterHierarchy(gameObject)` in `OnNetworkDespawn` for actor and capability membership.
+- Take the actor id from `ActorIdentity` (`Id => (_identity ??= new ActorIdentity(this)).Id`); the prefab's
+  `EntityNetworkMediator` registers the fixture, so never call the orchestrator for membership yourself.
+- Inject `IActorOrchestrator` only for ship membership (below).
 - Bind to the parent ship in **both** `OnNetworkSpawn` and `OnNetworkObjectParentChanged`; also accept the
   server's `IShipModule.OnAttachedToShip` callback. Delegate membership to the orchestrator's
   `RegisterShipModule(this, registry)` and `UnregisterShipModule(this)` methods. Rebind local state when

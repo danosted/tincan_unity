@@ -13,8 +13,5 @@ namespace TinCan.Network.Infrastructure
         public override bool IsSimulating => IsSpawned && IsServer;
 
         public Transform Transform => transform;
-
-        // Debris is never a possession target (NetworkMediator defaults to "possessable when free").
-        public override bool CanPossess(ulong playerId) => false;
     }
 }

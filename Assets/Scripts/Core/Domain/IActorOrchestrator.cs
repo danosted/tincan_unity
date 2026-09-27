@@ -1,15 +1,18 @@
-using UnityEngine;
+using TinCan.Core.Domain.Entities;
 
 namespace TinCan.Core.Domain
 {
     /// <summary>
-    /// Domain Layer: Interface for orchestrating the registration and unregistration
-    /// of actors and their associated capabilities (interactors, etc.) within the system.
+    /// Domain Layer: registers an entity's actors and capabilities (actor, interactors, ability controller,
+    /// targetables) in the domain registries, and links ship modules to their ship. Only an entity calls
+    /// <see cref="RegisterEntity"/>; registering the same entity again is a no-op.
     /// </summary>
     public interface IActorOrchestrator
     {
-        void RegisterHierarchy(GameObject root);
-        void UnregisterHierarchy(GameObject root);
+        IEntityRegistry Entities { get; }
+
+        void RegisterEntity(IEntity entity);
+        void UnregisterEntity(IEntity entity);
         void RegisterShipModule(IShipModule module, IShipModuleRegistry registry);
         void UnregisterShipModule(IShipModule module);
     }

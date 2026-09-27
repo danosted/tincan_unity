@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 7674693627328895524}
   - component: {fileID: 1699298387045624825}
   - component: {fileID: 5959019161563374994}
+  - component: {fileID: 8250581895073984103}
   m_Layer: 0
   m_Name: FlyingJerryCan
   m_TagString: Untagged
@@ -118,6 +119,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1273cf1bee5214440b0f18736662b7ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.FlyingCanNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &8250581895073984103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4833976213325917608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ac9e3c6af9bdef45bed08cb1c4ee6b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Entities.EntityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &5865459894698394884
 GameObject:

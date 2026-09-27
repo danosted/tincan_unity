@@ -3,17 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
+using TinCan.Core.Domain.Entities;
 using TinCan.Core.Domain.Targeting;
 using TinCan.Features.Abilities;
+using TinCan.Features.Entities;
 using TinCan.Features.Interaction;
 using VContainer;
 
 namespace TinCan.Core.Infrastructure
 {
     /// <summary>
-    /// Infrastructure Layer: Orchestrates the link between Unity GameObjects and Domain Registries.
-    /// This ensures that when an actor is created (via Spawner, Interceptor, or Scene Load),
-    /// all its capabilities are registered in the correct places.
+    /// Infrastructure Layer: registers each entity's actors and capabilities in the domain registries, once per
+    /// entity. Entities (EntityNetworkMediator) are the only callers.
     /// </summary>
     public class ActorOrchestrator : IActorOrchestrator
     {
@@ -46,59 +47,69 @@ namespace TinCan.Core.Infrastructure
             _targetableRegistry = targetableRegistry;
         }
 
-        public void RegisterHierarchy(GameObject root)
-        {
-            // Register Identity
-            if (root.TryGetComponent<IActor>(out var actor))
-            {
-                _actorRegistry.Register(actor);
-            }
+        public IEntityRegistry Entities { get; } = new EntityRegistry();
 
-            // Register Capabilities
-            var interactors = root.GetComponentsInChildren<IInteractorView>(true);
-            foreach (var interactor in interactors)
+        public void RegisterEntity(IEntity entity)
+        {
+            if (!Entities.Register(entity)) return;
+            var root = entity.Root;
+
+            // Identity: several root components share the entity's id; the registry holds one of them.
+            var actor = PrimaryActorSelection.Choose(root.GetComponents<IActor>());
+            if (actor != null) _actorRegistry.Register(actor);
+
+            foreach (var interactor in Owned<IInteractorView>(entity))
             {
                 _interactorRegistry.Register(interactor);
             }
 
             // One controller per actor, or GAS ticks the actor twice.
-            var abilityControllers = AbilityControllerSelection.OnePerActor(root.GetComponentsInChildren<IAbilityControllerBase>(true));
-            foreach (var controller in abilityControllers)
+            foreach (var controller in AbilityControllerSelection.OnePerActor(Owned<IAbilityControllerBase>(entity)))
             {
                 _abilityRegistry.Register(controller);
             }
 
             if (_targetableRegistry != null)
             {
-                foreach (var targetable in root.GetComponentsInChildren<ITargetable>(true)) _targetableRegistry.Register(targetable);
+                foreach (var targetable in Owned<ITargetable>(entity)) _targetableRegistry.Register(targetable);
             }
         }
 
-        public void UnregisterHierarchy(GameObject root)
+        public void UnregisterEntity(IEntity entity)
         {
-            // Unregister Identity
-            if (root.TryGetComponent<IActor>(out var actor))
+            if (!Entities.Unregister(entity)) return;
+            var root = entity.Root;
+
+            var actor = PrimaryActorSelection.Choose(root.GetComponents<IActor>());
+            if (actor != null)
             {
                 if (actor is IShipModule module) UnregisterShipModule(module);
                 _actorRegistry.Unregister(actor);
             }
 
-            // Unregister Capabilities
-            var interactors = root.GetComponentsInChildren<IInteractorView>(true);
-            foreach (var interactor in interactors)
+            foreach (var interactor in Owned<IInteractorView>(entity))
             {
                 _interactorRegistry.Unregister(interactor);
             }
 
-            var abilityControllers = root.GetComponentsInChildren<IAbilityControllerBase>(true);
-            foreach (var controller in abilityControllers)
+            foreach (var controller in Owned<IAbilityControllerBase>(entity))
             {
                 _abilityRegistry.Unregister(controller);
             }
 
             if (_targetableRegistry != null)
             {
-                foreach (var targetable in root.GetComponentsInChildren<ITargetable>(true)) _targetableRegistry.Unregister(targetable);
+                foreach (var targetable in Owned<ITargetable>(entity)) _targetableRegistry.Unregister(targetable);
+            }
+        }
+
+        // An entity's capabilities are the components whose nearest entity is itself: a fixture parented under the ship
+        // is its own entity and registers its own.
+        private static IEnumerable<T> Owned<T>(IEntity entity)
+        {
+            foreach (var capability in entity.Root.GetComponentsInChildren<T>(true))
+            {
+                if (capability is Component component && ReferenceEquals(component.GetComponentInParent<IEntity>(true), entity)) yield return capability;
             }
         }
 

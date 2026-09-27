@@ -76,7 +76,9 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
 
 ### 4. Possession & Interaction Flow
 The game relies heavily on dynamic possession (e.g., leaving a humanoid body to fly a free-camera, or boarding an airship).
-- **IPossessable:** Implemented by entities that can be owned by a player (e.g., Humanoid, Airship).
+- **IPossessable is opt-in:** an object is possessable when it has a `PossessableNetworkMediator` (the replicated
+  possessor; a player object is possessed by its owner on spawn). Its actor (`HumanoidPlayer`, `AirshipNetworkMediator`)
+  implements `IPossessable` by forwarding to it. The local free camera is the only other possessable.
 - **Possession authority:** `ServerPossessionManager` (`IPossessionAuthority`) assigns ownership on the server; `PossessionUseCase` (`IPossessionState`) is the client-side view; `PossessionNetworkMediator` carries the RPCs.
 - **Interaction is targeting plus an input bit:**
   - Interact is a predicted input bit (`Input_Interact`). On the tick a player's simulated input first has it pressed,
@@ -86,14 +88,27 @@ The game relies heavily on dynamic possession (e.g., leaving a humanoid body to 
   - The owner's prompt (`InteractorControllerView.CurrentTarget`) runs the same query, so both agree and no client ever
     names a target.
   - Every `IInteractionTarget` is an `ITargetable` through default members.
-  - Without `InteractionFeatureInstaller`, the legacy path applies: `InteractivityUseCase` sends the client-chosen
-    target through `NetworkMediator.RequestInteraction`.
+  - This is the only interaction path; without `InteractionFeatureInstaller` nothing can be interacted with.
 
 ### 5. ECS-Lite & Orchestrated Registries
 Instead of tight coupling and hardcoded subsystem checks, we utilize an ECS-lite compositional pattern based around Registries:
 - **Registries as Queries:** Subsystems operate on generic sets of interfaces (e.g., `IInteractorRegistry`, `IAbilityRegistry`, `IActorRegistry`).
-- **ActorOrchestrator:** Handles automatic registration. MonoBehaviours (Views/Mediators) DO NOT register themselves. When an object is spawned via the `NetworkPrefabInterceptor`, the `ActorOrchestrator` scans the prefab for relevant component interfaces (`IAbilityControllerBase`, `IInteractorView`, etc.) and registers them to the correct Domain registries.
-  Mediators delegate their network lifecycle to `IActorOrchestrator.RegisterHierarchy` / `UnregisterHierarchy`. Feature fixtures such as `FuelTankNetworkMediator` also delegate ship membership to `RegisterShipModule` / `UnregisterShipModule`; the orchestrator removes old membership on reparenting, while the fixture owns its local attribute binding.
+- **Entities:** every networked object has one `EntityNetworkMediator` on its root (`Features/Entities/`; a rule test
+  enforces it). It is the object's identity and its only registrar:
+  - **`EntityId`**, a GUID the server assigns (or a spawner presets, for a saved world) and replicates, so it is the same
+    on every peer and for late joiners.
+  - **Actor ids come from it** (`Core/Domain/Entities/ActorIdentity`): an actor on the root has the entity id, an actor
+    on a child object an id derived from the entity id and its path (`EntityIds.Derive`). Components on one object share
+    one id. Nothing else makes ids (`EntityIds.New` is the only `Guid.NewGuid`).
+  - **Registration once:** in `OnNetworkPostSpawn` it calls `IActorOrchestrator.RegisterEntity`, which registers the
+    root's primary actor (the `ISimulatedActor`, else the first), one ability controller per actor, the interactors and
+    the targetables whose nearest entity is this one (a fixture parented under the ship is its own entity). Despawn
+    unregisters them. Views and mediators never register themselves.
+  - `IActorOrchestrator.Entities` (`IEntityRegistry`) lists the live entities: the seam for a later session layer and
+    for persistence.
+- **Ship membership:** fixtures such as `FuelTankNetworkMediator` link to their ship with `RegisterShipModule` /
+  `UnregisterShipModule`; the orchestrator removes old membership on reparenting, while the fixture owns its local
+  attribute binding.
 - **Decoupled UseCases:** A `UseCase` iterates over its specific Registry, processing data without knowing if the actor is a Humanoid, an Airship, or an AI.
 
 ### 6. Targeting (cross-cutting)

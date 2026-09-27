@@ -104,6 +104,8 @@ actor changes. Persistent values (fuel level) live in `BaseValue`.
    Example: `ShipDamagePointNetworkMediator`.
 2. **Describe the query:** **TinCan > Targeting > Targeting Definition** in `Assets/Targeting/` (`TD_*`).
    - Pick the aim source and shape. A `Cone` is forgiving for close scans; a `Ray` is precise but needs colliders.
+   - `EyeAim` and `CameraAim` follow where the player looks (pitch included). `BodyForward` ignores pitch, which is
+     better for close, forgiving scans.
    - Pick the required or blocked tags on the target, and the selection rule.
    - Example: `TD_RepairScan` is a 2.5 m, 100° cone that requires `State.Damaged`, nearest first.
 3. **Link it:** set `AbilityDefinition.Targeting` to the `TD_*`.

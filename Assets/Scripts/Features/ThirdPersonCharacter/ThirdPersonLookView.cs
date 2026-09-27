@@ -28,6 +28,7 @@ namespace TinCan.Features.HumanoidMovement
         public float Yaw { get; set; }
         public float Sensitivity => _sensitivity;
         public float MaxPitch => _maxPitch;
+        public float OrbitHeight => _height;
 
         // Optional: follow where the body is drawn (interpolated between ticks) rather than the simulated root.
         private IHumanoidVisualAnchor _anchor;

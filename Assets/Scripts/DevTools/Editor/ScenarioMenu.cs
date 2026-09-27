@@ -44,6 +44,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "RepairLoop (Host + Client, Lag100)")]
         public static void RepairLoopDuo() => RunDuo("RepairLoop", "Lag100");
 
+        [MenuItem(Root + "AimPitch (Host)")]
+        public static void AimPitchSolo() => RunSolo("AimPitch");
+
+        [MenuItem(Root + "AimPitch (Host + Client, Lag100)")]
+        public static void AimPitchDuo() => RunDuo("AimPitch", "Lag100");
+
         public static void RunSolo(string scenario) =>
             NetHarnessPlayerTagsMenu.Run(new[] { "autohost", $"scenario:{scenario}", "scenariomode:solo" }, Array.Empty<string>());
 

@@ -22,6 +22,9 @@ namespace TinCan.Features.HumanoidMovement
         /// </summary>
         Quaternion LookRotation { get; }
 
+        /// <summary>Aim pitch in degrees from the look view (positive looks down); 0 when there is none.</summary>
+        float LookPitch { get; }
+
         /// <summary>
         /// Raw sensing data from the physical world.
         /// </summary>

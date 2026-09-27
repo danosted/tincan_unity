@@ -65,6 +65,32 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void GatheredInput_CarriesTheLookPitch()
+        {
+            _movementView.LookPitch = 25f;
+            var gather = typeof(HumanoidMovementUseCase).GetMethod("GatherLocalInput",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+
+            var input = (HumanoidInputState)gather.Invoke(_useCase, new object[] { _character })!;
+
+            Assert.That(input.LookPitch, Is.EqualTo(25f), "Pitch must travel in the input so the server can rebuild the aim.");
+        }
+
+        [Test]
+        public void InputState_SerializesTheLookPitch()
+        {
+            var sent = new HumanoidInputState { Sequence = 7, LookPitch = -12.5f, LookRotation = Quaternion.identity };
+            using var writer = new Unity.Netcode.FastBufferWriter(256, Unity.Collections.Allocator.Temp);
+            writer.WriteNetworkSerializable(sent);
+            using var reader = new Unity.Netcode.FastBufferReader(writer, Unity.Collections.Allocator.Temp);
+
+            reader.ReadNetworkSerializable(out HumanoidInputState received);
+
+            Assert.That(received.LookPitch, Is.EqualTo(-12.5f));
+            Assert.That(received.Sequence, Is.EqualTo(7u));
+        }
+
+        [Test]
         public void Jump_OnMovingPlatform_WithoutControllerGrounded_StillJumps()
         {
             _movementView.ControllerGrounded = false;

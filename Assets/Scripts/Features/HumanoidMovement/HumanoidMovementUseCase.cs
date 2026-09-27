@@ -84,6 +84,7 @@ namespace TinCan.Features.HumanoidMovement
                 IsSprinting = isSprinting,
                 // Relative to the platform underfoot, so the server applies it against its own view of that platform.
                 LookRotation = Quaternion.Inverse(FrameYaw(movement.CurrentGround.MovingGroundTransform)) * movement.LookRotation,
+                LookPitch = movement.LookPitch,
                 ActiveInputMask = InputService.GetActiveInputMask()
             };
         }

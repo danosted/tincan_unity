@@ -46,6 +46,10 @@ namespace TinCan.Features.Abilities
         public GameplayEffectDefinition CostEffect;
         public GameplayEffectDefinition CooldownEffect;
 
+        [Header("Targeting")]
+        [Tooltip("How this ability acquires its target (optional). Held abilities re-acquire each tick in their feature use case.")]
+        public TinCan.Features.Targeting.TargetingDefinition Targeting;
+
         // Logic for activation is usually handled by the UseCase or a subclass of this
     }
 }

@@ -7,16 +7,18 @@ using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
 using TinCan.Features.Abilities;
 using TinCan.Features.HumanoidMovement;
+using TinCan.Features.Targeting;
 using UnityEngine;
 
 namespace TinCan.Features.Airship.Damage
 {
     /// <summary>
     /// Application Layer, server only, after humanoid movement. The repair ability only expresses intent: while a player
-    /// carries the repairing tag (GA_RepairShip, predicted from the held Primary input), this finds the broken part they
-    /// face within reach and applies the repair effect to it every RepairInterval, so the rate does not depend on the
-    /// tick rate. When the part reaches full health, ShipBreakageUseCase releases its breach on its next reconcile.
-    /// Same shape as NetCatchUseCase: the ability sets a tag window, the feature performs the world effect.
+    /// carries the repairing tag (GA_RepairShip, predicted from the held Primary input), this asks the targeting service
+    /// which broken part they aim at (the ability's TargetingDefinition, TD_RepairScan) and applies the repair effect
+    /// to it every RepairInterval, so the rate does not depend on the tick rate. When the part reaches full health,
+    /// ShipBreakageUseCase releases its breach on its next reconcile. Same shape as NetCatchUseCase: the ability sets a
+    /// tag window, the feature performs the world effect.
     /// </summary>
     public class ShipRepairUseCase : ISimulationTickable
     {
@@ -27,10 +29,9 @@ namespace TinCan.Features.Airship.Damage
         private readonly ITimeService _time;
         private readonly IEventPublisher _events;
         private readonly AbilitySystemUseCase _abilities;
-        private readonly RepairTargetProcessor _processor;
+        private readonly ITargetingService _targeting;
         private readonly ShipDamageConfig _config;
         private readonly Dictionary<Guid, (int Target, float Accumulated)> _progress = new();
-        private readonly List<(int Index, Vector3 Position, bool Broken)> _parts = new();
 
         public ShipRepairUseCase(
             INetworkService network,
@@ -38,7 +39,7 @@ namespace TinCan.Features.Airship.Damage
             ITimeService time,
             IEventPublisher events,
             AbilitySystemUseCase abilities,
-            RepairTargetProcessor processor,
+            ITargetingService targeting,
             ShipDamageConfig config)
         {
             _network = network;
@@ -46,38 +47,30 @@ namespace TinCan.Features.Airship.Damage
             _time = time;
             _events = events;
             _abilities = abilities;
-            _processor = processor;
+            _targeting = targeting;
             _config = config;
         }
 
         public void Tick()
         {
-            if (!_network.IsServer || _config.RepairingTag == null || _config.RepairEffect == null) return;
-
-            var points = _actors.GetActors<IAirshipView>().SelectMany(ShipDamageLocator.FindPoints).ToArray();
-            _parts.Clear();
-            foreach (var point in points)
-            {
-                if (point.Transform != null) _parts.Add((point.Index, point.Transform.position, point.IsBroken));
-            }
+            var targeting = _config.RepairAbility?.Targeting;
+            if (!_network.IsServer || _config.RepairingTag == null || _config.RepairEffect == null || targeting == null) return;
 
             foreach (var player in _actors.GetActors<IHumanoidCharacterView>())
             {
-                var body = player.Movement?.Transform;
-                if (body == null || !player.HasTag(_config.RepairingTag))
+                if (!player.HasTag(_config.RepairingTag))
                 {
                     _progress.Remove(player.Id);
                     continue;
                 }
 
-                int target = _processor.FindTarget(body.position, body.forward, _parts, _config.RepairReach, _config.RepairConeDegrees);
-                if (target < 0)
+                if (!_targeting.TryAcquire(new HumanoidTargeter(player), targeting, out var result) || result.Target is not IShipDamagePoint point)
                 {
                     _progress.Remove(player.Id);
                     continue;
                 }
 
-                Advance(player, points.First(point => point.Index == target));
+                Advance(player, point);
             }
         }
 

@@ -9,6 +9,7 @@ using TinCan.Features.Airship;
 using TinCan.Features.Airship.Damage;
 using TinCan.Features.Airship.Fuel;
 using TinCan.Features.HumanoidMovement;
+using TinCan.Features.Targeting;
 using TinCan.Features.UI;
 using UnityEngine;
 using VContainer;
@@ -30,7 +31,7 @@ namespace TinCan.DevTools.Scenarios
         private readonly ScenarioSubject _subject;
         private readonly IHumanoidRespawnService _respawn;
         private readonly ShipDamageConfig _config;
-        private readonly RepairTargetProcessor _targets;
+        private readonly ITargetingService _targeting;
 
         // Where PlaceSubjectAtPoint stands the subject: this far behind the part along the way the subject already faces
         // (facing follows the look input every tick, so a teleport cannot turn a player), with its feet this far below
@@ -41,7 +42,7 @@ namespace TinCan.DevTools.Scenarios
         private float? _fuelBaseline;
 
         public ShipDamageScenarioLibrary(INetworkService network, IActorRegistry actors, IShipBreakage breakage, IHudValues hud,
-            ScenarioSubject subject, IHumanoidRespawnService respawn, ShipDamageConfig config, RepairTargetProcessor targets, IObjectResolver resolver)
+            ScenarioSubject subject, IHumanoidRespawnService respawn, ShipDamageConfig config, ITargetingService targeting, IObjectResolver resolver)
         {
             _network = network;
             _actors = actors;
@@ -50,7 +51,7 @@ namespace TinCan.DevTools.Scenarios
             _subject = subject;
             _respawn = respawn;
             _config = config;
-            _targets = targets;
+            _targeting = targeting;
             _tags = resolver.TryResolve<IGameplayTagRegistry>(out var tags) ? tags : null;
         }
 
@@ -103,19 +104,24 @@ namespace TinCan.DevTools.Scenarios
             return ScenarioCheck.Pass($"subject placed {StandOff} m behind part {index}");
         }
 
-        /// <summary>Would the repair use case target this part from where the subject stands on this peer?</summary>
+        /// <summary>
+        /// Would the repair use case target this part from where the subject stands on this peer? Asks the targeting service
+        /// with the repair ability's definition, so the scenario and the game share one answer.
+        /// </summary>
         private ScenarioCheck FacesPoint(string index)
         {
-            var body = _subject.Body;
+            var subject = _subject.Resolve();
             var point = Point(index);
-            if (body == null || point?.Transform == null) return ScenarioCheck.Fail("no subject body or part");
+            var definition = _config.RepairAbility?.Targeting;
+            if (subject == null || point == null) return ScenarioCheck.Fail("no subject or part");
+            if (definition == null) return ScenarioCheck.Fail("ShipDamageConfig.RepairAbility has no TargetingDefinition");
 
-            Vector3 offset = point.Transform.position - body.position;
-            float angle = Vector3.Angle(new Vector3(body.forward.x, 0f, body.forward.z), new Vector3(offset.x, 0f, offset.z));
-            var parts = new[] { (point.Index, point.Transform.position, true) };
-            bool targeted = _targets.FindTarget(body.position, body.forward, parts, _config.RepairReach, _config.RepairConeDegrees) == point.Index;
-            string detail = $"distance {offset.magnitude:0.00} m (reach {_config.RepairReach}), angle {angle:0} deg (cone {_config.RepairConeDegrees})";
-            return targeted ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+            if (!_targeting.TryAcquire(new HumanoidTargeter(subject), definition, out var result))
+                return ScenarioCheck.Fail($"{definition.name} acquires nothing from here");
+            if (result.Target is not IShipDamagePoint targeted || targeted.Index != point.Index)
+                return ScenarioCheck.Fail($"{definition.name} picks something else ({result.Target})");
+
+            return ScenarioCheck.Pass($"{definition.name}: part {index} at {result.Distance:0.00} m, {result.HorizontalAngle:0} deg");
         }
 
         private ScenarioCheck ServerOnly(Func<bool> action, string success)

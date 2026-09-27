@@ -1,6 +1,7 @@
 #nullable enable
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Attributes;
+using TinCan.Core.Domain.Targeting;
 using TinCan.Features.Abilities;
 using TinCan.Features.Airship.Damage;
 using UnityEngine;
@@ -34,7 +35,7 @@ namespace TinCan.Tests.EditMode.Fakes
         }
     }
 
-    public class FakeShipDamagePoint : MonoBehaviour, IShipDamagePoint
+    public class FakeShipDamagePoint : MonoBehaviour, IShipDamagePoint, ITargetable
     {
         private readonly FakeAbilityController _controller = new();
         private HealthAttributeSet _health = null!;
@@ -44,6 +45,9 @@ namespace TinCan.Tests.EditMode.Fakes
         public bool IsBroken => Health01 < 1f;
         public Transform? Transform => transform;
         public IAbilityControllerBase? Controller => _controller;
+        public System.Guid TargetId { get; } = System.Guid.NewGuid();
+        public Vector3 AimPoint => transform.position;
+        public bool IsTargetable => true;
         public FakeAbilityController FakeController => _controller;
 
         public void Init(HealthAttribute health, MaxHealthAttribute maxHealth)

@@ -25,5 +25,4 @@ MonoBehaviour:
   RepairingTag: {fileID: 11400000, guid: 7540705d2a90a204b8f8be49902ba07a, type: 2}
   RepairEffect: {fileID: 11400000, guid: 8d3fb3903820fff46bc7a5cae130cd47, type: 2}
   RepairInterval: 0.25
-  RepairReach: 2.5
-  RepairConeDegrees: 100
+  RepairAbility: {fileID: 11400000, guid: 13c99e26664fd6b40892ea4711510510, type: 2}

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
+using TinCan.Features.Abilities.Cues;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -12,16 +13,20 @@ namespace TinCan.Features.Airship.Damage
     /// Ship damage: breakable spots on the deck (the ShipDamageSockets fixture), random breakage, the hull-breach
     /// effect on the ship (fuel leak) and a HUD line. Switch it on or off by listing it in a scene's feature profile.
     /// Players repair with the repair tool from the tool rack fixture: holding it grants GA_RepairShip, and
-    /// <see cref="ShipRepairUseCase"/> applies the repair effect to the broken part they face.
+    /// <see cref="ShipRepairUseCase"/> applies the repair effect to the broken part they face. Presentation comes as
+    /// gameplay cues: the notifies listed here, and the marker's ToggleObjectCueHandler in the sockets prefab (both need
+    /// GameplayCuesFeatureInstaller).
     /// </summary>
     [CreateAssetMenu(fileName = "ShipDamageFeatureInstaller", menuName = "TinCan/Features/Ship Damage Feature Installer")]
-    public class ShipDamageFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<ShipFixtureDefinition>
+    public class ShipDamageFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<ShipFixtureDefinition>, FeatureInstaller.IExtension<GameplayCueNotify>
     {
         [SerializeField] private ShipDamageConfig? _config;
         [Tooltip("Networked ShipDamageSockets prefab and where it sits on the ship.")]
         [SerializeField] private ShipFixtureDefinition? _socketsFixture;
         [Tooltip("Networked rack that hands out the repair tool, and where it sits on the ship.")]
         [SerializeField] private ShipFixtureDefinition? _toolRackFixture;
+        [Tooltip("What break, repair, the leak and the repair tool look and sound like (GCN_* assets).")]
+        [SerializeField] private List<GameplayCueNotify> _cueNotifies = new();
 
         public override void Install(IContainerBuilder builder)
         {
@@ -57,5 +62,7 @@ namespace TinCan.Features.Airship.Damage
                 if (_toolRackFixture != null) yield return _toolRackFixture;
             }
         }
+
+        IEnumerable<GameplayCueNotify> FeatureInstaller.IExtension<GameplayCueNotify>.Contributions => _cueNotifies;
     }
 }

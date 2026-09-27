@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0c8fb8095534604c8350b93c97960de, type: 3}
+  m_Name: GCN_Ship_Part_Broken
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Abilities.Cues.GameplayCueNotify
+  _cue: {fileID: 11400000, guid: e5b96cfcfc313344bb96ba005fdfbf0b, type: 2}
+  _onExecute: []
+  _onActive:
+  - rid: 4526782338413363251
+  _onRemoved:
+  - rid: 4526782338413363252
+  - rid: 4526782338413363253
+  references:
+    version: 2
+    RefIds:
+    - rid: 4526782338413363251
+      type: {class: SpawnPrefabCueAction, ns: TinCan.Features.Abilities.Cues.Actions, asm: TinCan.Features}
+      data:
+        Prefab: {fileID: 5929576128090799873, guid: 22712194e0af7d64da8f380f4223b2c0, type: 3}
+        LocalOffset: {x: 0, y: 0, z: 0}
+        Lifetime: 2
+    - rid: 4526782338413363252
+      type: {class: PlaySoundCueAction, ns: TinCan.Features.Abilities.Cues.Actions, asm: TinCan.Features}
+      data:
+        Clip: {fileID: 8300000, guid: caa357fa545f1174a8bf5bdae7cebed1, type: 3}
+        Volume: 0.8
+    - rid: 4526782338413363253
+      type: {class: HudToastCueAction, ns: TinCan.Features.Abilities.Cues.Actions, asm: TinCan.Features}
+      data:
+        Text: Part repaired
+        Seconds: 3

@@ -249,6 +249,14 @@ the Items installer breaks Fuel and FlyingCan after the migration, so Items beco
 - 2026-09-27: Repair targeting moved onto the cross-cutting Targeting subsystem
   (`.docs/plans/targeting-subsystem.md`): `TD_RepairScan` replaces `RepairTargetProcessor`.
 
+- 2026-09-27: Step 3b done, redesigned in `.docs/plans/gameplay-cues.md`.
+  - Cues are `Cue.*` tags on effects: state cues while an effect is active, bursts from Instant effects.
+  - Features contribute `GameplayCueNotify` assets.
+  - The marker is now a `ToggleObjectCueHandler` on `Cue.Ship.Part.Broken`, so the point no longer toggles it itself.
+  - The first cues: break burst (sparks and a bang), sparks while broken, leak hiss, repair loop, and a repaired
+    ding with a HUD toast.
+  - Tags also replicate as state now, so late joiners see them (scenario `ShipDamageLateJoin`).
+
 ## Build order (vertical slices)
 0. **Feedback loop skeleton**: `Scenario` + expectations + report writer + self-terminating run + capture, first
    proven on an existing feature (a `NetCatch` scenario) so the harness is trusted before new code relies on it.

@@ -13,8 +13,9 @@ namespace TinCan.Features.Airship.Damage
     /// Infrastructure Layer: one breakable spot inside the ShipDamageSockets fixture. It needs an AbilityNetworkMediator
     /// on the same GameObject (the point's own GAS actor; it lives in Assembly-CSharp, so it is found through
     /// <see cref="IAbilityControllerBase"/> rather than required by type). Health is a <see cref="HealthAttributeSet"/>
-    /// on that controller, replicated with its attributes. Every peer shows the child named "Marker" while the point is
-    /// broken. Its index is its order among the fixture's damage points.
+    /// on that controller, replicated with its attributes. The child named "Marker" is presentation: its
+    /// ToggleObjectCueHandler shows it while the point holds the Cue.Ship.Part.Broken state cue (GE_ShipPartBroken), on
+    /// every peer and for late joiners. Its index is its order among the fixture's damage points.
     /// </summary>
     public class ShipDamagePointNetworkMediator : NetworkBehaviour, IShipDamagePoint, ITargetable
     {
@@ -52,19 +53,13 @@ namespace TinCan.Features.Airship.Damage
         }
 
         // Attribute writes go into the ability mediator's NetworkList, so the server seeds health once both behaviours
-        // are spawned rather than from OnNetworkSpawn, whose order between the two is not guaranteed. The marker follows
-        // the replicated attribute each frame; five points make polling cheaper than wiring a change event.
+        // are spawned rather than from OnNetworkSpawn, whose order between the two is not guaranteed.
         private void Update()
         {
-            if (!IsSpawned) return;
+            if (!IsSpawned || !IsServer || _initialized || _health == null || _controller is not NetworkBehaviour { IsSpawned: true }) return;
 
-            if (IsServer && !_initialized && _health != null && _controller is NetworkBehaviour { IsSpawned: true })
-            {
-                if (_health.MaxHealth <= 0f) _health.InitializeBaseValues(_maxHealth);
-                _initialized = true;
-            }
-
-            if (_marker != null && _marker.activeSelf != IsBroken) _marker.SetActive(IsBroken);
+            if (_health.MaxHealth <= 0f) _health.InitializeBaseValues(_maxHealth);
+            _initialized = true;
         }
     }
 }

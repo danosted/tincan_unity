@@ -121,6 +121,29 @@ actor changes. Persistent values (fuel level) live in `BaseValue`.
 and a `TargetableRegistry` (`ShipRepairUseCaseTests`). In play, a scenario probe that calls the service (as
 `SubjectFacesPoint` does) shows the same answer the game uses.
 
+### Add feedback to a gameplay moment (a gameplay cue)
+
+**When:** a moment should be seen or heard (a bang, sparks, a hum while something is on, a HUD line). Never drive
+presentation from domain events or from the gameplay code itself.
+
+1. **Name the cue:** a tag `Cue.<Area>.<Thing>` in `Assets/Abilities/Tags/`. Gameplay logic never reads `Cue.*` tags.
+2. **Hook it to an effect:** add the tag to the effect's `Cues` list.
+   - Put it on the **Instant** effect of the moment for a one-shot burst (`GE_ShipPartBreak`: `Cue.Ship.Part.Break`).
+   - Put it on the **Infinite/Duration** effect that holds a state for a state cue (`GE_HullBreach`: `Cue.Ship.Leak`).
+     A state cue reaches late joiners and is predicted on the owner.
+   - If no effect marks the moment, prefer adding one. A direct `IGameplayCueDispatcher.Execute` is the last resort.
+3. **Say what it does:**
+   - Notify: **TinCan > Abilities > Gameplay Cue Notify** in `Assets/Abilities/Cues/` (`GCN_*`). Set the cue and pick
+     actions per list (OnExecute / OnActive / OnRemoved): `Spawn Prefab`, `Play Sound`, `Hud Toast`. Something
+     spawned in OnActive lives until the cue is removed. List the notify on your feature's installer
+     (`IExtension<GameplayCueNotify>`, as `ShipDamageFeatureInstaller` does).
+   - Part of the model instead: put a handler component on it (`ToggleObjectCueHandler`, `AnimatorBoolCueHandler`, or
+     your own `IGameplayCueHandler`) inside the target's hierarchy.
+   - A new kind of action is a new `GameplayCueAction` subclass; it appears in the picker by itself.
+
+**Verify:** the probes `CueCount "Cue.X:Execute|Active|Removed:n"`, `CueActive` and `CueInactive` in a scenario, on
+both peers. Exact counts catch doubled bursts. Then listen and look in a host + client playtest.
+
 ## 4. Add a menu row or a HUD value
 
 **When:** a button in the start menu, a sub-menu, a number on screen.

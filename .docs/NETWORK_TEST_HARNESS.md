@@ -161,7 +161,8 @@ a timed-out `WaitUntil` aborts the run. A failed `Expect` is recorded and the ru
 every broken expectation.
 
 Commands and probes come from `IScenarioLibrary` classes, one per feature (`NetCatchScenarioLibrary.cs`), plus
-`CommonScenarioLibrary` (`SubjectReady`, `SubjectHasTag`, `SubjectLacksTag`, `NoRemotePlayers`). The catalog entry registers its
+`CommonScenarioLibrary` (`SubjectReady`, `SubjectHasTag`, `SubjectLacksTag`, `NoRemotePlayers`) and `GameplayCueScenarioLibrary`
+(`CueCount "Cue.X:Execute|Active|Removed:n"`, `CueActive`, `CueInactive`; counted on each peer from the scenario start). The catalog entry registers its
 libraries only when that scenario runs, so a library's feature dependencies are resolved only then.
 
 **Late join.** `.JoinLate(seconds)` on the builder makes the host + client menu give the client

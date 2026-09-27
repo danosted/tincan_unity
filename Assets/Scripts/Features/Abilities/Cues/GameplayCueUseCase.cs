@@ -20,8 +20,9 @@ namespace TinCan.Features.Abilities.Cues
     /// first frame sees cues already active as Active; a despawning actor is forgotten without Removed.</item>
     /// <item>Burst cues: <see cref="Play"/>, from the dispatcher or the network relay, runs Execute.</item>
     /// </list>
-    /// Handlers are the components implementing <see cref="IGameplayCueHandler"/> in the actor's own hierarchy (not in a
-    /// nested actor's), found once when the actor is first seen.
+    /// Handlers of a cue are the catalog's notifies for it (<see cref="GameplayCueNotifyHandler"/>) and the components
+    /// implementing <see cref="IGameplayCueHandler"/> in the actor's own hierarchy (not in a nested actor's), found once
+    /// when the actor is first seen. A despawning actor's held presentation returns to the pool.
     /// </summary>
     public sealed class GameplayCueUseCase : ITickable, IInitializable, IDisposable, IGameplayCuePlayer, IGameplayCueFeed
     {
@@ -32,18 +33,26 @@ namespace TinCan.Features.Abilities.Cues
         private readonly INetworkService _network;
         private readonly GameplayCueCatalog _catalog;
         private readonly GameplayCueStateTracker _tracker;
+        private readonly IGameplayCuePresenter _presenter;
+        private readonly Dictionary<GameplayTag, GameplayCueNotifyHandler[]> _notifyHandlers = new();
         private readonly Dictionary<Guid, IGameplayCueHandler[]> _handlers = new();
         private readonly HashSet<Guid> _seenThisTick = new();
 
         public event Action<GameplayCueEventKind, GameplayCueEvent>? CueHandled;
 
-        public GameplayCueUseCase(IAbilityRegistry abilities, IActorRegistry actors, INetworkService network, GameplayCueCatalog catalog, GameplayCueStateTracker tracker)
+        public GameplayCueUseCase(IAbilityRegistry abilities, IActorRegistry actors, INetworkService network, GameplayCueCatalog catalog, GameplayCueStateTracker tracker,
+            IGameplayCuePresenter presenter)
         {
             _abilities = abilities;
             _actors = actors;
             _network = network;
             _catalog = catalog;
             _tracker = tracker;
+            _presenter = presenter;
+            foreach (var cue in catalog.Cues)
+            {
+                _notifyHandlers[cue] = catalog.For(cue).Select(notify => new GameplayCueNotifyHandler(notify, presenter)).ToArray();
+            }
         }
 
         public void Initialize()
@@ -89,6 +98,10 @@ namespace TinCan.Features.Abilities.Cues
         {
             var cueEvent = new GameplayCueEvent(cue, TransformOf(controller), controller, RoleFor(controller));
 
+            if (_notifyHandlers.TryGetValue(cue, out var notifies))
+            {
+                foreach (var notify in notifies) Run(notify, kind, cueEvent);
+            }
             foreach (var handler in handlers)
             {
                 if (handler.Cue == cue) Run(handler, kind, cueEvent);
@@ -160,6 +173,7 @@ namespace TinCan.Features.Abilities.Cues
         private void Forget(IActor actor)
         {
             _tracker.Forget(actor.Id);
+            _presenter.ReleaseActor(actor.Id);
             _handlers.Remove(actor.Id);
         }
     }

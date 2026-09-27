@@ -48,6 +48,7 @@ namespace TinCan.DevTools
             builder.Register<ScenarioTimeline>(Lifetime.Singleton);
             builder.Register<ScenarioSubject>(Lifetime.Singleton);
             builder.Register<CommonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            builder.Register<GameplayCueScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             entry.RegisterLibraries(builder);
             builder.Register<ScenarioEventRecorder>(Lifetime.Singleton).As<IEventObserver>();
             builder.Register<ScenarioUseCase>(Lifetime.Singleton).As<ITickable>();

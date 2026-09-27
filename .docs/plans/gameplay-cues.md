@@ -160,8 +160,26 @@ reason to the edge (`Removed` versus `Teardown`) and skip actions on teardown.
 
 ### Progress
 - **Slice 0 done** (commit `3c5973b`).
-- **Steps 1 and 2 done (2026-09-27, awaiting developer review).** EditMode 410/410. `TagRequest`, `RepairLoop` and
-  `ShipDamageLateJoin` pass solo and host + client with the installer live.
+- **Steps 1 and 2 done** (commit `0c97b47`).
+- **Steps 3 to 5 done (2026-09-27, awaiting developer review).** EditMode 427/427. `ShipDamage`, `RepairLoop` and
+  `ShipDamageLateJoin` pass solo and host + client with the cue probes. On the client the break burst arrives exactly
+  once, and the repair loop goes active exactly once on the predicting owner.
+  - **Actions:** `SpawnPrefab`, `PlaySound` and `HudToast`. They call `GameplayCuePresenter`, which owns the pooled
+    instances, the one-shot sounds and the timed HUD lines. A notify runs through `GameplayCueNotifyHandler`, and a
+    despawning actor's held instances go back to the pool.
+  - **Type picker:** `GameplayCueActionPickerAttribute` + drawer (`Features/Abilities/Editor/`). It is an attribute,
+    because a drawer on the base type is not picked for null managed references.
+  - **Placeholder assets:** WAV clips generated into `Assets/Audio/Cues/`; prefabs in `Assets/Abilities/Cues/Prefabs/`
+    (URP `ParticlesUnlit`, AudioSource loops).
+  - **HUD:** a value-less line shows the key alone (`HudOverlayView`), so a toast reads "Part repaired".
+  - **Probes:** `GameplayCueScenarioLibrary` is registered for every scenario.
+- **Open:**
+  - The burst RPC is unreliable, as designed. Under `Lag100`'s 1% loss, a client-side burst probe can fail about
+    1 run in 100.
+  - The sparks and the sound levels need a human look and listen.
+  - **Audio listener:** the possessed camera's pivot gets an `AudioListener` at runtime (`ThirdPersonLookView`). A
+    client that joins while a cue sound is playing logs Unity's "no audio listeners" warning for about a second, until
+    its player is possessed. Accepted by the developer (2026-09-27): no fallback listener.
 - **Where the code differs from the design above:**
   - **Observers:** `IGameplayCueObserver` became `IGameplayCueFeed`, an event on the use case. VContainer does not
     promise an empty list when no observer is registered.

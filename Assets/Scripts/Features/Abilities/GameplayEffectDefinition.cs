@@ -5,31 +5,6 @@ using System.Collections.Generic;
 
 namespace TinCan.Features.Abilities
 {
-    public enum DurationType
-    {
-        Instant,
-        Duration,
-        Infinite
-    }
-
-    public enum ModifierOp
-    {
-        Add,
-        Multiply,
-        Override
-    }
-
-    [System.Serializable]
-    public struct AttributeModifier
-    {
-        public TinCan.Core.Domain.Abilities.Attributes.GameplayAttribute Attribute;
-        public ModifierOp Operation;
-        public float Value;
-
-        /// <summary>Optional upper bound for instant effects; the modified attribute is clamped to [0, this attribute's current value].</summary>
-        public Core.Domain.Abilities.Attributes.GameplayAttribute? ClampMaxAttribute;
-    }
-
     /// <summary>
     /// ScriptableObject defining a gameplay effect (e.g., Heal, Stun, Buff).
     /// </summary>
@@ -41,5 +16,9 @@ namespace TinCan.Features.Abilities
 
         public List<AttributeModifier> Modifiers;
         public List<GameplayTag> GrantedTags;
+
+        [Tooltip("Cue.* tags for presentation. Duration/Infinite: they join the target's tags while the effect is active " +
+                 "(state cues, late joiners included). Instant: each fires once as a burst on every peer.")]
+        public List<GameplayTag> Cues = new();
     }
 }

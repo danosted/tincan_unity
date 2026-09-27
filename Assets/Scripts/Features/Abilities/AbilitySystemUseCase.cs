@@ -6,6 +6,8 @@ using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Core.Domain.Events;
+using TinCan.Features.Abilities.Cues;
+using VContainer;
 using VContainer.Unity;
 using UnityEngine;
 
@@ -24,17 +26,25 @@ namespace TinCan.Features.Abilities
         private readonly IActorRegistry _actorRegistry;
         private readonly ITimeService _timeService;
         private readonly IEventPublisher _eventPublisher;
+        private readonly IGameplayCueDispatcher _cues; // Null without GameplayCuesFeatureInstaller: effects stay silent
 
         // Internal tracking for specs and effects per actor
         private readonly Dictionary<Guid, List<AbilitySpec>> _actorAbilities = new();
         private readonly Dictionary<Guid, List<ActiveGameplayEffect>> _activeEffects = new();
 
-        public AbilitySystemUseCase(IAbilityRegistry registry, IActorRegistry actorRegistry, ITimeService timeService, IEventPublisher eventPublisher)
+        public AbilitySystemUseCase(IAbilityRegistry registry, IActorRegistry actorRegistry, ITimeService timeService, IEventPublisher eventPublisher, IGameplayCueDispatcher cues = null)
         {
             _registry = registry;
             _actorRegistry = actorRegistry;
             _timeService = timeService;
             _eventPublisher = eventPublisher;
+            _cues = cues;
+        }
+
+        [Inject]
+        public AbilitySystemUseCase(IAbilityRegistry registry, IActorRegistry actorRegistry, ITimeService timeService, IEventPublisher eventPublisher, IObjectResolver resolver)
+            : this(registry, actorRegistry, timeService, eventPublisher, resolver.TryResolve<IGameplayCueDispatcher>(out var cues) ? cues : null)
+        {
         }
 
         public void Initialize()
@@ -105,7 +115,7 @@ namespace TinCan.Features.Abilities
                         case AbilityInputPolicy.OnInputTriggered when justPressed && !spec.IsActive:
                         case AbilityInputPolicy.OnInputReleased when justReleased && !spec.IsActive:
                         case AbilityInputPolicy.OnInputHeld when isPressedNow && !spec.IsActive:
-                            TryActivateAbility(actor, spec.Definition);
+                            TryActivateAbility(actor, spec.Definition, null, GameplayEffectContext.Predicted);
                             break;
                         case AbilityInputPolicy.OnInputHeld when !isPressedNow && spec.IsActive:
                             EndAbility(actor, spec);
@@ -229,7 +239,12 @@ namespace TinCan.Features.Abilities
             }
         }
 
-        public bool TryActivateAbility(IAbilityControllerBase actor, AbilityDefinition definition, IAbilityControllerBase target = null)
+        public bool TryActivateAbility(IAbilityControllerBase actor, AbilityDefinition definition, IAbilityControllerBase target = null) =>
+            TryActivateAbility(actor, definition, target, GameplayEffectContext.Default);
+
+        // The input-driven simulation activates with the predicted context, so the effects it applies can mark their cues
+        // as predicted (the owner plays them itself; the server leaves the owner out when it sends them).
+        private bool TryActivateAbility(IAbilityControllerBase actor, AbilityDefinition definition, IAbilityControllerBase target, GameplayEffectContext context)
         {
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return false;
 
@@ -247,7 +262,7 @@ namespace TinCan.Features.Abilities
                 case (isActive: false, isToggleable: _) when !CanActivateAbility(actor, ability, target):
                     return false;
                 default:
-                    ExecuteAbility(actor, ability, target);
+                    ExecuteAbility(actor, ability, target, context);
                     return true;
             }
         }
@@ -287,7 +302,7 @@ namespace TinCan.Features.Abilities
             return true;
         }
 
-        private void ExecuteAbility(IAbilityControllerBase actor, AbilitySpec spec, IAbilityControllerBase target = null)
+        private void ExecuteAbility(IAbilityControllerBase actor, AbilitySpec spec, IAbilityControllerBase target, GameplayEffectContext context)
         {
             spec.Activate(_timeService.Time);
             _eventPublisher.Publish(new AbilityActivatedEvent(actor.Id, spec.Definition.name));
@@ -299,7 +314,7 @@ namespace TinCan.Features.Abilities
 
                 if (effectRecipient != null)
                 {
-                    spec.AppliedActiveEffect = ApplyEffect(effectRecipient, spec.Definition.ActiveEffect);
+                    spec.AppliedActiveEffect = ApplyEffect(effectRecipient, spec.Definition.ActiveEffect, context);
                     spec.EffectRecipient = effectRecipient;
                 }
             }
@@ -307,7 +322,7 @@ namespace TinCan.Features.Abilities
             // Apply Cooldown Effect to the activator
             if (spec.Definition.CooldownEffect != null)
             {
-                ApplyEffect(actor, spec.Definition.CooldownEffect);
+                ApplyEffect(actor, spec.Definition.CooldownEffect, context);
             }
         }
 
@@ -327,13 +342,19 @@ namespace TinCan.Features.Abilities
             return false;
         }
 
-        public ActiveGameplayEffect ApplyEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition)
+        /// <summary>
+        /// Applies an effect. Its cues follow its duration type: an Instant effect fires each cue once as a burst
+        /// (through the cue dispatcher, with <paramref name="context"/> saying whether this apply is predicted); a
+        /// Duration or Infinite effect puts its cue tags on the actor while active, next to its granted tags.
+        /// </summary>
+        public ActiveGameplayEffect ApplyEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition, GameplayEffectContext context = default)
         {
             var effect = new ActiveGameplayEffect(definition, _timeService.Time);
 
             if (definition.DurationType == DurationType.Instant)
             {
                 ExecuteInstantEffect(actor, definition);
+                ExecuteCues(actor, definition, context);
                 return effect;
             }
 
@@ -345,8 +366,8 @@ namespace TinCan.Features.Abilities
 
             effects.Add(effect);
 
-            // Grant Tags
-            foreach (var tag in definition.GrantedTags)
+            // Grant tags, cue tags included (state cues)
+            foreach (var tag in TagsOf(definition))
             {
                 actor.AddEffectTag(tag);
             }
@@ -378,10 +399,10 @@ namespace TinCan.Features.Abilities
             if (!_activeEffects.TryGetValue(actor.Id, out var effects)) return;
             if (!effects.Remove(effect)) return;
 
-            var grantedEffectTags = effects.SelectMany(e => e.Definition.GrantedTags).ToList();
+            var grantedEffectTags = effects.SelectMany(e => TagsOf(e.Definition)).ToList();
 
-            // Remove Tags
-            foreach (var tag in effect.Definition.GrantedTags)
+            // Remove tags, cue tags included
+            foreach (var tag in TagsOf(effect.Definition))
             {
                 // Note: Only remove if no other active effect grants this tag
                 if (grantedEffectTags.Contains(tag)) continue;
@@ -397,6 +418,32 @@ namespace TinCan.Features.Abilities
             if (parentSpec is { IsActive: true })
             {
                 EndAbility(actor, parentSpec);
+            }
+        }
+
+        // The tags a Duration/Infinite effect puts on its actor while active: granted tags plus cue tags.
+        private static IEnumerable<GameplayTag> TagsOf(GameplayEffectDefinition definition)
+        {
+            if (definition.GrantedTags != null)
+            {
+                foreach (var tag in definition.GrantedTags) yield return tag;
+            }
+            if (definition.Cues != null)
+            {
+                foreach (var cue in definition.Cues)
+                {
+                    if (cue != null) yield return cue;
+                }
+            }
+        }
+
+        private void ExecuteCues(IAbilityControllerBase actor, GameplayEffectDefinition definition, GameplayEffectContext context)
+        {
+            if (_cues == null || definition.Cues == null) return;
+
+            foreach (var cue in definition.Cues)
+            {
+                if (cue != null) _cues.Execute(cue, actor, context);
             }
         }
 

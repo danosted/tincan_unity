@@ -5,6 +5,7 @@ using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Features.Abilities;
+using TinCan.Features.Abilities.Cues;
 using System.Collections.Generic;
 using System;
 using VContainer;
@@ -17,12 +18,14 @@ namespace TinCan.Network.Infrastructure.Abilities
     /// NGO Mediator for the Ability System: replicates one GAS actor's tags and attributes. Tags travel as a
     /// server-written set of names, so a late joiner receives the whole set with the spawn. On a client,
     /// <see cref="HasTag"/> combines that set with the owner's pending tag requests and predicted effect tags
-    /// (<see cref="ClientTagState"/>).
+    /// (<see cref="ClientTagState"/>). It also carries burst cues from the server to the clients (<see cref="IGameplayCueRelay"/>).
     /// </summary>
-    public class AbilityNetworkMediator : NetworkMediator, IAbilityControllerBase
+    public class AbilityNetworkMediator : NetworkMediator, IAbilityControllerBase, IGameplayCueRelay
     {
         private AbilitySystemUseCase _abilitySystem = null!; // Injected
         private IGameplayTagRegistry? _tagRegistry; // Injected when the gameplay tags installer is active
+        private IGameplayCuePlayer? _cuePlayer; // Injected when the gameplay cues installer is active
+        private readonly List<ulong> _cueTargets = new();
         private GameplayTagContainer _activeTags = new GameplayTagContainer(null);
         private readonly ClientTagState _clientTags = new();
         private readonly List<string> _replicatedTagScratch = new();
@@ -101,6 +104,7 @@ namespace TinCan.Network.Infrastructure.Abilities
             _abilitySystem = abilitySystem;
             // Optional: registered by GameplayTagsFeatureInstaller, which can be switched off.
             _tagRegistry = resolver.TryResolve<IGameplayTagRegistry>(out var registry) ? registry : null;
+            _cuePlayer = resolver.TryResolve<IGameplayCuePlayer>(out var cuePlayer) ? cuePlayer : null;
         }
 
         // IAbilityController Implementation
@@ -313,6 +317,32 @@ namespace TinCan.Network.Infrastructure.Abilities
             {
                 _abilitySystem.SendGameplayEvent(eventData);
             }
+        }
+
+        public bool IsOwnedLocally => IsSpawned && IsOwner;
+
+        public void RelayCue(GameplayTag cue, bool excludeOwner)
+        {
+            if (!IsServer || !IsSpawned || cue == null) return;
+
+            // The host already played it locally; the owner may have predicted it.
+            _cueTargets.Clear();
+            foreach (ulong clientId in NetworkManager.ConnectedClientsIds)
+            {
+                if (clientId == NetworkManager.ServerClientId || (excludeOwner && clientId == OwnerClientId)) continue;
+                _cueTargets.Add(clientId);
+            }
+            if (_cueTargets.Count == 0) return;
+
+            ExecuteCueClientRpc(cue.name, new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = _cueTargets } });
+        }
+
+        // Unreliable: a burst is presentation, and a late or lost one must not stall anything.
+        [ClientRpc(Delivery = RpcDelivery.Unreliable)]
+        private void ExecuteCueClientRpc(string cueTag, ClientRpcParams rpcParams = default)
+        {
+            if (IsServer || _cuePlayer == null) return;
+            if (TryResolveTag(cueTag, out var cue)) _cuePlayer.Play(cue, this);
         }
     }
 }

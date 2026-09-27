@@ -121,14 +121,11 @@ MonoBehaviour:
   _playerPrefab: {fileID: 925472637626500556, guid: fc298da6d560fb04fba62a7e6f38f196, type: 3}
   _airshipPrefab: {fileID: 4741218207008056854, guid: f227451d8202511408d6163b0a319dd4, type: 3}
   _possessionMediatorPrefab: {fileID: 7436285547912372809, guid: d61734141ac623b43b6120ccf6b09da6, type: 3}
-  _buildPlacementMediatorPrefab: {fileID: 6087914418897988617, guid: 535cfccc380ba564798456e50501f552, type: 3}
   _inputBindingConfig: {fileID: 11400000, guid: aee68fefa381a6847b1b923c5ba0df4c, type: 2}
   _cloudBoundaryConfig: {fileID: 11400000, guid: 61985f3e59da9d74d9b896a99f745055, type: 2}
   _cloudVisualProfile: {fileID: 11400000, guid: 3ab83aa9f9fd85d4590dcc01cc401635, type: 2}
-  _buildingTag: {fileID: 11400000, guid: 2804153ad74f5a943ac83979c92b845a, type: 2}
-  _buildablePrefabs:
-  - {fileID: 2084250224356171082, guid: fd433d6689aad314caa0c6811c337d1d, type: 3}
   _doorInteractionTag: {fileID: 0}
+  _featureProfile: {fileID: 0}
 --- !u!1 &6248915608490685301
 GameObject:
   m_ObjectHideFlags: 0

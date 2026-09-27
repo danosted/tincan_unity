@@ -17,7 +17,7 @@ namespace TinCan.Network.Infrastructure.Abilities
     /// <summary>
     /// NGO Mediator for the Ability System: replicates one GAS actor's tags and attributes. Tags travel as a
     /// server-written set of names, so a late joiner receives the whole set with the spawn. On a client,
-    /// <see cref="HasTag"/> combines that set with the owner's pending tag requests and predicted effect tags
+    /// <see cref="HasTag"/> combines that set with the owner's predicted effect tags
     /// (<see cref="ClientTagState"/>). It also carries burst cues from the server to the clients (<see cref="IGameplayCueRelay"/>).
     /// </summary>
     public class AbilityNetworkMediator : NetworkMediator, IAbilityControllerBase, IGameplayCueRelay
@@ -131,34 +131,26 @@ namespace TinCan.Network.Infrastructure.Abilities
             else if (IsOwner) _clientTags.RemovePredicted(tag.name);
         }
 
+        // Tags are server-authoritative: a client never writes one (its effects predict through AddEffectTag).
         public void AddTag(GameplayTag tag)
         {
-            if (IsServer)
-            {
-                _activeTags.AddTag(tag);
-                var name = ToWireName(tag);
-                if (!_replicatedTags.Contains(name)) _replicatedTags.Add(name);
-            }
-            else if (IsOwner)
-            {
-                _clientTags.AddOptimistic(tag.name);
-                RequestTagChangeServerRpc(tag.name, true);
-            }
+            if (!IsServer) { RejectClientTagWrite(tag); return; }
+
+            _activeTags.AddTag(tag);
+            var name = ToWireName(tag);
+            if (!_replicatedTags.Contains(name)) _replicatedTags.Add(name);
         }
 
         public void RemoveTag(GameplayTag tag)
         {
-            if (IsServer)
-            {
-                _activeTags.RemoveTag(tag);
-                _replicatedTags.Remove(ToWireName(tag));
-            }
-            else if (IsOwner)
-            {
-                _clientTags.RemoveOptimistic(tag.name);
-                RequestTagChangeServerRpc(tag.name, false);
-            }
+            if (!IsServer) { RejectClientTagWrite(tag); return; }
+
+            _activeTags.RemoveTag(tag);
+            _replicatedTags.Remove(ToWireName(tag));
         }
+
+        private void RejectClientTagWrite(GameplayTag tag) =>
+            Debug.LogError($"[AbilityNetworkMediator] A client tried to write tag '{tag.name}'. Tags change only on the server or through an effect.", this);
 
         private FixedString64Bytes ToWireName(GameplayTag tag)
         {
@@ -169,19 +161,6 @@ namespace TinCan.Network.Infrastructure.Abilities
             var name = new FixedString64Bytes();
             name.CopyFromTruncated(tag.name);
             return name;
-        }
-
-        [ServerRpc]
-        private void RequestTagChangeServerRpc(string tagName, bool add)
-        {
-            if (!TryResolveTag(tagName, out var tag))
-            {
-                Debug.LogWarning($"[AbilityNetworkMediator] Server could not find tag with name: {tagName}");
-                return;
-            }
-
-            if (add) AddTag(tag);
-            else RemoveTag(tag);
         }
 
         // Tags arrive by name. The registry (GameplayTagsFeatureInstaller) is the source of truth; without it, fall

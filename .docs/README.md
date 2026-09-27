@@ -107,7 +107,7 @@ Ranked by value for effort. Tick them off as they land.
       the silent-break bugs.
 - [ ] **`.tools/test.ps1` and `.tools/check-docs.ps1`**: run EditMode tests; verify every backticked path in
       `.docs/*.md` exists. Stepping stone to CI.
-- [ ] **Migrate legacy features onto installers** (airship, humanoid, possession, build mode), one PR each, so
+- [ ] **Migrate legacy features onto installers** (airship, humanoid, possession), one PR each, so
       `ProjectLifetimeScope.cs` stops being a merge hotspot.
 - [ ] **GitHub Actions EditMode tests** via the Unity CLI. Blocked on licence and runner; standalone builds are
       also blocked today (see CODE_MAP traps).

@@ -140,8 +140,8 @@ namespace TinCan.Tests.EditMode
             Assert.That(client.Has(parent, registry), Is.EqualTo(server.HasTag(parent)));
             Assert.That(client.Has(parent, null), Is.False, "without the registry only exact names match");
 
-            client.RemoveOptimistic(child.name);
-            Assert.That(client.Has(parent, registry), Is.False, "an optimistic remove hides the held child");
+            client.SetReplicated(new string[0]);
+            Assert.That(client.Has(parent, registry), Is.False, "the server removed the child");
 
             client.AddPredicted(child.name);
             Assert.That(client.Has(parent, registry), Is.True, "a predicted child matches too");

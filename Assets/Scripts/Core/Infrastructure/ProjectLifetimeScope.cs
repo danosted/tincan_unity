@@ -38,16 +38,9 @@ namespace TinCan.Core.Infrastructure
 
         [Header("APIs & Configs")]
         [SerializeField] private GameObject _possessionMediatorPrefab;
-        [SerializeField] private GameObject _buildPlacementMediatorPrefab;
         [SerializeField] private TinCan.Core.Domain.Abilities.InputBindingConfig _inputBindingConfig;
         [SerializeField] private CloudBoundaryConfig _cloudBoundaryConfig;
         [SerializeField] private CloudVisualProfile _cloudVisualProfile;
-
-        [Header("Abilities")]
-        [SerializeField] private TinCan.Core.Domain.Abilities.Tags.GameplayTag _buildingTag;
-
-        [Header("Building Modules")]
-        [SerializeField] private List<GameObject> _buildablePrefabs = new();
 
         [Header("Airship Components")]
         [SerializeField] private GameplayTag _doorInteractionTag;
@@ -113,11 +106,6 @@ namespace TinCan.Core.Infrastructure
             // builder.Register<VehicleBoardingUseCase>(Lifetime.Singleton).As<IVehicleBoardingUseCase>();
             builder.Register<InteractionOrchestrator>(Lifetime.Singleton).As<IInteractionOrchestrator>();
             builder.Register<ModuleSpawningService>(Lifetime.Singleton).As<IModuleSpawningService>();
-            builder.Register<ModulePlacementUseCase>(Lifetime.Singleton).As<IModulePlacementUseCase>();
-
-            // VContainer cannot inject parameters into classes resolved via EntryPoints using standard Register.
-            // For BuildModeUseCase, we register it as an EntryPoint and pass the parameter directly to the EntryPoint builder.
-            // Registration is handled inside UseEntryPoints below.
 
             builder.Register<PossessionUseCase>(Lifetime.Singleton)
                 .AsSelf()
@@ -148,7 +136,6 @@ namespace TinCan.Core.Infrastructure
                 builder.Register<InputGate>(Lifetime.Singleton);
                 entryPoints.Add<UnityInputService>().As<IInputService>();
                 entryPoints.Add<EventOrchestratorUseCase>().As<IEventOrchestrator>();
-                entryPoints.Add<BuildModeUseCase>().WithParameter("buildingTag", _buildingTag);
             });
 
             // Handle multi-instance actors in the scene hierarchy
@@ -208,25 +195,6 @@ namespace TinCan.Core.Infrastructure
                             manager.Subscribe();
                         }
                     });
-                container.AddNetworkedPrefab(
-                    networkManager: networkManager,
-                    prefab: _buildPlacementMediatorPrefab,
-                    onServerStarted: () =>
-                    {
-                        var instance = Instantiate(_buildPlacementMediatorPrefab);
-                        container.InjectGameObject(instance);
-                        var netObj = instance.GetComponent<NetworkObject>();
-                        netObj.Spawn();
-                        DontDestroyOnLoad(instance);
-                    });
-
-                // Register all buildable module prefabs
-                foreach (var modulePrefab in _buildablePrefabs)
-                {
-                    if (modulePrefab == null) continue;
-                    container.AddNetworkedPrefab(networkManager, modulePrefab);
-                }
-
                 // Find and inject all "Complete" NetworkMediator actors (e.g. FreeCamera) to ensure they have their Registry reference
                 foreach (var character in FindObjectsByType<NetworkMediator>(FindObjectsInactive.Exclude))
                 {

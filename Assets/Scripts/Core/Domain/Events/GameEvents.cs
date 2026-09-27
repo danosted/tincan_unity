@@ -70,17 +70,4 @@ namespace TinCan.Core.Domain.Events
         public override string ToString() => $"Coordinated event ended: {EventName} (Success: {Success})";
     }
 
-    public readonly struct BuildModeToggledEvent
-    {
-        public readonly Guid ActorId;
-        public readonly bool IsBuilding;
-
-        public BuildModeToggledEvent(Guid actorId, bool isBuilding)
-        {
-            ActorId = actorId;
-            IsBuilding = isBuilding;
-        }
-
-        public override string ToString() => $"Actor {ActorId} build mode: {(IsBuilding ? "entered" : "exited")}";
-    }
 }

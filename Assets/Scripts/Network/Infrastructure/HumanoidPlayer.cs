@@ -27,18 +27,9 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(InteractorControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
-    public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView, IBufferedInputSource, IPredictedHumanoid, TinCan.Features.Airship.IBuilder, IGameplayCueRelay
+    public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView, IBufferedInputSource, IPredictedHumanoid, IGameplayCueRelay
     {
         public override bool IsSimulating => IsSpawned && (IsServer || IsOwner);
-
-        [Header("Building / Crafting (Temporary)")]
-        [SerializeField] private GameObject? _selectedModulePrefab;
-
-        public GameObject? SelectedModulePrefab
-        {
-            get => _selectedModulePrefab;
-            set => _selectedModulePrefab = value;
-        }
 
         private HumanoidControllerView _movement = null!;
         private ThirdPersonLookView _look = null!;

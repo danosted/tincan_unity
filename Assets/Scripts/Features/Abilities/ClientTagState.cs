@@ -6,28 +6,21 @@ using TinCan.Core.Domain.Abilities.Tags;
 namespace TinCan.Features.Abilities
 {
     /// <summary>
-    /// A client's view of one actor's gameplay tags, by name. Three sources combine:
+    /// A client's view of one actor's gameplay tags, by name. Two sources combine:
     /// <list type="bullet">
     /// <item>the server's replicated set, which is the truth and reaches late joiners;</item>
-    /// <item>the owner's optimistic adds and removes (tags it asked the server to change), which hold only until the
-    /// server's set changes that tag, since that change is the server's answer;</item>
     /// <item>the owner's predicted effect tags, which the owner's own simulation adds and removes.</item>
     /// </list>
+    /// Clients never write tags themselves; only effects and the server change them.
     /// Queries match like the server's <see cref="GameplayTagContainer"/>: a held tag matches the query tag or any of
     /// its parents.
     /// </summary>
     public sealed class ClientTagState
     {
         private readonly HashSet<string> _replicated = new(StringComparer.Ordinal);
-        private readonly HashSet<string> _optimisticAdds = new(StringComparer.Ordinal);
-        private readonly HashSet<string> _optimisticRemoves = new(StringComparer.Ordinal);
         private readonly HashSet<string> _predicted = new(StringComparer.Ordinal);
-        private readonly List<string> _changed = new();
 
-        public bool Has(string name) =>
-            _predicted.Contains(name) ||
-            _optimisticAdds.Contains(name) ||
-            (_replicated.Contains(name) && !_optimisticRemoves.Contains(name));
+        public bool Has(string name) => _predicted.Contains(name) || _replicated.Contains(name);
 
         /// <summary>
         /// True when a held tag is <paramref name="query"/> or its child (<see cref="GameplayTag.IsChildOf"/>), the server's rule.
@@ -39,50 +32,23 @@ namespace TinCan.Features.Abilities
             if (Has(query.name)) return true;
             if (registry == null) return false;
 
-            return AnyChildOf(_predicted, query, registry)
-                || AnyChildOf(_optimisticAdds, query, registry)
-                || AnyChildOf(_replicated, query, registry, except: _optimisticRemoves);
+            return AnyChildOf(_predicted, query, registry) || AnyChildOf(_replicated, query, registry);
         }
 
-        private static bool AnyChildOf(HashSet<string> names, GameplayTag query, IGameplayTagRegistry registry, HashSet<string>? except = null)
+        private static bool AnyChildOf(HashSet<string> names, GameplayTag query, IGameplayTagRegistry registry)
         {
             foreach (var name in names)
             {
-                if (except != null && except.Contains(name)) continue;
                 if (registry.TryGet(name, out var held) && held.IsChildOf(query)) return true;
             }
             return false;
         }
 
-        /// <summary>Replaces the server's set. Every tag whose presence changed drops its optimistic entry.</summary>
+        /// <summary>Replaces the server's set.</summary>
         public void SetReplicated(IEnumerable<string> names)
         {
-            _changed.Clear();
-            _changed.AddRange(_replicated);
             _replicated.Clear();
-            foreach (var name in names)
-            {
-                if (!_replicated.Add(name)) continue;
-                if (!_changed.Remove(name)) _changed.Add(name); // present before: unchanged; absent before: added
-            }
-
-            foreach (var name in _changed)
-            {
-                _optimisticAdds.Remove(name);
-                _optimisticRemoves.Remove(name);
-            }
-        }
-
-        public void AddOptimistic(string name)
-        {
-            _optimisticRemoves.Remove(name);
-            _optimisticAdds.Add(name);
-        }
-
-        public void RemoveOptimistic(string name)
-        {
-            _optimisticAdds.Remove(name);
-            _optimisticRemoves.Add(name);
+            _replicated.UnionWith(names);
         }
 
         public void AddPredicted(string name) => _predicted.Add(name);
@@ -92,8 +58,6 @@ namespace TinCan.Features.Abilities
         public void Clear()
         {
             _replicated.Clear();
-            _optimisticAdds.Clear();
-            _optimisticRemoves.Clear();
             _predicted.Clear();
         }
     }

@@ -6,19 +6,6 @@ using VContainer;
 
 namespace TinCan.DevTools.Scenarios
 {
-    /// <summary>A scenario plus the step libraries it needs, registered only when it is the one being run.</summary>
-    public sealed class ScenarioEntry
-    {
-        public Scenario Scenario { get; }
-        public Action<IContainerBuilder> RegisterLibraries { get; }
-
-        public ScenarioEntry(Scenario scenario, Action<IContainerBuilder> registerLibraries)
-        {
-            Scenario = scenario;
-            RegisterLibraries = registerLibraries;
-        }
-    }
-
     /// <summary>
     /// Every scenario the harness can run by name (<c>-scenario &lt;name&gt;</c>). Scenarios are code, versioned and
     /// reviewed with the feature they test. Add one per feature slice; see .docs/NETWORK_TEST_HARNESS.md.
@@ -31,6 +18,7 @@ namespace TinCan.DevTools.Scenarios
         /// </summary>
         public static readonly ScenarioEntry NetCatch = new(
             new Scenario.Builder("NetCatch")
+                .InScene(TestScenes.NetCatch)
                 .Describe("Subject swings a net at a can spawned in reach; the can disappears and the jerry-can supply grows.")
                 .Timeout(90f)
                 .Arrange(s => s
@@ -60,6 +48,7 @@ namespace TinCan.DevTools.Scenarios
         /// </summary>
         public static readonly ScenarioEntry TagRequest = new(
             new Scenario.Builder("TagRequest")
+                .InScene(TestScenes.Core)
                 .Describe("Subject enters build mode; the server resolves State.Building by name through the tag registry.")
                 .Timeout(90f)
                 .Arrange(s => s
@@ -85,6 +74,7 @@ namespace TinCan.DevTools.Scenarios
         /// </summary>
         public static readonly ScenarioEntry EquipCycle = new(
             new Scenario.Builder("EquipCycle")
+                .InScene(TestScenes.Core)
                 .Describe("Equip net -> swing -> swap to jerry can -> unequip; grants and visuals follow on server and owner.")
                 .Timeout(90f)
                 .Arrange(s => s
@@ -132,6 +122,7 @@ namespace TinCan.DevTools.Scenarios
         /// </summary>
         public static readonly ScenarioEntry ShipDamage = new(
             new Scenario.Builder("ShipDamage")
+                .InScene(TestScenes.ShipDamage)
                 .Describe("Break part 0 -> marker, damaged tag, HUD and fuel leak on both peers -> restore -> all clear.")
                 .Timeout(90f)
                 .Arrange(s => s
@@ -173,6 +164,7 @@ namespace TinCan.DevTools.Scenarios
         /// </summary>
         public static readonly ScenarioEntry RepairLoop = new(
             new Scenario.Builder("RepairLoop")
+                .InScene(TestScenes.ShipDamage)
                 .Describe("Break part 0 -> give the repair tool -> hold Primary facing it -> part whole, leak stopped, on both peers.")
                 .Timeout(90f)
                 .Arrange(s => s
@@ -216,6 +208,7 @@ namespace TinCan.DevTools.Scenarios
         /// </summary>
         public static readonly ScenarioEntry AimPitch = new(
             new Scenario.Builder("AimPitch")
+                .InScene(TestScenes.ShipDamage)
                 .Describe("Look down 30 deg -> EyeAim scan misses part 0; look level -> it hits, on the owner and on the server.")
                 .Timeout(90f)
                 .Arrange(s => s
@@ -257,6 +250,7 @@ namespace TinCan.DevTools.Scenarios
         /// </summary>
         public static readonly ScenarioEntry InteractRack = new(
             new Scenario.Builder("InteractRack")
+                .InScene(TestScenes.ShipDamage)
                 .Describe("Face the tool rack -> prompt shows it -> press Interact -> server gives the tool -> press again -> returned.")
                 .Timeout(90f)
                 .Arrange(s => s
@@ -287,6 +281,8 @@ namespace TinCan.DevTools.Scenarios
             });
 
         private static readonly ScenarioEntry[] All = { NetCatch, TagRequest, EquipCycle, ShipDamage, RepairLoop, AimPitch, InteractRack };
+
+        public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 
         public static string Names => string.Join(", ", All.Select(entry => entry.Scenario.Name));
 

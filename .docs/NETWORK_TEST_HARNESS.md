@@ -135,8 +135,10 @@ out, or a modal dialog is open). The script guards against the MPPM and Editor f
   entry in the `CODE_MAP.md` traps), so a dirty scene now means a real unsaved edit.
 - A wedged pipeline is woken by focusing the Editor window. With `-RestartEditor`, the script also uses
   `unity close --force` and `unity open` as a last resort, which discards unsaved changes.
-- A clone that came back from a relaunch with an empty scene gets the host's scene opened before a host + client
-  run. Otherwise it "plays" nothing and never joins.
+- It opens the scenario's [test-range scene](#test-range) and restores your scene at the end.
+- Before a host + client run it reopens the host's scene in every clone. Otherwise a clone that relaunched with an
+  empty scene "plays" nothing, and one holding an old copy of a rebuilt scene runs that.
+- Each scenario tier line shows how long the run took.
 
 The menu also waits for Player 2 to report `Launched` before entering Play, and retries MPPM's tag file when a clone
 holds it.
@@ -176,12 +178,69 @@ after the summary is written. Flags, also usable as MPPM player tags: `scenario:
 
 ### Adding a scenario for a feature slice
 
-1. Put the commands and probes the feature needs in a new `IScenarioLibrary` under `DevTools/Scenarios/`.
+1. **Pick the area scene** the scenario runs in (see [Test range](#test-range) below). Reuse an area when the
+   feature belongs to it. Add an area only when the feature needs installers no existing area loads.
+2. **Put the commands and probes** the feature needs in an `IScenarioLibrary` under `DevTools/Scenarios/`.
    - Commands act on the server through the feature's own interfaces.
    - Probes read state that is replicated to the peer running them.
-2. Add a `ScenarioEntry` to `ScenarioCatalog` and list it in `All`.
-3. Add a `(Host)` and a `(Host + Client, Lag100)` menu pair in `DevTools/Editor/ScenarioMenu.cs`.
-4. The slice is done when `.\.tools\verify.ps1 -Scenario <Name>` exits 0.
+   - Stand the subject with `ScenarioPlacement.OnGround`, never at a height computed from something else.
+3. **Add a `ScenarioEntry`** to `ScenarioCatalog`, with `.InScene(TestScenes.<Area>)`, and list it in `All`.
+4. **Add a `(Host)` and a `(Host + Client, Lag100)` menu pair** in `DevTools/Editor/ScenarioMenu.cs`.
+5. **The slice is done** when `.\.tools\verify.ps1 -Scenario <Name>` exits 0.
+
+The same steps as an agent procedure: `.claude/skills/add-scenario/SKILL.md` (Claude) and
+`.github/prompts/add-scenario.prompt.md` (Copilot).
+
+## Test range
+
+Scenarios run in small scenes built for testing, not in the POC scene. A scenario loads only its feature area, on a
+bare ship, with no clouds or scenery. That cuts false failures: there are no ropes or stairs to block rays, and no
+features the scenario did not ask for. It does not make runs noticeably faster. A Play session's fixed cost (entering
+and leaving Play mode with domain and scene reload, connecting, spawning) is about 18 s whatever the scene holds;
+see the timings in `.docs/plans/test-range.md`.
+
+| Part | Where | What |
+|---|---|---|
+| Test ship | `Assets/Prefabs/Test/TestShip_Prefab.prefab` | Variant of `Airship_Prefab`: same components, no art. A flat deck with its top at ship-local y -3.49 (the real mid deck), so authored fixture poses still land on a deck. Low rails. |
+| Area scenes | `Assets/Scenes/Test/` (`TestScenes.cs`) | One per feature area. Root objects: the `GameLifetimeScope` and `NetworkService` prefabs, a sun, a fall catcher, and the cloud view with its visuals off. Only the scope's feature profile differs. |
+| Profiles | `Assets/Settings/FeatureProfiles/Test/` | `Profile_Test_Core` (UI, cloud submersion, harness, tags, items, targeting, interaction, test range), plus one profile per area that includes it. |
+| Test-range installer | `Assets/Settings/FeatureProfiles/Test/TestRangeFeatureInstaller.asset` | Registers the test ship with NGO at runtime. The real ship is registered through `DefaultNetworkPrefabs`, which is not edited. |
+
+Stations come from the area profile's installers, at their authored poses, exactly as in the game. Scenarios only
+move the subject.
+
+| Area scene | Profile adds | Scenarios |
+|---|---|---|
+| `Test_Core` | nothing | TagRequest, EquipCycle |
+| `Test_ShipDamage` | Fuel, ShipDamage | ShipDamage, RepairLoop, AimPitch, InteractRack |
+| `Test_NetCatch` | Fuel, FlyingCan | NetCatch |
+
+**The scenes are generated.** `DevTools/Editor/TestRangeSceneBuilder.cs` (**TinCan > Dev > Test Range > Rebuild
+Scenes**) builds every scene from its `Areas` table and adds them to the build list. Clients load the host's scene
+through NGO, so a scene missing from the build list leaves the client out. Change the set-up in the builder and
+rebuild; do not edit a test scene by hand. `ScenarioSceneTests` fails if a scenario's scene is missing or not in the
+build list.
+
+**Adding an area:** create its profile in `Assets/Settings/FeatureProfiles/Test/` (include `Profile_Test_Core`), add
+a constant to `TestScenes`, add a row to `TestRangeSceneBuilder.Areas`, and run Rebuild Scenes.
+
+**Running:** the scenario menu opens the scenario's scene first, and reopens your scene when Play ends. It refuses to
+switch while the open scene has unsaved changes. `verify.ps1` opens the scene itself, reopens it in every MPPM clone,
+and restores your scene at the end. `.InScene(null)` runs a scenario in whatever scene is open, for a deliberate
+check in the POC scene.
+
+### Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| Solo passes, host + client: `until SubjectReady timed out`, client report missing | The clone ran an old copy of the scene. Clones do not reload a scene that changed on disk; `verify.ps1` reopens it in each clone. From the menu, reopen the scene in Player 2 by hand. |
+| `VContainerException ... CloudEnvironmentView` | The area profile lacks `CloudSubmersionFeatureInstaller`. Include `Profile_Test_Core`. |
+| No ship, players stand on the grey fall catcher | The scene's scope has no profile, so the test-range installer did not register the ship. Run Rebuild Scenes. |
+| A station is missing | Its installer is not in the area's profile. |
+| Exit code 2, "modal" | A dialog is open in the Editor. Close it; with unsaved scene changes rerun with `-SaveDirtyScenes`. |
+| Host + client refused, prefab hashes differ | See the note printed by `verify.ps1`: `EditorUtility.SetDirty(prefab)` and `AssetDatabase.SaveAssets()` on the host. |
+| A teleported subject floats or sinks | Place with `ScenarioPlacement.OnGround`. On the server, a client's body may still be falling when the command runs. |
+| Debug lines from the network tick flicker | Tick-rate drawing needs a hold time (`TargetingGizmos.DrawDebug(..., seconds)`); a zero-length line lasts one frame. |
 
 ## Extending
 

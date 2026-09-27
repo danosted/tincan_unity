@@ -37,6 +37,7 @@ For where code goes, see [`CODE_MAP.md`](./CODE_MAP.md); for the design rules, [
 - **Fail Fast:** Use Guard clauses at the top of methods instead of deep nesting; prefer early returns over wrapping the remaining logic in nested `if` blocks.
 - **Pattern Matching:** Prefer switch expressions (`x switch { ... }`) and pattern-matching switch statements over long if/else-if chains when branching on an enum or a small combination of conditions. Use tuple patterns (e.g. `switch (a, b) { case (true, false): ... }`) for multi-condition matrices, and `when` guards for conditional arms. One arm per case/condition.
 - **Named Tuples:** Use named tuple elements (e.g. `(IActor Requester, IActor Target)`) instead of positional tuples when returning or destructuring multiple values, for clarity at call sites.
+- **One type per file:** Each class, interface, struct and enum gets its own file, named after the type. The only exception is a type fully isolated to its containing class (a private nested type, or one used nowhere else). Older files break this rule: do not sweep them, but split a file when you touch it anyway, as part of that change.
 - **Regions:** Do not use `#region`. If a class is too large and needs regions, it should be refactored into multiple classes.
 
 ## 7. Tests

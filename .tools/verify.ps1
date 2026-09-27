@@ -31,6 +31,10 @@ If an open scene is marked modified, save it instead of stopping. Unity otherwis
 If the Editor pipeline stays unresponsive after focusing its window, close it (unity close --force, which discards
 unsaved changes) and reopen it (unity open). Without this switch the script stops with exit code 2 instead.
 
+.PARAMETER KeepScene
+Leave the scenario's test-range scene open instead of reopening the scene that was open when the script started.
+Faster when running several verifies in a row; the next run then skips the scene switch.
+
 .EXAMPLE
 .\.tools\verify.ps1 -Scenario NetCatch
 .\.tools\verify.ps1 -Scenario NetCatch -UpTo Solo -TestFilter Scenario
@@ -46,7 +50,8 @@ param(
     [string]$TestFilter,
     [int]$ScenarioTimeoutSeconds = 240,
     [switch]$SaveDirtyScenes,
-    [switch]$RestartEditor
+    [switch]$RestartEditor,
+    [switch]$KeepScene
 )
 
 $ErrorActionPreference = "Stop"
@@ -227,7 +232,8 @@ function Invoke-Tests {
 }
 
 # MPPM clones can come back from a relaunch with an empty untitled scene. They then "play" nothing and never join,
-# so before a host + client run, open the host's active scene in every clone that has a different one.
+# so before a host + client run, open the host's active scene in every clone. A clone that already has it open reopens
+# it too: clones do not reload a scene that changed on disk (for example after Rebuild Scenes), and would run the stale one.
 function Sync-CloneScenes {
     $main = Invoke-Unity @("list_open_scenes") 20
     $mainScene = @($main.scenes | Where-Object { $_.isActive })[0].path
@@ -239,9 +245,8 @@ function Sync-CloneScenes {
     foreach ($clone in $clones) {
         $scenes = Invoke-Unity @("list_open_scenes", "--project-path", $clone) 20
         $active = @($scenes.scenes | Where-Object { $_.isActive })[0].path
-        if ($active -eq $mainScene) { continue }
-
         Invoke-Unity @("open_scene", "--project-path", $clone, "--path", $mainScene) 60 | Out-Null
+        if ($active -eq $mainScene) { continue }
         Write-Tier "Editor" "note" "clone $(Split-Path $clone -Leaf) had '$active' open; opened $mainScene"
     }
 }
@@ -269,8 +274,32 @@ function Confirm-NetworkPrefabsMatch {
     }
 }
 
+# Each scenario names its test-range scene (Scenario.ScenePath, see .docs/NETWORK_TEST_HARNESS.md "Test range"). Open it
+# in the main Editor before the run, so the clone sync below copies it and the menu has nothing to switch. The scene
+# that was open first is reopened when the script finishes.
+function Open-ScenarioScene {
+    $code = 'return TinCan.DevTools.Scenarios.ScenarioCatalog.TryGet("{0}", out var e) ? (e.Scenario.ScenePath ?? "") : "?";' -f $Scenario
+    $path = (Invoke-Unity @("eval", "--code", $code) 30).result
+    if ($path -eq "?") { Stop-Unusable "unknown scenario '$Scenario' (see DevTools/Scenarios/ScenarioCatalog.cs)" }
+    if (-not $path) { return }
+
+    $open = Invoke-Unity @("list_open_scenes") 20
+    $active = @($open.scenes | Where-Object { $_.isActive })[0].path
+    if ($active -eq $path) { return }
+    if (-not $script:ReturnScene) { $script:ReturnScene = $active }
+    Invoke-Unity @("open_scene", "--path", $path) 60 | Out-Null
+    Write-Tier "Editor" "note" "opened $path for $Scenario"
+}
+
+function Restore-StartScene {
+    if ($KeepScene -or -not $script:ReturnScene) { return }
+    Invoke-Unity @("open_scene", "--path", $script:ReturnScene) 60 | Out-Null
+    Write-Tier "Editor" "note" "reopened $script:ReturnScene"
+}
+
 function Invoke-Scenario([string]$mode) {
     Confirm-ScenesClean
+    Open-ScenarioScene
     if ($mode -eq "Duo") { Sync-CloneScenes; Confirm-NetworkPrefabsMatch }
     $status = Invoke-Unity @("editor_status") 15
     if ($status.playMode -and $status.playMode -ne "stopped") {
@@ -282,6 +311,7 @@ function Invoke-Scenario([string]$mode) {
     $summaryPath = Join-Path $directory "latest-summary.json"
     $menu = if ($mode -eq "Solo") { "TinCan/Dev/Scenarios/$Scenario (Host)" } else { "TinCan/Dev/Scenarios/$Scenario (Host + Client, Lag100)" }
     $started = (Get-Date).ToUniversalTime()
+    $clock = [Diagnostics.Stopwatch]::StartNew()
 
     $trigger = Invoke-Unity @("menu", "--path", $menu) 30
     if ($trigger.raw -and $trigger.raw -match "error|not found") { Stop-Unusable "menu '$menu' failed: $($trigger.raw)" }
@@ -302,7 +332,7 @@ function Invoke-Scenario([string]$mode) {
 
     $summary = Get-Content $summaryPath -Raw | ConvertFrom-Json -Depth 20
     $state = if ($summary.passed) { "PASS" } else { "FAIL" }
-    Write-Tier $mode $state "$Scenario ($($summary.mode)) -> $summaryPath"
+    Write-Tier $mode $state "$Scenario ($($summary.mode), $([int]$clock.Elapsed.TotalSeconds) s) -> $summaryPath"
     foreach ($peer in $summary.peers) {
         Write-Host ("  {0,-8} {1,-8} {2}" -f $peer.role, $peer.status, $peer.report)
         foreach ($failure in @($peer.failures)) { if ($failure) { Write-Host "    - $failure" -ForegroundColor Red } }
@@ -316,6 +346,7 @@ function Invoke-Scenario([string]$mode) {
 $modal = Restore-Editor
 if ($modal) { Stop-Unusable $modal }
 
+$exitCode = 0
 foreach ($tier in $Tiers) {
     $ok = switch ($tier) {
         "Compile" { Invoke-Compile }
@@ -323,7 +354,8 @@ foreach ($tier in $Tiers) {
         "Solo" { Invoke-Scenario "Solo" }
         "Duo" { Invoke-Scenario "Duo" }
     }
-    if (-not $ok) { exit 1 }
+    if (-not $ok) { $exitCode = 1; break }
     if ($tier -eq $UpTo) { break }
 }
-exit 0
+Restore-StartScene
+exit $exitCode

@@ -5,6 +5,7 @@ using NUnit.Framework;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Features.Abilities;
 using TinCan.Features.Airship.Damage;
+using TinCan.Features.Targeting;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 
@@ -30,6 +31,8 @@ namespace TinCan.Tests.EditMode
         private FakeHumanoidMovementView _movement = null!;
         private FakeNetHumanoidView _player = null!;
         private ShipRepairUseCase _useCase = null!;
+        private TargetableRegistry _targetables = null!;
+        private GameplayTag _damaged = null!;
 
         [SetUp]
         public void SetUp()
@@ -51,13 +54,25 @@ namespace TinCan.Tests.EditMode
             _config.RepairingTag = _repairing;
             _config.RepairEffect = repair;
             _config.RepairInterval = 0.25f;
-            _config.RepairReach = 2.5f;
-            _config.RepairConeDegrees = 100f;
+            _damaged = Create<GameplayTag>("State.Damaged");
+            var scan = Create<TargetingDefinition>("TD_RepairScan");
+            scan.Source = AimSource.BodyForward;
+            scan.Shape = TargetShape.Cone;
+            scan.Range = 2.5f;
+            scan.HorizontalAngle = 100f;
+            scan.VerticalAngle = 120f;
+            scan.RequiredTags = new List<GameplayTag> { _damaged };
+            scan.Selection = TargetSelection.Nearest;
+            var ability = Create<AbilityDefinition>("GA_RepairShip");
+            ability.Targeting = scan;
+            _config.RepairAbility = ability;
 
             _airship = new FakeAirshipView("Airship");
             _points = FakeShipDamage.AttachPoints(_airship.GameObject, 2, health, maxHealth);
             _points[0].transform.position = new Vector3(0f, 1f, 2f);
             _points[1].transform.position = new Vector3(0f, 1f, -2f);
+            _targetables = new TargetableRegistry();
+            foreach (var point in _points) _targetables.Register(point);
             _actors.Register(_airship);
 
             _movement = new FakeHumanoidMovementView("Player");
@@ -66,7 +81,7 @@ namespace TinCan.Tests.EditMode
             _player = new FakeNetHumanoidView(_movement);
             _actors.Register(_player);
 
-            _useCase = new ShipRepairUseCase(new FakeNetworkService(), _actors, _time, _events, _abilities, new RepairTargetProcessor(), _config);
+            _useCase = new ShipRepairUseCase(new FakeNetworkService(), _actors, _time, _events, _abilities, new TargetingUseCase(_targetables, new TargetingProcessor()), _config);
         }
 
         [TearDown]
@@ -81,7 +96,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void Repairing_AddsHealthEveryIntervalToThePartInFront()
         {
-            _points[0].SetHealth01(0f);
+            Break(_points[0], 0f);
             _player.AddTag(_repairing);
 
             _useCase.Tick();
@@ -94,7 +109,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void RepairStopsAtFullHealth()
         {
-            _points[0].SetHealth01(0.9f);
+            Break(_points[0], 0.9f);
             _player.AddTag(_repairing);
 
             for (int i = 0; i < 5; i++) _useCase.Tick();
@@ -107,7 +122,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void NotRepairing_DoesNothing()
         {
-            _points[0].SetHealth01(0f);
+            Break(_points[0], 0f);
 
             _useCase.Tick();
 
@@ -115,9 +130,20 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void PartWithoutTheDamagedTag_IsNotTargeted()
+        {
+            _points[0].SetHealth01(0f);
+            _player.AddTag(_repairing);
+
+            _useCase.Tick();
+
+            Assert.That(_points[0].Health01, Is.EqualTo(0f), "TD_RepairScan requires State.Damaged on the target.");
+        }
+
+        [Test]
         public void PartBehindThePlayer_IsNotRepaired()
         {
-            _points[1].SetHealth01(0f);
+            Break(_points[1], 0f);
             _player.AddTag(_repairing);
 
             _useCase.Tick();
@@ -129,7 +155,7 @@ namespace TinCan.Tests.EditMode
         public void ShortTicks_AccumulateToOneInterval()
         {
             _time.DeltaTime = 0.1f;
-            _points[0].SetHealth01(0f);
+            Break(_points[0], 0f);
             _player.AddTag(_repairing);
 
             _useCase.Tick();
@@ -144,7 +170,7 @@ namespace TinCan.Tests.EditMode
         public void StoppingResetsProgress()
         {
             _time.DeltaTime = 0.2f;
-            _points[0].SetHealth01(0f);
+            Break(_points[0], 0f);
             _player.AddTag(_repairing);
             _useCase.Tick();
 
@@ -154,6 +180,13 @@ namespace TinCan.Tests.EditMode
             _useCase.Tick();
 
             Assert.That(_points[0].Health01, Is.EqualTo(0f), "Banked progress is dropped when the player lets go.");
+        }
+
+        // In the game the breakage reconcile grants State.Damaged to a broken part; the repair scan filters on it.
+        private void Break(FakeShipDamagePoint point, float health01)
+        {
+            point.SetHealth01(health01);
+            point.FakeController.AddTag(_damaged);
         }
 
         private T Create<T>(string name) where T : ScriptableObject

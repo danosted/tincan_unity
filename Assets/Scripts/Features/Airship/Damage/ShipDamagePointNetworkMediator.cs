@@ -1,6 +1,8 @@
 #nullable enable
+using System;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
+using TinCan.Core.Domain.Targeting;
 using TinCan.Features.Abilities;
 using Unity.Netcode;
 using UnityEngine;
@@ -14,7 +16,7 @@ namespace TinCan.Features.Airship.Damage
     /// on that controller, replicated with its attributes. Every peer shows the child named "Marker" while the point is
     /// broken. Its index is its order among the fixture's damage points.
     /// </summary>
-    public class ShipDamagePointNetworkMediator : NetworkBehaviour, IShipDamagePoint
+    public class ShipDamagePointNetworkMediator : NetworkBehaviour, IShipDamagePoint, ITargetable
     {
         private const string MarkerName = "Marker";
 
@@ -30,6 +32,11 @@ namespace TinCan.Features.Airship.Damage
         public int Index => transform.GetSiblingIndex();
         public Transform? Transform => this != null ? transform : null;
         public IAbilityControllerBase? Controller => _controller;
+
+        // ITargetable: aim at the marker; the repair tool filters on State.Damaged, so a healthy part is never picked.
+        public Guid TargetId { get; } = Guid.NewGuid();
+        public Vector3 AimPoint => _marker != null ? _marker.transform.position : transform.position;
+        public bool IsTargetable => IsSpawned;
 
         public float Health01 => _health == null || _health.MaxHealth <= 0f ? 1f : _health.HealthPercentage;
         public bool IsBroken => Health01 < 1f;

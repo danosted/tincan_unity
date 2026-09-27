@@ -91,6 +91,30 @@ interaction a silent no-op. Settle the name before creating the asset.
 **Trap:** `ResetAttributesToBase` sets `CurrentValue = BaseValue` on every attribute whenever any effect on that
 actor changes. Persistent values (fuel level) live in `BaseValue`.
 
+**Granting through an item:** a tool's abilities belong on its `ITEM_*` asset (`GrantedAbilities`), not in
+`_startingAbilities`. `EquipmentAbilityBinder` grants them while the item is held. Example: `ITEM_RepairTool` grants
+`GA_RepairShip`.
+
+### Make an ability target something
+
+**When:** the ability acts on something the player aims at (repair a part, later: catch, hit, pick up).
+
+1. **Make the thing targetable:** implement `ITargetable` on a component in its spawned hierarchy (the aim point,
+   plus its GAS `Controller` if you want to filter by tags). `ActorOrchestrator` registers it. Never self-register.
+   Example: `ShipDamagePointNetworkMediator`.
+2. **Describe the query:** **TinCan > Targeting > Targeting Definition** in `Assets/Targeting/` (`TD_*`).
+   - Pick the aim source and shape. A `Cone` is forgiving for close scans; a `Ray` is precise but needs colliders.
+   - Pick the required or blocked tags on the target, and the selection rule.
+   - Example: `TD_RepairScan` is a 2.5 m, 100° cone that requires `State.Damaged`, nearest first.
+3. **Link it:** set `AbilityDefinition.Targeting` to the `TD_*`.
+4. **Act on the result** in the feature's server use case:
+   `ITargetingService.TryAcquire(new HumanoidTargeter(player), ability.Targeting, out var result)`, then apply
+   effects to `result.Target`. Example: `ShipRepairUseCase`. The owner can run the same query to predict prompts.
+
+**Verify:** `TargetingProcessorTests` covers the shape maths; test your use case with the real `TargetingUseCase`
+and a `TargetableRegistry` (`ShipRepairUseCaseTests`). In play, a scenario probe that calls the service (as
+`SubjectFacesPoint` does) shows the same answer the game uses.
+
 ## 4. Add a menu row or a HUD value
 
 **When:** a button in the start menu, a sub-menu, a number on screen.

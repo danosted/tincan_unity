@@ -36,7 +36,6 @@ namespace TinCan.Features.Airship.Damage
             builder.RegisterInstance(config);
             builder.Register<ShipBreakageProcessor>(Lifetime.Transient);
             builder.Register<ShipBreakageUseCase>(Lifetime.Singleton).AsSelf().As<IShipBreakage>().As<ISimulationTickable>();
-            builder.Register<RepairTargetProcessor>(Lifetime.Transient);
             builder.Register<ShipRepairUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
             builder.Register<ShipDamageHudPresenter>(Lifetime.Singleton).As<ITickable>();
         }

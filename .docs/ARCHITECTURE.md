@@ -71,7 +71,26 @@ Instead of tight coupling and hardcoded subsystem checks, we utilize an ECS-lite
   Mediators delegate their network lifecycle to `IActorOrchestrator.RegisterHierarchy` / `UnregisterHierarchy`. Feature fixtures such as `FuelTankNetworkMediator` also delegate ship membership to `RegisterShipModule` / `UnregisterShipModule`; the orchestrator removes old membership on reparenting, while the fixture owns its local attribute binding.
 - **Decoupled UseCases:** A `UseCase` iterates over its specific Registry, processing data without knowing if the actor is a Humanoid, an Airship, or an AI.
 
-### 6. Feature composition
+### 6. Targeting (cross-cutting)
+"What is this actor aiming at?" has one answer, shared by features and GAS. Interaction, repair and (later) net catch,
+build placement and weapons are *uses* of targeting, not separate aiming systems.
+- **Contracts** (`Core/Domain/Targeting/`):
+  - `ITargetable`: an aim point, `IsTargetable`, and an optional GAS controller for tag filters.
+  - `ITargetableRegistry`.
+  - `ITargeter` + `TargetingOrigin`: body pose, eye height, and an optional aim pitch.
+- **Registration:** `ActorOrchestrator` registers every `ITargetable` in a spawned hierarchy, like interactors. It
+  resolves the registry optionally, because the Targeting installer can be switched off.
+- **Queries are data:** a `TargetingDefinition` (`Assets/Targeting/TD_*`) chooses an aim source (`BodyForward`,
+  `BodyOffset`), a shape (`Cone` for forgiving close scans, `Sphere`, a physics `Ray`), gameplay-tag filters on the
+  target, a selection rule and optional line of sight. Several aim models coexist; each context picks its own.
+  `AbilityDefinition.Targeting` links an ability to one.
+- **Authority:** `ITargetingService.TryAcquire` runs on any peer from simulated state (the body pose follows the
+  replicated input). The owner uses it to predict; the server's answer is authoritative. The server never trusts a
+  client-chosen target.
+- **Not yet:** aim pitch is not in the input (the camera's pitch stays on the owner), so there is no pitched or
+  camera aim. The roadmap is in `.docs/plans/targeting-subsystem.md`.
+
+### 7. Feature composition
 A feature is one folder under `Assets/Scripts/Features/` plus one `FeatureInstaller` asset under
 `Assets/Resources/Installers/`. The installer registers the feature's services, lists the networked prefabs it
 spawns and the fixtures it bolts onto the ship. Adding a feature touches no shared file. Older features still

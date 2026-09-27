@@ -45,10 +45,7 @@ namespace TinCan.Features.Airship.Damage
 
         [Min(0.05f)] public float RepairInterval = 0.25f;
 
-        [Tooltip("How far from the player's feet a part can be repaired, in metres.")]
-        [Min(0.5f)] public float RepairReach = 2.5f;
-
-        [Tooltip("Full width of the horizontal cone in front of the player that counts as facing a part.")]
-        [Range(10f, 360f)] public float RepairConeDegrees = 100f;
+        [Tooltip("The repair tool's ability. Its TargetingDefinition (TD_RepairScan) decides which broken part a repairing player works on.")]
+        public AbilityDefinition? RepairAbility;
     }
 }

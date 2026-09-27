@@ -246,6 +246,9 @@ the Items installer breaks Fuel and FlyingCan after the migration, so Items beco
   - Found: a teleport cannot turn a player (facing follows the look input every tick). Scenario placement keeps the
     subject's facing.
 
+- 2026-09-27: Repair targeting moved onto the cross-cutting Targeting subsystem
+  (`.docs/plans/targeting-subsystem.md`): `TD_RepairScan` replaces `RepairTargetProcessor`.
+
 ## Build order (vertical slices)
 0. **Feedback loop skeleton**: `Scenario` + expectations + report writer + self-terminating run + capture, first
    proven on an existing feature (a `NetCatch` scenario) so the harness is trusted before new code relies on it.

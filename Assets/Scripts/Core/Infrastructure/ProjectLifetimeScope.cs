@@ -123,7 +123,7 @@ namespace TinCan.Core.Infrastructure
                 .AsSelf()
                 .As<IInitializable>()
                 .As<ITickable>().As<IPossessionState>();
-            builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>().As<ITickable>();
+            builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>().As<ISimulationTickable>();
             builder.Register<ShipStateProvider>(Lifetime.Singleton).As<IShipState>();
             builder.Register<AirshipMovementUseCase>(Lifetime.Singleton);
             builder.Register<CloudBoundaryUseCase>(Lifetime.Singleton);

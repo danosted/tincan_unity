@@ -14,6 +14,15 @@ namespace TinCan.Tests.EditMode.Fakes
         public float Time { get; set; }
         public float DeltaTime { get; set; } = 1f / 30f;
         public float FixedDeltaTime { get; set; } = 0.02f;
+        public int TickRate { get; set; } = 30;
+
+        // Follows Time (floored to whole ticks) until a test sets it, so tests written in seconds keep working.
+        private int? _tick;
+        public int Tick
+        {
+            get => _tick ?? Mathf.FloorToInt(Time * TickRate + 1e-4f);
+            set => _tick = value;
+        }
     }
 
     public class FakeInputService : IInputService

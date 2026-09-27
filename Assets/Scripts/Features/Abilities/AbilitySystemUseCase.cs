@@ -17,10 +17,11 @@ namespace TinCan.Features.Abilities
 {
     /// <summary>
     /// Application Layer: Logic processor for the Gameplay Ability System.
-    /// Handles ticking of effects, cooldowns, and ability activation logic.
-    /// Supports Input-Driven Simulation for predicted gameplay.
+    /// Handles ticking of effects, cooldowns, and ability activation logic, all counted in simulation ticks.
+    /// Each actor has one clock: an <see cref="ISimulatedActor"/> is ticked by its movement loop
+    /// (<see cref="ProcessAbilitySimulation"/>), every other simulating controller by <see cref="Tick"/>.
     /// </summary>
-    public class AbilitySystemUseCase : ITickable, IInitializable, IDisposable
+    public class AbilitySystemUseCase : ISimulationTickable, IInitializable, IDisposable
     {
         private readonly IAbilityRegistry _registry;
         private readonly IActorRegistry _actorRegistry;
@@ -64,20 +65,22 @@ namespace TinCan.Features.Abilities
             _activeEffects.Remove(actor.Id);
         }
 
+        public SimulationPhase Phase => SimulationPhase.AfterHumanoid;
+
         public void Tick()
         {
-            float currentTime = _timeService.Time;
+            int currentTick = _timeService.Tick;
 
             foreach (var actor in _registry.AllControllers)
             {
-                // Only tick globally if this actor is NOT explicitly predicted by a movement loop
+                // A simulated actor has its own clock: its movement loop calls ProcessAbilitySimulation.
                 if (actor is ISimulatedActor) continue;
 
                 // Also, only tick global effects if the actor itself is considered "simulating" (locally owned or server authority)
                 if (!actor.IsSimulating) continue;
 
-                UpdateEffects(actor, currentTime);
-                UpdateAbilities(actor, currentTime);
+                UpdateEffects(actor, currentTick);
+                UpdateAbilities(actor, currentTick);
             }
         }
 
@@ -87,11 +90,11 @@ namespace TinCan.Features.Abilities
         /// </summary>
         public void ProcessAbilitySimulation(IAbilityControllerBase actor, HumanoidInputState input, ulong previousInputMask, float deltaTime)
         {
-            float currentTime = _timeService.Time;
+            int currentTick = _timeService.Tick;
 
             // 1. Update passive state (Effects & Active Ability Windows)
-            UpdateEffects(actor, currentTime);
-            UpdateAbilities(actor, currentTime);
+            UpdateEffects(actor, currentTick);
+            UpdateAbilities(actor, currentTick);
 
             // 2. Process Input Triggers
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
@@ -148,7 +151,7 @@ namespace TinCan.Features.Abilities
             _eventPublisher.Publish(new AbilityEndedEvent(actor.Id, spec.Definition.name));
         }
 
-        private void UpdateAbilities(IAbilityControllerBase actor, float currentTime)
+        private void UpdateAbilities(IAbilityControllerBase actor, int currentTick)
         {
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
 
@@ -156,18 +159,20 @@ namespace TinCan.Features.Abilities
             {
                 if (!spec.IsActive) continue;
 
-                UpdateTimingWindows(actor, spec, currentTime);
+                UpdateTimingWindows(actor, spec, currentTick);
             }
         }
 
-        private void UpdateTimingWindows(IAbilityControllerBase actor, AbilitySpec spec, float currentTime)
+        private void UpdateTimingWindows(IAbilityControllerBase actor, AbilitySpec spec, int currentTick)
         {
-            float elapsed = currentTime - spec.StartTime;
+            int elapsed = currentTick - spec.StartTick;
+            int tickRate = _timeService.TickRate;
             var def = spec.Definition;
 
             foreach (var window in def.TimingTagWindows)
             {
-                bool shouldHaveTag = elapsed >= window.StartOffset && elapsed <= (window.StartOffset + window.Duration);
+                int start = GameplayTicks.FromSeconds(window.StartOffset, tickRate);
+                bool shouldHaveTag = elapsed >= start && elapsed <= start + GameplayTicks.FromSeconds(window.Duration, tickRate);
                 bool hasTag = spec.ActiveWindowTags.Contains(window.Tag);
 
                 // One arm per (shouldHaveTag, hasTag) combo; the other two combos are no-ops.
@@ -188,14 +193,14 @@ namespace TinCan.Features.Abilities
             // For now, let's assume abilities have a fixed duration or manual end.
         }
 
-        private void UpdateEffects(IAbilityControllerBase actor, float currentTime)
+        private void UpdateEffects(IAbilityControllerBase actor, int currentTick)
         {
             if (!_activeEffects.TryGetValue(actor.Id, out var effects)) return;
 
             for (int i = effects.Count - 1; i >= 0; i--)
             {
                 var effect = effects[i];
-                if (effect.IsExpired(currentTime))
+                if (effect.IsExpired(currentTick))
                 {
                     RemoveEffect(actor, effect);
                 }
@@ -297,14 +302,14 @@ namespace TinCan.Features.Abilities
             if (def.ActivationRequiredTagsOnTarget.Any(t => target != null && !target.HasTag(t))) return false;
 
             // Cooldown?
-            if (spec.IsOnCooldown(_timeService.Time)) return false;
+            if (spec.IsOnCooldown(_timeService.Tick, _timeService.TickRate)) return false;
 
             return true;
         }
 
         private void ExecuteAbility(IAbilityControllerBase actor, AbilitySpec spec, IAbilityControllerBase target, GameplayEffectContext context)
         {
-            spec.Activate(_timeService.Time);
+            spec.Activate(_timeService.Tick);
             _eventPublisher.Publish(new AbilityActivatedEvent(actor.Id, spec.Definition.name));
 
             // Apply the active buff to the correct target
@@ -335,7 +340,7 @@ namespace TinCan.Features.Abilities
             for (int i = effects.Count - 1; i >= 0; i--)
             {
                 var candidate = effects[i];
-                if (candidate.IsExpired(_timeService.Time) || !candidate.Definition.GrantedTags.Contains(tag)) continue;
+                if (candidate.IsExpired(_timeService.Tick) || !candidate.Definition.GrantedTags.Contains(tag)) continue;
                 effect = candidate;
                 return true;
             }
@@ -349,7 +354,7 @@ namespace TinCan.Features.Abilities
         /// </summary>
         public ActiveGameplayEffect ApplyEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition, GameplayEffectContext context = default)
         {
-            var effect = new ActiveGameplayEffect(definition, _timeService.Time);
+            var effect = new ActiveGameplayEffect(definition, _timeService.Tick, _timeService.TickRate);
 
             if (definition.DurationType == DurationType.Instant)
             {

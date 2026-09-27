@@ -19,7 +19,7 @@ namespace TinCan.Tests.EditMode.Fakes
         private readonly Dictionary<IAbilityDefinition, GameplayTag> _tagByAbility = new();
         private GameplayTagContainer _tags = new(null);
 
-        public Guid Id { get; } = Guid.NewGuid();
+        public Guid Id { get; set; } = Guid.NewGuid();
         public bool IsSimulating => true;
         public GameplayTagContainer ActiveTags => _tags;
         public List<IAbilityDefinition> Granted { get; } = new();

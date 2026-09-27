@@ -158,6 +158,24 @@ reason to the edge (`Removed` versus `Teardown`) and skip actions on teardown.
    the marker moved onto its handler.
 5. Scenario probes (through `IGameplayCueObserver`) and docs.
 
+### Progress
+- **Slice 0 done** (commit `3c5973b`).
+- **Steps 1 and 2 done (2026-09-27, awaiting developer review).** EditMode 410/410. `TagRequest`, `RepairLoop` and
+  `ShipDamageLateJoin` pass solo and host + client with the installer live.
+- **Where the code differs from the design above:**
+  - **Observers:** `IGameplayCueObserver` became `IGameplayCueFeed`, an event on the use case. VContainer does not
+    promise an empty list when no observer is registered.
+  - **Transport:** two interfaces carry it.
+    - `IGameplayCueRelay` (ownership, and the server → clients send) is implemented by `AbilityNetworkMediator`,
+      and forwarded by `HumanoidPlayer`, which is the controller the simulation passes.
+    - `IGameplayCuePlayer` (play here now) is how the RPC reaches the use case.
+  - **Dispatcher:** it is its own class, `GameplayCueDispatcher`.
+  - **`GameplayCueNotify`:** it holds only its cue tag so far. The action lists come in step 3.
+  - **On-object handlers:** they are found once per actor, anywhere under it but not inside a nested actor. Players
+    register twice under one Id (`HumanoidPlayer` and its mediator), so the use case dedupes by Id.
+  - **Profiles:** `GameplayCuesFeatureInstaller` (Order -19) is listed in `Profile_Base` and in `Profile_Test_Core`,
+    which lists its installers itself.
+
 ## Tests and verification
 - **EditMode:**
   - `GameplayCueStateTrackerTests`: edges, no-op when unchanged, several effects sharing one cue tag.

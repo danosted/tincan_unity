@@ -10,6 +10,7 @@ using VContainer;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Features.Abilities;
+using TinCan.Features.Abilities.Cues;
 using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Network.Infrastructure.Abilities;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(InteractorControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
-    public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView, IBufferedInputSource, IPredictedHumanoid, TinCan.Features.Airship.IBuilder
+    public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView, IBufferedInputSource, IPredictedHumanoid, TinCan.Features.Airship.IBuilder, IGameplayCueRelay
     {
         public override bool IsSimulating => IsSpawned && (IsServer || IsOwner);
 
@@ -318,6 +319,9 @@ namespace TinCan.Network.Infrastructure
         public bool TryActivateAbility(IAbilityDefinition definition) => _abilitySync.TryActivateAbility(definition);
 
         public void HandleGameplayEvent(GameplayEventData eventData) => _abilitySync.HandleGameplayEvent(eventData);
+
+        public bool IsOwnedLocally => _abilitySync.IsOwnedLocally;
+        public void RelayCue(GameplayTag cue, bool excludeOwner) => _abilitySync.RelayCue(cue, excludeOwner);
 
         public bool TryActivateAbility(IAbilityDefinition definition, IAbilityControllerBase? target = null) => _abilitySync.TryActivateAbility(definition, target);
     }

@@ -84,9 +84,11 @@ namespace TinCan.Tests.EditMode.Fakes
 
     public class FakeAbilityRegistry : IAbilityRegistry
     {
-        public IEnumerable<IAbilityControllerBase> AllControllers => Enumerable.Empty<IAbilityControllerBase>();
-        public void Register(IAbilityControllerBase controller) { }
-        public void Unregister(IAbilityControllerBase controller) { }
+        private readonly List<IAbilityControllerBase> _controllers = new();
+
+        public IEnumerable<IAbilityControllerBase> AllControllers => _controllers;
+        public void Register(IAbilityControllerBase controller) => _controllers.Add(controller);
+        public void Unregister(IAbilityControllerBase controller) => _controllers.Remove(controller);
     }
 
     public class FakeEventPublisher : IEventPublisher

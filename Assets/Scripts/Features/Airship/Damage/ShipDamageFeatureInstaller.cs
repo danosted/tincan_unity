@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
 using TinCan.Features.Abilities.Cues;
+using TinCan.Features.DesignedEvents;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -43,6 +44,10 @@ namespace TinCan.Features.Airship.Damage
             builder.Register<ShipBreakageUseCase>(Lifetime.Singleton).AsSelf().As<IShipBreakage>().As<ISimulationTickable>();
             builder.Register<ShipRepairUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
             builder.Register<ShipDamageHudPresenter>(Lifetime.Singleton).As<ITickable>();
+
+            // Designed-event vocabulary for ship damage (used when the events feature is loaded).
+            builder.Register<BreakShipPartActionHandler>(Lifetime.Singleton).As<IEventActionHandler>();
+            builder.Register<BrokenPartsAtMostConditionHandler>(Lifetime.Singleton).As<IEventConditionHandler>();
         }
 
         public override IEnumerable<GameObject> NetworkedPrefabs

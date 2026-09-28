@@ -63,7 +63,7 @@ go-ahead. Evidence was gathered read-only at `5424351`.
      travel as registry ids.
 
 ### B. Structural debt against the vision
-5. **`ProjectLifetimeScope` is still the god composition root** (282 lines, 46 registrations).
+5. **`ProjectLifetimeScope` is still the god composition root** **Done (2026-09-28, `composition-root-diet.md`): core only, 37 registrations.** (282 lines, 46 registrations).
    - It holds serialized configs, spawn logic for the airship and mediators, `FindAnyObjectByType` factories, and
      scene scans (`FindObjectsByType<MonoBehaviour>` for `IInjectedView`).
    - Core registrations are mixed with legacy feature registrations (cloud, gas challenge, build mode, door, boarding,
@@ -76,7 +76,7 @@ go-ahead. Evidence was gathered read-only at `5424351`.
    - `HumanoidPlayer` implements seven roles, including `IBuilder` crafting fields and cue relaying.
    - **Fix:** move use cases into `Features`, and split `HumanoidPlayer` into focused components (input submission,
      prediction state, building).
-7. **Global and scene lookups** that the DI and registry pillars forbid.
+7. **Global and scene lookups** **Done (2026-09-28): none left in `Features`; `GASVisualScriptingBridge` remains.** that the DI and registry pillars forbid.
    - `NetworkManager.Singleton` in `ProjectTimeService` and `ThirdPersonLookView`.
    - `Camera.main` in `InteractorControllerView`, `BuildModeUseCase` and `CloudEnvironmentView`.
    - `FindObjectsByType` in `GasChallengeUseCase` (a use case scanning the scene instead of a registry).

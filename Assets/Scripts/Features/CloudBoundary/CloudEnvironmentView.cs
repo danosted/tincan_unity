@@ -3,14 +3,13 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using TinCan.Core.Domain;
 using VContainer;
 
 namespace TinCan.Features.CloudBoundary
 {
     public class CloudEnvironmentView : MonoBehaviour
     {
-        private const float CameraSearchInterval = 0.5f;
-
         private readonly List<Matrix4x4> _puffMatrices = new();
         private readonly List<GameObject> _puffPool = new();
         private ICloudSurfaceQuery? _surfaceQuery;
@@ -23,14 +22,13 @@ namespace TinCan.Features.CloudBoundary
         private ParticleSystem? _bankParticles;
         private Mesh? _surfaceMesh;
         private Mesh? _puffMesh;
-        private Camera? _renderCamera;
+        private ILocalViewCamera? _viewCamera;
         private Light? _sunLight;
         private float _baseLightIntensity;
         private bool _baseAtmosphereCached;
         private bool _baseFogEnabled;
         private Color _baseFogColor;
         private float _baseFogDensity;
-        private float _nextCameraSearchTime;
         private Vector2 _surfaceCenter = new(float.PositiveInfinity, float.PositiveInfinity);
         private Vector2Int _bankCell = new(int.MinValue, int.MinValue);
         private Vector2Int _cloudCell = new(int.MinValue, int.MinValue);
@@ -47,8 +45,10 @@ namespace TinCan.Features.CloudBoundary
             CloudBoundaryConfig boundaryConfig,
             CloudVisualProfile visualProfile,
             CloudSubmersionProcessor submersionProcessor,
-            CloudSubmersionConfig submersionConfig)
+            CloudSubmersionConfig submersionConfig,
+            ILocalViewCamera viewCamera)
         {
+            _viewCamera = viewCamera;
             _surfaceQuery = surfaceQuery;
             _boundaryConfig = boundaryConfig;
             _visualProfile = visualProfile;
@@ -142,41 +142,8 @@ namespace TinCan.Features.CloudBoundary
             _baseLightIntensity = _sunLight != null ? _sunLight.intensity : 0f;
         }
 
-        private Camera? ResolveRenderCamera()
-        {
-            if (_renderCamera != null && _renderCamera.isActiveAndEnabled)
-            {
-                return _renderCamera;
-            }
-
-            Camera mainCamera = Camera.main;
-            if (mainCamera != null && mainCamera.isActiveAndEnabled)
-            {
-                _renderCamera = mainCamera;
-                return _renderCamera;
-            }
-
-            if (Time.unscaledTime < _nextCameraSearchTime)
-            {
-                return null;
-            }
-
-            _nextCameraSearchTime = Time.unscaledTime + CameraSearchInterval;
-            foreach (Camera candidate in Camera.allCameras)
-            {
-                if (!candidate.isActiveAndEnabled ||
-                    candidate.cameraType != CameraType.Game ||
-                    candidate.targetTexture != null)
-                {
-                    continue;
-                }
-
-                _renderCamera = candidate;
-                return _renderCamera;
-            }
-
-            return null;
-        }
+        // The camera the local player looks through; none before the player spawns (scenes have no camera).
+        private Camera? ResolveRenderCamera() => _viewCamera?.Camera;
 
         private void OnDestroy()
         {

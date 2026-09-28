@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace TinCan.Features.CloudBoundary
 {
-    public class CloudBoundaryUseCase
+    public class CloudBoundaryUseCase : ISimulationTickable
     {
         private readonly INetworkService _networkService;
         private readonly IActorRegistry _actorRegistry;
@@ -45,6 +45,8 @@ namespace TinCan.Features.CloudBoundary
             _processor = processor;
             _config = config;
         }
+
+        public SimulationPhase Phase => SimulationPhase.BeforeHumanoid;
 
         public void Tick()
         {

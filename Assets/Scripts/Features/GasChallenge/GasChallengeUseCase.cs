@@ -1,69 +1,52 @@
 #nullable enable
-using System.Linq;
+using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Networking;
 using TinCan.Features.Abilities;
 using TinCan.Features.Airship;
-using Unity.Netcode;
 using UnityEngine;
-using VContainer.Unity;
 
 namespace TinCan.Features.GasChallenge
 {
     /// <summary>
-    /// Server-authoritative hazard loop: detonates a gas pocket the first time an airship overlaps it.
+    /// Server-authoritative hazard loop, on the simulation tick: a gas pocket detonates the first time an airship
+    /// touches it, applying its explosion effect to the ship.
     /// </summary>
-    public class GasChallengeUseCase : ITickable
+    public class GasChallengeUseCase : ISimulationTickable
     {
         private readonly IActorRegistry _actorRegistry;
         private readonly INetworkService _networkService;
         private readonly AbilitySystemUseCase _abilitySystem;
+        private readonly IGasPocketQuery _pockets;
+        private readonly List<GasPocketVolume> _touching = new();
 
         public GasChallengeUseCase(
             IActorRegistry actorRegistry,
             INetworkService networkService,
-            AbilitySystemUseCase abilitySystem)
+            AbilitySystemUseCase abilitySystem,
+            IGasPocketQuery pockets)
         {
             _actorRegistry = actorRegistry;
             _networkService = networkService;
             _abilitySystem = abilitySystem;
+            _pockets = pockets;
         }
+
+        public SimulationPhase Phase => SimulationPhase.AfterAirship;
 
         public void Tick()
         {
-            if (!_networkService.IsServer)
+            if (!_networkService.IsServer) return;
+
+            foreach (var airship in _actorRegistry.GetActors<IAirshipView>())
             {
-                return;
-            }
+                if (!airship.IsSimulating || airship is not IShipState { Controller: { } controller }) continue;
 
-            var gasPockets = Object.FindObjectsByType<GasPocketVolume>(FindObjectsInactive.Exclude);
-            if (gasPockets.Length == 0)
-            {
-                return;
-            }
-
-            foreach (IAirshipView airship in _actorRegistry.GetActors<IAirshipView>().Where(a => a.IsSimulating))
-            {
-                var shipCollider = (airship as Component)?.GetComponentInChildren<Collider>();
-                if (shipCollider == null)
+                _pockets.Touching(airship, _touching);
+                foreach (var pocket in _touching)
                 {
-                    continue;
-                }
-
-                if (airship is not IShipState shipState || shipState.Controller == null)
-                {
-                    continue;
-                }
-
-                foreach (GasPocketVolume pocket in gasPockets)
-                {
-                    if (!GasPocketDetonationProcessor.ShouldDetonate(pocket, shipCollider))
-                    {
-                        continue;
-                    }
-
-                    Detonate(pocket, shipState.Controller);
+                    if (!pocket.HasDetonated) Detonate(pocket, controller);
                 }
             }
         }
@@ -79,11 +62,6 @@ namespace TinCan.Features.GasChallenge
             }
 
             _abilitySystem.ApplyGameplayEffect(target, pocket.ExplosionEffect);
-
-            if (pocket.TryGetComponent<NetworkObject>(out var networkObject) && networkObject.IsSpawned)
-            {
-                networkObject.Despawn(true);
-            }
         }
     }
 }

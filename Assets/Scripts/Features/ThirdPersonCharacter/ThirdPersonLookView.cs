@@ -2,7 +2,6 @@ using System;
 using UnityEngine;
 using TinCan.Features.Possession;
 using TinCan.Core.Domain;
-using Unity.Netcode;
 
 namespace TinCan.Features.HumanoidMovement
 {
@@ -85,9 +84,15 @@ namespace TinCan.Features.HumanoidMovement
             Yaw = yaw;
         }
 
+        // Injected with the player prefab; tells OnPossessed whether this body is the local player's.
+        private TinCan.Core.Domain.Networking.INetworkService _network;
+
+        [VContainer.Inject]
+        public void Construct(TinCan.Core.Domain.Networking.INetworkService network) => _network = network;
+
         public void OnPossessed(ulong playerId)
         {
-            ulong localId = NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClientId : 0;
+            ulong localId = _network?.LocalClientId ?? 0;
 
             if (localId == playerId)
             {

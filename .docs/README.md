@@ -29,7 +29,7 @@ Pick the path that matches what you want to do right now.
   VContainer lifecycle (`ITickable`, `ISimulationTickable`). `*NetworkMediator` is the thin NGO adapter that
   implements a domain interface and guards writes with `IsServer`. `*View` is a MonoBehaviour that only renders.
 - **The server owns state, on a fixed tick.** `NetworkSimulationScheduler` runs the network tick: airship ->
-  `AfterAirship` features -> cloud boundary -> physics sync -> humanoid -> `AfterHumanoid` features. Time-critical
+  `AfterAirship` features -> `BeforeHumanoid` features (cloud boundary) -> physics sync -> humanoid -> `AfterHumanoid` features. Time-critical
   intent travels as bits in an `InputState`, never as a side-channel RPC.
 - **Behaviour is data.** Abilities, effects, tags, interactions, menus, fixtures and tunables are ScriptableObject
   assets created from the **TinCan** create menu. Many changes need no code at all.
@@ -100,8 +100,7 @@ Ranked by value for effort. Tick them off as they land.
       tests green, feature index updated, assets touched listed, playtested host + client.
 - [x] **Stop gitignoring `.docs/plans/`** (done 2026-09-06; Dan had added the ignore in May). Plans are the
       best record of AI intent. Give each a `Status: Draft | Approved | Done` header and commit it with the work.
-- [ ] **Repo hygiene PR.** Delete the empty scaffold folders, move `ThirdPersonCharacter`, rename the duplicate
-      `IShipState`, remove the two deleted scenes from Build Settings. See CODE_MAP "Legacy, oddities and traps".
+- [ ] **Repo hygiene PR.** Delete the empty scaffold folders, move `ThirdPersonCharacter`, remove the two deleted scenes from Build Settings. See CODE_MAP "Legacy, oddities and traps".
 - [ ] **Editor window `TinCan > Feature Overview`** listing installers, fixtures, networked prefabs, tickables
       and handlers, and validating that every `IA_*` handler type and `Menu_*` command id still resolves. Catches
       the silent-break bugs.

@@ -14,7 +14,6 @@ namespace TinCan.Tests.EditMode
         {
             "AirshipControlPanel",
             "AirshipDoor",
-            "CoordinatedEventMediator",
             "HumanoidPlayer",
             "NetworkTransformMediator",
             "ToggleShipTagStation",
@@ -23,13 +22,10 @@ namespace TinCan.Tests.EditMode
         /// <summary>Global or scene lookups in <c>Assets/Scripts/Features</c>, as "path | pattern" (review B7).</summary>
         public static readonly string[] GlobalLookupsInFeatures =
         {
-            "Scripts/Features/CloudBoundary/CloudEnvironmentView.cs | Camera.main",
-            "Scripts/Features/GasChallenge/GasChallengeUseCase.cs | Find*ObjectsBy/OfType",
-            "Scripts/Features/ThirdPersonCharacter/ThirdPersonLookView.cs | NetworkManager.Singleton",
         };
 
         /// <summary>Registration calls in <c>ProjectLifetimeScope.cs</c> (review B5).</summary>
-        public const int ProjectLifetimeScopeRegistrationLimit = 49;
+        public const int ProjectLifetimeScopeRegistrationLimit = 37;
 
         /// <summary>Processors, use cases and interaction handlers no test file mentions (review C13).</summary>
         public static readonly string[] UntestedTypes =
@@ -37,11 +33,9 @@ namespace TinCan.Tests.EditMode
             "ActivateAbilityInteractionHandler",
             "AirshipMovementUseCase",
             "DoorInteractionHandler",
-            "EventOrchestratorUseCase",
             "FreeCameraMovementProcessor",
             "FreeCameraMovementUseCase",
             "FreeCameraRotationProcessor",
-            "GasChallengeUseCase",
             "NetworkConditionsUseCase",
             "PlayerLookUseCase",
             "PossessionInteractionHandler",
@@ -51,6 +45,6 @@ namespace TinCan.Tests.EditMode
         };
 
         /// <summary>Scripts under <c>Assets/Scripts</c> without <c>#nullable enable</c> (review C12).</summary>
-        public const int FilesWithoutNullableLimit = 110;
+        public const int FilesWithoutNullableLimit = 105;
     }
 }

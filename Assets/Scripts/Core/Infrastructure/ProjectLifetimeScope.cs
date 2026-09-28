@@ -4,15 +4,11 @@ using VContainer.Unity;
 using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.FreeCamera;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Features.Possession;
 using TinCan.Features.Airship;
-using TinCan.Features.CloudBoundary;
-using TinCan.Features.GasChallenge;
 using TinCan.Features.Interaction;
 using TinCan.Features.Abilities;
-using TinCan.Features.Events;
 using TinCan.Network.Infrastructure;
 using UnityEngine;
 using Unity.Netcode;
@@ -20,15 +16,14 @@ using TinCan.Core.Infrastructure.Extensions;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Infrastructure.Events;
-using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Features;
 using TinCan.Features.Airship.Fixtures;
-using Assets.Scripts.Features.Airship;
 namespace TinCan.Core.Infrastructure
 {
     /// <summary>
-    /// Composition root for the project using VContainer.
-    /// This defines which services are available for injection.
+    /// Composition root: core services only (networking, time, registries, possession, abilities, input, the movement
+    /// simulations and their scheduler, interaction core, spawning). Every feature registers through a FeatureInstaller
+    /// asset; see .docs/FEATURE_INSTALLERS.md.
     /// </summary>
     public class ProjectLifetimeScope : LifetimeScope
     {
@@ -39,11 +34,6 @@ namespace TinCan.Core.Infrastructure
         [Header("APIs & Configs")]
         [SerializeField] private GameObject _possessionMediatorPrefab;
         [SerializeField] private TinCan.Core.Domain.Abilities.InputBindingConfig _inputBindingConfig;
-        [SerializeField] private CloudBoundaryConfig _cloudBoundaryConfig;
-        [SerializeField] private CloudVisualProfile _cloudVisualProfile;
-
-        [Header("Airship Components")]
-        [SerializeField] private GameplayTag _doorInteractionTag;
 
         [Header("Feature Composition")]
         [SerializeField] private FeatureProfile _featureProfile;
@@ -64,8 +54,6 @@ namespace TinCan.Core.Infrastructure
 
             // Register Configs
             builder.RegisterInstance(_inputBindingConfig);
-            builder.RegisterInstance(_cloudBoundaryConfig);
-            builder.RegisterInstance(_cloudVisualProfile);
 
             // Register Events
             builder.Register<DebugLogEventObserver>(Lifetime.Singleton).As<IEventObserver>();
@@ -73,11 +61,6 @@ namespace TinCan.Core.Infrastructure
 
             // Register Domain logic (Plain C# classes)
             builder.Register<AirshipMovementProcessor>(Lifetime.Transient);
-            builder.Register<CloudBoundaryProcessor>(Lifetime.Singleton);
-            builder.Register<CloudSurfaceQuery>(Lifetime.Singleton).As<ICloudSurfaceQuery>();
-            builder.Register<NoOpCloudBoundaryExpiryHandler>(Lifetime.Singleton).As<ICloudBoundaryExpiryHandler>();
-            builder.Register<FreeCameraMovementProcessor>(Lifetime.Transient);
-            builder.Register<FreeCameraRotationProcessor>(Lifetime.Transient);
             builder.Register<HumanoidMovementProcessor>(Lifetime.Transient);
 
             // Register Application Use Cases
@@ -102,6 +85,7 @@ namespace TinCan.Core.Infrastructure
 
             // Register Server Possession Manager
             builder.Register<ServerPossessionManager>(Lifetime.Singleton).AsImplementedInterfaces().AsSelf().As<IPossessionAuthority>();
+            builder.Register<PossessedViewCamera>(Lifetime.Singleton).As<ILocalViewCamera>();
 
             // builder.Register<VehicleBoardingUseCase>(Lifetime.Singleton).As<IVehicleBoardingUseCase>();
             builder.Register<InteractionOrchestrator>(Lifetime.Singleton).As<IInteractionOrchestrator>();
@@ -114,8 +98,6 @@ namespace TinCan.Core.Infrastructure
             builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>().As<ISimulationTickable>();
             builder.Register<ShipStateProvider>(Lifetime.Singleton).As<IShipState>();
             builder.Register<AirshipMovementUseCase>(Lifetime.Singleton);
-            builder.Register<CloudBoundaryUseCase>(Lifetime.Singleton);
-            builder.Register<GasChallengeUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
             builder.Register<HumanoidMovementUseCase>(Lifetime.Singleton).AsSelf().As<IHumanoidRespawnService>();
             builder.Register<NetworkSimulationScheduler>(Lifetime.Singleton).As<IInitializable>();
 
@@ -123,18 +105,15 @@ namespace TinCan.Core.Infrastructure
             {
                 installer.Install(builder);
             }
-            builder.RegisterComponentInHierarchy<CloudEnvironmentView>();
 
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
-                entryPoints.Add<FreeCameraMovementUseCase>();
                 entryPoints.Add<PlayerLookUseCase>();
                 entryPoints.Add<VehicleBoardingUseCase>().As<IVehicleBoardingUseCase>();
                 entryPoints.Add<PossessionInputController>();
                 builder.Register<ScriptedInput>(Lifetime.Singleton).AsSelf().As<IScriptedInput>().As<ILateTickable>();
                 builder.Register<InputGate>(Lifetime.Singleton);
                 entryPoints.Add<UnityInputService>().As<IInputService>();
-                entryPoints.Add<EventOrchestratorUseCase>().As<IEventOrchestrator>();
             });
 
             // Handle multi-instance actors in the scene hierarchy
@@ -218,9 +197,6 @@ namespace TinCan.Core.Infrastructure
                 }
             });
 
-
-            // Airship components (Consider moving this to a separate LifetimeScope for the Airship feature)
-            builder.Register<DoorInteractionHandler>(Lifetime.Singleton).WithParameter("handlerTag", _doorInteractionTag).As<IInteractionHandler>();
         }
 
         // NetworkConfig.Prefabs is only initialised when a session starts, so Contains() cannot see the list assets yet;

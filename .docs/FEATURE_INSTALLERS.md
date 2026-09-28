@@ -18,7 +18,7 @@ parallel those files were in permanent conflict. A feature now contributes every
 | `FeatureProfile` | `Core/Domain/Features/` | Optional per-scene allow-list of installers; can include other profiles as shared bases. Restricts the catalog instead of loading everything from Resources. |
 | `ShipFixtureDefinition` | `Core/Domain/Features/` | A networked prefab plus a ship-local pose. |
 | `ShipFixtureSpawningUseCase` | `Features/Airship/Fixtures/` | Server only. Furnishes each airship once with all fixtures, spawning each as its own `NetworkObject` parented to the ship (via `IModuleSpawningService`, the same path build-mode modules use). |
-| `ISimulationTickable` | `Core/Domain/` | Lets a feature run on the fixed network tick without editing `NetworkSimulationScheduler`. Phases: `AfterAirship`, `AfterHumanoid`. |
+| `ISimulationTickable` | `Core/Domain/` | Lets a feature run on the fixed network tick without editing `NetworkSimulationScheduler`. Phases, in tick order: `AfterAirship`, `BeforeHumanoid`, `AfterHumanoid`. |
 | `IInjectedView` | `Core/Domain/` | Marker for scene/prefab `MonoBehaviour`s that want container injection at build (UI overlays). |
 
 `ProjectLifetimeScope` does four generic things for installers: calls `Install(builder)` on each, registers each

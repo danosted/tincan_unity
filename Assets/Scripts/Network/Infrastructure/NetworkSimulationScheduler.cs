@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Infrastructure;
 using TinCan.Features.Airship;
-using TinCan.Features.CloudBoundary;
 using TinCan.Features.HumanoidMovement;
 using Unity.Netcode;
 using UnityEngine;
@@ -20,7 +19,6 @@ namespace TinCan.Network.Infrastructure
         private readonly NetworkManager _networkManager;
         private readonly ProjectTimeService _timeService;
         private readonly AirshipMovementUseCase _airshipMovement;
-        private readonly CloudBoundaryUseCase _cloudBoundary;
         private readonly HumanoidMovementUseCase _humanoidMovement;
         private readonly SimulationTickRunner _features;
         private bool _isSubscribed;
@@ -29,14 +27,12 @@ namespace TinCan.Network.Infrastructure
             NetworkManager networkManager,
             ProjectTimeService timeService,
             AirshipMovementUseCase airshipMovement,
-            CloudBoundaryUseCase cloudBoundary,
             HumanoidMovementUseCase humanoidMovement,
             IEnumerable<ISimulationTickable> featureTickables)
         {
             _networkManager = networkManager;
             _timeService = timeService;
             _airshipMovement = airshipMovement;
-            _cloudBoundary = cloudBoundary;
             _humanoidMovement = humanoidMovement;
             _features = new SimulationTickRunner(featureTickables);
         }
@@ -89,7 +85,7 @@ namespace TinCan.Network.Infrastructure
             {
                 _airshipMovement.Tick();
                 _features.Run(SimulationPhase.AfterAirship);
-                _cloudBoundary.Tick();
+                _features.Run(SimulationPhase.BeforeHumanoid);
                 Physics.SyncTransforms();
                 _humanoidMovement.Tick();
                 _features.Run(SimulationPhase.AfterHumanoid);

@@ -4,7 +4,6 @@ using TinCan.Features.Airship;
 using TinCan.Core.Domain;
 using TinCan.Features.Possession;
 using TinCan.Features.Interaction;
-using TinCan.Features.Events;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Abilities.Attributes;

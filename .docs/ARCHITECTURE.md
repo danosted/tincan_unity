@@ -137,8 +137,10 @@ build placement and weapons are *uses* of targeting, not separate aiming systems
 ### 7. Feature composition
 A feature is one folder under `Assets/Scripts/Features/` plus one `FeatureInstaller` asset under
 `Assets/Resources/Installers/`. The installer registers the feature's services, lists the networked prefabs it
-spawns and the fixtures it bolts onto the ship. Adding a feature touches no shared file. Older features still
-register directly in `ProjectLifetimeScope`; treat that as legacy and migrate when you touch them. Reference:
+spawns and the fixtures it bolts onto the ship. Adding a feature touches no shared file. `ProjectLifetimeScope`
+registers only the core: networking, time, registries and entities, possession (with `ILocalViewCamera`), abilities,
+input, the humanoid and airship simulations and their scheduler, interaction core, and spawning (which moves to a
+session layer later). Every other feature is an installer, switched on per scene by its profile. Reference:
 [`FEATURE_INSTALLERS.md`](FEATURE_INSTALLERS.md).
 
 ## A Play session, end to end
@@ -161,7 +163,7 @@ What happens between pressing Play and the first simulation tick.
 6. `ShipFixtureSpawningUseCase` (server) sees a new `IAirshipView` and spawns every `ShipFixtureDefinition`
    from the installers as a child `NetworkObject` of the ship.
 7. `NetworkSimulationScheduler` subscribes to the network tick and, every tick, runs:
-   airship movement, `AfterAirship` feature tickables, cloud boundary, `Physics.SyncTransforms`, humanoid
+   airship movement, `AfterAirship` feature tickables, `BeforeHumanoid` feature tickables (cloud boundary), `Physics.SyncTransforms`, humanoid
    movement, `AfterHumanoid` feature tickables. Per-frame work (`ITickable`) runs from VContainer's player loop
    outside this order.
 

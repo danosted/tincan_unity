@@ -16,14 +16,14 @@ namespace TinCan.DevTools
     public sealed class HarnessGameplayOverrides : IInitializable
     {
         private readonly HarnessOptions _options;
-        private readonly CloudBoundaryUseCase _cloudBoundary;
+        private readonly CloudBoundaryUseCase? _cloudBoundary; // null when the cloud boundary installer is off
         private readonly IEventPublisher _events;
         private readonly IShipBreakage? _breakage;
 
-        public HarnessGameplayOverrides(HarnessOptions options, CloudBoundaryUseCase cloudBoundary, IEventPublisher events, IObjectResolver resolver)
+        public HarnessGameplayOverrides(HarnessOptions options, IEventPublisher events, IObjectResolver resolver)
         {
             _options = options;
-            _cloudBoundary = cloudBoundary;
+            _cloudBoundary = resolver.TryResolve<CloudBoundaryUseCase>(out var cloudBoundary) ? cloudBoundary : null;
             _events = events;
             _breakage = resolver.TryResolve<IShipBreakage>(out var breakage) ? breakage : null;
         }
@@ -32,8 +32,11 @@ namespace TinCan.DevTools
         {
             if (!_options.IsScripted) return;
 
-            _cloudBoundary.CharacterResetEnabled = false;
-            _events.LogInfo("NetHarness", "Cloud-boundary character reset disabled for the scripted run.");
+            if (_cloudBoundary != null)
+            {
+                _cloudBoundary.CharacterResetEnabled = false;
+                _events.LogInfo("NetHarness", "Cloud-boundary character reset disabled for the scripted run.");
+            }
 
             if (_breakage == null) return;
             _breakage.AutoBreak = false;

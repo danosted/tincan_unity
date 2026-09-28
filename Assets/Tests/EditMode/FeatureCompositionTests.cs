@@ -95,14 +95,19 @@ namespace TinCan.Tests.EditMode
                 new Tickable(SimulationPhase.AfterHumanoid, log, "catch"),
                 new Tickable(SimulationPhase.AfterAirship, log, "fuel"),
                 new Tickable(SimulationPhase.AfterAirship, log, "cans"),
+                new Tickable(SimulationPhase.BeforeHumanoid, log, "clouds"),
             });
 
+            // The scheduler's order: AfterAirship, BeforeHumanoid, (physics sync, humanoids), AfterHumanoid.
             runner.Run(SimulationPhase.AfterAirship);
             Assert.That(log, Is.EqualTo(new[] { "fuel", "cans" }));
 
+            runner.Run(SimulationPhase.BeforeHumanoid);
+            Assert.That(log, Is.EqualTo(new[] { "fuel", "cans", "clouds" }));
+
             runner.Run(SimulationPhase.AfterHumanoid);
-            Assert.That(log, Is.EqualTo(new[] { "fuel", "cans", "catch" }));
-            Assert.That(runner.Count, Is.EqualTo(3));
+            Assert.That(log, Is.EqualTo(new[] { "fuel", "cans", "clouds", "catch" }));
+            Assert.That(runner.Count, Is.EqualTo(4));
         }
 
         private TestInstaller Installer(string name, int order)

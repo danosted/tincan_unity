@@ -47,27 +47,5 @@ namespace TinCan.Core.Domain.Events
         public override string ToString() => $"Actor {ActorId} ended {AbilityName}";
     }
 
-    public readonly struct CoordinatedEventStartedEvent
-    {
-        public readonly string EventName;
-
-        public CoordinatedEventStartedEvent(string eventName) => EventName = eventName;
-
-        public override string ToString() => $"Coordinated event started: {EventName}";
-    }
-
-    public readonly struct CoordinatedEventEndedEvent
-    {
-        public readonly string EventName;
-        public readonly bool Success;
-
-        public CoordinatedEventEndedEvent(string eventName, bool success)
-        {
-            EventName = eventName;
-            Success = success;
-        }
-
-        public override string ToString() => $"Coordinated event ended: {EventName} (Success: {Success})";
-    }
 
 }

@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8632eca921e511841a78653d4360cfa1, type: 3}
+  m_Name: CloudBoundaryFeatureInstaller
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.CloudBoundary.CloudBoundaryFeatureInstaller
+  _config: {fileID: 11400000, guid: 61985f3e59da9d74d9b896a99f745055, type: 2}
+  _visualProfile: {fileID: 11400000, guid: 3ab83aa9f9fd85d4590dcc01cc401635, type: 2}

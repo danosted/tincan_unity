@@ -303,7 +303,47 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack };
+        /// <summary>
+        /// Designed events POC: the server starts the HullStress catalog event; after its "Groan" phase it breaks parts 0
+        /// and 2 through the ship-damage handlers, which both peers see through normal replication. The server repairs them
+        /// and the event succeeds on its BrokenPartsAtMost(0) condition. Event state itself is server-local for now.
+        /// </summary>
+        public static readonly ScenarioEntry HullStressEvent = new(
+            new Scenario.Builder("HullStressEvent")
+                .InScene(TestScenes.ShipDamage)
+                .Describe("Server starts HullStress -> parts 0 and 2 break on both peers -> repaired -> event succeeds.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Expect("PointHealthy", "0")
+                    .Expect("PointHealthy", "2")
+                    .Do("StartEvent", "1")
+                    .Expect("EventPhase", "Groan")
+                    .WaitUntil("EventPhase", 6f, "Break")
+                    .Expect("PointBroken", "0")
+                    .Expect("PointBroken", "2")
+                    .Expect("HudShows", "Event"))
+                .Act(s => s
+                    .WaitUntil("PointBroken", 10f, "0")
+                    .WaitUntil("PointBroken", 3f, "2")
+                    .WaitUntil("MarkerShown", 3f, "0")
+                    .Checkpoint("event-broke-parts"))
+                .Assert(s => s
+                    .Wait(1f, "subject saw the breaks")
+                    .Do("RestorePoint", "0")
+                    .Expect("EventPhase", "Break")
+                    .Do("RestorePoint", "2")
+                    .WaitUntil("EventOutcome", 3f, "Succeeded")
+                    .Expect("EventPhase", "none"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<ShipDamageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<DesignedEventsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

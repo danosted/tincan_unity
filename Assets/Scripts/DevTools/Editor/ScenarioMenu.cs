@@ -58,6 +58,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "InteractRack (Host + Client, Lag100)")]
         public static void InteractRackDuo() => RunDuo("InteractRack", "Lag100");
 
+        [MenuItem(Root + "HullStressEvent (Host)")]
+        public static void HullStressEventSolo() => RunSolo("HullStressEvent");
+
+        [MenuItem(Root + "HullStressEvent (Host + Client, Lag100)")]
+        public static void HullStressEventDuo() => RunDuo("HullStressEvent", "Lag100");
+
         public static void RunSolo(string scenario)
         {
             if (!ScenarioSceneSwitcher.OpenFor(scenario)) return;

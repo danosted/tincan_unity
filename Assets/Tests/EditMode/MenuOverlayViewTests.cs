@@ -35,7 +35,7 @@ namespace TinCan.Tests.EditMode
                 new MenuItemDefinition { ItemId = "address", Label = "Address", Kind = MenuItemKind.TextField, DefaultValue = "" });
 
             // Named test assemblies cannot reference the predefined Assembly-CSharp assembly.
-            var viewType = Type.GetType("TinCan.UI.MenuOverlayView, Assembly-CSharp", true)!;
+            var viewType = Type.GetType("TinCan.App.Views.MenuOverlayView, TinCan.App", true)!;
             var view = _object.AddComponent(viewType);
             viewType.GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(view, null);
             viewType.GetMethod("Construct")!.Invoke(view, new object[] { _menus, new FakeNetworkService() });

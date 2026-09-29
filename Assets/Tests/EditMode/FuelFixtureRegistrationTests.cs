@@ -153,7 +153,7 @@ namespace TinCan.Tests.EditMode
 
         private IAbilityControllerBase AddAbilityController(GameObject instance)
         {
-            var type = Type.GetType("TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, Assembly-CSharp", true)!;
+            var type = Type.GetType("TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, TinCan.Network", true)!;
             var controller = (IAbilityControllerBase)instance.AddComponent(type);
             typeof(NetworkBehaviour).GetProperty("IsOwner")!.SetValue(controller, true);
             return controller;
@@ -164,7 +164,7 @@ namespace TinCan.Tests.EditMode
             var ship = CreateObject(name);
             var controller = AddAbilityController(ship);
             controller.SetAttribute(_fuel, new AttributeValue(fuel));
-            var type = Type.GetType("TinCan.Network.Infrastructure.ShipModuleRegistryNetworkMediator, Assembly-CSharp", true)!;
+            var type = Type.GetType("TinCan.Network.Infrastructure.ShipModuleRegistryNetworkMediator, TinCan.Network", true)!;
             ship.AddComponent(type);
             return ship;
         }

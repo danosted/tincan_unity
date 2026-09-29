@@ -232,9 +232,9 @@ attributes; do not add a second GAS tick without moving ownership out of the glo
 unity cmd run_tests --mode EditMode
 ```
 
-**Trap:** tests cannot reference `Assembly-CSharp`. If your class is in `App`, `Network/Infrastructure` or
-`Scripts/UI`, the test will not compile; move the logic to a feature or core assembly. A class in a feature assembly
-needs that assembly listed in `TinCan.Tests.EditMode.asmdef`.
+**Trap:** the tests see only the assemblies listed in `TinCan.Tests.EditMode.asmdef`. A test that can't find your
+class usually means its assembly (a new feature's, for example) isn't listed there yet: add it. Nothing compiles into
+`Assembly-CSharp` any more, which tests could never reference.
 
 ## 8. Run and playtest with a second player
 

@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 using VContainer;
 using TinCan.Core.Domain.Hud;
 
-namespace TinCan.UI
+namespace TinCan.App.Views
 {
     /// <summary>
     /// Throwaway presentation for <see cref="IHudValues"/>: one label per value, top-left.

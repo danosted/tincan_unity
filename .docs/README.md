@@ -18,9 +18,10 @@ Pick the path that matches what you want to do right now.
 
 ## The 60-second mental model
 
-- **Three assemblies, one direction.** `TinCan.Core.Domain` (contracts) <- `TinCan.Features` (gameplay) <-
-  `Assembly-CSharp` (composition root, NGO glue, UI views). Nothing points the other way. Unit tests can see only
-  the first two, so logic you want tested goes in `Features` or `Core.Domain`.
+- **Assemblies, one direction.** `TinCan.Core.Domain` (contracts) <- the core systems (`TinCan.Gas`,
+  `TinCan.Humanoid`, `TinCan.Ship`, ...) <- `TinCan.Network` (NGO glue) <- one assembly per feature
+  (`TinCan.Features.<Name>`) <- `TinCan.App` (composition root, UI views). Nothing points the other way, the compiler
+  enforces it, and every assembly can be unit-tested. See CODE_MAP "Assemblies and the one-way rule".
 - **A feature is one folder plus one asset.** Code in `Assets/Scripts/Features/<X>/`, and a `FeatureInstaller`
   asset in `Assets/Resources/Installers/`. The installer registers services, lists networked prefabs and ship
   fixtures. No shared file is edited. Older features still register directly in `ProjectLifetimeScope.cs`; that

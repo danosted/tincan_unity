@@ -35,16 +35,12 @@ namespace TinCan.Features.Abilities.Cues
         private Transform? _poolRoot;
         private float _now;
 
+        // The HUD is a core service (TinCan.UI's installer always loads); tests may pass none.
+        [Inject]
         public GameplayCuePresenter(ITimeService time, IHudValues? hud = null)
         {
             _time = time;
             _hud = hud;
-        }
-
-        [Inject]
-        public GameplayCuePresenter(ITimeService time, IObjectResolver resolver)
-            : this(time, resolver.TryResolve<IHudValues>(out var hud) ? hud : null)
-        {
         }
 
         public int HeldCount => _held.Count;

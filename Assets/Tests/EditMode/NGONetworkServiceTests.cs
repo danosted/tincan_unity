@@ -25,7 +25,7 @@ namespace TinCan.Tests.EditMode
                 transport.ConnectionData.ServerListenAddress = listenAddress!;
 
                 // Named test assemblies cannot reference the predefined Assembly-CSharp assembly.
-                var serviceType = Type.GetType("TinCan.Network.Infrastructure.NGONetworkService, Assembly-CSharp", true)!;
+                var serviceType = Type.GetType("TinCan.Network.Infrastructure.NGONetworkService, TinCan.Network", true)!;
                 var service = (INetworkService)Activator.CreateInstance(serviceType, new object?[] { manager, null })!;
 
                 service.SetConnection("192.0.2.10", 8000);

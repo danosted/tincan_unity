@@ -1,8 +1,8 @@
 #nullable enable
-using TinCan.Features.Airship.Fuel.Minigame;
+using TinCan.Network.Infrastructure;
 using UnityEngine;
 
-namespace TinCan.Network.Infrastructure
+namespace TinCan.Features.Airship.Fuel.Minigame
 {
     /// <summary>
     /// Infrastructure Layer: a stationary world pickup. NetworkTransformMediator replicates its spawn position.

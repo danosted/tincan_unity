@@ -32,6 +32,8 @@ namespace TinCan.Features.Abilities
         private readonly Dictionary<Guid, List<AbilitySpec>> _actorAbilities = new();
         private readonly Dictionary<Guid, List<ActiveGameplayEffect>> _activeEffects = new();
 
+        // The cue dispatcher is a GAS core service (the cues installer always loads); tests may pass none.
+        [Inject]
         public AbilitySystemUseCase(IAbilityRegistry registry, IActorRegistry actorRegistry, ITimeService timeService, IEventPublisher eventPublisher, IGameplayCueDispatcher cues = null)
         {
             _registry = registry;
@@ -39,12 +41,6 @@ namespace TinCan.Features.Abilities
             _timeService = timeService;
             _eventPublisher = eventPublisher;
             _cues = cues;
-        }
-
-        [Inject]
-        public AbilitySystemUseCase(IAbilityRegistry registry, IActorRegistry actorRegistry, ITimeService timeService, IEventPublisher eventPublisher, IObjectResolver resolver)
-            : this(registry, actorRegistry, timeService, eventPublisher, resolver.TryResolve<IGameplayCueDispatcher>(out var cues) ? cues : null)
-        {
         }
 
         public void Initialize()

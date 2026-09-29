@@ -268,7 +268,7 @@ rebase on `origin/main`, PR to `danosted/tincan_unity` main with the file list a
 | Feature does nothing, no errors | Installer asset is not under a `Resources/Installers` folder, or a reference on it is unassigned. Check the console for the installer's warning. |
 | Pressing E does nothing | `IA_` dropdown is blank (handler renamed after the asset was made), or the collider is below the interaction ray, or `_interactionDefinition` is unassigned on the target. |
 | Fixture spawns at the world origin or drifts | Prefab root is missing `AutoObjectParentSync`, or it has a `NetworkTransform`. |
-| Test file will not compile: type not found | Your class landed in `Assembly-CSharp` (`App`, `Network/Infrastructure`, `Scripts/UI`), or in an assembly the tests don't reference yet. Move it to the feature folder, or add the feature's assembly to `TinCan.Tests.EditMode.asmdef`. |
+| Test file will not compile: type not found | Your class is in an assembly the tests don't reference yet. Add the feature's assembly to `TinCan.Tests.EditMode.asmdef`. |
 | Nothing moves in play, scheduler never resolves | A class has a test-only constructor overload and VContainer picked it. Mark the real constructor `[Inject]`. |
 | Value correct on host, wrong on a late joiner | You relied on `NetworkVariable.OnValueChanged` for the initial value. Read `.Value` in `OnNetworkSpawn` as well. |
 | Level resets to base when another effect fires | You stored a persistent value in a GAS `CurrentValue`. Use `BaseValue` (see `FuelAttributeSet`). |

@@ -84,13 +84,13 @@ namespace TinCan.Network.Infrastructure.Abilities
             }
         }
 
+        // Tag registry and cue player are GAS core services, always registered (core installers always load).
         [Inject]
-        public void Construct(AbilitySystemUseCase abilitySystem, IObjectResolver resolver)
+        public void Construct(AbilitySystemUseCase abilitySystem, IGameplayTagRegistry tagRegistry, IGameplayCuePlayer cuePlayer)
         {
             _abilitySystem = abilitySystem;
-            // Optional: registered by GameplayTagsFeatureInstaller, which can be switched off.
-            _tagRegistry = resolver.TryResolve<IGameplayTagRegistry>(out var registry) ? registry : null;
-            _cuePlayer = resolver.TryResolve<IGameplayCuePlayer>(out var cuePlayer) ? cuePlayer : null;
+            _tagRegistry = tagRegistry;
+            _cuePlayer = cuePlayer;
         }
 
         // IAbilityController Implementation
@@ -149,8 +149,8 @@ namespace TinCan.Network.Infrastructure.Abilities
             return name;
         }
 
-        // Tags arrive by name. The registry (GameplayTagsFeatureInstaller) is the source of truth; without it, fall
-        // back to scanning loaded tag assets, which only finds tags something has already loaded.
+        // Tags arrive by name. The registry (GameplayTagsFeatureInstaller, always loaded) is the source of truth. The scan
+        // only serves a mediator that was never injected (EditMode tests) and finds only tags something already loaded.
         private bool TryResolveTag(string tagName, out GameplayTag tag)
         {
             if (_tagRegistry != null) return _tagRegistry.TryGet(tagName, out tag);

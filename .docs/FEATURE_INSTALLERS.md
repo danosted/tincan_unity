@@ -136,25 +136,31 @@ The input binding config is still a list in a shared asset.
 
 ## Selecting features per scene
 
-By default `ProjectLifetimeScope` loads every installer under any `Resources/Installers` folder — the same set for
-every scene, since `Resources` isn't scene-scoped. To compose a specific experience (e.g. a fuel-only sandbox scene
-without the flying-can minigame), create a `FeatureProfile` asset (**TinCan > Features > Feature Profile**), list
-only the installers that scene wants, and assign it to that scene's `GameLifetimeScope` instance (its
-`ProjectLifetimeScope` component, `Feature Composition` header). A scene with no profile assigned keeps loading
-everything, unchanged. This only gates installer-based features; the legacy features still registered directly in
-`ProjectLifetimeScope.Configure` are global to every scene regardless of profile.
+**Core installers always load; profiles pick features.** An installer in a core assembly (`TinCan.Gas`,
+`TinCan.Targeting`, `TinCan.Interaction`, `TinCan.Items`, `TinCan.UI`, ...) belongs to a core system and loads in
+every scene: `FeatureInstallerCatalog.LoadForScene` adds them all to what the scene's profile lists, and
+`FeatureInstallerCatalog.IsCore` decides by assembly, so there is no list to keep. Core services are therefore
+always there: inject them directly, never through `TryResolve`. `FeatureProfiles_ListNoCoreInstallers` fails if a
+profile lists one.
 
-A profile can also **include** other profiles, so shared bases (e.g. a `Profile_Base` listing just
-`UiFeatureInstaller`) aren't repeated in every experience-specific profile. `ProjectLifetimeScope` calls
+To compose a specific experience (e.g. a fuel-only sandbox scene without the flying-can minigame), create a
+`FeatureProfile` asset (**TinCan > Features > Feature Profile**), list only the features that scene wants, and assign
+it to that scene's `GameLifetimeScope` instance (its `ProjectLifetimeScope` component, `Feature Composition` header).
+A scene with no profile assigned loads every installer under any `Resources/Installers` folder. Registrations made
+directly in `ProjectLifetimeScope.Configure` are also global to every scene.
+
+A profile can also **include** other profiles, so shared bases (e.g. a `Profile_Base` listing the features every
+scene wants: cloud boundary, free camera, the door, the test harness) aren't repeated in every experience-specific
+profile. `ProjectLifetimeScope` calls
 `FeatureProfile.ResolveInstallers()`, which walks a profile's `_includes` recursively, merges every reachable
 profile's own installer list, de-duplicates installers listed more than once, and tolerates cyclic includes (a
 profile that (in)directly includes itself is simply visited once). Compose by listing base profiles under
 `_includes` and only the feature-specific installers under the profile's own list.
 
 **A new installer does nothing in a profiled scene until a profile lists it.** The main scene
-(`drm_cloud_environment`) uses `Profile_FuelSandbox`, which includes `Profile_Base`. Put shared infrastructure,
-such as `GameplayTagsFeatureInstaller`, in `Profile_Base`, and gameplay features in the experience profile. This
-is also how a feature is switched on or off: add it to a profile or remove it.
+(`drm_cloud_environment`) uses `Profile_FuelSandbox`, which includes `Profile_Base`. Put features every scene wants
+in `Profile_Base`, and gameplay features in the experience profile. This is also how a feature is switched on or off:
+add it to a profile or remove it. A core system can't be switched off.
 
 **A feature's assembly references are its requirements.** If `TinCan.Features.FlyingCan` references
 `TinCan.Features.Fuel`, every profile that loads FlyingCan must load Fuel. The compiler already made the code depend

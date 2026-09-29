@@ -44,6 +44,17 @@ namespace TinCan.DevTools
                 return;
             }
 
+            // A scenario's libraries need the features its own scene loads; in another scene they cannot be built.
+            // This happens with a scenario player tag left over from an interrupted run.
+            var scene = builder.ApplicationOrigin is Component scope ? scope.gameObject.scene.path : null;
+            var expected = entry.Scenario.ScenePath;
+            if (expected != null && !string.IsNullOrEmpty(scene) && scene != expected)
+            {
+                Debug.LogWarning($"[Scenario] '{options.Scenario}' runs in {expected}, not {scene}; not starting it. " +
+                                 "Leftover scenario player tag? Clear it in Window > Multiplayer > Multiplayer Play Mode.");
+                return;
+            }
+
             builder.RegisterInstance(entry);
             builder.Register<ScenarioTimeline>(Lifetime.Singleton);
             builder.Register<ScenarioSubject>(Lifetime.Singleton);

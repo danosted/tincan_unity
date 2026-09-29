@@ -7,8 +7,13 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
+using TinCan.Core.Domain;
+using TinCan.Core.Domain.Features;
+using TinCan.Features.Abilities;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.TestTools;
+using VContainer;
 
 namespace TinCan.Tests.EditMode
 {
@@ -37,6 +42,21 @@ namespace TinCan.Tests.EditMode
         private static readonly Regex TestedSuffix = new(@"(Processor|UseCase|InteractionHandler)$");
         private static readonly Regex EntityRegistration = new(@"\.(Register|Unregister)Entity\(");
         private static readonly Regex NewGuid = new(@"\bGuid\.NewGuid\(");
+
+        /// <summary>Prefabs every scene spawns whatever its profile loads, so nothing on them may need a feature.</summary>
+        private static readonly string[] SharedPrefabs =
+        {
+            "Assets/Prefabs/NetworkPlayer.prefab",
+            "Assets/Prefabs/Airship/Airship_Prefab.prefab",
+            "Assets/Prefabs/Test/TestShip_Prefab.prefab",
+        };
+
+        private const string ScopePrefab = "Assets/Prefabs/Singletons/GameLifetimeScope.prefab";
+
+        /// <summary>Assemblies features are being carved out of; a new feature installer may not be compiled into one.</summary>
+        private static readonly HashSet<string> SharedAssemblies = new() { "TinCan.Core.Domain", "TinCan.Core.Infrastructure", "TinCan.Features", "Assembly-CSharp" };
+
+        private VContainer.Unity.LifetimeScope? _scope;
 
         [Test]
         public void NetworkBehaviours_EndInNetworkMediator()
@@ -71,7 +91,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void ProjectLifetimeScope_RegistrationsDoNotGrow()
         {
-            var text = Sources("Scripts/Core/Infrastructure").Single(s => s.Path.EndsWith("/ProjectLifetimeScope.cs")).Text;
+            var text = Sources("Scripts/App").Single(s => s.Path.EndsWith("/ProjectLifetimeScope.cs")).Text;
             var count = Registration.Matches(WithoutCommentLines(text)).Count;
 
             AssertRatchet(count, ArchitectureRulesBaseline.ProjectLifetimeScopeRegistrationLimit,
@@ -148,6 +168,187 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void FeatureInstallers_LiveInTheirOwnAssembly()
+        {
+            var actual = ProjectTypes()
+                .Where(t => typeof(FeatureInstaller).IsAssignableFrom(t) && !t.IsAbstract)
+                .Where(t => SharedAssemblies.Contains(t.Assembly.GetName().Name))
+                .Select(TypeName);
+
+            AssertMatchesBaseline(actual, ArchitectureRulesBaseline.InstallersInSharedAssemblies,
+                nameof(ArchitectureRulesBaseline.InstallersInSharedAssemblies),
+                "A feature is its own assembly: give its folder an asmdef named TinCan.Features.<Name> that references "
+                + "only what the feature uses (CODE_MAP.md, \"Assemblies and the one-way rule\"; the worked example is "
+                + "Features/GasChallenge).");
+        }
+
+        [Test]
+        public void AssemblyCSharp_HoldsOnlyTheTopLayer()
+        {
+            // Unity's default assembly catches any script outside an asmdef and sees everything. Only the top layer
+            // (composition root, NGO adapters, overlay views) may live there, and it shrinks as those get assemblies.
+            var offenders = UnityEditor.Compilation.CompilationPipeline.GetAssemblies()
+                .Where(a => a.name == "Assembly-CSharp")
+                .SelectMany(a => a.sourceFiles)
+                .Select(f => f.Replace('\\', '/'))
+                .Where(f => f.StartsWith("Assets/Scripts/", StringComparison.Ordinal))
+                .Where(f => !ArchitectureRulesBaseline.AssemblyCSharpFolders.Any(folder => f.StartsWith(folder, StringComparison.Ordinal)))
+                .ToList();
+
+            Assert.That(offenders, Is.Empty,
+                "A script outside every asmdef compiles into Assembly-CSharp and can see everything (CODE_MAP.md, "
+                + "\"Assemblies and the one-way rule\"). Put it in its feature's or system's assembly:\n  "
+                + string.Join("\n  ", offenders));
+        }
+
+        [Test]
+        public void SharedAssemblies_DoNotReferenceFeatureAssemblies()
+        {
+            var features = FeatureAssemblies();
+            var offenders = UnityEditor.Compilation.CompilationPipeline.GetAssemblies()
+                .Where(a => a.name is "TinCan.Core.Domain" or "TinCan.Core.Infrastructure" or "TinCan.Features")
+                .SelectMany(a => a.assemblyReferences.Where(r => features.Contains(r.name)).Select(r => $"{a.name} -> {r.name}"))
+                .ToList();
+
+            Assert.That(offenders, Is.Empty,
+                "Core never depends on a feature (CODE_MAP.md, \"Assemblies and the one-way rule\"). Move the contract the "
+                + "core needs down into Core.Domain and let the feature implement it:\n  " + string.Join("\n  ", offenders));
+        }
+
+        [Test]
+        public void FeatureProfiles_LoadTheFeaturesTheirFeaturesReference()
+        {
+            // A feature assembly's references to other feature assemblies are its requirements: the compiler already
+            // enforces them in code, so a profile must load them too.
+            var features = FeatureAssemblies();
+            var references = UnityEditor.Compilation.CompilationPipeline.GetAssemblies()
+                .Where(a => features.Contains(a.name))
+                .ToDictionary(a => a.name, a => a.assemblyReferences.Select(r => r.name).Where(features.Contains).ToList());
+
+            var offenders = new List<string>();
+            foreach (var profile in LoadAssets<FeatureProfile>())
+            {
+                var installers = profile.ResolveInstallers().ToList();
+                var loaded = new HashSet<string>(installers.Select(i => i.GetType().Assembly.GetName().Name));
+                foreach (var installer in installers)
+                {
+                    var assembly = installer.GetType().Assembly.GetName().Name;
+                    if (!references.TryGetValue(assembly, out var required)) continue;
+                    offenders.AddRange(required.Where(r => !loaded.Contains(r)).Select(r => $"{profile.name}: {installer.name} ({assembly}) needs {r}"));
+                }
+            }
+
+            Assert.That(offenders.Distinct(), Is.Empty,
+                "A profile loads every feature its features reference (FEATURE_INSTALLERS.md, \"Selecting features per "
+                + "scene\"). Add the referenced feature's installer to the profile:\n  " + string.Join("\n  ", offenders.Distinct()));
+        }
+
+        [Test]
+        public void FeatureProfiles_CanBuildTheirServices()
+        {
+            // Runs the real ProjectLifetimeScope.Configure (core registrations plus the profile's installers, then
+            // InstallerServiceCheck) for every profile asset, on an inactive copy of the scope prefab: it registers but
+            // never builds, so a profile that would refuse to start at Play fails here first.
+            LogAssert.ignoreFailingMessages = true;
+            var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(ScopePrefab);
+            Assert.That(prefab, Is.Not.Null, $"Scope prefab moved or renamed: {ScopePrefab}. Update ScopePrefab.");
+
+            // The test harness installer registers the active scenario's libraries, read from launch arguments and
+            // MPPM player tags. Check the profiles as a plain Play would see them, not whatever scenario ran last.
+            var launchArguments = typeof(LaunchArguments).GetField("_current", BindingFlags.Static | BindingFlags.NonPublic)!;
+            var savedArguments = launchArguments.GetValue(null);
+            launchArguments.SetValue(null, Array.Empty<string>());
+
+            var offenders = new List<string>();
+            try
+            {
+                offenders.AddRange(ConfigureEveryProfile(prefab));
+            }
+            finally
+            {
+                launchArguments.SetValue(null, savedArguments);
+            }
+
+            Assert.That(offenders, Is.Empty,
+                "Every service a profile's installers register must be buildable from that profile (FEATURE_INSTALLERS.md, "
+                + "\"Features and shared prefabs\"). Add the installer that provides it to the profile, or resolve it "
+                + "optionally through IObjectResolver.TryResolve:\n  " + string.Join("\n  ", offenders));
+        }
+
+        private static IEnumerable<string> ConfigureEveryProfile(GameObject prefab)
+        {
+            var offenders = new List<string>();
+            foreach (var profile in LoadAssets<FeatureProfile>())
+            {
+                var host = new GameObject("ScopeUnderTest");
+                host.SetActive(false);
+                try
+                {
+                    var scope = UnityEngine.Object.Instantiate(prefab, host.transform).GetComponent<VContainer.Unity.LifetimeScope>();
+                    scope.GetType().GetField("_featureProfile", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(scope, profile);
+                    var configure = typeof(VContainer.Unity.LifetimeScope).GetMethod("Configure", BindingFlags.Instance | BindingFlags.NonPublic)!;
+                    configure.Invoke(scope, new object[] { new ContainerBuilder { ApplicationOrigin = scope } });
+                }
+                catch (TargetInvocationException e)
+                {
+                    offenders.Add($"{profile.name} | {e.InnerException?.Message ?? e.Message}");
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(host);
+                }
+            }
+
+            return offenders;
+        }
+
+        [Test]
+        public void SharedPrefabs_DoNotRequireFeatureServices()
+        {
+            // Some installers warn about unassigned optional config while installing; that is not this rule's concern.
+            LogAssert.ignoreFailingMessages = true;
+            var installers = LoadAssets<FeatureInstaller>().ToList();
+            var features = FeatureRegistrations(installers);
+            bool FeatureProvided(Type type) => features.Exists(type, includeInterfaceTypes: true);
+
+            var granted = new HashSet<UnityEngine.Object>(installers
+                .OfType<FeatureInstaller.IExtension<ActorAbilityGrant>>()
+                .SelectMany(e => e.Contributions)
+                .Where(g => g?.Ability != null)
+                .Select(g => (UnityEngine.Object)g.Ability!));
+
+            var actual = new List<string>();
+            foreach (var path in SharedPrefabs)
+            {
+                var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                Assert.That(prefab, Is.Not.Null, $"Shared prefab moved or renamed: {path}. Update SharedPrefabs.");
+                var name = Path.GetFileNameWithoutExtension(path);
+
+                foreach (var component in prefab.GetComponentsInChildren<MonoBehaviour>(true))
+                {
+                    if (component == null) continue;
+                    foreach (var dependency in InstallerServiceCheck.Dependencies(component.GetType()).Where(t => !IsCollection(t) && FeatureProvided(t)).Distinct())
+                        actual.Add($"{name} | {TypeName(component.GetType())} | {TypeName(dependency)}");
+
+                    var starting = new UnityEditor.SerializedObject(component).FindProperty("_startingAbilities");
+                    if (starting is not { isArray: true }) continue;
+                    for (int i = 0; i < starting.arraySize; i++)
+                    {
+                        var ability = starting.GetArrayElementAtIndex(i).objectReferenceValue;
+                        if (ability != null && granted.Contains(ability))
+                            actual.Add($"{name} | {TypeName(component.GetType())} | starting ability {ability.name}");
+                    }
+                }
+            }
+
+            AssertMatchesBaseline(actual, ArchitectureRulesBaseline.SharedPrefabFeatureDependencies,
+                nameof(ArchitectureRulesBaseline.SharedPrefabFeatureDependencies),
+                "Shared prefabs carry core components and sockets only (FEATURE_INSTALLERS.md, \"Features and shared "
+                + "prefabs\"). Resolve a feature's service optionally through IObjectResolver.TryResolve, and let the "
+                + "feature grant its abilities with an ActorAbilityGrant instead of the prefab's starting list.");
+        }
+
+        [Test]
         public void Scripts_HaveNoRegionsOrCoroutines()
         {
             var offenders = Sources("Scripts")
@@ -204,6 +405,50 @@ namespace TinCan.Tests.EditMode
                         yield return type;
             }
         }
+
+        /// <summary>Every installer in the project, installed into one builder: the service types only a feature provides.</summary>
+        private ContainerBuilder FeatureRegistrations(IEnumerable<FeatureInstaller> installers)
+        {
+            var builder = SceneBuilder();
+            InstallerServiceCheck.Install(installers, builder);
+            Assert.That(builder.Exists(typeof(TinCan.Features.Targeting.ITargetingService), includeInterfaceTypes: true), Is.True,
+                "Installer discovery found no feature services, so this rule would check nothing.");
+            return builder;
+        }
+
+        // RegisterComponentInHierarchy reads the scene from the builder's LifetimeScope. An inactive scope never runs
+        // Awake, so it supplies the scene without building a container.
+        private ContainerBuilder SceneBuilder()
+        {
+            if (_scope == null)
+            {
+                var host = new GameObject("InstallerCheckScope");
+                host.SetActive(false);
+                _scope = host.AddComponent<VContainer.Unity.LifetimeScope>();
+            }
+            return new ContainerBuilder { ApplicationOrigin = _scope };
+        }
+
+        [TearDown]
+        public void DestroyScope()
+        {
+            if (_scope != null) UnityEngine.Object.DestroyImmediate(_scope.gameObject);
+            _scope = null;
+        }
+
+        /// <summary>Feature assemblies: a TinCan.Features.* assembly that defines a feature installer.</summary>
+        private static HashSet<string> FeatureAssemblies() => new(ProjectTypes()
+            .Where(t => typeof(FeatureInstaller).IsAssignableFrom(t) && !t.IsAbstract)
+            .Select(t => t.Assembly.GetName().Name)
+            .Where(n => n.StartsWith("TinCan.Features.", StringComparison.Ordinal)));
+
+        private static bool IsCollection(Type type) =>
+            type.IsArray || (type.IsGenericType && typeof(System.Collections.IEnumerable).IsAssignableFrom(type));
+
+        private static IEnumerable<T> LoadAssets<T>() where T : UnityEngine.Object =>
+            UnityEditor.AssetDatabase.FindAssets($"t:{typeof(T).Name}", new[] { "Assets" })
+                .Select(guid => UnityEditor.AssetDatabase.LoadAssetAtPath<T>(UnityEditor.AssetDatabase.GUIDToAssetPath(guid)))
+                .Where(asset => asset != null);
 
         private static string TypeName(Type type)
         {

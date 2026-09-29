@@ -104,8 +104,7 @@ namespace TinCan.Tests.EditMode
         {
             var actors = new FakeActorRegistry();
             var abilities = new FakeAbilityRegistry();
-            var type = Type.GetType("TinCan.Core.Infrastructure.ActorOrchestrator, Assembly-CSharp", true)!;
-            var orchestrator = (IActorOrchestrator)Activator.CreateInstance(type, actors, new InteractorRegistry(), abilities)!;
+            var orchestrator = new TinCan.Core.Infrastructure.ActorOrchestrator(actors, new InteractorRegistry(), abilities);
 
             var root = Create("Ship");
             var entity = root.AddComponent<FakeEntity>();
@@ -129,7 +128,8 @@ namespace TinCan.Tests.EditMode
         public void Possession_IsOptIn_OnlyPlayerShipAndFreeCameraArePossessable()
         {
             var possessable = AppDomain.CurrentDomain.GetAssemblies()
-                .Where(a => a.GetName().Name is "Assembly-CSharp" or "TinCan.Features")
+                .Where(a => a.GetName().Name == "Assembly-CSharp"
+                            || (a.GetName().Name.StartsWith("TinCan.") && !a.GetName().Name.StartsWith("TinCan.Tests")))
                 .SelectMany(a => a.GetTypes())
                 .Where(t => t.IsClass && !t.IsAbstract && typeof(IPossessable).IsAssignableFrom(t))
                 .Select(t => t.Name)

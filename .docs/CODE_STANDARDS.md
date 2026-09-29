@@ -15,6 +15,15 @@ For where code goes, see [`CODE_MAP.md`](./CODE_MAP.md); for the design rules, [
 - **Dynamic Resolution:** Prefer resolving dependencies programmatically via VContainer `[Inject]`, `GetComponent()`, or `GetComponentInChildren()` in `Awake`/`Start`/`OnNetworkSpawn`.
 - **Constructor Injection:** For plain C# classes (UseCases, Processors, Handlers), use Constructor injection exclusively. If a class has a test-only constructor overload, mark the production constructor `[Inject]` (VContainer picks the longest one otherwise).
 
+### Assemblies: every feature is its own
+- A new feature gets its own asmdef, `TinCan.Features.<Name>`, in its folder. It references only what it uses:
+  `TinCan.Core.Domain`, the shared `TinCan.Features`, the packages it needs, and the other features it builds on.
+- Don't add new features to `TinCan.Features`; that block is being split up, not grown.
+- Core never references a feature. When core needs something a feature provides, put the contract in
+  `Core.Domain` and let the feature implement it.
+- Worked example: `Features/GasChallenge/`. The rule, diagram and rule tests are in
+  [CODE_MAP.md, "Assemblies and the one-way rule"](./CODE_MAP.md#assemblies-and-the-one-way-rule).
+
 ## 3. Naming Conventions
 - **Interfaces:** Prefix with `I` (e.g., `IPossessable`).
 - **Classes/Structs:** PascalCase (e.g., `NetworkMediator`).
@@ -46,7 +55,8 @@ For where code goes, see [`CODE_MAP.md`](./CODE_MAP.md); for the design rules, [
 - Views keep their math in a `public static` function and test that.
 - `Assets/Tests/EditMode/ArchitectureRulesTests.cs` checks the rules that can be checked: naming, global lookups in
   `Features`, registrations in `ProjectLifetimeScope`, a test per processor/use case/handler, `#nullable enable`, no
-  `#region` or coroutines. Known offenders sit in `ArchitectureRulesBaseline.cs`. Remove an entry when you fix it; never
+  `#region` or coroutines, and the assembly rules (a feature in its own assembly, core never referencing a feature,
+  profiles loading the features their features reference). Known offenders sit in `ArchitectureRulesBaseline.cs`. Remove an entry when you fix it; never
   add one without the developer's agreement.
 
 ## Related Documents

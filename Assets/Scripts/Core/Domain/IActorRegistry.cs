@@ -5,6 +5,7 @@ namespace TinCan.Core.Domain
 {
     public interface IActorRegistry
     {
+        event System.Action<IActor> OnActorRegistered;
         event System.Action<IActor> OnActorUnregistered;
         IEnumerable<IActor> AllActors { get; }
         IEnumerable<T> GetActors<T>() where T : IActor;

@@ -500,8 +500,6 @@ GameObject:
   - component: {fileID: 8058975959621502806}
   - component: {fileID: 8391301724436922}
   - component: {fileID: 5413053595513433082}
-  - component: {fileID: 1236587825717468461}
-  - component: {fileID: 5238261166935614583}
   m_Layer: 8
   m_Name: BoosterTEST
   m_TagString: Untagged
@@ -616,37 +614,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Events.ToggleShipTagStation
   ShowTopMostFoldoutHeaderGroup: 1
   _interactionDefinition: {fileID: 11400000, guid: 3c1bb46d63f580c4686d6896541f2e1b, type: 2}
---- !u!114 &1236587825717468461
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8235984370234757519}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e741851cba3ad425c91ecf922cc6b379, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.VisualScripting.Core::Unity.VisualScripting.Variables
-  _data:
-    _json: '{"declarations":{"Kind":"Object","collection":{"$content":[],"$version":"A"},"$version":"A"}}'
-    _objectReferences: []
---- !u!114 &5238261166935614583
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8235984370234757519}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d2fe5546f775c47d2820aa5e8a715f53, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.VisualScripting.Flow::Unity.VisualScripting.ScriptMachine
-  _data:
-    _json: '{"nest":{"source":"Macro","macro":0,"embed":null}}'
-    _objectReferences:
-    - {fileID: 11400000, guid: 015b676f68c18e243ad583580ed6f0aa, type: 2}
 --- !u!1001 &562812679333077657
 PrefabInstance:
   m_ObjectHideFlags: 0

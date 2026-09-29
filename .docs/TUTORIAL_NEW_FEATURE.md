@@ -15,8 +15,10 @@ Answer these; they decide which steps below you need.
 1. **Who owns the state?** Almost always the server. Clients read replicated values and predict from input.
 2. **Per tick or per frame?** Logic that must agree across peers runs on the fixed tick (`ISimulationTickable`).
    Visuals and HUD run per frame (`ITickable`, `MonoBehaviour.Update`).
-3. **Where does it live in the world?** On the ship (a fixture, spawned by the installer), on the player (a child
-   of `NetworkPlayer.prefab`, a shared file), or nowhere (a global system).
+3. **Where does it live in the world?** On the ship (a fixture, spawned by the installer), on the player (an
+   ability grant from the installer; a child of `NetworkPlayer.prefab`, a shared file, only if it must be a
+   component), or nowhere (a global system). Either way the feature must be absent without its installer; see
+   [Features and shared prefabs](FEATURE_INSTALLERS.md#features-and-shared-prefabs).
 4. **How does the player trigger it?** Press E (interaction handler) or a key that must be predicted (an ability
    input bit). Never a bare `ServerRpc` for simulated actions.
 5. **Which numbers will someone tune?** They go in a `*Config` ScriptableObject.
@@ -27,12 +29,13 @@ Ballast: server-owned; fill per tick, HUD per frame; on the ship; press E; capac
 
 These are shared files. A feature built on the installer pattern never edits them:
 
-- `Assets/Scripts/Core/Infrastructure/ProjectLifetimeScope.cs`
+- `Assets/Scripts/App/ProjectLifetimeScope.cs`
 - `Assets/Scripts/Network/Infrastructure/NetworkSimulationScheduler.cs`
 - `Assets/Prefabs/Singletons/GameLifetimeScope.prefab`
 - `Assets/Prefabs/Airship/Airship_Prefab.prefab`
 - `Assets/DefaultNetworkPrefabs.asset`
-- `Assets/Prefabs/NetworkPlayer.prefab` (unless the feature genuinely lives on the player; then one child only)
+- `Assets/Prefabs/NetworkPlayer.prefab` (unless the feature genuinely lives on the player; then one child only,
+  resolving its services optionally. Abilities go in an `ActorAbilityGrant`, not `_startingAbilities`.)
 - `Assets/Scripts/Core/Domain/` (unless you are adding a contract several features share)
 - `Assets/Abilities/Inputs/DefaultInputBindingConfig.asset` (unless you add a new predicted input)
 
@@ -47,8 +50,17 @@ unity cmd recompile && unity cmd recompile_status
 
 ### 1. Create the folder
 
-`Assets/Scripts/Features/Ballast/`. It compiles into `TinCan.Features` automatically; no asmdef needed. Every
-file starts with `#nullable enable`.
+`Assets/Scripts/Features/Ballast/`, with its own assembly: create `TinCan.Features.Ballast.asmdef` in the folder
+(**Create > Scripting > Assembly Definition**). Copy [`Features/GasChallenge/TinCan.Features.GasChallenge.asmdef`](../Assets/Scripts/Features/GasChallenge/TinCan.Features.GasChallenge.asmdef)
+and rename it. Reference:
+- `TinCan.Core.Domain` and `TinCan.Features`;
+- `VContainer`, and `Unity.Netcode.Runtime` only if you write a `NetworkBehaviour`;
+- any other feature Ballast builds on, and nothing else.
+
+A feature you don't reference is invisible to your code, which is the point. Every profile that loads Ballast must
+then load those features too; a rule test checks it. Add a reference to `TinCan.Tests.EditMode.asmdef` for your
+tests, and to `TinCan.DevTools.asmdef` if a scenario library uses Ballast's types. Rationale: [CODE_MAP.md, "Assemblies
+and the one-way rule"](CODE_MAP.md#assemblies-and-the-one-way-rule). Every file starts with `#nullable enable`.
 
 ### 2. Config
 
@@ -256,7 +268,7 @@ rebase on `origin/main`, PR to `danosted/tincan_unity` main with the file list a
 | Feature does nothing, no errors | Installer asset is not under a `Resources/Installers` folder, or a reference on it is unassigned. Check the console for the installer's warning. |
 | Pressing E does nothing | `IA_` dropdown is blank (handler renamed after the asset was made), or the collider is below the interaction ray, or `_interactionDefinition` is unassigned on the target. |
 | Fixture spawns at the world origin or drifts | Prefab root is missing `AutoObjectParentSync`, or it has a `NetworkTransform`. |
-| Test file will not compile: type not found | Your class landed in `Assembly-CSharp` (`Core/Infrastructure`, `Network/Infrastructure`, `Scripts/UI`). Move it to the feature folder. |
+| Test file will not compile: type not found | Your class landed in `Assembly-CSharp` (`App`, `Network/Infrastructure`, `Scripts/UI`), or in an assembly the tests don't reference yet. Move it to the feature folder, or add the feature's assembly to `TinCan.Tests.EditMode.asmdef`. |
 | Nothing moves in play, scheduler never resolves | A class has a test-only constructor overload and VContainer picked it. Mark the real constructor `[Inject]`. |
 | Value correct on host, wrong on a late joiner | You relied on `NetworkVariable.OnValueChanged` for the initial value. Read `.Value` in `OnNetworkSpawn` as well. |
 | Level resets to base when another effect fires | You stored a persistent value in a GAS `CurrentValue`. Use `BaseValue` (see `FuelAttributeSet`). |

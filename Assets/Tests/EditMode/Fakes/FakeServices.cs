@@ -65,6 +65,7 @@ namespace TinCan.Tests.EditMode.Fakes
 
     public class FakeActorRegistry : IActorRegistry
     {
+        public event Action<IActor> OnActorRegistered;
         public event Action<IActor> OnActorUnregistered;
 
         private readonly List<IActor> _actors = new();
@@ -83,7 +84,12 @@ namespace TinCan.Tests.EditMode.Fakes
 
         public TActor GetLocalPlayerActor<TActor>() where TActor : IActor => LocalPlayer is TActor local ? local : default;
 
-        public void Register(IActor actor) => _actors.Add(actor);
+        public void Register(IActor actor)
+        {
+            _actors.Add(actor);
+            OnActorRegistered?.Invoke(actor);
+        }
+
         public void Unregister(IActor actor)
         {
             _actors.Remove(actor);

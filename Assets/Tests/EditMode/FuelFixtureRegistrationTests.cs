@@ -49,9 +49,7 @@ namespace TinCan.Tests.EditMode
         {
             _actors = new FakeActorRegistry();
             _abilities = new RecordingAbilityRegistry();
-            // Infrastructure is in Assembly-CSharp; mirror the existing mediator tests' reflection boundary.
-            var type = Type.GetType("TinCan.Core.Infrastructure.ActorOrchestrator, Assembly-CSharp", true)!;
-            _orchestrator = (IActorOrchestrator)Activator.CreateInstance(type, _actors, new InteractorRegistry(), _abilities)!;
+            _orchestrator = new TinCan.Core.Infrastructure.ActorOrchestrator(_actors, new InteractorRegistry(), _abilities);
             var fixture = CreateObject("Fuel fixture");
             _entity = fixture.AddComponent<FakeEntity>();
             _tank = fixture.AddComponent<FuelTankNetworkMediator>();

@@ -19,6 +19,7 @@ namespace TinCan.Tests.EditMode
             public IActor? LocalPlayer;
             public readonly List<IActor> Actors = new();
 
+            public event Action<IActor>? OnActorRegistered { add { } remove { } }
             public event Action<IActor>? OnActorUnregistered;
             public IEnumerable<IActor> AllActors => Actors;
             public IEnumerable<T> GetActors<T>() where T : IActor => Actors.OfType<T>();

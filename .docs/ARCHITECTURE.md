@@ -10,7 +10,7 @@ TinCan is built on a few technical pillars designed to make multiplayer developm
 ### 1. Dependency Injection (VContainer)
 We use [VContainer](https://vcontainer.hadashikick.jp/) as our DI framework.
 - **No Singletons:** Avoid using `Instance` patterns. Inject dependencies via constructors or standard VContainer `[Inject]` attributes on MonoBehaviours.
-- **ProjectLifetimeScope:** Found in `Core/Infrastructure/ProjectLifetimeScope.cs`. This is the composition root where core services, registries and NGO services are bound, and where every `FeatureInstaller` asset is asked to register its feature.
+- **ProjectLifetimeScope:** Found in `App/ProjectLifetimeScope.cs`. This is the composition root where core services, registries and NGO services are bound, and where every `FeatureInstaller` asset is asked to register its feature.
 - **Entry Points:** We heavily utilize `IInitializable`, `ITickable`, and UseCases bound via `builder.UseEntryPoints(...)`.
 - **Constructor selection:** VContainer picks the constructor with the most parameters. A class with a test-only overload must mark the production constructor `[Inject]`.
 
@@ -140,13 +140,27 @@ build placement and weapons are *uses* of targeting, not separate aiming systems
   `.docs/plans/targeting-subsystem.md`.
 
 ### 7. Feature composition
-A feature is one folder under `Assets/Scripts/Features/` plus one `FeatureInstaller` asset under
-`Assets/Resources/Installers/`. The installer registers the feature's services, lists the networked prefabs it
+A feature is one folder under `Assets/Scripts/Features/` with its own assembly (`TinCan.Features.<Name>`), plus one
+`FeatureInstaller` asset under `Assets/Resources/Installers/`. The assembly is the feature's boundary, enforced by
+the compiler:
+- it sees only the core and the features it references;
+- core can't see it;
+- a reference to another feature is a requirement every profile loading it must meet.
+
+The rule is in [CODE_MAP.md, "Assemblies and the one-way rule"](CODE_MAP.md#assemblies-and-the-one-way-rule);
+`GasChallenge` is the worked example. The installer registers the feature's services, lists the networked prefabs it
 spawns and the fixtures it bolts onto the ship. Adding a feature touches no shared file. `ProjectLifetimeScope`
 registers only the core: networking, time, registries and entities, possession (with `ILocalViewCamera`), abilities,
 input, the humanoid and airship simulations and their scheduler, interaction core, and spawning (which moves to a
 session layer later). Every other feature is an installer, switched on per scene by its profile. Reference:
 [`FEATURE_INSTALLERS.md`](FEATURE_INSTALLERS.md).
+
+A left-out feature must be absent, never half-present. Shared prefabs (player, airship) hold core components and
+sockets only. Features plug in through ship fixtures and `ActorAbilityGrant`s, or grant at runtime from their own use
+case. A feature component that must sit on a shared root resolves its services optionally. At configuration the
+scope checks that every installed service's dependencies are registered, and refuses to start if not
+(`InstallerServiceCheck`). Rule tests enforce both per prefab and per profile; see
+[Features and shared prefabs](FEATURE_INSTALLERS.md#features-and-shared-prefabs).
 
 ## A Play session, end to end
 

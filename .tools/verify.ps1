@@ -290,12 +290,26 @@ function Sync-CloneScenes {
     $mainScene = @($main.scenes | Where-Object { $_.isActive })[0].path
     if (-not $mainScene) { return }
 
-    foreach ($clone in Get-ClonePaths) {
+    $clones = @(Get-ClonePaths)
+    if ($clones.Count -eq 0) { Stop-Unusable "no MPPM clone found for host + client (unity status lists none); start Player 2 in Window > Multiplayer > Multiplayer Play Mode" }
+
+    foreach ($clone in $clones) {
+        $name = Split-Path $clone -Leaf
+        # Right after a host + client run the clone is still leaving Play mode, and refuses to open a scene until it has.
+        $deadline = (Get-Date).AddSeconds(30)
+        while ((Invoke-Unity @("editor_status", "--project-path", $clone) 15).playMode -notin @($null, "stopped")) {
+            if ((Get-Date) -gt $deadline) { Stop-Unusable "clone $name is still in Play mode after 30 s" }
+            Start-Sleep -Milliseconds 500
+        }
+
         $scenes = Invoke-Unity @("list_open_scenes", "--project-path", $clone) 20
         $active = @($scenes.scenes | Where-Object { $_.isActive })[0].path
         Invoke-Unity @("open_scene", "--project-path", $clone, "--path", $mainScene) 60 | Out-Null
-        if ($active -eq $mainScene) { continue }
-        Write-Tier "Editor" "note" "clone $(Split-Path $clone -Leaf) had '$active' open; opened $mainScene"
+
+        # A client in another scene never joins; the run then only shows "no subject player". Confirm, don't assume.
+        $now = @((Invoke-Unity @("list_open_scenes", "--project-path", $clone) 20).scenes | Where-Object { $_.isActive })[0].path
+        if ($now -ne $mainScene) { Stop-Unusable "clone $name did not open $mainScene (still has '$now')" }
+        if ($active -ne $mainScene) { Write-Tier "Editor" "note" "clone $name had '$active' open; opened $mainScene" }
     }
 }
 

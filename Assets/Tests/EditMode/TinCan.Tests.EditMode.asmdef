@@ -3,7 +3,10 @@
     "rootNamespace": "",
     "references": [
         "TinCan.Core.Domain",
+        "TinCan.Core.Infrastructure",
         "TinCan.Features",
+        "TinCan.Features.GasChallenge",
+        "TinCan.Features.SkyHazards",
         "TinCan.DevTools",
         "TinCan.Tests.Shared",
         "Unity.Netcode.Runtime",

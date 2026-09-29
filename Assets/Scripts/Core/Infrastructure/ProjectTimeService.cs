@@ -6,7 +6,7 @@ namespace TinCan.Core.Infrastructure
     /// <summary>
     /// Infrastructure Layer: Unified time service that bridges Unity Time and Netcode ServerTime.
     /// Provides synchronized time when in a network session, and falls back to local time otherwise.
-    /// The simulation tick comes from <see cref="Network.Infrastructure.NetworkSimulationScheduler"/>.
+    /// The simulation tick comes from <c>NetworkSimulationScheduler</c> (Network/Infrastructure).
     /// </summary>
     public class ProjectTimeService : ITimeService
     {

@@ -159,9 +159,7 @@ namespace TinCan.Tests.EditMode
         public void ActorOrchestrator_RegistersAnEntitysTargetablesOnce_AndNotThoseOfAChildEntity()
         {
             var registry = new TargetableRegistry();
-            // Infrastructure lives in Assembly-CSharp; same reflection boundary as FuelFixtureRegistrationTests.
-            var type = Type.GetType("TinCan.Core.Infrastructure.ActorOrchestrator, Assembly-CSharp", true)!;
-            var orchestrator = (IActorOrchestrator)Activator.CreateInstance(type, new FakeActorRegistry(), new InteractorRegistry(), new FakeAbilityRegistry(), registry)!;
+            var orchestrator = new TinCan.Core.Infrastructure.ActorOrchestrator(new FakeActorRegistry(), new InteractorRegistry(), new FakeAbilityRegistry(), registry);
 
             var health = ScriptableObject.CreateInstance<HealthAttribute>();
             var maxHealth = ScriptableObject.CreateInstance<MaxHealthAttribute>();

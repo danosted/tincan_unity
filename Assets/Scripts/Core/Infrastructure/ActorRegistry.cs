@@ -8,6 +8,7 @@ namespace TinCan.Core.Infrastructure
 {
     public class ActorRegistry : IActorRegistry
     {
+        public event System.Action<IActor>? OnActorRegistered;
         public event System.Action<IActor>? OnActorUnregistered;
         private readonly IActor? _localPlayerActor;
         private readonly List<IActor> _actors = new();
@@ -30,6 +31,7 @@ namespace TinCan.Core.Infrastructure
             if (!_actors.Contains(actor))
             {
                 _actors.Add(actor);
+                OnActorRegistered?.Invoke(actor);
             }
         }
 

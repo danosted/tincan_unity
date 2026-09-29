@@ -44,7 +44,48 @@ namespace TinCan.Tests.EditMode
             "VehicleBoardingUseCase",
         };
 
+        /// <summary>Shared prefab components that need a feature's service, or starting abilities a feature also grants, as "prefab | component | dependency".</summary>
+        public static readonly string[] SharedPrefabFeatureDependencies =
+        {
+        };
+
+        /// <summary>
+        /// Installers still compiled into a shared assembly instead of their own (<c>.docs/plans/feature-assemblies.md</c>).
+        /// Carve a feature out with its own asmdef, then remove it here; <c>GasChallenge</c> is the worked example.
+        /// </summary>
+        public static readonly string[] InstallersInSharedAssemblies =
+        {
+            "AirshipDoorFeatureInstaller",
+            "CannonFeatureInstaller",
+            "CloudBoundaryFeatureInstaller",
+            "CloudSubmersionFeatureInstaller",
+            "EventsFeatureInstaller",
+            "FlyingCanFeatureInstaller",
+            "FreeCameraFeatureInstaller",
+            "FuelFeatureInstaller",
+            "GameplayCuesFeatureInstaller",
+            "GameplayTagsFeatureInstaller",
+            "InteractionFeatureInstaller",
+            "ItemsFeatureInstaller",
+            "ShipDamageFeatureInstaller",
+            "StationsFeatureInstaller",
+            "TargetingFeatureInstaller",
+            "UiFeatureInstaller",
+        };
+
+        /// <summary>
+        /// The only folders whose scripts may compile into Assembly-CSharp: the top layer, until it gets its own
+        /// assemblies (<c>TinCan.App</c>, <c>TinCan.Network</c>; <c>.docs/plans/feature-assemblies.md</c>). Remove a
+        /// folder when it moves; never add one.
+        /// </summary>
+        public static readonly string[] AssemblyCSharpFolders =
+        {
+            "Assets/Scripts/App/",
+            "Assets/Scripts/Network/Infrastructure/",
+            "Assets/Scripts/UI/",
+        };
+
         /// <summary>Scripts under <c>Assets/Scripts</c> without <c>#nullable enable</c> (review C12).</summary>
-        public const int FilesWithoutNullableLimit = 105;
+        public const int FilesWithoutNullableLimit = 104;
     }
 }

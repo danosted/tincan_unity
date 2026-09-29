@@ -143,7 +143,12 @@ out, or a modal dialog is open). The script guards against the MPPM and Editor f
   `unity close --force` and `unity open` as a last resort, which discards unsaved changes.
 - It opens the scenario's [test-range scene](#test-range) and restores your scene at the end.
 - Before a host + client run it reopens the host's scene in every clone. Otherwise a clone that relaunched with an
-  empty scene "plays" nothing, and one holding an old copy of a rebuilt scene runs that.
+  empty scene "plays" nothing, and one holding an old copy of a rebuilt scene runs that. It first waits (up to 30 s)
+  for the clone to leave Play mode from the previous run, since a playing clone refuses to open a scene. Afterwards
+  it confirms the clone's active scene and stops with `STOP` if it doesn't match, or if no clone is running at all.
+  Before this check, a failed switch went unnoticed and only showed up as the client never joining.
+- The harness only starts a scenario in the scene it belongs to (`Scenario.ScenePath`). A scenario player tag left
+  over from an interrupted run logs a warning in any other scene instead of breaking it.
 - Each scenario tier line shows how long the run took.
 
 The menu also waits for Player 2 to report `Launched` before entering Play, and retries MPPM's tag file when a clone

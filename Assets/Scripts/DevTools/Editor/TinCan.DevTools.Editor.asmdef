@@ -4,6 +4,7 @@
     "references": [
         "TinCan.Core.Domain",
         "TinCan.Features",
+        "TinCan.Features.SkyHazards",
         "TinCan.DevTools",
         "Unity.Netcode.Runtime"
     ],

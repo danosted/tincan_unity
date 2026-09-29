@@ -81,8 +81,11 @@ interaction a silent no-op. Settle the name before creating the asset.
 - Key binding: an input asset under `Assets/Abilities/Inputs/` (**TinCan > Abilities > Inputs > ...**) bound in
   `DefaultInputBindingConfig.asset`. This becomes a bit in `HumanoidInputState.ActiveInputMask`, so the ability
   is predicted on the client and replayed on the server. Never trigger simulated actions with a bare `ServerRpc`.
-- Granting: add the `GA_` to `_startingAbilities` on `NetworkPlayer.prefab` or `Airship_Prefab.prefab`, or grant
-  at runtime with `IAbilityControllerBase.GrantAbility` (see `FuelConsumptionUseCase.UpdateStall`).
+- Granting: a feature's ability comes from its installer as an `ActorAbilityGrant` (implement
+  `FeatureInstaller.IExtension<ActorAbilityGrant>`), so it only exists where the feature is loaded. You can also grant
+  it at runtime with `IAbilityControllerBase.GrantAbility` (see `FuelConsumptionUseCase.UpdateStall`), or through an
+  item. `_startingAbilities` on the shared prefabs is for core abilities only; the rules suite fails on a feature's
+  ability there.
 
 **Read:** `Features/Abilities/AbilitySystemUseCase.cs` for activation, cost, cooldown and effect ticking.
 
@@ -229,8 +232,9 @@ attributes; do not add a second GAS tick without moving ownership out of the glo
 unity cmd run_tests --mode EditMode
 ```
 
-**Trap:** tests cannot reference `Assembly-CSharp`. If your class is in `Core/Infrastructure`, `Network/Infrastructure`
-or `Scripts/UI`, the test will not compile; move the logic to `Features`.
+**Trap:** tests cannot reference `Assembly-CSharp`. If your class is in `App`, `Network/Infrastructure` or
+`Scripts/UI`, the test will not compile; move the logic to a feature or core assembly. A class in a feature assembly
+needs that assembly listed in `TinCan.Tests.EditMode.asmdef`.
 
 ## 8. Run and playtest with a second player
 

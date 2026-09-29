@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Items.ItemDefinition
   _id: 1
   _displayName: Jerry can
-  _visualName: Carry_JerryCan
+  _heldVisual: {fileID: 2424395058195870981, guid: a510da48cbabafa45a48c888ff8a9d50, type: 3}
   _grantedAbilities: []
   _equippedEffect: {fileID: 11400000, guid: b9274242a7d25134fb6cd64741850ad1, type: 2}

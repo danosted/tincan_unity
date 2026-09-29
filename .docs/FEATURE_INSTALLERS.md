@@ -106,7 +106,15 @@ whose use case isn't there). The rules:
      (`Core/Gas/ActorAbilityGrant.cs`) to give every humanoid or airship an ability.
      `ActorAbilityGrantUseCase` grants them on every peer as the actor registers. The actors know nothing about it;
      their prefab's `_startingAbilities` is for core abilities only (sprint). Don't add a feature's ability there.
-     The use case is registered by `GameplayTagsFeatureInstaller`, which every profile loads.
+     The use case is registered by `GameplayTagsFeatureInstaller`, a GAS core installer that always loads.
+   - **Items:** implement `FeatureInstaller.IExtension<ItemDefinition>` and list the feature's `ITEM_*` assets. The
+     core item catalog is built from what the loaded features contribute, so an item exists only where the feature
+     that makes it work does. For example, Fuel contributes the jerry can, the net-catch minigame the net, and ship
+     damage the repair tool.
+     - An item brings its own held visual: `ItemDefinition.HeldVisual`, a prefab under `Assets/Prefabs/Items/`. The
+       equipment mediator instantiates it under the player's `Visual`.
+     - Anything that animates the held item lives on that prefab, the way `NetSwingVisualView` lives on
+       `Carry_Net.prefab`, never on the player prefab.
    - Runtime grants from the feature's own use case (`StationOccupancyUseCase`, `EquipmentAbilityBinder`,
      `FuelConsumptionUseCase`), or from an item.
 3. **A feature component NGO forces onto a shared root** (a `NetworkBehaviour` must exist at spawn) resolves the

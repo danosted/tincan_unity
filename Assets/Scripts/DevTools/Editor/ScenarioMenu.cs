@@ -28,6 +28,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "EquipCycle (Host + Client, Lag100)")]
         public static void EquipCycleDuo() => RunDuo("EquipCycle", "Lag100");
 
+        [MenuItem(Root + "CoreBoot (Host)")]
+        public static void CoreBootSolo() => RunSolo("CoreBoot");
+
+        [MenuItem(Root + "CoreBoot (Host + Client, Lag100)")]
+        public static void CoreBootDuo() => RunDuo("CoreBoot", "Lag100");
+
         [MenuItem(Root + "ShipDamage (Host)")]
         public static void ShipDamageSolo() => RunSolo("ShipDamage");
 

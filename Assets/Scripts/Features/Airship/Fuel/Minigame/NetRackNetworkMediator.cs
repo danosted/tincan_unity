@@ -4,7 +4,7 @@ using TinCan.Core.Interaction;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace TinCan.Features.Carry
+namespace TinCan.Features.Airship.Fuel.Minigame
 {
     /// <summary>Marker for the deck fixture where the net hangs; keeps the handler testable without a NetworkBehaviour.</summary>
     public interface INetRack : IInteractable { }

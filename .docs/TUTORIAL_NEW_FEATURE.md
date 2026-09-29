@@ -53,7 +53,7 @@ unity cmd recompile && unity cmd recompile_status
 `Assets/Scripts/Features/Ballast/`, with its own assembly: create `TinCan.Features.Ballast.asmdef` in the folder
 (**Create > Scripting > Assembly Definition**). Copy [`Features/GasChallenge/TinCan.Features.GasChallenge.asmdef`](../Assets/Scripts/Features/GasChallenge/TinCan.Features.GasChallenge.asmdef)
 and rename it. Reference:
-- `TinCan.Core.Domain` and `TinCan.Features`;
+- `TinCan.Core.Domain` and the core systems it uses (for example `TinCan.Gas`, `TinCan.Interaction`, `TinCan.Ship`);
 - `VContainer`, and `Unity.Netcode.Runtime` only if you write a `NetworkBehaviour`;
 - any other feature Ballast builds on, and nothing else.
 

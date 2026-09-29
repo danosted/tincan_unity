@@ -49,7 +49,8 @@ namespace TinCan.DevTools.Scenarios
         /// </summary>
         public static readonly ScenarioEntry EquipCycle = new(
             new Scenario.Builder("EquipCycle")
-                .InScene(TestScenes.Core)
+                // Its items (net, jerry can) belong to the minigame and fuel features, which Test_NetCatch loads.
+                .InScene(TestScenes.NetCatch)
                 .Describe("Equip net -> swing -> swap to jerry can -> unequip; grants and visuals follow on server and owner.")
                 .Timeout(90f)
                 .Arrange(s => s
@@ -87,6 +88,29 @@ namespace TinCan.DevTools.Scenarios
                     .Do("UnequipSubject")
                     .Expect("SubjectHolds", "none")
                     .Expect("SubjectLacksTag", "State.Carrying.JerryCan"))
+                .Build(),
+            builder => builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        /// <summary>
+        /// The mandatory core boots on its own: in Test_Core, whose profile loads only the base features, a player spawns
+        /// on host and client with empty hands and its core starting ability (sprint), on its own peer and on the server.
+        /// Guards the composition itself: core installers always load, and no core service needs a feature.
+        /// </summary>
+        public static readonly ScenarioEntry CoreBoot = new(
+            new Scenario.Builder("CoreBoot")
+                .InScene(TestScenes.Core)
+                .Describe("Core-only scene: the player spawns on host and client, holds nothing and can sprint.")
+                .Timeout(60f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn"))
+                .Act(s => s
+                    .Expect("SubjectHolds", "none")
+                    .WaitUntil("SubjectHasAbility", 5f, "GA_Sprint")
+                    .Checkpoint("booted"))
+                .Assert(s => s
+                    .Expect("SubjectHolds", "none")
+                    .WaitUntil("SubjectHasAbility", 5f, "GA_Sprint"))
                 .Build(),
             builder => builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
@@ -389,7 +413,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<CannonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

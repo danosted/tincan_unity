@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Items.ItemDefinition
   _id: 3
   _displayName: Repair tool
-  _visualName: Carry_RepairTool
+  _heldVisual: {fileID: 3285585081148200879, guid: 4a3e91ae4385056419ff10d9ca063631, type: 3}
   _grantedAbilities:
   - {fileID: 11400000, guid: 13c99e26664fd6b40892ea4711510510, type: 2}
   _equippedEffect: {fileID: 11400000, guid: da751990765f7fb4484af8ec5d468641, type: 2}

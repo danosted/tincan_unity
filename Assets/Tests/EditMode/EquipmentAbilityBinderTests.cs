@@ -39,8 +39,8 @@ namespace TinCan.Tests.EditMode
             holdingEffect.Modifiers = new List<AttributeModifier>();
             holdingEffect.GrantedTags = new List<GameplayTag> { _holdingNet };
 
-            _net = Track(ItemDefinition.Create(2, "ITEM_CatchingNet", "Carry_Net", holdingEffect, _swing, _sprint));
-            _can = Track(ItemDefinition.Create(1, "ITEM_JerryCan", "Carry_JerryCan"));
+            _net = Track(ItemDefinition.Create(2, "ITEM_CatchingNet", holdingEffect, _swing, _sprint));
+            _can = Track(ItemDefinition.Create(1, "ITEM_JerryCan"));
         }
 
         [TearDown]

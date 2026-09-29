@@ -51,7 +51,7 @@ unity cmd console --level error
 **Touch:**
 - Target: a small `NetworkBehaviour : IInteractionTarget` that exposes `Definition`. Copy
   `Assets/Scripts/Features/Airship/Fuel/MotorFillPortNetworkMediator.cs` (25 lines). If handlers need to find
-  the target without NGO, add a marker interface like `INetRack` in `Features/Carry/NetRackNetworkMediator.cs`.
+  the target without NGO, add a marker interface like `INetRack` in `Features/Airship/Fuel/Minigame/NetRackNetworkMediator.cs`.
 - Behaviour: an `IInteractionHandler`. Copy `Features/Airship/Fuel/PourFuelInteractionHandler.cs`: a type guard
   on `context.Target`, then a `switch` over the state matrix, `LogInfo` on every refused branch.
 - Registration: in your `FeatureInstaller.Install`:
@@ -304,8 +304,9 @@ unity cmd editor_stop
 2. `[SerializeField]` fields on `ProjectLifetimeScope` that only that feature uses move to the installer; assign
    them on the new asset under `Assets/Resources/Installers/` and remove them from `GameLifetimeScope.prefab`.
 3. Prefabs the feature spawns move from `_buildablePrefabs` / `DefaultNetworkPrefabs.asset` to `NetworkedPrefabs`.
-4. Mediators that only that feature uses move from `Network/Infrastructure/` into the feature folder (they
-   compile in `TinCan.Features` as long as they do not touch `NetworkManager` or `UnityTransport`).
+4. Mediators that only that feature uses move from `Network/Infrastructure/` into the feature folder (a feature
+   assembly can reference `TinCan.Network` for the `NetworkMediator` base, as the minigame does for
+   `FlyingCanNetworkMediator`).
 5. Update the style column in the feature index.
 
 **Verify:** recompile, tests, Start Host, and the feature still works on a virtual client.

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
+using TinCan.Core.Items;
 using TinCan.Core.Gas.Cues;
 using TinCan.Features.DesignedEvents;
 using UnityEngine;
@@ -20,7 +21,7 @@ namespace TinCan.Features.Airship.Damage
     /// </summary>
     [CreateAssetMenu(fileName = "ShipDamageFeatureInstaller", menuName = "TinCan/Features/Ship Damage Feature Installer")]
     public class ShipDamageFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<ShipFixtureDefinition>, FeatureInstaller.IExtension<GameplayCueNotify>,
-        FeatureInstaller.IExtension<EventDefinition>
+        FeatureInstaller.IExtension<EventDefinition>, FeatureInstaller.IExtension<ItemDefinition>
     {
         [SerializeField] private ShipDamageConfig? _config;
         [Tooltip("Networked ShipDamageSockets prefab and where it sits on the ship.")]
@@ -29,6 +30,8 @@ namespace TinCan.Features.Airship.Damage
         [SerializeField] private ShipFixtureDefinition? _toolRackFixture;
         [Tooltip("What break, repair, the leak and the repair tool look and sound like (GCN_* assets).")]
         [SerializeField] private List<GameplayCueNotify> _cueNotifies = new();
+        [Tooltip("The items this feature owns (the repair tool).")]
+        [SerializeField] private List<ItemDefinition> _items = new();
 
         public override void Install(IContainerBuilder builder)
         {
@@ -72,5 +75,7 @@ namespace TinCan.Features.Airship.Damage
         IEnumerable<GameplayCueNotify> FeatureInstaller.IExtension<GameplayCueNotify>.Contributions => _cueNotifies;
 
         IEnumerable<EventDefinition> FeatureInstaller.IExtension<EventDefinition>.Contributions => ShipDamageDesignedEvents.All;
+
+        IEnumerable<ItemDefinition> FeatureInstaller.IExtension<ItemDefinition>.Contributions => _items;
     }
 }

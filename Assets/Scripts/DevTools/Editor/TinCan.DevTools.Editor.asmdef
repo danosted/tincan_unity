@@ -2,8 +2,10 @@
     "name": "TinCan.DevTools.Editor",
     "rootNamespace": "TinCan.DevTools.Editor",
     "references": [
+        "TinCan.Core.Domain",
         "TinCan.Features",
-        "TinCan.DevTools"
+        "TinCan.DevTools",
+        "Unity.Netcode.Runtime"
     ],
     "includePlatforms": [
         "Editor"

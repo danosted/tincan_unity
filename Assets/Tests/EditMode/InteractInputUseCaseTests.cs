@@ -30,6 +30,12 @@ namespace TinCan.Tests.EditMode
                 result = Answer != null ? new TargetResult(Answer, 1f, 0f) : default;
                 return Answer != null;
             }
+
+            public bool TryAcquireSegment(Vector3 from, Vector3 to, TargetingDefinition definition, System.Func<Collider, bool>? ignore, out SegmentHit hit)
+            {
+                hit = default;
+                return false;
+            }
         }
 
         private sealed class RecordingOrchestrator : IInteractionOrchestrator

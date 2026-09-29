@@ -24,13 +24,17 @@ namespace TinCan.Features.Abilities
     {
         [Header("Tags")]
         public GameplayTag AbilityTag; // Unique tag for this ability
+        [Tooltip("On activation, ends the actor's other active abilities whose AbilityTag matches (or is a child of) one of these.")]
         public List<GameplayTag> CancelAbilitiesWithTag;
+        [Tooltip("While this ability is active, the actor's abilities whose AbilityTag matches (or is a child of) one of these cannot activate.")]
         public List<GameplayTag> BlockAbilitiesWithTag;
 
         [Header("Activation Constraints")]
         public TinCan.Core.Domain.Abilities.Inputs.GameplayInput TriggerInput; // Input mapped to this ability
         public AbilityInputPolicy InputPolicy = AbilityInputPolicy.OnInputTriggered;
         public bool IsToggleable; // If true, re-triggering while active cancels it instead of being blocked
+        [Tooltip("One-shot: the ability ends in the tick it activates (its effects and cooldown are applied first). Timing windows never open.")]
+        public bool EndsImmediately;
         public List<GameplayTag> ActivationRequiredTagsOnActor;
         public List<GameplayTag> ActivationBlockedTagsOnActor;
         public List<GameplayTag> ActivationRequiredTagsOnTarget;

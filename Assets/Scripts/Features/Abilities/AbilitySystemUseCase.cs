@@ -304,11 +304,36 @@ namespace TinCan.Features.Abilities
             // Cooldown?
             if (spec.IsOnCooldown(_timeService.Tick, _timeService.TickRate)) return false;
 
+            // Blocked by another of the actor's active abilities?
+            if (_actorAbilities.TryGetValue(actor.Id, out var abilities) &&
+                abilities.Any(other => other != spec && other.IsActive && Matches(def.AbilityTag, other.Definition.BlockAbilitiesWithTag)))
+            {
+                return false;
+            }
+
             return true;
+        }
+
+        // True when an ability's tag is one of the listed tags or a child of one.
+        private static bool Matches(GameplayTag abilityTag, List<GameplayTag> tags) =>
+            abilityTag != null && tags != null && tags.Any(tag => abilityTag.IsChildOf(tag));
+
+        private void CancelAbilitiesMatching(IAbilityControllerBase actor, AbilitySpec activating)
+        {
+            if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
+
+            foreach (var other in abilities.ToArray())
+            {
+                if (other != activating && other.IsActive && Matches(other.Definition.AbilityTag, activating.Definition.CancelAbilitiesWithTag))
+                {
+                    EndAbility(actor, other);
+                }
+            }
         }
 
         private void ExecuteAbility(IAbilityControllerBase actor, AbilitySpec spec, IAbilityControllerBase target, GameplayEffectContext context)
         {
+            CancelAbilitiesMatching(actor, spec);
             spec.Activate(_timeService.Tick);
             _eventPublisher.Publish(new AbilityActivatedEvent(actor.Id, spec.Definition.name));
 
@@ -328,6 +353,11 @@ namespace TinCan.Features.Abilities
             if (spec.Definition.CooldownEffect != null)
             {
                 ApplyEffect(actor, spec.Definition.CooldownEffect, context);
+            }
+
+            if (spec.Definition.EndsImmediately)
+            {
+                EndAbility(actor, spec);
             }
         }
 

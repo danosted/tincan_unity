@@ -107,7 +107,7 @@ namespace TinCan.Features.Airship.Damage
         private void BreakRandom(IReadOnlyList<IShipDamagePoint> points)
         {
             _brokenFlags.Clear();
-            foreach (var point in points) _brokenFlags.Add(point.IsBroken);
+            foreach (var point in points) _brokenFlags.Add(point.Controller.IsDamaged());
             if (!_processor.CanBreak(_brokenFlags, _config.MaxBroken)) return;
 
             int index = _processor.PickHealthy(_random, _brokenFlags);
@@ -124,7 +124,7 @@ namespace TinCan.Features.Airship.Damage
             foreach (var point in points)
             {
                 bool tracked = _breaches.TryGetValue(point, out var breach);
-                switch (broken: point.IsBroken, tracked)
+                switch (broken: point.Controller.IsDamaged(), tracked)
                 {
                     case (broken: true, tracked: false):
                         _breaches[point] = (Apply(controller, _config.HullBreachEffect), Apply(point.Controller, _config.PartBrokenEffect));

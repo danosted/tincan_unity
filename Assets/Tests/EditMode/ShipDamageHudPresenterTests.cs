@@ -50,13 +50,13 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void BrokenParts_AreCounted_AndTheLineGoesAwayWhenRepaired()
         {
-            _points[0].SetHealth01(0f);
-            _points[2].SetHealth01(0.5f);
+            _points[0].SetHealthFraction(0f);
+            _points[2].SetHealthFraction(0.5f);
             _presenter.Tick();
             Assert.That(_hud.All[ShipDamageHudPresenter.HudKey], Is.EqualTo("2"));
 
-            _points[0].SetHealth01(1f);
-            _points[2].SetHealth01(1f);
+            _points[0].SetHealthFraction(1f);
+            _points[2].SetHealthFraction(1f);
             _presenter.Tick();
             Assert.That(_hud.All.ContainsKey(ShipDamageHudPresenter.HudKey), Is.False);
         }

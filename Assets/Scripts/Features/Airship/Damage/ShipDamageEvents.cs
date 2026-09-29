@@ -33,18 +33,16 @@ namespace TinCan.Features.Airship.Damage
         }
     }
 
-    /// <summary>Server: a player's repair tool added health to a broken part (Health01 is after the repair).</summary>
+    /// <summary>Server: a player's repair tool applied one repair effect to a broken part (its health is on the part's controller).</summary>
     public readonly struct ShipPartRepairTickEvent
     {
         public readonly Guid RepairerId;
         public readonly int PointIndex;
-        public readonly float Health01;
 
-        public ShipPartRepairTickEvent(Guid repairerId, int pointIndex, float health01)
+        public ShipPartRepairTickEvent(Guid repairerId, int pointIndex)
         {
             RepairerId = repairerId;
             PointIndex = pointIndex;
-            Health01 = health01;
         }
     }
 }

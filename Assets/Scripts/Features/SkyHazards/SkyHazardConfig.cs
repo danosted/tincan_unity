@@ -1,4 +1,5 @@
 #nullable enable
+using TinCan.Core.Gas;
 using UnityEngine;
 
 namespace TinCan.Features.SkyHazards
@@ -22,6 +23,15 @@ namespace TinCan.Features.SkyHazards
         [Min(1f)] public float RemoveDistance = 260f;
         [Tooltip("Seconds between spawns while the field is below MaxAlive.")]
         [Min(0f)] public float SpawnInterval = 1.5f;
+
+        [Header("Drift and ship contact")]
+        [Tooltip("Metres per second a field hazard homes on the ship. 0: field hazards hang still. Targets placed with " +
+                 "SpawnAt stay still unless asked to drift.")]
+        [Min(0f)] public float DriftSpeed = 4f;
+        [Tooltip("A hazard touches the ship when a sphere this big around it overlaps the ship's colliders.")]
+        [Min(0.1f)] public float ContactRadius = 1.5f;
+        [Tooltip("Instant effect applied to the ship on contact (GE_HazardImpact: -Health). The hazard is then removed.")]
+        public GameplayEffectDefinition? ImpactEffect;
 
         [Header("Destruction")]
         [Tooltip("Seconds a destroyed hazard stays before it despawns (lets its last health update reach the clients).")]

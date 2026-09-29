@@ -7,23 +7,22 @@ using UnityEngine;
 
 namespace TinCan.Features.SkyHazards
 {
-    /// <summary>Something drifting in the sky that the crew shoots down. Its health is GAS state on its own controller.</summary>
+    /// <summary>
+    /// Something drifting in the sky that the crew shoots down. Its health is GAS state on its own
+    /// <see cref="Controller"/>; it is shot down when that health is depleted (<see cref="HealthQueries.IsDepleted"/>).
+    /// </summary>
     public interface ISkyHazard
     {
         Transform? Transform { get; }
-
-        /// <summary>Health as a fraction of max; 1 until its attributes exist.</summary>
-        float Health01 { get; }
-
-        /// <summary>Shot down: health reached zero.</summary>
-        bool IsDestroyed { get; }
+        IAbilityControllerBase? Controller { get; }
     }
 
     /// <summary>
     /// Infrastructure Layer: one sky hazard. It needs an AbilityNetworkMediator on the same GameObject (its GAS actor,
-    /// found through <see cref="IAbilityControllerBase"/>); health is a <see cref="HealthAttributeSet"/> on it, so any
-    /// damage effect (a cannonball) hurts it and every peer sees the replicated health. It is a targetable, so the
-    /// cannonball sweep finds it by its collider. Movement comes later (S2); today it hangs where it was spawned.
+    /// found through <see cref="IAbilityControllerBase"/>); health is a <see cref="HealthAttributeSet"/> registered on it,
+    /// so any damage effect (a cannonball) hurts it and every peer sees the replicated health. It is a targetable, so the
+    /// cannonball sweep finds it by its collider. The server moves it (SkyHazardUseCase); a NetworkTransformMediator on
+    /// the prefab carries the motion to clients.
     /// </summary>
     public class SkyHazardNetworkMediator : NetworkBehaviour, ISkyHazard, ITargetable
     {
@@ -37,11 +36,8 @@ namespace TinCan.Features.SkyHazards
 
         public Transform? Transform => this != null ? transform : null;
         public Vector3 AimPoint => transform.position;
-        public bool IsTargetable => IsSpawned && !IsDestroyed;
+        public bool IsTargetable => IsSpawned && !_controller.IsDepleted();
         public IAbilityControllerBase? Controller => _controller;
-
-        public float Health01 => _health == null || _health.MaxHealth <= 0f ? 1f : _health.HealthPercentage;
-        public bool IsDestroyed => _initialized && _health != null && _health.MaxHealth > 0f && _health.Health <= 0f;
 
         private void Awake()
         {
@@ -50,6 +46,7 @@ namespace TinCan.Features.SkyHazards
             if (_controller != null && _healthAttribute != null && _maxHealthAttribute != null)
             {
                 _health = new HealthAttributeSet(_controller, _healthAttribute, _maxHealthAttribute);
+                _controller.RegisterAttributeSet(_health);
             }
         }
 

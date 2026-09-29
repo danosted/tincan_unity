@@ -4,7 +4,9 @@ using System.Globalization;
 using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
+using TinCan.Core.Gas;
 using TinCan.Core.Humanoid;
+using TinCan.Core.Ship;
 using TinCan.Features.SkyHazards;
 using TinCan.Features.Stations;
 using TinCan.Features.Weapons.Cannon;
@@ -33,6 +35,8 @@ namespace TinCan.DevTools.Scenarios
         private const float StandBehind = 2.2f;
         private const float NearTolerance = 0.8f;
 
+        private int _hitsBeforeSpawn;
+
         public CannonScenarioLibrary(ScenarioSubject subject, INetworkService network, IActorRegistry actors, ISkyHazards hazards,
             CannonShotPresenter presenter, CannonConfig config, CannonAimProcessor aim, IHumanoidRespawnService respawn)
         {
@@ -51,7 +55,8 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioCommand("PlaceSubjectAtCannon", _ => PlaceAtCannon()),
             new ScenarioCommand("HazardField", SetField),
             new ScenarioCommand("AimCannon", Aim),
-            new ScenarioCommand("SpawnTargetOnArc", SpawnOnArc)
+            new ScenarioCommand("SpawnTargetOnArc", SpawnOnArc),
+            new ScenarioCommand("SpawnDriftingHazard", SpawnDrifting)
         };
 
         public IEnumerable<ScenarioProbe> Probes => new[]
@@ -61,7 +66,9 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("CannonFree", _ => CheckManned(expected: false)),
             new ScenarioProbe("HazardsVisible", CheckVisible),
             new ScenarioProbe("HazardsDestroyed", CheckDestroyed),
-            new ScenarioProbe("BallsShown", CheckBalls)
+            new ScenarioProbe("BallsShown", CheckBalls),
+            new ScenarioProbe("HazardHits", CheckHits),
+            new ScenarioProbe("ShipHealthBelow", CheckShipHealthBelow)
         };
 
         /// <summary>Server: stands the subject behind the cannon on the deck, through the respawn service (the owner snaps).</summary>
@@ -132,6 +139,42 @@ namespace TinCan.DevTools.Scenarios
             return hazard != null
                 ? ScenarioCheck.Pass($"target {distance} m down the arc (yaw {cannon.Yaw:0.#}, elevation {cannon.Elevation:0.#})")
                 : ScenarioCheck.Fail("hazard spawn failed (no SkyHazardConfig prefab?)");
+        }
+
+        /// <summary>
+        /// Server: a hazard this far off the ship's starboard side, homing on it. Hits from before this (the field runs
+        /// from the moment the host starts) no longer count toward <c>HazardHits</c>.
+        /// </summary>
+        private ScenarioCheck SpawnDrifting(string metres)
+        {
+            if (!_network.IsServer) return ScenarioCheck.Fail("server-only command");
+            var ship = _actors.GetActors<IAirshipView>().FirstOrDefault(candidate => candidate.Transform != null);
+            if (ship == null) return ScenarioCheck.Fail("no ship");
+
+            _hitsBeforeSpawn = _hazards.Hits;
+            var hazard = _hazards.SpawnAt(ship.Transform.position + ship.Transform.right * Parse(metres), drifts: true);
+            return hazard != null
+                ? ScenarioCheck.Pass($"drifting hazard {metres} m to starboard")
+                : ScenarioCheck.Fail("hazard spawn failed (no SkyHazardConfig prefab?)");
+        }
+
+        /// <summary>Server: hits on the ship since the last SpawnDriftingHazard.</summary>
+        private ScenarioCheck CheckHits(string count)
+        {
+            if (!_network.IsServer) return ScenarioCheck.Fail("server-only probe");
+            int hits = _hazards.Hits - _hitsBeforeSpawn;
+            string detail = $"{hits} hit(s) on the ship since the spawn ({_hazards.Hits} in all)";
+            return hits >= int.Parse(count, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
+
+        /// <summary>The ship's replicated health on this peer is below this value.</summary>
+        private ScenarioCheck CheckShipHealthBelow(string value)
+        {
+            var controller = _actors.GetActors<IAirshipView>().OfType<IShipState>().FirstOrDefault()?.Controller;
+            if (controller == null || !controller.TryGetAttributeSet<HealthAttributeSet>(out var health)) return ScenarioCheck.Fail("no ship health");
+
+            string detail = $"ship health {health.Health:0} / {health.MaxHealth:0} on this peer";
+            return health.Health < Parse(value) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
         private ScenarioCheck CheckManned(bool expected)

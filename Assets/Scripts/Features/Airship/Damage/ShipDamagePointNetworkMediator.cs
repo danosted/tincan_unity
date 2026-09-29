@@ -13,7 +13,7 @@ namespace TinCan.Features.Airship.Damage
     /// Infrastructure Layer: one breakable spot inside the ShipDamageSockets fixture. It needs an AbilityNetworkMediator
     /// on the same GameObject (the point's own GAS actor; it lives in Assembly-CSharp, so it is found through
     /// <see cref="IAbilityControllerBase"/> rather than required by type). Health is a <see cref="HealthAttributeSet"/>
-    /// on that controller, replicated with its attributes. The child named "Marker" is presentation: its
+    /// registered on that controller, replicated with its attributes; read it through <see cref="HealthQueries"/>. The child named "Marker" is presentation: its
     /// ToggleObjectCueHandler shows it while the point holds the Cue.Ship.Part.Broken state cue (GE_ShipPartBroken), on
     /// every peer and for late joiners. Its index is its order among the fixture's damage points.
     /// </summary>
@@ -38,9 +38,6 @@ namespace TinCan.Features.Airship.Damage
         public Vector3 AimPoint => _marker != null ? _marker.transform.position : transform.position;
         public bool IsTargetable => IsSpawned;
 
-        public float Health01 => _health == null || _health.MaxHealth <= 0f ? 1f : _health.HealthPercentage;
-        public bool IsBroken => Health01 < 1f;
-
         private void Awake()
         {
             _marker = transform.FindDescendant(MarkerName)?.gameObject;
@@ -49,6 +46,7 @@ namespace TinCan.Features.Airship.Damage
             if (_controller != null && _healthAttribute != null && _maxHealthAttribute != null)
             {
                 _health = new HealthAttributeSet(_controller, _healthAttribute, _maxHealthAttribute);
+                _controller.RegisterAttributeSet(_health);
             }
         }
 

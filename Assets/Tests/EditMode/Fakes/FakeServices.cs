@@ -34,7 +34,8 @@ namespace TinCan.Tests.EditMode.Fakes
         public bool WasActionTriggered(string actionName) => TriggeredActions.Contains(actionName);
         public float GetAxis(string positiveAction, string negativeAction) =>
             (PressedActions.Contains(positiveAction) ? 1f : 0f) - (PressedActions.Contains(negativeAction) ? 1f : 0f);
-        public Vector2 GetMouseDelta() => Vector2.zero;
+        public Vector2 MouseDelta { get; set; }
+        public Vector2 GetMouseDelta() => MouseDelta;
         public ulong GetActiveInputMask() => 0UL;
     }
 

@@ -131,6 +131,8 @@ namespace TinCan.Tests.EditMode.Fakes
             return false;
         }
 
+        public void RegisterAttributeSet(IAttributeSet set) { }
+
         public List<IAbilityDefinition> GrantedAbilities { get; } = new();
         public void GrantAbility(IAbilityDefinition definition) => GrantedAbilities.Add(definition);
         public void RemoveAbility(IAbilityDefinition definition) { }

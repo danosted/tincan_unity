@@ -76,5 +76,25 @@ namespace TinCan.Tests.EditMode
 
             Assert.That(set.IsBroken, Is.False);
         }
+
+        [Test]
+        public void DamagedAndDepleted_AreReadFromTheControllersRegisteredHealth()
+        {
+            Assert.That(_controller.IsDamaged() || _controller.IsDepleted(), Is.False, "no registered health: neither");
+
+            var set = new HealthAttributeSet(_controller, _healthDef, _maxHealthDef);
+            _controller.RegisterAttributeSet(set);
+            Assert.That(_controller.IsDamaged() || _controller.IsDepleted(), Is.False, "not seeded yet: a fresh actor is whole");
+
+            set.InitializeBaseValues(100f);
+            Assert.That(_controller.IsDamaged(), Is.False);
+
+            _controller.SetAttribute(_healthDef, new AttributeValue(40f));
+            Assert.That(_controller.IsDamaged(), Is.True);
+            Assert.That(_controller.IsDepleted(), Is.False);
+
+            _controller.SetAttribute(_healthDef, new AttributeValue(0f));
+            Assert.That(_controller.IsDepleted(), Is.True);
+        }
     }
 }

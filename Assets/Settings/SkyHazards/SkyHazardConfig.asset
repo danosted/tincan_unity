@@ -14,9 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.SkyHazards.SkyHazardConfig
   Prefab: {fileID: 815884424711072158, guid: 85609dcb7d0566f4299bb9684dabfa6a, type: 3}
   FieldEnabled: 1
-  MaxAlive: 6
+  MaxAlive: 4
   FieldMin: {x: 30, y: -10, z: -20}
   FieldMax: {x: 110, y: 25, z: 120}
   RemoveDistance: 260
-  SpawnInterval: 1.5
+  SpawnInterval: 6
+  DriftSpeed: 4
+  ContactRadius: 1.5
+  ImpactEffect: {fileID: 11400000, guid: 1f7cffd1f743b7e47a6ea2f0bbd14577, type: 2}
   DespawnDelay: 0.5

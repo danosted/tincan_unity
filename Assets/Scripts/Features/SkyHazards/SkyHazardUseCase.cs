@@ -1,9 +1,11 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
+using TinCan.Core.Gas;
 using TinCan.Core.Ship;
 using UnityEngine;
 using VContainer;
@@ -19,8 +21,13 @@ namespace TinCan.Features.SkyHazards
         /// <summary>Hazards shot down since the session started.</summary>
         int Destroyed { get; }
 
+        /// <summary>Hazards that reached the ship since the session started.</summary>
+        int Hits { get; }
+
         bool FieldEnabled { get; set; }
-        ISkyHazard? SpawnAt(Vector3 position);
+
+        /// <summary>A hazard here. It hangs still (a target) unless <paramref name="drifts"/>, when it homes on the ship like the field's.</summary>
+        ISkyHazard? SpawnAt(Vector3 position, bool drifts = false);
     }
 
     /// <summary>Server: a hazard was shot down.</summary>
@@ -36,11 +43,24 @@ namespace TinCan.Features.SkyHazards
         }
     }
 
+    /// <summary>Server: a hazard reached the ship and hurt it.</summary>
+    public readonly struct SkyHazardHitShipEvent
+    {
+        public readonly Guid AirshipId;
+        public readonly int Hits;
+
+        public SkyHazardHitShipEvent(Guid airshipId, int hits)
+        {
+            AirshipId = airshipId;
+            Hits = hits;
+        }
+    }
+
     /// <summary>
     /// Application Layer, server only, after airship movement. Removes hazards that were shot down (after a short
-    /// delay, so their last health update reaches the clients first) and, while the field is on, keeps up to
-    /// MaxAlive of them in a box ahead of the first ship, removing those left far behind. Hazards hang still for now;
-    /// drift toward the ship and ship contact come in S2.
+    /// delay, so their last health update reaches the clients first). Drifting hazards home on the first ship; any
+    /// hazard that touches it applies the impact effect to the ship (its health) and is removed. While the field is on,
+    /// it keeps up to MaxAlive drifting hazards in a box beside the ship, removing those left far behind.
     /// </summary>
     public class SkyHazardUseCase : ISimulationTickable, ISkyHazards
     {
@@ -54,20 +74,26 @@ namespace TinCan.Features.SkyHazards
         private readonly IEventPublisher _events;
         private readonly ISkyHazardSpawner _spawner;
         private readonly SkyHazardFieldProcessor _field;
+        private readonly HazardDriftProcessor _drift;
+        private readonly IShipContactQuery _contact;
+        private readonly AbilitySystemUseCase _abilities;
         private readonly SkyHazardConfig _config;
         private readonly System.Random _random;
         private readonly List<ISkyHazard> _alive = new();
+        private readonly HashSet<ISkyHazard> _drifting = new();
         private readonly Dictionary<ISkyHazard, float> _destroyedAt = new();
         private float _elapsed;
         private float _nextSpawnAt;
 
         [Inject]
         public SkyHazardUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
-            ISkyHazardSpawner spawner, SkyHazardFieldProcessor field, SkyHazardConfig config)
-            : this(network, actors, time, events, spawner, field, config, new System.Random()) { }
+            ISkyHazardSpawner spawner, SkyHazardFieldProcessor field, HazardDriftProcessor drift, IShipContactQuery contact,
+            AbilitySystemUseCase abilities, SkyHazardConfig config)
+            : this(network, actors, time, events, spawner, field, drift, contact, abilities, config, new System.Random()) { }
 
         public SkyHazardUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
-            ISkyHazardSpawner spawner, SkyHazardFieldProcessor field, SkyHazardConfig config, System.Random random)
+            ISkyHazardSpawner spawner, SkyHazardFieldProcessor field, HazardDriftProcessor drift, IShipContactQuery contact,
+            AbilitySystemUseCase abilities, SkyHazardConfig config, System.Random random)
         {
             _network = network;
             _actors = actors;
@@ -75,6 +101,9 @@ namespace TinCan.Features.SkyHazards
             _events = events;
             _spawner = spawner;
             _field = field;
+            _drift = drift;
+            _contact = contact;
+            _abilities = abilities;
             _config = config;
             _random = random;
             FieldEnabled = config.FieldEnabled;
@@ -82,13 +111,17 @@ namespace TinCan.Features.SkyHazards
 
         public IReadOnlyList<ISkyHazard> Alive => _alive;
         public int Destroyed { get; private set; }
+        public int Hits { get; private set; }
         public bool FieldEnabled { get; set; }
 
-        public ISkyHazard? SpawnAt(Vector3 position)
+        public ISkyHazard? SpawnAt(Vector3 position, bool drifts = false)
         {
             if (!_network.IsServer) return null;
             var hazard = _spawner.Spawn(position);
-            if (hazard != null) _alive.Add(hazard);
+            if (hazard == null) return null;
+
+            _alive.Add(hazard);
+            if (drifts) _drifting.Add(hazard);
             return hazard;
         }
 
@@ -98,17 +131,21 @@ namespace TinCan.Features.SkyHazards
             _elapsed += _time.DeltaTime;
 
             _alive.RemoveAll(hazard => hazard.Transform == null);
+            _drifting.RemoveWhere(hazard => hazard.Transform == null);
             RemoveDestroyed();
 
             var ship = _actors.GetActors<IAirshipView>().FirstOrDefault(candidate => candidate.IsSimulating && candidate.Transform != null);
-            if (!FieldEnabled || ship == null) return;
+            if (ship == null) return;
+
+            DriftAndStrike(ship);
+            if (!FieldEnabled) return;
 
             RemoveDistant(ship.Transform.position);
             if (_alive.Count < _config.MaxAlive && _elapsed >= _nextSpawnAt)
             {
                 var position = _field.SpawnPoint(ship.Transform.position, ship.Transform.rotation, _config.FieldShape,
                     (float)_random.NextDouble(), (float)_random.NextDouble(), (float)_random.NextDouble());
-                SpawnAt(position);
+                SpawnAt(position, drifts: true);
                 _nextSpawnAt = _elapsed + _config.SpawnInterval;
             }
         }
@@ -118,7 +155,7 @@ namespace TinCan.Features.SkyHazards
             for (int i = _alive.Count - 1; i >= 0; i--)
             {
                 var hazard = _alive[i];
-                if (!hazard.IsDestroyed) continue;
+                if (!IsShotDown(hazard)) continue;
 
                 if (!_destroyedAt.TryGetValue(hazard, out var at))
                 {
@@ -133,8 +170,43 @@ namespace TinCan.Features.SkyHazards
                 if (_elapsed - at < _config.DespawnDelay) continue;
                 _destroyedAt.Remove(hazard);
                 _alive.RemoveAt(i);
+                _drifting.Remove(hazard);
                 _spawner.Despawn(hazard);
             }
+        }
+
+        private void DriftAndStrike(IAirshipView ship)
+        {
+            Vector3? target = null;
+            for (int i = _alive.Count - 1; i >= 0; i--)
+            {
+                var hazard = _alive[i];
+                var transform = hazard.Transform;
+                if (IsShotDown(hazard) || transform == null) continue;
+
+                if (_drifting.Contains(hazard))
+                {
+                    target ??= _contact.Center(ship);
+                    transform.position = _drift.Step(transform.position, target.Value, _config.DriftSpeed, _time.DeltaTime);
+                }
+
+                if (!_contact.Touches(ship, transform.position, _config.ContactRadius)) continue;
+
+                Strike(ship);
+                _alive.RemoveAt(i);
+                _drifting.Remove(hazard);
+                _spawner.Despawn(hazard);
+            }
+        }
+
+        private void Strike(IAirshipView ship)
+        {
+            Hits++;
+            var controller = (ship as IShipState)?.Controller;
+            if (controller != null && _config.ImpactEffect != null) _abilities.ApplyEffect(controller, _config.ImpactEffect);
+
+            _events.Publish(new SkyHazardHitShipEvent(ship.Id, Hits));
+            _events.LogInfo(LogSource, $"A hazard hit the ship ({Hits} so far).");
         }
 
         private void RemoveDistant(Vector3 shipPosition)
@@ -142,10 +214,13 @@ namespace TinCan.Features.SkyHazards
             for (int i = _alive.Count - 1; i >= 0; i--)
             {
                 var hazard = _alive[i];
-                if (hazard.IsDestroyed || !_field.IsTooFar(shipPosition, hazard.Transform!.position, _config.RemoveDistance)) continue;
+                if (IsShotDown(hazard) || !_field.IsTooFar(shipPosition, hazard.Transform!.position, _config.RemoveDistance)) continue;
                 _alive.RemoveAt(i);
+                _drifting.Remove(hazard);
                 _spawner.Despawn(hazard);
             }
         }
+
+        private static bool IsShotDown(ISkyHazard hazard) => hazard.Controller.IsDepleted();
     }
 }

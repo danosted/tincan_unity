@@ -97,7 +97,7 @@ namespace TinCan.Tests.EditMode
             useCase.TryBreak(0);
             useCase.TryBreak(2);
 
-            Assert.That(_points[0].IsBroken && _points[2].IsBroken, Is.True);
+            Assert.That(_points[0].Controller.IsDamaged() && _points[2].Controller.IsDamaged(), Is.True);
             Assert.That(useCase.BrokenCount, Is.EqualTo(2));
             Assert.That(LeakRate, Is.EqualTo(1f).Within(0.0001f));
             Assert.That(_shipController.HasTag(_damaged), Is.True);
@@ -111,13 +111,13 @@ namespace TinCan.Tests.EditMode
 
             useCase.TryBreak(1);
 
-            Assert.That(_points[1].Health01, Is.EqualTo(0f), "The instant break effect set the part's health to 0.");
+            Assert.That(FakeShipDamage.HealthFraction(_points[1]), Is.EqualTo(0f), "The instant break effect set the part's health to 0.");
             Assert.That(_points[1].FakeController.HasTag(_partDamaged), Is.True);
             Assert.That(_points[0].FakeController.HasTag(_partDamaged), Is.False);
 
             useCase.TryRestore(1);
 
-            Assert.That(_points[1].Health01, Is.EqualTo(1f), "Restore overrides to max, clamped by MaxHealth.");
+            Assert.That(FakeShipDamage.HealthFraction(_points[1]), Is.EqualTo(1f), "Restore overrides to max, clamped by MaxHealth.");
             Assert.That(_points[1].FakeController.HasTag(_partDamaged), Is.False);
         }
 
@@ -146,7 +146,7 @@ namespace TinCan.Tests.EditMode
             var useCase = UseCase();
             useCase.TryBreak(0);
 
-            _points[0].SetHealth01(0.9f);
+            _points[0].SetHealthFraction(0.9f);
             useCase.Tick();
 
             Assert.That(LeakRate, Is.EqualTo(0.5f).Within(0.0001f));
@@ -157,11 +157,11 @@ namespace TinCan.Tests.EditMode
         {
             var useCase = UseCase();
 
-            _points[3].SetHealth01(0f);
+            _points[3].SetHealthFraction(0f);
             useCase.Tick();
             Assert.That(useCase.BrokenCount, Is.EqualTo(1));
 
-            _points[3].SetHealth01(1f);
+            _points[3].SetHealthFraction(1f);
             useCase.Tick();
             Assert.That(useCase.BrokenCount, Is.EqualTo(0));
             Assert.That(LeakRate, Is.EqualTo(0f).Within(0.0001f));

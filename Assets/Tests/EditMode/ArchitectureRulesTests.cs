@@ -202,6 +202,22 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void InteractionDefinitions_ResolveTheirHandler()
+        {
+            // The handler is stored as an assembly-qualified type name, so moving a handler to another assembly (or
+            // renaming it) leaves the IA_* asset pointing at nothing and the interaction silently does nothing.
+            var offenders = LoadAssets<TinCan.Features.Interaction.InteractionDefinition>()
+                .Select(d => (Asset: d, Name: new UnityEditor.SerializedObject(d).FindProperty("_handlerTypeName").stringValue))
+                .Where(d => !string.IsNullOrEmpty(d.Name) && d.Asset.HandlerType == null)
+                .Select(d => $"{UnityEditor.AssetDatabase.GetAssetPath(d.Asset)}: {d.Name.Split(',')[0]} (stored as {string.Join(",", d.Name.Split(',').Skip(1).Take(1)).Trim()})")
+                .ToList();
+
+            Assert.That(offenders, Is.Empty,
+                "Every InteractionDefinition's handler resolves (CODE_MAP.md, \"Legacy, oddities and traps\"). The type "
+                + "moved or was renamed: re-pick it in the IA_* asset's handler dropdown:\n  " + string.Join("\n  ", offenders));
+        }
+
+        [Test]
         public void SharedAssemblies_DoNotReferenceFeatureAssemblies()
         {
             var features = FeatureAssemblies();

@@ -5,6 +5,8 @@
         "TinCan.Core.Domain",
         "TinCan.Features",
         "TinCan.Features.SkyHazards",
+        "TinCan.Features.Stations",
+        "TinCan.Features.Weapons.Cannon",
         "TinCan.DevTools",
         "Unity.Netcode.Runtime"
     ],

@@ -29,6 +29,7 @@ The human entry point is [`.docs/README.md`](.docs/README.md). Keep it and the d
 - New features register through a `FeatureInstaller` asset under `Assets/Resources/Installers/`. Never add feature registrations or fields to `ProjectLifetimeScope.cs`, and do not edit the "Do NOT touch" files listed in `.docs/TUTORIAL_NEW_FEATURE.md`.
 - Every processor, use case and interaction handler ships with an EditMode test; the suite stays green.
 - A new feature gets a row in the feature index in `.docs/CODE_MAP.md`.
+- Ask the developer before any `verify.ps1` run that plays scenarios (the Solo and Duo tiers: `-Scenario`, `-All`). It takes over the Editor and brings Unity and Player 2 to the front mid-work. Say which scenarios and tiers, roughly how long, and wait for a yes. `-UpTo Compile` and `-UpTo Tests` need no confirmation. Batch the play runs: one confirmed run at the end beats several small ones.
 - Every feature slice ships with a scenario that passes `.\.tools\verify.ps1 -Scenario <Name>` (solo and host + client) in its test-range scene. Procedures: `.claude/skills/verify-feature` and `.claude/skills/add-scenario` (Copilot: `.github/prompts/`); reference: `.docs/NETWORK_TEST_HARNESS.md`.
 - After a C# edit, check diagnostics and request Unity script compilation; confirm it finishes without compiler errors.
 - In documentation, cite file paths rather than pasting code.

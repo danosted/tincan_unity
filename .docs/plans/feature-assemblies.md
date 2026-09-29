@@ -30,12 +30,17 @@ Rule tests in `ArchitectureRulesTests`:
 1. **Leaf features, and the pattern (done).** `GasChallenge` (the worked example) and `SkyHazards` (referenced by
    DevTools and tests) each got an asmdef. The docs and the tests above went in with them. A probe confirmed that
    GasChallenge cannot use a SkyHazards type without a reference (CS0234).
-2. **More leaves, one at a time.** Weapons/Cannon and Stations (after the cannon work lands; Cannon references
-   Stations), and DesignedEvents (ShipDamage references it, so it becomes a feature reference). Each move:
+2. **More leaves, one at a time.** Each move:
    - add the asmdef;
    - add references in DevTools and tests;
    - remove the installer from the baseline;
+   - re-pick any `IA_*` handler the move breaks (`InteractionDefinitions_ResolveTheirHandler` lists them);
    - update its feature index row.
+
+   Done: `Stations` and `Weapons.Cannon`. Cannon references Stations, the first feature-to-feature reference, so
+   every profile loading Cannon must load Stations; both cannon profiles already do. `IA_OccupyCannon` was re-pointed.
+   Next: DesignedEvents. ShipDamage references it, so it becomes a feature reference once ShipDamage moves in
+   phase 3.
 3. **Split `Features/Airship/`.** Separate the ship itself (core) from the features in it: Fuel, Damage, FlyingCan
    (FlyingCan references Fuel), and the door.
 4. **Untangle the core systems and give them assemblies.** The folder-level scan shows cycles, which assemblies
@@ -69,6 +74,6 @@ Rule tests in `ArchitectureRulesTests`:
 ## Watch out when moving a type between assemblies
 - Script GUIDs are unchanged, so prefab and scene references survive.
 - `InteractionDefinition` stores its handler as an assembly-qualified type name, so moving a handler blanks the
-  `IA_*` dropdown. Re-pick it in the Editor.
+  `IA_*` dropdown. `InteractionDefinitions_ResolveTheirHandler` catches it; re-pick the handler in the Editor.
 - `[SerializeReference]` types need `[MovedFrom]`.
 - Assembly-CSharp cannot be referenced by an asmdef: features reach `Network/Infrastructure` only through interfaces.

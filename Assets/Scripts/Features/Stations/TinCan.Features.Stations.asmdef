@@ -1,16 +1,9 @@
 {
-    "name": "TinCan.DevTools",
-    "rootNamespace": "TinCan.DevTools",
+    "name": "TinCan.Features.Stations",
+    "rootNamespace": "TinCan.Features.Stations",
     "references": [
         "TinCan.Core.Domain",
         "TinCan.Features",
-        "TinCan.Features.SkyHazards",
-        "TinCan.Features.Stations",
-        "TinCan.Features.Weapons.Cannon",
-        "Unity.Netcode.Runtime",
-        "Unity.Networking.Transport",
-        "Unity.Collections",
-        "Unity.InputSystem",
         "VContainer"
     ],
     "includePlatforms": [],

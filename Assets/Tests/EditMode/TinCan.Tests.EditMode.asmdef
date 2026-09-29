@@ -7,6 +7,8 @@
         "TinCan.Features",
         "TinCan.Features.GasChallenge",
         "TinCan.Features.SkyHazards",
+        "TinCan.Features.Stations",
+        "TinCan.Features.Weapons.Cannon",
         "TinCan.DevTools",
         "TinCan.Tests.Shared",
         "Unity.Netcode.Runtime",

@@ -9,19 +9,25 @@ The canonical description is `.docs/NETWORK_TEST_HARNESS.md` ("Scenarios" and "T
 
 1. **Pick the scenario** for the feature from `Assets/Scripts/DevTools/Scenarios/ScenarioCatalog.cs`. If the feature has
    none, stop and use the `add-scenario` skill first. A slice is not done without one.
-2. **Run** from the repo root, in PowerShell, with the Editor open:
+2. **Ask first for any run that plays.** The Solo and Duo tiers enter Play mode and bring the Editor and Player 2 to
+   the front over whatever the developer is doing. Before running `-Scenario` or `-All`, tell the developer which
+   scenarios and tiers will run and roughly how long it takes (about 15–25 s per scenario per tier, plus a minute for
+   compile and tests), and wait for a yes. `-UpTo Compile` and `-UpTo Tests` don't play and need no confirmation.
+   Iterate on those, then ask once for the play run at the end.
+3. **Run** from the repo root, in PowerShell, with the Editor open:
    ```powershell
    .\.tools\verify.ps1 -Scenario <Name> -SaveDirtyScenes
    ```
-   - Add `-UpTo Solo` while iterating, then run the full ladder once at the end.
+   - `-UpTo Solo` skips host + client, but it still plays, so it still needs the developer's yes. Prefer iterating on
+     `-UpTo Tests` and asking once for the full ladder at the end.
    - Add `-TestFilter <Fragment>` to narrow the EditMode tier.
    - Use `.\.tools\verify.ps1 -UpTo Tests` when there is no scenario yet.
    - For a change to shared code, run every scenario as one batch: `.\.tools\verify.ps1 -All -SaveDirtyScenes`
      (compile and tests run once; never loop over `verify.ps1` per scenario).
    - The script opens the scenario's test-range scene, syncs the MPPM clone, and restores the starting scene.
-3. **Read the exit code:** 0 means every tier passed, 1 means a tier failed, and 2 means the Editor was blocked (a
+4. **Read the exit code:** 0 means every tier passed, 1 means a tier failed, and 2 means the Editor was blocked (a
    modal or a wedged pipeline). An exit of 2 says nothing about the code.
-4. **Triage a failure by tier:**
+5. **Triage a failure by tier:**
    - **Compile:** fix the errors and rerun `.\.tools\verify.ps1 -UpTo Compile`. Do not call `unity cmd recompile` to
      check: when nothing changed it answers "up to date" and forgets the errors.
    - **Tests:** read the failing test's message and fix the code, not the test, unless the test is wrong.
@@ -32,5 +38,5 @@ The canonical description is `.docs/NETWORK_TEST_HARNESS.md` ("Scenarios" and "T
      - For errors not in the report, run `unity cmd console --level error --tail 20` (add `--project-path` with the
        clone path for the client).
    - Match the symptom against the troubleshooting table in `.docs/NETWORK_TEST_HARNESS.md` before digging further.
-5. **Report** the tier lines, each tier's pass or fail with its timing, and what a human still has to playtest. Do not
+6. **Report** the tier lines, each tier's pass or fail with its timing, and what a human still has to playtest. Do not
    report "done" on a solo pass alone. The host + client tier is the one that proves replication.

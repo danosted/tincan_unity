@@ -652,6 +652,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: TestShip_Prefab
       objectReference: {fileID: 0}
+    - target: {fileID: 8441850146422661578, guid: f227451d8202511408d6163b0a319dd4, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 158929479
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 8206273670123853129, guid: f227451d8202511408d6163b0a319dd4, type: 3}

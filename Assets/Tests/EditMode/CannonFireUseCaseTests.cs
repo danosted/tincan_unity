@@ -185,11 +185,11 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void Aim_FollowsTheGunnersFacing_AndLookPitch()
+        public void Aim_FollowsTheGunnersLookInput_NotTheBodysFacing()
         {
             _occupancy.Occupant = _gunner;
-            _body.Transform.rotation = Quaternion.Euler(0f, 30f, 0f);
-            _gunner.InputState = new HumanoidInputState { LookPitch = -10f };
+            _body.Transform.rotation = Quaternion.Euler(0f, -50f, 0f); // still turning toward the look: ignored
+            _gunner.InputState = new HumanoidInputState { LookRotation = Quaternion.Euler(0f, 30f, 0f), LookPitch = -10f };
 
             _useCase.Tick();
 

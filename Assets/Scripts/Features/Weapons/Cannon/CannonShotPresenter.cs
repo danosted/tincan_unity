@@ -96,8 +96,10 @@ namespace TinCan.Features.Weapons.Cannon
             var local = LocalOccupant(cannon);
             if (local != null)
             {
+                // The live look (the orbital camera's yaw and pitch, updated every frame from the mouse), not the body's
+                // facing, which only turns in simulation ticks: the gunner's camera rides the barrel, so steps would show.
                 var movement = local.Movement;
-                (state.Yaw, state.Elevation) = _aim.BarrelAngles(cannon.Base.rotation, movement.Transform.forward, movement.LookPitch, _config.AimLimits);
+                (state.Yaw, state.Elevation) = _aim.BarrelAngles(cannon.Base.rotation, movement.LookRotation * Vector3.forward, movement.LookPitch, _config.AimLimits);
             }
             else if (!state.Initialized)
             {

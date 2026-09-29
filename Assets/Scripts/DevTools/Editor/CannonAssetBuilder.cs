@@ -40,8 +40,9 @@ namespace TinCan.DevTools.Editor
         private const string AbilityMediatorType = "TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, Assembly-CSharp";
 
         // Starboard broadside on the mid deck, which sits at y = -3.49 in ship space on both the airship and the test ship;
-        // aft of the fuel fixture's net rack (5.2, -3.5, 0), so the two stations do not crowd each other.
-        private static readonly Vector3 CannonLocalPosition = new(4.6f, -3.49f, -3f);
+        // 4 m forward of the fuel fixture's net rack (5.2, -3.5, 0). Aft of it (z -3) is the StairsTop staircase; z 2..6
+        // is clear for the cannon and its seat (overlap-checked against the airship and fixtures, 2026-09-29).
+        private static readonly Vector3 CannonLocalPosition = new(4.6f, -3.49f, 4f);
         private static readonly Vector3 CannonLocalEuler = new(0f, 90f, 0f);
 
         [MenuItem("TinCan/Dev/Cannon/Build Assets")]

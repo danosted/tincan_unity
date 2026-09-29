@@ -20,10 +20,16 @@ Where the build differs from the design below, and why:
   local occupant and swaps the body camera back on leaving. `PossessedViewCamera` asks its `ILocalViewOverride` first.
   This is still occupancy, not possession: only the view changes, and the body's predicted look keeps aiming. A
   LineRenderer arc (`AimPreview`) shows where a shot will fly.
+- **Aim follows the look, not the body (2026-09-29):** the body turns only in simulation ticks, so a barrel driven by
+  it stepped visibly under the barrel camera. The local gunner's barrel follows the per-frame look
+  (`IHumanoidMovementView.LookRotation`/`LookPitch`). The server aims from that tick's input look (platform yaw ×
+  `InputState.LookRotation`). The inherited velocity is the ship's motion at the muzzle (`BaseVelocityAt`), without
+  the barrel's swing.
 - **Cosmetic balls are timed from when a peer hears of the shot.** Ticks are not comparable across peers, so
   `ShotFired` carries origin and velocity only.
 - **Cues are deferred.** There is no fire, impact or destroyed cue yet.
-- **Placement:** one starboard broadside cannon on the mid deck (y -3.49 on both the airship and the test ship). The
+- **Placement:** one starboard broadside cannon on the mid deck (y -3.49 on both the airship and the test ship), at
+  z 4. That is forward of the net rack (z 0); z 1 crowded the rack and z -3 was inside the StairsTop staircase. The
   hazard field is a box on the starboard side (`SkyHazardConfig.FieldMin/Max`). `FieldEnabled` is on: S1 hazards
   only hang in the sky, so they are harmless targets. Turn the field off before S2 makes them hit the ship.
 - **Tuning:** one hit destroys a hazard (`GE_CannonballHit` -100, hazard health 100). The reload is 1.5 s.

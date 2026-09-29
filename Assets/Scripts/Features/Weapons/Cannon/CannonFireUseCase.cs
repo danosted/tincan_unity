@@ -134,7 +134,7 @@ namespace TinCan.Features.Weapons.Cannon
                 return;
             }
 
-            var (yaw, elevation) = _aim.BarrelAngles(cannon.Base.rotation, occupant.Movement.Transform.forward,
+            var (yaw, elevation) = _aim.BarrelAngles(cannon.Base.rotation, LookForward(occupant),
                 occupant.InputState.LookPitch, _config.AimLimits);
             cannon.ServerSetAim(yaw, elevation);
             cannon.ApplyAim(yaw, elevation);
@@ -149,6 +149,15 @@ namespace TinCan.Features.Weapons.Cannon
                     : Vector3.zero;
                 Fire(cannon, muzzle, _aim.MuzzleDirection(cannon.Base.rotation, yaw, elevation), inherited);
             }
+        }
+
+        // Where the occupant looks this tick: the input's look is relative to the yaw of the platform underfoot (as
+        // HumanoidMovementUseCase applies it). Not the body's facing, which only turns toward the look over a few ticks.
+        private static Vector3 LookForward(IHumanoidCharacterView occupant)
+        {
+            var platform = occupant.Movement.CurrentGround.MovingGroundTransform;
+            var platformYaw = platform != null ? Quaternion.Euler(0f, platform.eulerAngles.y, 0f) : Quaternion.identity;
+            return platformYaw * occupant.InputState.LookRotation * Vector3.forward;
         }
 
         private bool JustPressedFire(Guid cannonId, IHumanoidCharacterView occupant)

@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: CannonStationFixture
   m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Features.ShipFixtureDefinition
   Prefab: {fileID: 1808055983637199317, guid: 51920a2119834fb4aa466005ce5e0ea1, type: 3}
-  LocalPosition: {x: 6, y: -3.49, z: -3}
+  LocalPosition: {x: 4.6, y: -3.49, z: 4}
   LocalEulerAngles: {x: 0, y: 90, z: 0}

@@ -140,7 +140,7 @@ namespace TinCan.Tests.EditMode
                 _abilities.GrantAbility(_player, ability);
                 var pressed = new HumanoidInputState { ActiveInputMask = 1UL << ability.TriggerInput.BitIndex };
                 _spawner.Spawn(new Vector3(0f, 1f, 2f));
-                _abilities.ProcessAbilitySimulation(_player, pressed, 0, _time.DeltaTime);
+                _abilities.ProcessAbilitySimulation(_player, pressed.ActiveInputMask, 0, _time.DeltaTime);
                 _useCase.Tick();
 
                 _time.Time = 0.25f;
@@ -148,7 +148,7 @@ namespace TinCan.Tests.EditMode
                 _useCase.Tick();
                 _spawner.Spawn(new Vector3(0f, 1f, 2f));
                 _time.Time = 0.5f;
-                _abilities.ProcessAbilitySimulation(_player, pressed, 0, _time.DeltaTime);
+                _abilities.ProcessAbilitySimulation(_player, pressed.ActiveInputMask, 0, _time.DeltaTime);
                 Assert.That(_player.HasTag(_swingTag), Is.True);
 
                 _useCase.Tick();

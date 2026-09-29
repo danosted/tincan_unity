@@ -218,11 +218,30 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void GameplayCueNotifies_LoadAllTheirActions()
+        {
+            // Cue actions are [SerializeReference] data stored with their class, namespace and assembly name. Moving an
+            // action type to another assembly or namespace without [MovedFrom] silently drops it from every GCN_* asset.
+            var notifies = LoadAssets<TinCan.Features.Abilities.Cues.GameplayCueNotify>().ToList();
+            Assert.That(notifies, Is.Not.Empty, "No GameplayCueNotify assets found, so this rule would check nothing.");
+
+            var offenders = notifies
+                .Where(UnityEditor.SerializationUtility.HasManagedReferencesWithMissingTypes)
+                .Select(UnityEditor.AssetDatabase.GetAssetPath)
+                .ToList();
+
+            Assert.That(offenders, Is.Empty,
+                "These cue assets reference action types that no longer resolve. Give the moved action type "
+                + "[MovedFrom(false, sourceAssembly: \"<old assembly>\")] (CODE_MAP.md, \"Legacy, oddities and traps\"):\n  "
+                + string.Join("\n  ", offenders));
+        }
+
+        [Test]
         public void SharedAssemblies_DoNotReferenceFeatureAssemblies()
         {
             var features = FeatureAssemblies();
             var offenders = UnityEditor.Compilation.CompilationPipeline.GetAssemblies()
-                .Where(a => a.name is "TinCan.Core.Domain" or "TinCan.Core.Infrastructure" or "TinCan.Features")
+                .Where(a => IsCoreAssembly(a.name))
                 .SelectMany(a => a.assemblyReferences.Where(r => features.Contains(r.name)).Select(r => $"{a.name} -> {r.name}"))
                 .ToList();
 
@@ -451,6 +470,17 @@ namespace TinCan.Tests.EditMode
             if (_scope != null) UnityEngine.Object.DestroyImmediate(_scope.gameObject);
             _scope = null;
         }
+
+        /// <summary>
+        /// Core assemblies: every TinCan.* assembly that is not a feature (TinCan.Features.*), DevTools or a test assembly,
+        /// plus the shared TinCan.Features block. Core may never reference a feature.
+        /// </summary>
+        private static bool IsCoreAssembly(string name) =>
+            name == "TinCan.Features"
+            || (name.StartsWith("TinCan.", StringComparison.Ordinal)
+                && !name.StartsWith("TinCan.Features.", StringComparison.Ordinal)
+                && !name.StartsWith("TinCan.DevTools", StringComparison.Ordinal)
+                && !name.StartsWith("TinCan.Tests", StringComparison.Ordinal));
 
         /// <summary>Feature assemblies: a TinCan.Features.* assembly that defines a feature installer.</summary>
         private static HashSet<string> FeatureAssemblies() => new(ProjectTypes()

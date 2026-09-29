@@ -3,7 +3,7 @@
     "rootNamespace": "TinCan.Features.DesignedEvents",
     "references": [
         "TinCan.Core.Domain",
-        "TinCan.Features",
+        "TinCan.Gas",
         "VContainer"
     ],
     "includePlatforms": [],

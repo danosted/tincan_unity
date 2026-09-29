@@ -1,4 +1,4 @@
-namespace TinCan.Features.Possession
+namespace TinCan.Core.Domain
 {
     /// <summary>
     /// Downstream interface for components that need to react to possession changes with player context.

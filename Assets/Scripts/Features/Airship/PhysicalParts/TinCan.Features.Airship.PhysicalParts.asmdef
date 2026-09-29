@@ -3,7 +3,7 @@
     "rootNamespace": "TinCan.Features.Airship.PhysicalParts",
     "references": [
         "TinCan.Core.Domain",
-        "TinCan.Features",
+        "TinCan.Interaction",
         "Unity.Netcode.Runtime",
         "VContainer"
     ],

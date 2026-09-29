@@ -1,4 +1,5 @@
 #nullable enable
+using UnityEngine.Scripting.APIUpdating;
 using System;
 using TinCan.Core.Domain.Cues;
 using UnityEngine;
@@ -7,6 +8,8 @@ namespace TinCan.Features.Abilities.Cues.Actions
 {
     /// <summary>A HUD line for a few seconds. The same text key restarts its time instead of stacking.</summary>
     [Serializable]
+    // Stored by [SerializeReference] in GCN_* assets with its assembly name; this keeps old assets loading after a move.
+    [MovedFrom(false, sourceAssembly: "TinCan.Features")]
     public sealed class HudToastCueAction : GameplayCueAction
     {
         public string Text = string.Empty;

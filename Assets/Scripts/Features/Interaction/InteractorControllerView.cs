@@ -1,6 +1,7 @@
 using UnityEngine;
 using TinCan.Core.Domain;
 using VContainer;
+using TinCan.Features.HumanoidMovement;
 
 namespace TinCan.Features.Interaction
 {
@@ -47,7 +48,7 @@ namespace TinCan.Features.Interaction
                 return;
             }
 
-            var targeter = new Targeting.HumanoidTargeter(character);
+            var targeter = new HumanoidTargeter(character);
             bool acquired = _targeting.TryAcquire(targeter, _settings.Targeting, out var result);
             CurrentTarget = acquired ? result.Target as IInteractable : null;
 

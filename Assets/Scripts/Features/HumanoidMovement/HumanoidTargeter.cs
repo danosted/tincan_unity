@@ -1,9 +1,8 @@
 #nullable enable
 using System;
 using TinCan.Core.Domain.Targeting;
-using TinCan.Features.HumanoidMovement;
 
-namespace TinCan.Features.Targeting
+namespace TinCan.Features.HumanoidMovement
 {
     /// <summary>
     /// A humanoid as a targeter. Everything comes from state owner and server share: the simulated body pose (it

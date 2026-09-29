@@ -11,7 +11,6 @@ using VContainer;
 using VContainer.Unity;
 using UnityEngine;
 
-using TinCan.Features.HumanoidMovement;
 
 namespace TinCan.Features.Abilities
 {
@@ -86,9 +85,10 @@ namespace TinCan.Features.Abilities
 
         /// <summary>
         /// Authoritative simulation tick for a specific actor.
-        /// Called by movement systems to ensure predicted abilities are synced with movement.
+        /// Called by movement systems to ensure predicted abilities are synced with movement. Takes only the input bits
+        /// (<see cref="TinCan.Core.Domain.Abilities.Inputs.GameplayInput.BitIndex"/>), so GAS knows no actor's input struct.
         /// </summary>
-        public void ProcessAbilitySimulation(IAbilityControllerBase actor, HumanoidInputState input, ulong previousInputMask, float deltaTime)
+        public void ProcessAbilitySimulation(IAbilityControllerBase actor, ulong inputMask, ulong previousInputMask, float deltaTime)
         {
             int currentTick = _timeService.Tick;
 
@@ -99,7 +99,7 @@ namespace TinCan.Features.Abilities
             // 2. Process Input Triggers
             if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
 
-            ulong currentMask = input.ActiveInputMask;
+            ulong currentMask = inputMask;
 
             foreach (var spec in abilities)
             {

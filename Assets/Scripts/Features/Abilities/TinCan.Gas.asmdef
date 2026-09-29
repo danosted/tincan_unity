@@ -1,0 +1,18 @@
+{
+    "name": "TinCan.Gas",
+    "rootNamespace": "",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Targeting",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

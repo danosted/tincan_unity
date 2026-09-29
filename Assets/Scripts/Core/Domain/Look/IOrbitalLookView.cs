@@ -1,7 +1,7 @@
 using UnityEngine;
 using TinCan.Core.Domain;
 
-namespace TinCan.Features.HumanoidMovement
+namespace TinCan.Core.Domain.Look
 {
     /// <summary>
     /// Domain Layer: Interface for look behavior (1st person, 3rd person).

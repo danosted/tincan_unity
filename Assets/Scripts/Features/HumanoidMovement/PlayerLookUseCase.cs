@@ -4,7 +4,7 @@ using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
 using System.Collections.Generic;
 using System.Linq;
-using TinCan.Features.FreeCamera;
+using TinCan.Core.Domain.Look;
 
 namespace TinCan.Features.HumanoidMovement
 {

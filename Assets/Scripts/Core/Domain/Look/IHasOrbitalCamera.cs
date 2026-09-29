@@ -1,7 +1,6 @@
 using TinCan.Core.Domain;
-using TinCan.Features.HumanoidMovement;
 
-namespace TinCan.Features.FreeCamera
+namespace TinCan.Core.Domain.Look
 {
     /// <summary>
     /// Composite interface indicating an actor has an orbital camera that should receive mouse input.

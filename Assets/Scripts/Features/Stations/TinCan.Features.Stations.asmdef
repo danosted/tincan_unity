@@ -3,7 +3,9 @@
     "rootNamespace": "TinCan.Features.Stations",
     "references": [
         "TinCan.Core.Domain",
-        "TinCan.Features",
+        "TinCan.Gas",
+        "TinCan.Humanoid",
+        "TinCan.Interaction",
         "VContainer"
     ],
     "includePlatforms": [],

@@ -66,16 +66,13 @@ Rule tests in `ArchitectureRulesTests`:
    - ShipDamage now requires the events feature in every profile. It used to register its event handlers "for when
      events are loaded"; the compile-time reference makes that a hard requirement. Both profiles that load ShipDamage
      already load Events.
-4. **Untangle the core systems and give them assemblies.** The folder-level scan shows cycles, which assemblies
-   forbid:
-   - Abilities ↔ Airship
-   - Abilities ↔ HumanoidMovement
-   - Targeting → HumanoidMovement → Abilities → Targeting
-   - Possession ↔ Airship and Possession ↔ FreeCamera
-   - Interaction ↔ Abilities and Interaction ↔ Airship
-
-   Move the shared contracts down into `Core.Domain`. `ActorAbilityGrantUseCase` (Abilities → Airship,
-   HumanoidMovement) should detect actor kinds through `Core.Domain` contracts when GAS moves.
+4. **Untangle the core systems and give them assemblies (done).** Detail in
+   [`core-assemblies.md`](core-assemblies.md).
+   - **Core assemblies:** `TinCan.Targeting`, `TinCan.Possession`, `TinCan.Entities`, `TinCan.Gas`,
+     `TinCan.Humanoid`, `TinCan.Interaction`, `TinCan.Ship`, `TinCan.Items`, `TinCan.UI`.
+   - **Carved out as features:** CloudBoundary (with submersion), FreeCamera, Environment, Events.
+   - **The shared `TinCan.Features` block** is down to `Carry/`: the net rack and net-swing visuals, which need a
+     socket before they can move.
 5. **Make core mandatory.** Core-system installers go in one core profile the scope always loads, and scene profiles
    only add features. Core services are then guaranteed: drop `TryResolve` for them, and move the ability-grant
    socket into the GAS core instead of `GameplayTagsFeatureInstaller`.

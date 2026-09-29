@@ -5,8 +5,6 @@ using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Features;
-using TinCan.Features.Airship;
-using TinCan.Features.HumanoidMovement;
 using UnityEngine;
 using VContainer.Unity;
 
@@ -41,13 +39,13 @@ namespace TinCan.Features.Abilities
         {
             if (_grants.Count == 0) return;
 
-            _actors.OnActorRegistered += Grant;
-            foreach (var actor in _actors.AllActors.ToList()) Grant(actor);
+            _actors.OnActorRegistered += GrantTo;
+            foreach (var actor in _actors.AllActors.ToList()) GrantTo(actor);
         }
 
-        public void Dispose() => _actors.OnActorRegistered -= Grant;
+        public void Dispose() => _actors.OnActorRegistered -= GrantTo;
 
-        public void Grant(IActor actor)
+        public void GrantTo(IActor actor)
         {
             if (KindOf(actor) is not { } kind || ControllerOf(actor) is not { } controller) return;
 
@@ -56,8 +54,8 @@ namespace TinCan.Features.Abilities
 
         private static ActorKind? KindOf(IActor actor) => actor switch
         {
-            IHumanoidCharacterView => ActorKind.Humanoid,
-            IAirshipView => ActorKind.Airship,
+            IHumanoidActor => ActorKind.Humanoid,
+            IShipActor => ActorKind.Airship,
             _ => null,
         };
 

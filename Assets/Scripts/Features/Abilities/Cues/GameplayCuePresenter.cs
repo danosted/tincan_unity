@@ -2,11 +2,11 @@
 using System;
 using System.Collections.Generic;
 using TinCan.Core.Domain;
-using TinCan.Features.UI;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 using Object = UnityEngine.Object;
+using TinCan.Core.Domain.Hud;
 
 namespace TinCan.Features.Abilities.Cues
 {

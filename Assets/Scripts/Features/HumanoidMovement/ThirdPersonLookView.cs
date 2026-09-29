@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
-using TinCan.Features.Possession;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Look;
 
 namespace TinCan.Features.HumanoidMovement
 {

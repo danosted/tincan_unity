@@ -3,7 +3,8 @@
     "rootNamespace": "TinCan.Features.SkyHazards",
     "references": [
         "TinCan.Core.Domain",
-        "TinCan.Features",
+        "TinCan.Gas",
+        "TinCan.Ship",
         "Unity.Netcode.Runtime",
         "VContainer"
     ],

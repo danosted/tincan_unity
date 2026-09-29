@@ -1,0 +1,20 @@
+{
+    "name": "TinCan.Ship",
+    "rootNamespace": "",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Humanoid",
+        "TinCan.Interaction",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

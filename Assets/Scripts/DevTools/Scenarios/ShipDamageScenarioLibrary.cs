@@ -10,9 +10,9 @@ using TinCan.Features.Airship.Damage;
 using TinCan.Features.Airship.Fuel;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Features.Targeting;
-using TinCan.Features.UI;
 using UnityEngine;
 using VContainer;
+using TinCan.Core.Domain.Hud;
 
 namespace TinCan.DevTools.Scenarios
 {

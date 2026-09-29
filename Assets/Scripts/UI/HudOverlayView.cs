@@ -4,6 +4,7 @@ using TinCan.Features.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 using VContainer;
+using TinCan.Core.Domain.Hud;
 
 namespace TinCan.UI
 {

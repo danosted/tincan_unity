@@ -1,6 +1,5 @@
 using System;
 using TinCan.Core.Domain;
-using TinCan.Features.Airship;
 using TinCan.Features.Possession;
 using UnityEngine;
 using VContainer.Unity;

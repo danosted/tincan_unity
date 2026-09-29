@@ -2,7 +2,6 @@
 using System;
 using TinCan.Core.Domain.Networking;
 using TinCan.Core.Domain;
-using TinCan.Features.Airship;
 using Unity.Netcode;
 using UnityEngine;
 using VContainer.Unity;
@@ -186,11 +185,7 @@ namespace TinCan.Features.Possession
                 possession.ChangeOwnership(NetworkManager.ServerClientId);
             }
 
-            if (possessable is IAirshipView airship)
-            {
-                airship.InputState = new AirshipInputState();
-            }
-
+            // The possessable resets its own state on release (the airship drops its pilot's input).
             possessable.AuthoritativeSetPossessor(null);
             _activePossessions.Remove(clientId);
             _currentMediator?.NotifyPossessionLost(possession, clientId);

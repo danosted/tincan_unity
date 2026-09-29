@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace TinCan.Features.Airship
+namespace TinCan.Features.HumanoidMovement
 {
     [RequireComponent(typeof(BoxCollider))]
     public class ParentLocalSpaceVolume : MonoBehaviour

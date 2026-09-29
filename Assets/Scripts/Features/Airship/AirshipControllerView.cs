@@ -1,11 +1,10 @@
 using UnityEngine;
 using TinCan.Core.Domain;
-using TinCan.Features.Possession;
 using TinCan.Features.Airship;
 using System;
 using System.Collections.Generic;
 using TinCan.Features.HumanoidMovement;
-using TinCan.Features.FreeCamera;
+using TinCan.Core.Domain.Look;
 
 namespace TinCan.Features.Airship
 {

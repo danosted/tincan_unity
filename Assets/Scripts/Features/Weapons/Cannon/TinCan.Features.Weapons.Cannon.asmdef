@@ -3,7 +3,10 @@
     "rootNamespace": "TinCan.Features.Weapons.Cannon",
     "references": [
         "TinCan.Core.Domain",
-        "TinCan.Features",
+        "TinCan.Gas",
+        "TinCan.Humanoid",
+        "TinCan.Interaction",
+        "TinCan.Targeting",
         "TinCan.Features.Stations",
         "Unity.Netcode.Runtime",
         "VContainer"

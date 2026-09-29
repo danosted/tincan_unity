@@ -25,6 +25,7 @@ MonoBehaviour:
   MaxElevation: 40
   ProxyAimSharpness: 15
   BallDiameter: 0.5
+  BallMaterial: {fileID: 2100000, guid: 8aa49ad5a0d944f479f826a2861f7539, type: 2}
   MuzzleBlendSeconds: 0.2
   AimPreviewSeconds: 2.5
   AimPreviewPoints: 40

@@ -35,7 +35,9 @@ tests referencing a feature.
 **The core systems are assemblies too, in a fixed order** (the list above). A contract two core systems share goes
 down into `TinCan.Core.Domain`, never sideways; examples are `Core/Domain/Look/` (`IOrbitalLookView`,
 `IHasOrbitalCamera`), `IPossessionReceiver`, `Core/Domain/Hud/IHudValues`, and the `IHumanoidActor` / `IShipActor`
-markers. Folder, namespace and assembly agree: a core system lives in `Assets/Scripts/Core/<System>/`, its namespace
+markers. **`Core` means core to gameplay, not engine-free:** the core systems are the always-loaded gameplay
+foundation and may hold Unity code, views included (for example `Core/Gas/Views/AttributeBarView`). The engine-light,
+contract-only centre is `TinCan.Core.Domain`. Folder, namespace and assembly agree: a core system lives in `Assets/Scripts/Core/<System>/`, its namespace
 is `TinCan.Core.<System>`, and its assembly is `TinCan.<System>` (`Core/Gas/` is `TinCan.Core.Gas` in `TinCan.Gas`).
 Features live in `Assets/Scripts/Features/<Feature>/` as `TinCan.Features.<Feature>`. There is no shared block any more:
 every script belongs to a core system, a feature, or the top layer.
@@ -150,6 +152,7 @@ Both can be unit-tested directly.
 | An input that triggers an ability | `Assets/Abilities/Inputs/Input_*.asset` bound in `DefaultInputBindingConfig.asset`; becomes a bit in `HumanoidInputState.ActiveInputMask` so it is predicted and replayed. |
 | Starting abilities | A feature's: its installer, as `ActorAbilityGrant`s (`Core/Gas/ActorAbilityGrant.cs`), granted by `ActorAbilityGrantUseCase`. Core only (sprint): `_startingAbilities` on `NetworkPlayer.prefab` (`HumanoidPlayer`) and `Airship_Prefab.prefab` (`AirshipNetworkMediator`). Abilities that come from a held item (for example `GA_SwingNet` from the net) belong on the `ITEM_*` asset. |
 | A HUD number | `IHudValues` (`Core/Domain/Hud/IHudValues.cs`) written by a `*Presenter`; rendered by `App/Views/HudOverlayView.cs`. |
+| A bar over something showing a GAS attribute (health while repairing, later stamina, shields, reload) | `Core/Gas/Views/AttributeBarView.cs` on `Assets/Prefabs/UI/AttributeBar.prefab`: drop the prefab under the actor and pick the attribute and its max attribute (or a fixed max). Hidden while full unless told otherwise; faces the local view camera. First use: one bar per damage point in `ShipDamageSockets.prefab`. |
 | A menu or menu row | `Assets/UI/Menus/*.asset`; commands in `Core/UI/Commands/`; see `UI_FRAMEWORK.md`. |
 | Something bolted onto the ship | A fixture prefab + `ShipFixtureDefinition` in `Assets/Settings/Fixtures/`, listed by an installer; spawned by `Core/Ship/Fixtures/ShipFixtureSpawningUseCase.cs`. |
 | The fixed tick order | `Network/Infrastructure/NetworkSimulationScheduler.cs`, `SimulateNetworkTick`. Features hook in with `ISimulationTickable` + `SimulationPhase`. |

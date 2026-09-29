@@ -1,4 +1,4 @@
-Status: Done (phases 1–6; follow-ups: the Carry socket, the booster fixture)
+Status: Done (phases 1–6 and the Carry socket; open follow-up: the booster fixture)
 
 # Feature assemblies: compiler-enforced boundaries
 
@@ -71,8 +71,9 @@ Rule tests in `ArchitectureRulesTests`:
    - **Core assemblies:** `TinCan.Targeting`, `TinCan.Possession`, `TinCan.Entities`, `TinCan.Gas`,
      `TinCan.Humanoid`, `TinCan.Interaction`, `TinCan.Ship`, `TinCan.Items`, `TinCan.UI`.
    - **Carved out as features:** CloudBoundary (with submersion), FreeCamera, Environment, Events.
-   - **The shared `TinCan.Features` block** is down to `Carry/`: the net rack and net-swing visuals, which need a
-     socket before they can move.
+   - **The shared `TinCan.Features` block** was down to `Carry/`: the net rack and net-swing visuals, which needed a
+     socket before they could move. Done in [`item-and-rack-sockets.md`](item-and-rack-sockets.md), and the block
+     is deleted.
 5. **Make core mandatory (done).**
    - **Which installers are core is decided by assembly** (the developer's choice over a core profile asset or an
      `IsCore` flag): `FeatureInstallerCatalog.IsCore`. `LoadForScene` loads every core installer plus the profile's

@@ -1,6 +1,5 @@
 #nullable enable
 using TinCan.Core.Domain.Events;
-using TinCan.Features.Carry;
 using TinCan.Core.Interaction;
 using TinCan.Core.Items;
 

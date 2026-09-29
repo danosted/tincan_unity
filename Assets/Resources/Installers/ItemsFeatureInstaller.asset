@@ -12,7 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75656ba04d8ae29458ea2da07cce508e, type: 3}
   m_Name: ItemsFeatureInstaller
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Items.ItemsFeatureInstaller
-  _items:
-  - {fileID: 11400000, guid: e7e80d4df040f794b8e4629467b40e24, type: 2}
-  - {fileID: 11400000, guid: 89a9305e9f8494f4b9b7cc503a190564, type: 2}
-  - {fileID: 11400000, guid: b2b592841a1ed8c46bd9e9e6394b1a46, type: 2}
+  _items: []

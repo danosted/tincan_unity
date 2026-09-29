@@ -5,6 +5,7 @@
         "TinCan.Core.Domain",
         "TinCan.Gas",
         "TinCan.Humanoid",
+        "TinCan.Items",
         "TinCan.Ship",
         "TinCan.Targeting",
         "TinCan.Features.DesignedEvents",

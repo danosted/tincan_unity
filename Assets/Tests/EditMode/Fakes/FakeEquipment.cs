@@ -1,8 +1,8 @@
 #nullable enable
 using System;
+using TinCan.Features.Airship.Fuel.Minigame;
 using TinCan.Core.Domain;
 using TinCan.Features.Airship.Fuel;
-using TinCan.Features.Carry;
 using TinCan.Core.Items;
 using UnityEngine;
 

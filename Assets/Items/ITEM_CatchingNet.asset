@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Items.ItemDefinition
   _id: 2
   _displayName: Catching net
-  _visualName: Carry_Net
+  _heldVisual: {fileID: 3599527343882421267, guid: 1ee5bf5ca7f303349861f471d292419c, type: 3}
   _grantedAbilities:
   - {fileID: 11400000, guid: 70d0f151a693fc143b9fb2147a14dd8d, type: 2}
   _equippedEffect: {fileID: 11400000, guid: 94d73a7e254aaab4a8a2bc5deba1c438, type: 2}

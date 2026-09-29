@@ -13,3 +13,6 @@ MonoBehaviour:
   m_Name: FlyingCanFeatureInstaller
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Airship.Fuel.Minigame.FlyingCanFeatureInstaller
   _config: {fileID: 11400000, guid: 31593c6eacc0a1148b6a8b9cdab8ebfe, type: 2}
+  _items:
+  - {fileID: 11400000, guid: 89a9305e9f8494f4b9b7cc503a190564, type: 2}
+  _netRackFixture: {fileID: 11400000, guid: 04d96a4bc8b4c6f4c9de9566650d36bc, type: 2}

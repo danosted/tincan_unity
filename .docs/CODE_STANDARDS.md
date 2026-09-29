@@ -17,8 +17,8 @@ For where code goes, see [`CODE_MAP.md`](./CODE_MAP.md); for the design rules, [
 
 ### Assemblies: every feature is its own
 - A new feature gets its own asmdef, `TinCan.Features.<Name>`, in its folder. It references only what it uses:
-  `TinCan.Core.Domain`, the shared `TinCan.Features`, the packages it needs, and the other features it builds on.
-- Don't add new features to `TinCan.Features`; that block is being split up, not grown.
+  `TinCan.Core.Domain`, the core systems it uses (`TinCan.Gas`, `TinCan.Interaction`, ...), the packages it needs,
+  and the other features it builds on.
 - Core never references a feature. When core needs something a feature provides, put the contract in
   `Core.Domain` and let the feature implement it.
 - Worked example: `Features/GasChallenge/`. The rule, diagram and rule tests are in

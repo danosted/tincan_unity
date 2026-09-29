@@ -5,7 +5,6 @@
         "TinCan.Core.Domain",
         "TinCan.Core.Infrastructure",
         "TinCan.Entities",
-        "TinCan.Features",
         "TinCan.Features.CloudBoundary",
         "TinCan.Gas",
         "TinCan.Humanoid",

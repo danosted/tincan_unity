@@ -13,3 +13,5 @@ MonoBehaviour:
   m_Name: FuelFeatureInstaller
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Airship.Fuel.FuelFeatureInstaller
   _fuelSystemFixture: {fileID: 11400000, guid: 5f911f3a13b0ecb438490b4d3d0936ac, type: 2}
+  _items:
+  - {fileID: 11400000, guid: e7e80d4df040f794b8e4629467b40e24, type: 2}

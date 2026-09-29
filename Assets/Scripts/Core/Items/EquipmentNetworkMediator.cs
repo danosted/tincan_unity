@@ -11,19 +11,21 @@ namespace TinCan.Core.Items
 {
     /// <summary>
     /// Infrastructure Layer: the player's held item, as an item id the server writes. On every change, every peer
-    /// shows the held item's visual (a child named by <see cref="ItemDefinition.VisualName"/>), and the server and the
-    /// owning client apply its grants through <see cref="EquipmentAbilityBinder"/>. Proxies only draw.
+    /// shows the held item's visual (the item's <see cref="ItemDefinition.HeldVisual"/> prefab, instantiated once under
+    /// the player's <c>Visual</c> and then shown or hidden), and the server and the owning client apply its grants
+    /// through <see cref="EquipmentAbilityBinder"/>. Proxies only draw.
     /// </summary>
     public class EquipmentNetworkMediator : NetworkBehaviour, IEquipment
     {
         private const string LogSource = "Items";
+        private const string VisualRootName = "Visual";
 
         private readonly NetworkVariable<int> _heldId = new(
             ItemCatalog.None,
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server);
 
-        private readonly Dictionary<string, GameObject?> _visuals = new();
+        private readonly Dictionary<ItemDefinition, GameObject> _visuals = new();
 
         private ItemCatalog? _catalog;
         private EquipmentAbilityBinder? _binder;
@@ -31,15 +33,13 @@ namespace TinCan.Core.Items
 
         public ItemDefinition? Held => _catalog?.Find(_heldId.Value);
 
+        // Core services: the Items installer always loads.
         [Inject]
-        public void Construct(IObjectResolver resolver)
+        public void Construct(ItemCatalog catalog, EquipmentAbilityBinder binder, IEventPublisher events)
         {
-            // Registered by ItemsFeatureInstaller. Without it the player can hold nothing; say so instead of failing
-            // the whole player's injection.
-            resolver.TryResolve(out _catalog);
-            resolver.TryResolve(out _binder);
-            resolver.TryResolve(out _events);
-            if (_catalog == null) Debug.LogError("[Items] No ItemCatalog registered; is ItemsFeatureInstaller in the scene's feature profile?", this);
+            _catalog = catalog;
+            _binder = binder;
+            _events = events;
         }
 
         public override void OnNetworkSpawn()
@@ -61,7 +61,7 @@ namespace TinCan.Core.Items
 
             if (!_catalog.Contains(item))
             {
-                _events?.LogWarning(LogSource, $"{item.name} is not in the item catalog; add it to ItemsFeatureInstaller.");
+                _events?.LogWarning(LogSource, $"{item.name} is not in the item catalog; its feature's installer must contribute it and be in this scene's profile.");
                 return false;
             }
 
@@ -95,22 +95,20 @@ namespace TinCan.Core.Items
 
         private void ApplyVisuals(ItemDefinition? held)
         {
-            if (_catalog == null) return;
-
-            foreach (var item in _catalog.All)
+            foreach (var pair in _visuals)
             {
-                if (string.IsNullOrEmpty(item.VisualName)) continue;
-                var visual = FindVisual(item.VisualName);
-                if (visual != null) visual.SetActive(item == held);
+                if (pair.Value != null) pair.Value.SetActive(pair.Key == held);
             }
-        }
 
-        private GameObject? FindVisual(string visualName)
-        {
-            if (_visuals.TryGetValue(visualName, out var cached)) return cached;
-            var found = transform.FindDescendant(visualName)?.gameObject;
-            _visuals[visualName] = found;
-            return found;
+            if (held == null || held.HeldVisual == null || _visuals.ContainsKey(held)) return;
+
+            // First time this item is held here: build its visual. Named after the prefab so it can be found by name
+            // (scenarios check "Carry_Net" and friends).
+            var parent = transform.FindDescendant(VisualRootName) ?? transform;
+            var visual = Instantiate(held.HeldVisual, parent, false);
+            visual.name = held.HeldVisual.name;
+            visual.SetActive(true);
+            _visuals[held] = visual;
         }
 
         private string Describe(int id) => _catalog?.Find(id)?.name ?? (id == ItemCatalog.None ? "none" : $"#{id}");

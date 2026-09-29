@@ -195,6 +195,7 @@ namespace TinCan.Features.Weapons.Cannon
             Object.Destroy(ball.GetComponent<Collider>()); // drawn only; the server's sweep decides hits
             ball.transform.SetParent(_root, false);
             ball.transform.localScale = Vector3.one * _config.BallDiameter;
+            if (_config.BallMaterial != null) ball.GetComponent<Renderer>().sharedMaterial = _config.BallMaterial;
             return ball.transform;
         }
 

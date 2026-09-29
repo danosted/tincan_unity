@@ -35,6 +35,9 @@ namespace TinCan.Features.Weapons.Cannon
 
         [Header("Presentation")]
         [Min(0.01f)] public float BallDiameter = 0.5f;
+        [Tooltip("The drawn ball's material (URP). Required in player builds: a runtime primitive otherwise keeps the " +
+                 "built-in default material, which URP draws pink.")]
+        public Material? BallMaterial;
         [Tooltip("Seconds over which a drawn ball moves from this peer's muzzle onto the server's path.")]
         [Min(0f)] public float MuzzleBlendSeconds = 0.2f;
         [Tooltip("Seconds of flight the local occupant's aiming arc shows (0 hides it).")]

@@ -134,6 +134,7 @@ namespace TinCan.DevTools.Editor
                 config.FireAbility = fireAbility;
                 config.HitEffect = hit;
                 config.Sweep = sweep;
+                config.BallMaterial = Material("M_CannonIron", new Color(0.18f, 0.18f, 0.2f)); // an asset, so builds include its shader
             });
 
             // Prefabs and the fixture

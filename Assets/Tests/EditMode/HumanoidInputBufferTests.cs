@@ -1,7 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using NUnit.Framework;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Humanoid;
 using UnityEngine;
 
 namespace TinCan.Tests.EditMode
@@ -175,7 +175,7 @@ namespace TinCan.Tests.EditMode
         {
             var time = new Fakes.FakeTimeService();
             var registry = new Fakes.FakeActorRegistry();
-            var abilities = new TinCan.Features.Abilities.AbilitySystemUseCase(new Fakes.FakeAbilityRegistry(), registry, time, new Fakes.FakeEventPublisher());
+            var abilities = new TinCan.Core.Gas.AbilitySystemUseCase(new Fakes.FakeAbilityRegistry(), registry, time, new Fakes.FakeEventPublisher());
             var useCase = new HumanoidMovementUseCase(new Fakes.FakeInputService(), new Fakes.FakeNetworkService(), new HumanoidMovementProcessor(), abilities, registry, time);
             var movement = new Fakes.FakeHumanoidMovementView("Buffered");
             var character = new BufferedCharacter(movement);

@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Domain;
-using TinCan.Features.Abilities;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Gas;
+using TinCan.Core.Humanoid;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 

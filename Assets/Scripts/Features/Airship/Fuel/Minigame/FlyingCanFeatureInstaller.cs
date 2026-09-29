@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
 using TinCan.Features.Carry;
-using TinCan.Features.Interaction;
+using TinCan.Core.Interaction;
 using UnityEngine;
 using VContainer;
 

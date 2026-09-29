@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Targeting;
-using TinCan.Features.Abilities.Inputs;
-using TinCan.Features.HumanoidMovement;
-using TinCan.Features.Interaction;
-using TinCan.Features.Targeting;
+using TinCan.Core.Gas.Inputs;
+using TinCan.Core.Humanoid;
+using TinCan.Core.Interaction;
+using TinCan.Core.Targeting;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 

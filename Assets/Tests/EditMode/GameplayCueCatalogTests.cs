@@ -4,7 +4,7 @@ using System.Reflection;
 using NUnit.Framework;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Features;
-using TinCan.Features.Abilities.Cues;
+using TinCan.Core.Gas.Cues;
 using UnityEngine;
 using VContainer;
 using Object = UnityEngine.Object;

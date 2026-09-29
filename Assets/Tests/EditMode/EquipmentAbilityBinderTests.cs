@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Domain.Abilities.Tags;
-using TinCan.Features.Abilities;
-using TinCan.Features.Items;
+using TinCan.Core.Gas;
+using TinCan.Core.Items;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 

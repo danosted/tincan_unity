@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Airship;
+using TinCan.Core.Ship;
 using TinCan.Features.Airship.Fuel;
 using TinCan.Features.Airship.Fuel.Minigame;
-using TinCan.Features.Items;
+using TinCan.Core.Items;
 using UnityEngine;
 
 namespace TinCan.DevTools.Scenarios

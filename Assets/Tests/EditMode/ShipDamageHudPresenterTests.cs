@@ -20,9 +20,9 @@ namespace TinCan.Tests.EditMode
             _actors = new FakeActorRegistry();
             _hud = new FakeHudValues();
             _airship = new FakeAirshipView();
-            var health = UnityEngine.ScriptableObject.CreateInstance<TinCan.Features.Abilities.HealthAttribute>();
+            var health = UnityEngine.ScriptableObject.CreateInstance<TinCan.Core.Gas.HealthAttribute>();
             health.name = "Attr_Health";
-            var maxHealth = UnityEngine.ScriptableObject.CreateInstance<TinCan.Features.Abilities.MaxHealthAttribute>();
+            var maxHealth = UnityEngine.ScriptableObject.CreateInstance<TinCan.Core.Gas.MaxHealthAttribute>();
             maxHealth.name = "Attr_MaxHealth";
             _assets.Add(health);
             _assets.Add(maxHealth);

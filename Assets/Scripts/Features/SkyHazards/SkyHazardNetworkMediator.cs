@@ -1,7 +1,7 @@
 #nullable enable
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Targeting;
-using TinCan.Features.Abilities;
+using TinCan.Core.Gas;
 using Unity.Netcode;
 using UnityEngine;
 

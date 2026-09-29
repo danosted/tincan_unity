@@ -4,6 +4,7 @@ using TinCan.Core.Domain;
 using UnityEngine;
 using VContainer.Unity;
 using TinCan.Core.Domain.Hud;
+using TinCan.Core.Ship;
 
 namespace TinCan.Features.Airship.Fuel
 {

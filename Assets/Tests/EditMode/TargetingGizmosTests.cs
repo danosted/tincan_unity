@@ -4,7 +4,7 @@ using System.Linq;
 using NUnit.Framework;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Targeting;
-using TinCan.Features.Targeting;
+using TinCan.Core.Targeting;
 using UnityEngine;
 
 namespace TinCan.Tests.EditMode

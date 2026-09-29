@@ -5,7 +5,7 @@ namespace TinCan.Features.Airship.Fuel
     public interface IJerryCanSupply
     {
         /// <summary>The item a taken can becomes in the player's hands.</summary>
-        TinCan.Features.Items.ItemDefinition? Item { get; }
+        TinCan.Core.Items.ItemDefinition? Item { get; }
         int Count { get; }
         bool TryTake();
         void Add(int amount);

@@ -7,7 +7,7 @@ using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Features.Airship.Fuel;
-using TinCan.Features.Interaction;
+using TinCan.Core.Interaction;
 using TinCan.Tests.EditMode.Fakes;
 using Unity.Netcode;
 using UnityEditor;

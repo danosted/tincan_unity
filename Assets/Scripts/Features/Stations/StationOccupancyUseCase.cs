@@ -5,9 +5,9 @@ using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Abilities;
-using TinCan.Features.HumanoidMovement;
-using TinCan.Features.Interaction;
+using TinCan.Core.Gas;
+using TinCan.Core.Humanoid;
+using TinCan.Core.Interaction;
 using UnityEngine;
 
 namespace TinCan.Features.Stations

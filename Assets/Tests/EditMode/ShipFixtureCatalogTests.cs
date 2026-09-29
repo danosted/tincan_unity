@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Domain.Features;
-using TinCan.Features.Airship.Fixtures;
+using TinCan.Core.Ship.Fixtures;
 using UnityEngine;
 using VContainer;
 

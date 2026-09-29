@@ -2,8 +2,8 @@
 using NUnit.Framework;
 using TinCan.Features.Airship.Fuel.Minigame;
 using TinCan.Features.Carry;
-using TinCan.Features.Interaction;
-using TinCan.Features.Items;
+using TinCan.Core.Interaction;
+using TinCan.Core.Items;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 

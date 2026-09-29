@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Humanoid;
 using TinCan.Features.SkyHazards;
 using TinCan.Features.Stations;
 using TinCan.Features.Weapons.Cannon;

@@ -6,7 +6,7 @@ using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Entities;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Humanoid;
 using UnityEngine;
 using VContainer;
 

@@ -1,13 +1,13 @@
 using Unity.Netcode;
 using UnityEngine;
-using TinCan.Features.Airship;
+using TinCan.Core.Ship;
 using TinCan.Core.Domain;
-using TinCan.Features.Possession;
-using TinCan.Features.Interaction;
+using TinCan.Core.Possession;
+using TinCan.Core.Interaction;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Abilities.Attributes;
-using TinCan.Features.Abilities;
+using TinCan.Core.Gas;
 using TinCan.Network.Infrastructure.Abilities;
 using System;
 using TinCan.Core.Domain.Look;
@@ -21,15 +21,15 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(AirshipControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
-    [RequireComponent(typeof(TinCan.Features.Possession.Infrastructure.PossessableNetworkMediator))]
+    [RequireComponent(typeof(TinCan.Core.Possession.Infrastructure.PossessableNetworkMediator))]
     public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Core.Domain.Look.IHasOrbitalCamera, IShipState
     {
         public override bool IsSimulating => IsSpawned && IsServer;
 
         // IPossessable, forwarded to the possession component (the helm is taken through possession).
-        private TinCan.Features.Possession.Infrastructure.PossessableNetworkMediator _possession;
-        private TinCan.Features.Possession.Infrastructure.PossessableNetworkMediator Possession =>
-            _possession ??= GetComponent<TinCan.Features.Possession.Infrastructure.PossessableNetworkMediator>();
+        private TinCan.Core.Possession.Infrastructure.PossessableNetworkMediator _possession;
+        private TinCan.Core.Possession.Infrastructure.PossessableNetworkMediator Possession =>
+            _possession ??= GetComponent<TinCan.Core.Possession.Infrastructure.PossessableNetworkMediator>();
         public ulong? PossessorId => Possession.PossessorId;
         public bool CanPossess(ulong playerId) => Possession.CanPossess(playerId);
         public void AuthoritativeSetPossessor(ulong? playerId)

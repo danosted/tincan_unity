@@ -1,5 +1,6 @@
 #nullable enable
 using UnityEngine;
+using TinCan.Core.Ship;
 
 namespace TinCan.Features.Airship.Fuel
 {

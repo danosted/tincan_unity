@@ -1,6 +1,6 @@
 #nullable enable
 using NUnit.Framework;
-using TinCan.Features.Abilities.Cues;
+using TinCan.Core.Gas.Cues;
 
 namespace TinCan.Tests.EditMode
 {

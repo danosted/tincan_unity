@@ -101,7 +101,7 @@ Ranked by value for effort. Tick them off as they land.
       tests green, feature index updated, assets touched listed, playtested host + client.
 - [x] **Stop gitignoring `.docs/plans/`** (done 2026-09-06; Dan had added the ignore in May). Plans are the
       best record of AI intent. Give each a `Status: Draft | Approved | Done` header and commit it with the work.
-- [ ] **Repo hygiene PR.** Delete the last empty scaffold folder (`Features/Airship/Infrastructure`), remove the two deleted scenes from Build Settings. (`ThirdPersonCharacter` moved into the humanoid with the core split.) See CODE_MAP "Legacy, oddities and traps".
+- [x] **Repo hygiene.** Empty scaffold folders deleted, `ThirdPersonCharacter` moved into the humanoid, the two deleted scenes removed from Build Settings (done 2026-09-29). See CODE_MAP "Legacy, oddities and traps".
 - [ ] **Editor window `TinCan > Feature Overview`** listing installers, fixtures, networked prefabs, tickables
       and handlers, and validating that every `IA_*` handler type and `Menu_*` command id still resolves. Catches
       the silent-break bugs.

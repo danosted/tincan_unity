@@ -16,12 +16,12 @@ namespace TinCan.DevTools.Editor
 
         [MenuItem(MenuPath)]
         private static void Toggle() =>
-            TinCan.Features.Targeting.TargetingDebug.SetDrawAllQueries(!System.IO.File.Exists(TinCan.Features.Targeting.TargetingDebug.FlagPath));
+            TinCan.Core.Targeting.TargetingDebug.SetDrawAllQueries(!System.IO.File.Exists(TinCan.Core.Targeting.TargetingDebug.FlagPath));
 
         [MenuItem(MenuPath, true)]
         private static bool ToggleValidate()
         {
-            Menu.SetChecked(MenuPath, System.IO.File.Exists(TinCan.Features.Targeting.TargetingDebug.FlagPath));
+            Menu.SetChecked(MenuPath, System.IO.File.Exists(TinCan.Core.Targeting.TargetingDebug.FlagPath));
             return true;
         }
     }

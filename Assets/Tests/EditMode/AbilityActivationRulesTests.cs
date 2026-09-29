@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
-using TinCan.Features.Abilities;
+using TinCan.Core.Gas;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEditor;
 using UnityEngine;

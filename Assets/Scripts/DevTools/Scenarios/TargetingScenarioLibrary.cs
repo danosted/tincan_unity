@@ -6,11 +6,11 @@ using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Airship;
+using TinCan.Core.Ship;
 using TinCan.Features.Airship.Damage;
-using TinCan.Features.HumanoidMovement;
-using TinCan.Features.Interaction;
-using TinCan.Features.Targeting;
+using TinCan.Core.Humanoid;
+using TinCan.Core.Interaction;
+using TinCan.Core.Targeting;
 using UnityEngine;
 using VContainer;
 

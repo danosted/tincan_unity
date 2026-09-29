@@ -6,6 +6,7 @@ using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
 using UnityEngine;
 using VContainer;
+using TinCan.Core.Ship;
 
 namespace TinCan.Features.Airship.Fuel.Minigame
 {

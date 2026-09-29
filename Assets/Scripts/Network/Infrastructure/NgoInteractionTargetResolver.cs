@@ -1,5 +1,5 @@
 #nullable enable
-using TinCan.Features.Interaction;
+using TinCan.Core.Interaction;
 using TinCan.Core.Domain;
 using Unity.Netcode;
 

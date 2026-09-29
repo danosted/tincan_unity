@@ -7,7 +7,7 @@ The framework separates three things so they can evolve independently:
 | Layer | Lives in | What it is |
 |---|---|---|
 | **Data** | `Assets/UI/Menus/*.asset` (`MenuDefinition`) | Which menus exist and which rows they contain. Authored in the Inspector, no code. |
-| **Headless model** | `Assets/Scripts/Features/UI/` (TinCan.Features) | `IMenuSystem` (menu stack + values), `IMenuCommand` (what a row does), `IHudValues` (named HUD texts), `MainMenuBootstrap` (owns the Cancel key). Pure C#, unit-tested, knows nothing about rendering. |
+| **Headless model** | `Assets/Scripts/Core/UI/` (TinCan.Features) | `IMenuSystem` (menu stack + values), `IMenuCommand` (what a row does), `IHudValues` (named HUD texts), `MainMenuBootstrap` (owns the Cancel key). Pure C#, unit-tested, knows nothing about rendering. |
 | **Views** | `Assets/Scripts/App/Views/` (`TinCan.App`) | `MenuOverlayView`, `HudOverlayView`: UI Toolkit code-built renderers of the model. Replace these when real UI arrives; nothing else changes. |
 
 Gameplay code never talks to a view. It opens menus through `IMenuSystem`, reacts to rows through `IMenuCommand`, and shows numbers through `IHudValues`.
@@ -81,7 +81,7 @@ builder.Register<OpenSettingsMenuCommand>(Lifetime.Singleton).As<IMenuCommand>()
 
 3. Put a `Command` row with that `CommandId` in a `MenuDefinition`. Unknown ids are ignored silently, so double-check spelling.
 
-Existing commands: `StartHost`, `JoinGame`, `Quit` (`Assets/Scripts/Features/UI/Commands/`).
+Existing commands: `StartHost`, `JoinGame`, `Quit` (`Assets/Scripts/Core/UI/Commands/`).
 
 ## Adding a menu
 

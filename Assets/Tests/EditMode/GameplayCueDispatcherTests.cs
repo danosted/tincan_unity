@@ -1,7 +1,7 @@
 #nullable enable
 using NUnit.Framework;
 using TinCan.Core.Domain.Abilities.Tags;
-using TinCan.Features.Abilities.Cues;
+using TinCan.Core.Gas.Cues;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 using Object = UnityEngine.Object;

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Abilities;
-using TinCan.Features.Airship;
+using TinCan.Core.Gas;
+using TinCan.Core.Ship;
 using UnityEngine;
 
 namespace TinCan.Features.GasChallenge

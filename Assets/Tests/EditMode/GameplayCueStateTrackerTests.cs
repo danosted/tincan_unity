@@ -2,7 +2,7 @@
 using System;
 using NUnit.Framework;
 using TinCan.Core.Domain.Abilities.Tags;
-using TinCan.Features.Abilities.Cues;
+using TinCan.Core.Gas.Cues;
 using UnityEngine;
 using Object = UnityEngine.Object;
 

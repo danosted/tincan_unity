@@ -1,0 +1,24 @@
+using System;
+using TinCan.Core.Domain;
+
+namespace TinCan.Core.Possession
+{
+    public interface IPossessionNetworkMediator
+    {
+        event Action<IPossessable, ulong> OnPossessionReceived;
+        event Action<IPossessable, ulong> OnPossessionLost;
+        event Action<IPossessable> OnPossessionDenied;
+
+        // Server side event
+        event Action<ulong, Unity.Netcode.NetworkObjectReference, Unity.Netcode.NetworkObjectReference[]> OnServerPossessionRequested;
+        event Action<ulong> OnServerPossessionReleaseRequested;
+
+        void RequestPossession(PossessionRequest.Request request);
+        void RequestPossessionRelease();
+
+        // Server side callbacks to trigger RPCs
+        void NotifyPossessionReceived(Unity.Netcode.NetworkObjectReference targetRef, ulong newOwnerClientId);
+        void NotifyPossessionLost(Unity.Netcode.NetworkObjectReference targetRef, ulong newOwnerClientId);
+        void NotifyPossessionDenied(Unity.Netcode.NetworkObjectReference targetRef, ulong senderId);
+    }
+}

@@ -4,7 +4,7 @@ using NUnit.Framework;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Airship.Fixtures;
+using TinCan.Core.Ship.Fixtures;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 

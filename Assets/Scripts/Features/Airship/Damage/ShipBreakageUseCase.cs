@@ -6,7 +6,8 @@ using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Abilities;
+using TinCan.Core.Gas;
+using TinCan.Core.Ship;
 
 namespace TinCan.Features.Airship.Damage
 {

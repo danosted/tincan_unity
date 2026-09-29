@@ -4,7 +4,7 @@ using NUnit.Framework;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Targeting;
-using TinCan.Features.Targeting;
+using TinCan.Core.Targeting;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 

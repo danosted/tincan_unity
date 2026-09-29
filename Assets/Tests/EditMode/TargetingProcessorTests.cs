@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Domain.Targeting;
-using TinCan.Features.Targeting;
+using TinCan.Core.Targeting;
 using UnityEngine;
 
 namespace TinCan.Tests.EditMode

@@ -25,7 +25,7 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
 - **Input-Driven Simulation (Input Sync):** Primary for movement and time-critical actions. Clients capture intent as an `InputState`. Both Client (Prediction) and Server (Authority) execute the same Use Case logic using this input stream.
   For humanoids the stream is exact, not "latest value". The owner stamps each tick's input with a sequence and sends
   it, with the previous three, in an unreliable RPC (`HumanoidPlayer.SubmitInputsServerRpc`). The server queues
-  inputs in `Features/HumanoidMovement/HumanoidInputBuffer.cs` and consumes exactly one per simulation tick
+  inputs in `Core/Humanoid/HumanoidInputBuffer.cs` and consumes exactly one per simulation tick
   (`HumanoidMovementUseCase.Tick` → `IBufferedInputSource.AdvanceInput`). A starved tick repeats the last input
   without its jump. An overfull queue skips its oldest inputs but keeps their one-shot bits. Plan:
   `.docs/plans/humanoid-prediction-reconciliation.md`.
@@ -44,11 +44,11 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
     movement is simulated in that platform's yaw frame (input look and momentum). Each peer sees the ship at a
     different pose, so world-space comparison or world-space momentum desyncs on a moving or turning ship.
 - **Decoupled Prediction Loop:** UseCases that own a simulation loop (e.g., `HumanoidMovementUseCase`) are strictly responsible for passing their predicted `InputState` to auxiliary systems (like `AbilitySystemUseCase.ProcessAbilitySimulation`). Global systems must check `actor is ISimulatedActor` and skip global ticking for actors that handle their own prediction, guaranteeing that simulation physics and abilities share the exact same temporal tick.
-  GAS counts time in simulation ticks (`ITimeService.Tick`): effect durations, cooldowns and timing windows are authored in seconds and become whole ticks when applied (`Features/Abilities/GameplayTicks.cs`), so owner and server end a window after the same number of ticks. Each actor has one ability controller and one clock: `ActorOrchestrator` registers one controller per `Id` (`AbilityControllerSelection`, the `ISimulatedActor` wins), and the global loop runs on the simulation tick (`ISimulationTickable`, `AfterHumanoid`), never per frame. Reconciliation replays movement only; GAS tags stay server-authoritative.
+  GAS counts time in simulation ticks (`ITimeService.Tick`): effect durations, cooldowns and timing windows are authored in seconds and become whole ticks when applied (`Core/Gas/GameplayTicks.cs`), so owner and server end a window after the same number of ticks. Each actor has one ability controller and one clock: `ActorOrchestrator` registers one controller per `Id` (`AbilityControllerSelection`, the `ISimulatedActor` wins), and the global loop runs on the simulation tick (`ISimulationTickable`, `AfterHumanoid`), never per frame. Reconciliation replays movement only; GAS tags stay server-authoritative.
   Ability-to-ability rules live on `AbilityDefinition`: `CancelAbilitiesWithTag` ends the actor's matching active abilities when this one activates, `BlockAbilitiesWithTag` stops matching ones from activating while this one is active (matching is by `AbilityTag`, parents included), and `EndsImmediately` marks a one-shot ability that ends in its activation tick after applying its effects and cooldown.
-  The current airship is a legacy exception: `Assets/Scripts/Features/Airship/AirshipMovementUseCase.cs` does not tick GAS. Its separate `Assets/Scripts/Network/Infrastructure/Abilities/AbilityNetworkMediator.cs` is not an `ISimulatedActor`, so `AbilitySystemUseCase.Tick` still updates that controller globally. Moving ship abilities into prediction requires changing both paths together to preserve one ticking owner.
+  The current airship is a legacy exception: `Assets/Scripts/Core/Ship/AirshipMovementUseCase.cs` does not tick GAS. Its separate `Assets/Scripts/Network/Infrastructure/Abilities/AbilityNetworkMediator.cs` is not an `ISimulatedActor`, so `AbilitySystemUseCase.Tick` still updates that controller globally. Moving ship abilities into prediction requires changing both paths together to preserve one ticking owner.
 - **State-Driven Synchronization (State Sync):** The server is the source of truth for high-level state changes (Tags, Attributes, Inventory). Mediators sync these back to clients via `NetworkVariable` or `ClientRpc` for visual confirmation.
-  Persistent state replicates as state (`NetworkVariable`/`NetworkList`), never as change RPCs, so a late joiner receives it whole with the spawn. GAS tags follow this: `AbilityNetworkMediator` keeps a server-written `NetworkList` of tag names, and a client's `HasTag` combines it with the owner's predicted effect tags (`Features/Abilities/ClientTagState.cs`). Clients never write tags: only the server and effects change them (there is no tag-request RPC). Every peer matches tags the same way: a held tag matches the query tag or any of its parents (`GameplayTag.IsChildOf`); clients resolve held names through `IGameplayTagRegistry`.
+  Persistent state replicates as state (`NetworkVariable`/`NetworkList`), never as change RPCs, so a late joiner receives it whole with the spawn. GAS tags follow this: `AbilityNetworkMediator` keeps a server-written `NetworkList` of tag names, and a client's `HasTag` combines it with the owner's predicted effect tags (`Core/Gas/ClientTagState.cs`). Clients never write tags: only the server and effects change them (there is no tag-request RPC). Every peer matches tags the same way: a held tag matches the query tag or any of its parents (`GameplayTag.IsChildOf`); clients resolve held names through `IGameplayTagRegistry`.
 - **Avoid Side-Channels:** Do not use independent `ServerRpc` calls for actions that are part of the core simulation loop (like ability triggers or jumping). These should be bits in the `InputState` to ensure they are processed at the correct simulation tick.
 
 - **Equipment grants abilities.** What a player holds is an `ItemDefinition` whose id the server writes into
@@ -73,7 +73,7 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
   - **Handlers:** what a cue does is composed. A feature contributes `GameplayCueNotify` assets (action lists:
     `SpawnPrefab`, `PlaySound`, `HudToast`) through `FeatureInstaller.IExtension<GameplayCueNotify>`. Components in the
     target's own hierarchy can implement `IGameplayCueHandler` (`ToggleObjectCueHandler`).
-  - **Runtime:** `GameplayCuesFeatureInstaller`, in `Features/Abilities/Cues/`. Plan: `.docs/plans/gameplay-cues.md`.
+  - **Runtime:** `GameplayCuesFeatureInstaller`, in `Core/Gas/Cues/`. Plan: `.docs/plans/gameplay-cues.md`.
 
 ### 4. Possession & Interaction Flow
 The game relies heavily on dynamic possession (e.g., leaving a humanoid body to fly a free-camera, or boarding an airship).
@@ -94,7 +94,7 @@ The game relies heavily on dynamic possession (e.g., leaving a humanoid body to 
 ### 5. ECS-Lite & Orchestrated Registries
 Instead of tight coupling and hardcoded subsystem checks, we utilize an ECS-lite compositional pattern based around Registries:
 - **Registries as Queries:** Subsystems operate on generic sets of interfaces (e.g., `IInteractorRegistry`, `IAbilityRegistry`, `IActorRegistry`).
-- **Entities:** every networked object has one `EntityNetworkMediator` on its root (`Features/Entities/`; a rule test
+- **Entities:** every networked object has one `EntityNetworkMediator` on its root (`Core/Entities/`; a rule test
   enforces it). It is the object's identity and its only registrar:
   - **`EntityId`**, a GUID the server assigns (or a spawner presets, for a saved world) and replicates, so it is the same
     on every peer and for late joiners.

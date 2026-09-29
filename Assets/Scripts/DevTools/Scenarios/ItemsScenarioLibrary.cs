@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Abilities;
-using TinCan.Features.Items;
+using TinCan.Core.Gas;
+using TinCan.Core.Items;
 using UnityEngine;
 
 namespace TinCan.DevTools.Scenarios

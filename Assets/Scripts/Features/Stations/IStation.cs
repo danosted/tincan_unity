@@ -1,8 +1,8 @@
 #nullable enable
 using System.Collections.Generic;
-using TinCan.Features.Abilities;
-using TinCan.Features.HumanoidMovement;
-using TinCan.Features.Interaction;
+using TinCan.Core.Gas;
+using TinCan.Core.Humanoid;
+using TinCan.Core.Interaction;
 using UnityEngine;
 
 namespace TinCan.Features.Stations

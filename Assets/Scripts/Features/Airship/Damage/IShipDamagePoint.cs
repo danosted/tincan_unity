@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TinCan.Core.Domain.Abilities;
 using UnityEngine;
+using TinCan.Core.Ship;
 
 namespace TinCan.Features.Airship.Damage
 {

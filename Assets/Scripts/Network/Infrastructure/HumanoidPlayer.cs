@@ -1,19 +1,19 @@
 #nullable enable
 using Unity.Netcode;
 using UnityEngine;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Humanoid;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Interaction;
+using TinCan.Core.Interaction;
 using System;
 using VContainer;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Abilities;
-using TinCan.Features.Abilities;
-using TinCan.Features.Abilities.Cues;
+using TinCan.Core.Gas;
+using TinCan.Core.Gas.Cues;
 using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Network.Infrastructure.Abilities;
-using TinCan.Features.Possession.Infrastructure;
+using TinCan.Core.Possession.Infrastructure;
 using System.Collections.Generic;
 using TinCan.Core.Domain.Look;
 

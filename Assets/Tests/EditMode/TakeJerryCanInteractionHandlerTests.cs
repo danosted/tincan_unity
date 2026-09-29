@@ -5,8 +5,8 @@ using NUnit.Framework;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Features.Airship.Fuel;
-using TinCan.Features.Interaction;
-using TinCan.Features.Items;
+using TinCan.Core.Interaction;
+using TinCan.Core.Items;
 using TinCan.Tests.EditMode.Fakes;
 using Object = UnityEngine.Object;
 

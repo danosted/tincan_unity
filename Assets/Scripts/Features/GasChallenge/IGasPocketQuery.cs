@@ -1,6 +1,6 @@
 #nullable enable
 using System.Collections.Generic;
-using TinCan.Features.Airship;
+using TinCan.Core.Ship;
 
 namespace TinCan.Features.GasChallenge
 {

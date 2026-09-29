@@ -1,8 +1,8 @@
 #nullable enable
 using TinCan.Core.Domain.Events;
 using TinCan.Features.Carry;
-using TinCan.Features.Interaction;
-using TinCan.Features.Items;
+using TinCan.Core.Interaction;
+using TinCan.Core.Items;
 
 namespace TinCan.Features.Airship.Fuel.Minigame
 {

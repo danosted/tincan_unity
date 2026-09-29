@@ -6,7 +6,7 @@ using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Humanoid;
 using Unity.Netcode;
 using UnityEngine;
 using VContainer.Unity;

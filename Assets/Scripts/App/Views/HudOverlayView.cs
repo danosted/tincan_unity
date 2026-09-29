@@ -1,6 +1,6 @@
 #nullable enable
 using TinCan.Core.Domain;
-using TinCan.Features.UI;
+using TinCan.Core.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 using VContainer;

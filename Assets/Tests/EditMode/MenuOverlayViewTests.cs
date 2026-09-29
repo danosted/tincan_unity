@@ -2,7 +2,7 @@
 using System;
 using System.Reflection;
 using NUnit.Framework;
-using TinCan.Features.UI;
+using TinCan.Core.UI;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 using UnityEngine.UIElements;

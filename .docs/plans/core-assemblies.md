@@ -101,5 +101,5 @@ follow-up from phase 3.
   `IA_ToggleFlightBoost`.
 - **Left for later:**
   - `Carry/` stays in the shared block until the socket follow-up.
-  - The core systems still live under `Assets/Scripts/Features/<System>/`. Moving the folders is optional
-    cosmetics.
+  - Done later the same day: the core systems moved to `Assets/Scripts/Core/<System>/` with namespaces
+    `TinCan.Core.<System>` (the door, which shared the ship's namespace, became `TinCan.Features.Airship.PhysicalParts`).

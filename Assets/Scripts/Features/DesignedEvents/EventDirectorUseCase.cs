@@ -4,7 +4,7 @@ using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Abilities;
+using TinCan.Core.Gas;
 
 namespace TinCan.Features.DesignedEvents
 {

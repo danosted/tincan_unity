@@ -1,6 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
-using TinCan.Features.Interaction;
+using TinCan.Core.Interaction;
 
 namespace TinCan.Features.Events
 {

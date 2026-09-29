@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using TinCan.Core.Domain;
-using TinCan.Features.Interaction;
+using TinCan.Core.Interaction;
 using UnityEngine;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;

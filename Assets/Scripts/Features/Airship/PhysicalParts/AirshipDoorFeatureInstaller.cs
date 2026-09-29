@@ -1,11 +1,11 @@
 #nullable enable
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Features;
-using TinCan.Features.Interaction;
+using TinCan.Core.Interaction;
 using UnityEngine;
 using VContainer;
 
-namespace TinCan.Features.Airship
+namespace TinCan.Features.Airship.PhysicalParts
 {
     /// <summary>The airship's doors: interacting with an <see cref="AirshipDoor"/> toggles it (IA_ToggleDoor).</summary>
     [CreateAssetMenu(fileName = "AirshipDoorFeatureInstaller", menuName = "TinCan/Features/Airship Door Feature Installer")]

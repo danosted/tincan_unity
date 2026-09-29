@@ -2,8 +2,8 @@
 using NUnit.Framework;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Cues;
-using TinCan.Features.Abilities.Cues;
-using TinCan.Features.Abilities.Cues.Actions;
+using TinCan.Core.Gas.Cues;
+using TinCan.Core.Gas.Cues.Actions;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 using Object = UnityEngine.Object;

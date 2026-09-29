@@ -1,0 +1,557 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TinCan.Core.Domain;
+using TinCan.Core.Domain.Abilities;
+using TinCan.Core.Domain.Abilities.Tags;
+using TinCan.Core.Domain.Abilities.Attributes;
+using TinCan.Core.Domain.Events;
+using TinCan.Core.Gas.Cues;
+using VContainer;
+using VContainer.Unity;
+using UnityEngine;
+
+
+namespace TinCan.Core.Gas
+{
+    /// <summary>
+    /// Application Layer: Logic processor for the Gameplay Ability System.
+    /// Handles ticking of effects, cooldowns, and ability activation logic, all counted in simulation ticks.
+    /// Each actor has one clock: an <see cref="ISimulatedActor"/> is ticked by its movement loop
+    /// (<see cref="ProcessAbilitySimulation"/>), every other simulating controller by <see cref="Tick"/>.
+    /// </summary>
+    public class AbilitySystemUseCase : ISimulationTickable, IInitializable, IDisposable
+    {
+        private readonly IAbilityRegistry _registry;
+        private readonly IActorRegistry _actorRegistry;
+        private readonly ITimeService _timeService;
+        private readonly IEventPublisher _eventPublisher;
+        private readonly IGameplayCueDispatcher _cues; // Null without GameplayCuesFeatureInstaller: effects stay silent
+
+        // Internal tracking for specs and effects per actor
+        private readonly Dictionary<Guid, List<AbilitySpec>> _actorAbilities = new();
+        private readonly Dictionary<Guid, List<ActiveGameplayEffect>> _activeEffects = new();
+
+        // The cue dispatcher is a GAS core service (the cues installer always loads); tests may pass none.
+        [Inject]
+        public AbilitySystemUseCase(IAbilityRegistry registry, IActorRegistry actorRegistry, ITimeService timeService, IEventPublisher eventPublisher, IGameplayCueDispatcher cues = null)
+        {
+            _registry = registry;
+            _actorRegistry = actorRegistry;
+            _timeService = timeService;
+            _eventPublisher = eventPublisher;
+            _cues = cues;
+        }
+
+        public void Initialize()
+        {
+            _actorRegistry.OnActorUnregistered += HandleActorUnregistered;
+        }
+
+        public void Dispose()
+        {
+            _actorRegistry.OnActorUnregistered -= HandleActorUnregistered;
+        }
+
+        // Actors never explicitly revoke granted abilities/effects today, so despawn is the only cleanup point.
+        private void HandleActorUnregistered(IActor actor)
+        {
+            _actorAbilities.Remove(actor.Id);
+            _activeEffects.Remove(actor.Id);
+        }
+
+        public SimulationPhase Phase => SimulationPhase.AfterHumanoid;
+
+        public void Tick()
+        {
+            int currentTick = _timeService.Tick;
+
+            foreach (var actor in _registry.AllControllers)
+            {
+                // A simulated actor has its own clock: its movement loop calls ProcessAbilitySimulation.
+                if (actor is ISimulatedActor) continue;
+
+                // Also, only tick global effects if the actor itself is considered "simulating" (locally owned or server authority)
+                if (!actor.IsSimulating) continue;
+
+                UpdateEffects(actor, currentTick);
+                UpdateAbilities(actor, currentTick);
+            }
+        }
+
+        /// <summary>
+        /// Authoritative simulation tick for a specific actor.
+        /// Called by movement systems to ensure predicted abilities are synced with movement. Takes only the input bits
+        /// (<see cref="TinCan.Core.Domain.Abilities.Inputs.GameplayInput.BitIndex"/>), so GAS knows no actor's input struct.
+        /// </summary>
+        public void ProcessAbilitySimulation(IAbilityControllerBase actor, ulong inputMask, ulong previousInputMask, float deltaTime)
+        {
+            int currentTick = _timeService.Tick;
+
+            // 1. Update passive state (Effects & Active Ability Windows)
+            UpdateEffects(actor, currentTick);
+            UpdateAbilities(actor, currentTick);
+
+            // 2. Process Input Triggers
+            if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
+
+            ulong currentMask = inputMask;
+
+            foreach (var spec in abilities)
+            {
+                var trigger = spec.Definition.TriggerInput;
+                if (trigger != null && trigger.BitIndex >= 0)
+                {
+                    bool isPressedNow = (currentMask & (1UL << trigger.BitIndex)) != 0;
+                    bool wasPressedBefore = (previousInputMask & (1UL << trigger.BitIndex)) != 0;
+
+                    bool justPressed = isPressedNow && !wasPressedBefore;
+                    bool justReleased = !isPressedNow && wasPressedBefore;
+
+                    // One arm per InputPolicy; guards express exactly when that policy triggers.
+                    switch (spec.Definition.InputPolicy)
+                    {
+                        case AbilityInputPolicy.OnInputTriggered when justPressed && !spec.IsActive:
+                        case AbilityInputPolicy.OnInputReleased when justReleased && !spec.IsActive:
+                        case AbilityInputPolicy.OnInputHeld when isPressedNow && !spec.IsActive:
+                            TryActivateAbility(actor, spec.Definition, null, GameplayEffectContext.Predicted);
+                            break;
+                        case AbilityInputPolicy.OnInputHeld when !isPressedNow && spec.IsActive:
+                            EndAbility(actor, spec);
+                            break;
+                    }
+                }
+            }
+        }
+
+        public void EndAbility(IAbilityControllerBase actor, AbilitySpec spec)
+        {
+            if (!spec.IsActive) return;
+            spec.IsActive = false;
+
+            // Remove the active buff when the ability stops (from whoever received it)
+            if (spec.AppliedActiveEffect != null && spec.EffectRecipient != null)
+            {
+                RemoveEffect(spec.EffectRecipient, spec.AppliedActiveEffect);
+                spec.AppliedActiveEffect = null;
+                spec.EffectRecipient = null;
+            }
+
+            // Remove any tags added by this ability's timing windows
+            foreach (var tag in spec.ActiveWindowTags)
+            {
+                actor.RemoveEffectTag(tag);
+            }
+            spec.ActiveWindowTags.Clear();
+
+            _eventPublisher.Publish(new AbilityEndedEvent(actor.Id, spec.Definition.name));
+        }
+
+        private void UpdateAbilities(IAbilityControllerBase actor, int currentTick)
+        {
+            if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
+
+            foreach (var spec in abilities)
+            {
+                if (!spec.IsActive) continue;
+
+                UpdateTimingWindows(actor, spec, currentTick);
+            }
+        }
+
+        private void UpdateTimingWindows(IAbilityControllerBase actor, AbilitySpec spec, int currentTick)
+        {
+            int elapsed = currentTick - spec.StartTick;
+            int tickRate = _timeService.TickRate;
+            var def = spec.Definition;
+
+            foreach (var window in def.TimingTagWindows)
+            {
+                int start = GameplayTicks.FromSeconds(window.StartOffset, tickRate);
+                bool shouldHaveTag = elapsed >= start && elapsed <= start + GameplayTicks.FromSeconds(window.Duration, tickRate);
+                bool hasTag = spec.ActiveWindowTags.Contains(window.Tag);
+
+                // One arm per (shouldHaveTag, hasTag) combo; the other two combos are no-ops.
+                switch (shouldHaveTag, hasTag)
+                {
+                    case (true, false):
+                        actor.AddEffectTag(window.Tag);
+                        spec.ActiveWindowTags.Add(window.Tag);
+                        break;
+                    case (false, true):
+                        actor.RemoveEffectTag(window.Tag);
+                        spec.ActiveWindowTags.Remove(window.Tag);
+                        break;
+                }
+            }
+
+            // End ability if all windows passed?
+            // For now, let's assume abilities have a fixed duration or manual end.
+        }
+
+        private void UpdateEffects(IAbilityControllerBase actor, int currentTick)
+        {
+            if (!_activeEffects.TryGetValue(actor.Id, out var effects)) return;
+
+            for (int i = effects.Count - 1; i >= 0; i--)
+            {
+                var effect = effects[i];
+                if (effect.IsExpired(currentTick))
+                {
+                    RemoveEffect(actor, effect);
+                }
+            }
+        }
+
+        public void GrantAbility(IAbilityControllerBase actor, AbilityDefinition definition)
+        {
+            if (!_actorAbilities.TryGetValue(actor.Id, out var abilities))
+            {
+                abilities = new List<AbilitySpec>();
+                _actorAbilities[actor.Id] = abilities;
+            }
+
+            if (abilities.Any(a => a.Definition == definition)) return;
+            abilities.Add(new AbilitySpec(definition));
+        }
+
+        public bool HasAbility(IAbilityControllerBase actor, AbilityDefinition definition) =>
+            _actorAbilities.TryGetValue(actor.Id, out var abilities) && abilities.Any(a => a.Definition == definition);
+
+        public void RemoveAbility(IAbilityControllerBase actor, AbilityDefinition definition)
+        {
+            if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
+
+            var spec = abilities.FirstOrDefault(a => a.Definition == definition);
+            if (spec == null) return;
+
+            if (spec.IsActive) EndAbility(actor, spec);
+            abilities.Remove(spec);
+        }
+
+        public void CancelAbility(IAbilityControllerBase actor, AbilityDefinition definition)
+        {
+            if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
+
+            var spec = abilities.FirstOrDefault(a => a.Definition == definition);
+            if (spec is { IsActive: true })
+            {
+                EndAbility(actor, spec);
+            }
+        }
+
+        public bool TryActivateAbility(IAbilityControllerBase actor, AbilityDefinition definition, IAbilityControllerBase target = null) =>
+            TryActivateAbility(actor, definition, target, GameplayEffectContext.Default);
+
+        // The input-driven simulation activates with the predicted context, so the effects it applies can mark their cues
+        // as predicted (the owner plays them itself; the server leaves the owner out when it sends them).
+        private bool TryActivateAbility(IAbilityControllerBase actor, AbilityDefinition definition, IAbilityControllerBase target, GameplayEffectContext context)
+        {
+            if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return false;
+
+            var ability = abilities.FirstOrDefault(a => a.Definition == definition);
+            if (ability == null) return false;
+
+            // One arm per (IsActive, IsToggleable) combo; costs would be a future arm here too.
+            switch (isActive: ability.IsActive, isToggleable: definition.IsToggleable)
+            {
+                case (isActive: true, isToggleable: true):
+                    CancelAbility(actor, definition);
+                    return true;
+                case (isActive: true, isToggleable: false):
+                    return false;
+                case (isActive: false, isToggleable: _) when !CanActivateAbility(actor, ability, target):
+                    return false;
+                default:
+                    ExecuteAbility(actor, ability, target, context);
+                    return true;
+            }
+        }
+
+        /// <summary>
+        /// Public entry point to apply a gameplay effect to an actor.
+        /// Returns a result object for easier integration with Visual Scripting.
+        /// </summary>
+        public GameplayEffectResult ApplyGameplayEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition)
+        {
+            if (actor == null) return GameplayEffectResult.Failure("Target actor is null.");
+            if (definition == null) return GameplayEffectResult.Failure("Effect definition is null.");
+
+            ApplyEffect(actor, definition);
+            return GameplayEffectResult.Successful();
+        }
+
+        private bool CanActivateAbility(IAbilityControllerBase actor, AbilitySpec spec, IAbilityControllerBase target = null)
+        {
+            var def = spec.Definition;
+
+            // Query the controller so owners include synchronized and locally predicted tags.
+            if (def.ActivationBlockedTagsOnActor.Any(t => actor.HasTag(t))) return false;
+
+            // Missing required tags?
+            if (def.ActivationRequiredTagsOnActor.Any(t => !actor.HasTag(t))) return false;
+
+            // Blocked by target tags?
+            if (def.ActivationBlockedTagsOnTarget.Any(t => target != null && target.HasTag(t))) return false;
+
+            // Missing required target tags?
+            if (def.ActivationRequiredTagsOnTarget.Any(t => target != null && !target.HasTag(t))) return false;
+
+            // Cooldown?
+            if (spec.IsOnCooldown(_timeService.Tick, _timeService.TickRate)) return false;
+
+            // Blocked by another of the actor's active abilities?
+            if (_actorAbilities.TryGetValue(actor.Id, out var abilities) &&
+                abilities.Any(other => other != spec && other.IsActive && Matches(def.AbilityTag, other.Definition.BlockAbilitiesWithTag)))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        // True when an ability's tag is one of the listed tags or a child of one.
+        private static bool Matches(GameplayTag abilityTag, List<GameplayTag> tags) =>
+            abilityTag != null && tags != null && tags.Any(tag => abilityTag.IsChildOf(tag));
+
+        private void CancelAbilitiesMatching(IAbilityControllerBase actor, AbilitySpec activating)
+        {
+            if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
+
+            foreach (var other in abilities.ToArray())
+            {
+                if (other != activating && other.IsActive && Matches(other.Definition.AbilityTag, activating.Definition.CancelAbilitiesWithTag))
+                {
+                    EndAbility(actor, other);
+                }
+            }
+        }
+
+        private void ExecuteAbility(IAbilityControllerBase actor, AbilitySpec spec, IAbilityControllerBase target, GameplayEffectContext context)
+        {
+            CancelAbilitiesMatching(actor, spec);
+            spec.Activate(_timeService.Tick);
+            _eventPublisher.Publish(new AbilityActivatedEvent(actor.Id, spec.Definition.name));
+
+            // Apply the active buff to the correct target
+            if (spec.Definition.ActiveEffect != null)
+            {
+                var effectRecipient = spec.Definition.ActiveEffectTarget == EffectTarget.ProvidedTarget ? target : actor;
+
+                if (effectRecipient != null)
+                {
+                    spec.AppliedActiveEffect = ApplyEffect(effectRecipient, spec.Definition.ActiveEffect, context);
+                    spec.EffectRecipient = effectRecipient;
+                }
+            }
+
+            // Apply Cooldown Effect to the activator
+            if (spec.Definition.CooldownEffect != null)
+            {
+                ApplyEffect(actor, spec.Definition.CooldownEffect, context);
+            }
+
+            if (spec.Definition.EndsImmediately)
+            {
+                EndAbility(actor, spec);
+            }
+        }
+
+        /// <summary>Finds the latest live effect granting a tag, preserving its identity across simulation steps.</summary>
+        public bool TryGetActiveEffectGrantingTag(Guid actorId, GameplayTag tag, out ActiveGameplayEffect effect)
+        {
+            effect = null;
+            if (!_activeEffects.TryGetValue(actorId, out var effects)) return false;
+
+            for (int i = effects.Count - 1; i >= 0; i--)
+            {
+                var candidate = effects[i];
+                if (candidate.IsExpired(_timeService.Tick) || !candidate.Definition.GrantedTags.Contains(tag)) continue;
+                effect = candidate;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Applies an effect. Its cues follow its duration type: an Instant effect fires each cue once as a burst
+        /// (through the cue dispatcher, with <paramref name="context"/> saying whether this apply is predicted); a
+        /// Duration or Infinite effect puts its cue tags on the actor while active, next to its granted tags.
+        /// </summary>
+        public ActiveGameplayEffect ApplyEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition, GameplayEffectContext context = default)
+        {
+            var effect = new ActiveGameplayEffect(definition, _timeService.Tick, _timeService.TickRate);
+
+            if (definition.DurationType == DurationType.Instant)
+            {
+                ExecuteInstantEffect(actor, definition);
+                ExecuteCues(actor, definition, context);
+                return effect;
+            }
+
+            if (!_activeEffects.TryGetValue(actor.Id, out var effects))
+            {
+                effects = new List<ActiveGameplayEffect>();
+                _activeEffects[actor.Id] = effects;
+            }
+
+            effects.Add(effect);
+
+            // Grant tags, cue tags included (state cues)
+            foreach (var tag in TagsOf(definition))
+            {
+                actor.AddEffectTag(tag);
+            }
+
+            // Apply Attribute Modifiers
+            UpdateAttributes(actor);
+
+            return effect;
+        }
+
+        public void SendGameplayEvent(GameplayEventData eventData)
+        {
+            if (eventData.Target == null) return;
+            if (!_actorAbilities.TryGetValue(eventData.Target.Id, out var abilities)) return;
+
+            // Any ability whose TriggerTag matches this event's tag activates.
+            foreach (var spec in abilities)
+            {
+                if (spec.Definition.TriggerTag != null && spec.Definition.TriggerTag == eventData.EventTag)
+                {
+                    TryActivateAbility(eventData.Target, spec.Definition);
+                }
+            }
+        }
+
+        /// <summary>Removes one applied effect (the handle <see cref="ApplyEffect"/> returned); a stale handle is ignored.</summary>
+        public void RemoveEffect(IAbilityControllerBase actor, ActiveGameplayEffect effect)
+        {
+            if (!_activeEffects.TryGetValue(actor.Id, out var effects)) return;
+            if (!effects.Remove(effect)) return;
+
+            var grantedEffectTags = effects.SelectMany(e => TagsOf(e.Definition)).ToList();
+
+            // Remove tags, cue tags included
+            foreach (var tag in TagsOf(effect.Definition))
+            {
+                // Note: Only remove if no other active effect grants this tag
+                if (grantedEffectTags.Contains(tag)) continue;
+                actor.RemoveEffectTag(tag);
+            }
+
+            UpdateAttributes(actor);
+
+            // If this effect was the primary active effect for an ability, end the ability automatically.
+            if (!_actorAbilities.TryGetValue(actor.Id, out var abilities)) return;
+
+            var parentSpec = abilities.FirstOrDefault(s => s.AppliedActiveEffect == effect);
+            if (parentSpec is { IsActive: true })
+            {
+                EndAbility(actor, parentSpec);
+            }
+        }
+
+        // The tags a Duration/Infinite effect puts on its actor while active: granted tags plus cue tags.
+        private static IEnumerable<GameplayTag> TagsOf(GameplayEffectDefinition definition)
+        {
+            if (definition.GrantedTags != null)
+            {
+                foreach (var tag in definition.GrantedTags) yield return tag;
+            }
+            if (definition.Cues != null)
+            {
+                foreach (var cue in definition.Cues)
+                {
+                    if (cue != null) yield return cue;
+                }
+            }
+        }
+
+        private void ExecuteCues(IAbilityControllerBase actor, GameplayEffectDefinition definition, GameplayEffectContext context)
+        {
+            if (_cues == null || definition.Cues == null) return;
+
+            foreach (var cue in definition.Cues)
+            {
+                if (cue != null) _cues.Execute(cue, actor, context);
+            }
+        }
+
+        private void ExecuteInstantEffect(IAbilityControllerBase actor, GameplayEffectDefinition definition)
+        {
+            foreach (var modifier in definition.Modifiers)
+            {
+                if (modifier.Attribute == null) continue;
+
+                if (actor.TryGetAttribute(modifier.Attribute, out var attrVal))
+                {
+                    float oldBase = attrVal.BaseValue;
+
+                    // Instant effects modify the BASE value permanently
+                    attrVal.BaseValue = modifier.Operation switch
+                    {
+                        ModifierOp.Add => attrVal.BaseValue + modifier.Value,
+                        ModifierOp.Multiply => attrVal.BaseValue * modifier.Value,
+                        ModifierOp.Override => modifier.Value,
+                        _ => attrVal.BaseValue
+                    };
+
+                    if (modifier.ClampMaxAttribute != null && actor.TryGetAttribute(modifier.ClampMaxAttribute, out var maxVal))
+                    {
+                        attrVal.BaseValue = Mathf.Clamp(attrVal.BaseValue, 0f, Mathf.Max(0f, maxVal.CurrentValue));
+                    }
+
+                    actor.SetAttribute(modifier.Attribute, attrVal);
+                    _eventPublisher.LogInfo("AbilitySystem", $"Instant Effect {definition.name} modified Base {modifier.Attribute.name}: {oldBase} -> {attrVal.BaseValue}");
+                }
+            }
+
+            // Recalculate current values based on the new base and existing duration effects
+            UpdateAttributes(actor);
+        }
+
+        private void UpdateAttributes(IAbilityControllerBase actor)
+        {
+            // Reset to base
+            actor.ResetAttributesToBase();
+
+            if (!_activeEffects.TryGetValue(actor.Id, out var effects)) return;
+
+            foreach (var effect in effects)
+            {
+                foreach (var modifier in effect.Definition.Modifiers)
+                {
+                    if (modifier.Attribute == null)
+                    {
+                        _eventPublisher.LogWarning("AbilitySystem", $"Modifier on {effect.Definition.name} has a null Attribute reference!");
+                        continue;
+                    }
+
+                    if (actor.TryGetAttribute(modifier.Attribute, out var attrVal))
+                    {
+                        float oldVal = attrVal.CurrentValue;
+                        ApplyModifier(ref attrVal, modifier);
+                        actor.SetAttribute(modifier.Attribute, attrVal);
+                        _eventPublisher.LogInfo("AbilitySystem", $"Modified {modifier.Attribute.name}: {oldVal} -> {attrVal.CurrentValue}");
+                    }
+                    else
+                    {
+                        _eventPublisher.LogWarning("AbilitySystem", $"Actor {actor.Id} missing attribute {modifier.Attribute.name}!");
+                    }
+                }
+            }
+        }
+
+        private void ApplyModifier(ref AttributeValue attr, AttributeModifier mod)
+        {
+            attr.CurrentValue = mod.Operation switch
+            {
+                ModifierOp.Add => attr.CurrentValue + mod.Value,
+                ModifierOp.Multiply => attr.CurrentValue * mod.Value,
+                ModifierOp.Override => mod.Value,
+                _ => attr.CurrentValue
+            };
+        }
+    }
+}

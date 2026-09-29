@@ -17,7 +17,7 @@ parallel those files were in permanent conflict. A feature now contributes every
 | `FeatureInstallerCatalog` | `Core/Domain/Features/` | Loads every installer from any `Resources/Installers` folder, orders them (`Order`, then name), and aggregates prefabs and fixtures. |
 | `FeatureProfile` | `Core/Domain/Features/` | Optional per-scene allow-list of installers; can include other profiles as shared bases. Restricts the catalog instead of loading everything from Resources. |
 | `ShipFixtureDefinition` | `Core/Domain/Features/` | A networked prefab plus a ship-local pose. |
-| `ShipFixtureSpawningUseCase` | `Features/Airship/Fixtures/` | Server only. Furnishes each airship once with all fixtures, spawning each as its own `NetworkObject` parented to the ship (via `IModuleSpawningService`, the same path build-mode modules use). |
+| `ShipFixtureSpawningUseCase` | `Core/Ship/Fixtures/` | Server only. Furnishes each airship once with all fixtures, spawning each as its own `NetworkObject` parented to the ship (via `IModuleSpawningService`, the same path build-mode modules use). |
 | `ISimulationTickable` | `Core/Domain/` | Lets a feature run on the fixed network tick without editing `NetworkSimulationScheduler`. Phases, in tick order: `AfterAirship`, `BeforeHumanoid`, `AfterHumanoid`. |
 | `IInjectedView` | `Core/Domain/` | Marker for scene/prefab `MonoBehaviour`s that want container injection at build (UI overlays). |
 
@@ -103,7 +103,7 @@ whose use case isn't there). The rules:
 2. **Features reach actors through sockets:**
    - Ship fixtures (above): the feature spawns its own parts onto the ship.
    - **Ability grants:** implement `FeatureInstaller.IExtension<ActorAbilityGrant>`
-     (`Features/Abilities/ActorAbilityGrant.cs`) to give every humanoid or airship an ability.
+     (`Core/Gas/ActorAbilityGrant.cs`) to give every humanoid or airship an ability.
      `ActorAbilityGrantUseCase` grants them on every peer as the actor registers. The actors know nothing about it;
      their prefab's `_startingAbilities` is for core abilities only (sprint). Don't add a feature's ability there.
      The use case is registered by `GameplayTagsFeatureInstaller`, which every profile loads.

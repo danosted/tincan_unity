@@ -112,7 +112,7 @@ namespace TinCan.Tests.EditMode
             var ability = InputAbility(Effect(DurationType.Instant, _bang));
             _abilities.GrantAbility(_actor, ability);
 
-            _abilities.ProcessAbilitySimulation(_actor, new HumanoidInputState { ActiveInputMask = 1 }, 0, _time.DeltaTime);
+            _abilities.ProcessAbilitySimulation(_actor, 1, 0, _time.DeltaTime);
 
             Assert.That(_dispatcher.Executed, Has.Count.EqualTo(1));
             Assert.That(_dispatcher.Executed[0].Context.IsPredicted, Is.True);

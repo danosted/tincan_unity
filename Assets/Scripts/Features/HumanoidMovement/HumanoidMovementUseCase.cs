@@ -5,8 +5,7 @@ using TinCan.Core.Domain.Networking;
 using System.Collections.Generic;
 using System;
 using TinCan.Features.Abilities;
-using TinCan.Features.Airship;
-using TinCan.Features.FreeCamera;
+using TinCan.Core.Domain.Look;
 
 namespace TinCan.Features.HumanoidMovement
 {
@@ -103,7 +102,7 @@ namespace TinCan.Features.HumanoidMovement
             }
 
             // 1. Process Abilities first (Ensures prediction of tags/attributes for movement)
-            _abilitySystem.ProcessAbilitySimulation(character, input, prevMask, TimeService.DeltaTime);
+            _abilitySystem.ProcessAbilitySimulation(character, input.ActiveInputMask, prevMask, TimeService.DeltaTime);
 
             // Store the mask for the next tick
             _previousInputMasks[character.Id] = input.ActiveInputMask;

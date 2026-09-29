@@ -1,5 +1,5 @@
 #nullable enable
-using TinCan.Features.UI;
+using TinCan.Core.Domain.Hud;
 
 namespace TinCan.Features.DesignedEvents
 {

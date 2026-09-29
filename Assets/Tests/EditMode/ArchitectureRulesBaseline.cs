@@ -55,15 +55,6 @@ namespace TinCan.Tests.EditMode
         /// </summary>
         public static readonly string[] InstallersInSharedAssemblies =
         {
-            "CloudBoundaryFeatureInstaller",
-            "CloudSubmersionFeatureInstaller",
-            "FreeCameraFeatureInstaller",
-            "GameplayCuesFeatureInstaller",
-            "GameplayTagsFeatureInstaller",
-            "InteractionFeatureInstaller",
-            "ItemsFeatureInstaller",
-            "TargetingFeatureInstaller",
-            "UiFeatureInstaller",
         };
 
         /// <summary>

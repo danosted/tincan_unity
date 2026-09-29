@@ -1,0 +1,19 @@
+{
+    "name": "TinCan.Humanoid",
+    "rootNamespace": "",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Gas",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

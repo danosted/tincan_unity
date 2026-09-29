@@ -3,6 +3,7 @@
     "rootNamespace": "",
     "references": [
         "TinCan.Core.Domain",
+        "TinCan.Interaction",
         "Unity.Netcode.Runtime",
         "VContainer"
     ],

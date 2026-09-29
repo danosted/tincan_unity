@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using TinCan.Core.Domain.Hud;
 
 namespace TinCan.Features.UI
 {

@@ -2,8 +2,8 @@
     "name": "TinCan.Features.Abilities.Editor",
     "rootNamespace": "",
     "references": [
-        "TinCan.Features",
-        "TinCan.Core.Domain"
+        "TinCan.Core.Domain",
+        "TinCan.Gas"
     ],
     "includePlatforms": [
         "Editor"

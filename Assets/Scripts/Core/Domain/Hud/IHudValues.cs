@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace TinCan.Features.UI
+namespace TinCan.Core.Domain.Hud
 {
     /// <summary>
     /// Headless HUD: named text values that any view can render. Deliberately tiny; grow it when a real need appears.

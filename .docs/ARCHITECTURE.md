@@ -147,6 +147,12 @@ the compiler:
 - core can't see it;
 - a reference to another feature is a requirement every profile loading it must meet.
 
+The core systems are assemblies too, in a fixed one-way order:
+
+`Core.Domain` → `Targeting`, `Possession`, `Entities` → `Gas` → `Humanoid` → `Interaction` → `Ship` → `Items`, `UI`
+
+A contract two core systems share goes down into `Core.Domain`, never sideways.
+
 The rule is in [CODE_MAP.md, "Assemblies and the one-way rule"](CODE_MAP.md#assemblies-and-the-one-way-rule);
 `GasChallenge` is the worked example. The installer registers the feature's services, lists the networked prefabs it
 spawns and the fixtures it bolts onto the ship. Adding a feature touches no shared file. `ProjectLifetimeScope`

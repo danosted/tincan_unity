@@ -3,7 +3,11 @@
     "rootNamespace": "TinCan.DevTools.Editor",
     "references": [
         "TinCan.Core.Domain",
-        "TinCan.Features",
+        "TinCan.Entities",
+        "TinCan.Features.CloudBoundary",
+        "TinCan.Gas",
+        "TinCan.Interaction",
+        "TinCan.Targeting",
         "TinCan.Features.SkyHazards",
         "TinCan.Features.Stations",
         "TinCan.Features.Weapons.Cannon",

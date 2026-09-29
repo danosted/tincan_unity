@@ -10,6 +10,7 @@ using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Features.Abilities;
 using TinCan.Network.Infrastructure.Abilities;
 using System;
+using TinCan.Core.Domain.Look;
 
 namespace TinCan.Network.Infrastructure
 {
@@ -21,7 +22,7 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
     [RequireComponent(typeof(TinCan.Features.Possession.Infrastructure.PossessableNetworkMediator))]
-    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Features.FreeCamera.IHasOrbitalCamera, IShipState
+    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Core.Domain.Look.IHasOrbitalCamera, IShipState
     {
         public override bool IsSimulating => IsSpawned && IsServer;
 
@@ -31,7 +32,12 @@ namespace TinCan.Network.Infrastructure
             _possession ??= GetComponent<TinCan.Features.Possession.Infrastructure.PossessableNetworkMediator>();
         public ulong? PossessorId => Possession.PossessorId;
         public bool CanPossess(ulong playerId) => Possession.CanPossess(playerId);
-        public void AuthoritativeSetPossessor(ulong? playerId) => Possession.AuthoritativeSetPossessor(playerId);
+        public void AuthoritativeSetPossessor(ulong? playerId)
+        {
+            // Released: nobody steers, so drop the last pilot's input (the server owns the ship again by now).
+            if (playerId == null) InputState = new AirshipInputState();
+            Possession.AuthoritativeSetPossessor(playerId);
+        }
 
         private AirshipControllerView _view;
         private AbilityNetworkMediator _abilitySync;
@@ -54,7 +60,7 @@ namespace TinCan.Network.Infrastructure
             writePerm: NetworkVariableWritePermission.Owner);
 
         // IHasOrbitalCamera Implementation
-        public TinCan.Features.HumanoidMovement.IOrbitalLookView Look => _view.Look;
+        public TinCan.Core.Domain.Look.IOrbitalLookView Look => _view.Look;
 
         // IAirshipView Implementation (Forwarding to view or using attributes)
         public Transform Transform => _view.transform;

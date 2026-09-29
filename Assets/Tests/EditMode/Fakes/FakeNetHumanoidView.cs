@@ -5,8 +5,8 @@ using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Features.Abilities;
-using TinCan.Features.FreeCamera;
 using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Domain.Look;
 
 namespace TinCan.Tests.EditMode.Fakes
 {

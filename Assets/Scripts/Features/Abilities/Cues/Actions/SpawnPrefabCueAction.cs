@@ -1,4 +1,5 @@
 #nullable enable
+using UnityEngine.Scripting.APIUpdating;
 using System;
 using TinCan.Core.Domain.Cues;
 using UnityEngine;
@@ -10,6 +11,8 @@ namespace TinCan.Features.Abilities.Cues.Actions
     /// OnExecute and OnRemoved it lives for <see cref="Lifetime"/> seconds; in OnActive it lives until the cue is removed.
     /// </summary>
     [Serializable]
+    // Stored by [SerializeReference] in GCN_* assets with its assembly name; this keeps old assets loading after a move.
+    [MovedFrom(false, sourceAssembly: "TinCan.Features")]
     public sealed class SpawnPrefabCueAction : GameplayCueAction
     {
         public GameObject? Prefab;

@@ -1,0 +1,18 @@
+{
+    "name": "TinCan.UI",
+    "rootNamespace": "",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Possession",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

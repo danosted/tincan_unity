@@ -1,8 +1,8 @@
 #nullable enable
 using TinCan.Core.Domain;
-using TinCan.Features.FreeCamera;
 using UnityEngine;
 using VContainer;
+using TinCan.Core.Domain.Look;
 
 namespace TinCan.Features.Possession
 {

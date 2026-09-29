@@ -15,6 +15,7 @@ using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Network.Infrastructure.Abilities;
 using TinCan.Features.Possession.Infrastructure;
 using System.Collections.Generic;
+using TinCan.Core.Domain.Look;
 
 namespace TinCan.Network.Infrastructure
 {

@@ -68,7 +68,7 @@ namespace TinCan.Tests.EditMode
             ServerSets(_carryingTag.name, true);
             Assert.That(_controller.ActiveTags.HasTag(_carryingTag), Is.False, "The client's raw domain container is not its synchronized tag store.");
 
-            _abilities.ProcessAbilitySimulation(_controller, new HumanoidInputState { ActiveInputMask = 1 }, 0, _time.DeltaTime);
+            _abilities.ProcessAbilitySimulation(_controller, 1, 0, _time.DeltaTime);
 
             Assert.That(_controller.HasTag(_swingingTag), Is.True, "The owner must see the swing before receiving a server confirmation.");
             _time.Time = _swing.ActiveEffect.DurationSeconds + 0.01f;
@@ -79,7 +79,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void Input_WithoutCarryTag_DoesNotPredictSwing()
         {
-            _abilities.ProcessAbilitySimulation(_controller, new HumanoidInputState { ActiveInputMask = 1 }, 0, _time.DeltaTime);
+            _abilities.ProcessAbilitySimulation(_controller, 1, 0, _time.DeltaTime);
 
             Assert.That(_controller.HasTag(_swingingTag), Is.False);
         }
@@ -90,7 +90,7 @@ namespace TinCan.Tests.EditMode
             _swing.ActivationBlockedTagsOnActor.Add(_carryingTag);
             ServerSets(_carryingTag.name, true);
 
-            _abilities.ProcessAbilitySimulation(_controller, new HumanoidInputState { ActiveInputMask = 1 }, 0, _time.DeltaTime);
+            _abilities.ProcessAbilitySimulation(_controller, 1, 0, _time.DeltaTime);
 
             Assert.That(_controller.HasTag(_swingingTag), Is.False);
         }

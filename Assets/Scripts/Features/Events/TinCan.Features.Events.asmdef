@@ -1,0 +1,18 @@
+{
+    "name": "TinCan.Features.Events",
+    "rootNamespace": "TinCan.Features.Events",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Interaction",
+        "Unity.Netcode.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

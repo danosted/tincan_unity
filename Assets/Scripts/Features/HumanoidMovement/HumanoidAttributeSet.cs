@@ -2,7 +2,7 @@ using System;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Attributes;
 
-namespace TinCan.Features.Abilities
+namespace TinCan.Features.HumanoidMovement
 {
     /// <summary>
     /// Attribute set wrapper for humanoid characters.

@@ -3,7 +3,8 @@
     "rootNamespace": "TinCan.Features.GasChallenge",
     "references": [
         "TinCan.Core.Domain",
-        "TinCan.Features",
+        "TinCan.Gas",
+        "TinCan.Ship",
         "VContainer"
     ],
     "includePlatforms": [],

@@ -1,9 +1,9 @@
 #nullable enable
 using System.Linq;
 using TinCan.Core.Domain;
-using TinCan.Features.UI;
 using UnityEngine;
 using VContainer.Unity;
+using TinCan.Core.Domain.Hud;
 
 namespace TinCan.Features.Airship.Fuel
 {

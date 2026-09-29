@@ -5,33 +5,45 @@ Where things live, what the suffixes mean, and which features exist. Paths are r
 ## Assemblies and the one-way rule
 
 ```
-Assembly-CSharp               top layer: App, Network/Infrastructure, UI (sees everything below)
-  TinCan.Features.<Feature>   one per feature; sees the core and the features it references
-  TinCan.Core.Infrastructure  core implementations; sees Features and Domain, never a feature
-    TinCan.Features           shared block: core systems and older features
-      TinCan.Core.Domain      contracts
+Assembly-CSharp                top layer: App, Network/Infrastructure, UI (sees everything)
+  TinCan.Features.<Feature>    one per feature; sees the core and the features it references
+  TinCan.Core.Infrastructure   core implementations (ActorOrchestrator, registries, input, time)
+  core systems, lowest first:
+    TinCan.Items, TinCan.UI
+    TinCan.Ship                the airship itself and Fixtures/
+    TinCan.Interaction
+    TinCan.Humanoid            movement, input state, look, targeter, attribute set
+    TinCan.Gas                 abilities, effects, tags, cues, the ability-grant socket
+    TinCan.Possession, TinCan.Targeting, TinCan.Entities
+      TinCan.Core.Domain       contracts, including the ones shared across systems
 
 Each layer references only layers below it. TinCan.DevTools and TinCan.Tests.EditMode reference what they exercise.
 ```
 
 **Every feature is its own assembly.** A feature folder gets an asmdef named `TinCan.Features.<Name>` that
-references only what the feature uses: `TinCan.Core.Domain`, the shared `TinCan.Features` block, and any other
-feature it builds on. The compiler then enforces the boundaries:
+references only what the feature uses: `TinCan.Core.Domain`, the core systems it needs, and any other feature it
+builds on. The compiler then enforces the boundaries:
 - A feature cannot touch another feature it doesn't reference.
 - Core can never depend on a feature: circular references are a compile error, and a rule test covers the rest.
 - A reference between features is also that feature's profile requirement.
 
-The worked example is [`Features/GasChallenge/`](../Assets/Scripts/Features/GasChallenge/): one asmdef, no Netcode
-reference because it doesn't need one. `Features/SkyHazards/` shows DevTools and tests referencing a feature.
+The worked example is [`Features/GasChallenge/`](../Assets/Scripts/Features/GasChallenge/): one asmdef referencing
+only `TinCan.Gas` and `TinCan.Ship`, and no Netcode, because it needs none. `Features/SkyHazards/` shows DevTools and
+tests referencing a feature.
 
-`TinCan.Features` is the shared block features are being carved out of. It still holds the core systems (GAS,
-targeting, interaction, items, the humanoid, the ship) and older features. Don't add a new feature to it.
-[`.docs/plans/feature-assemblies.md`](plans/feature-assemblies.md) is the roadmap for splitting it. Enforced by
-`ArchitectureRulesTests`:
-- `FeatureInstallers_LiveInTheirOwnAssembly` (legacy installers are baselined);
-- `SharedAssemblies_DoNotReferenceFeatureAssemblies`;
+**The core systems are assemblies too, in a fixed order** (the list above). A contract two core systems share goes
+down into `TinCan.Core.Domain`, never sideways; examples are `Core/Domain/Look/` (`IOrbitalLookView`,
+`IHasOrbitalCamera`), `IPossessionReceiver`, `Core/Domain/Hud/IHudValues`, and the `IHumanoidActor` / `IShipActor`
+markers. The core systems still live under `Assets/Scripts/Features/<System>/` (for example `Abilities/` is
+`TinCan.Gas`). The shared `TinCan.Features` block now only holds `Carry/`; see the roadmap.
+[`.docs/plans/feature-assemblies.md`](plans/feature-assemblies.md) is the roadmap and
+[`.docs/plans/core-assemblies.md`](plans/core-assemblies.md) the core split. Enforced by `ArchitectureRulesTests`:
+- `FeatureInstallers_LiveInTheirOwnAssembly`;
+- `SharedAssemblies_DoNotReferenceFeatureAssemblies`: no core assembly references a feature;
 - `FeatureProfiles_LoadTheFeaturesTheirFeaturesReference`;
-- `AssemblyCSharp_HoldsOnlyTheTopLayer`.
+- `AssemblyCSharp_HoldsOnlyTheTopLayer`;
+- `GameplayCueNotifies_LoadAllTheirActions`: cue actions are `[SerializeReference]` data stored with their assembly
+  name, so moving an action type needs `[MovedFrom]`.
 
 **Assembly-CSharp is the top layer, and it is shrinking.** Unity compiles every script outside an asmdef into
 Assembly-CSharp. That assembly sees everything automatically, and nothing (tests included) can reference it. Only
@@ -46,14 +58,20 @@ Anything else is a script that forgot its asmdef, and the rule test fails. These
 | Assembly | asmdef | Contains | May reference |
 |---|---|---|---|
 | `TinCan.Core.Domain` | `Assets/Scripts/Core/Domain/TinCan.Core.Domain.asmdef` | Contracts, registries, `SimulationUseCase`, `ISimulationTickable`, the GAS vocabulary, `FeatureInstaller`. | NGO runtime, VContainer |
-| `TinCan.Features` | `Assets/Scripts/Features/TinCan.Features.asmdef` | The shared block: core systems and older features, one folder per concern. Closed to new features. | Core.Domain, NGO, VContainer |
-| `TinCan.Features.<Feature>` | `Assets/Scripts/Features/<Feature>/TinCan.Features.<Feature>.asmdef` | One feature: its processors, use cases, mediators, installer. Today: `GasChallenge`, `SkyHazards`, `Stations`, `Weapons.Cannon` (references Stations), `DesignedEvents`, `Airship.Fuel`, `Airship.Fuel.Minigame` (references Fuel), `Airship.Damage` (references DesignedEvents), `Airship.PhysicalParts` (the door). | Core.Domain, Features, the features it builds on, and only the packages it uses |
-| `TinCan.Core.Infrastructure` | `Assets/Scripts/Core/Infrastructure/TinCan.Core.Infrastructure.asmdef` | Core implementations behind `Core.Domain` contracts: `ActorOrchestrator`, `ActorRegistry`, `AbilityRegistry`, `NetworkPrefabInterceptor`, `UnityInputService`, `ProjectTimeService`, `ShipStateProvider`, `Events/`. Unit-testable. | Core.Domain, Features, NGO, Input System, VContainer |
+| `TinCan.Targeting`, `TinCan.Possession`, `TinCan.Entities` | in `Features/Targeting/`, `Features/Possession/`, `Features/Entities/` | Core systems with no core dependency: the targeting query, possession (authority, camera and cursor responders), `EntityNetworkMediator`. | Core.Domain, NGO, VContainer |
+| `TinCan.Gas` | `Features/Abilities/TinCan.Gas.asmdef` | Abilities, effects, attributes, tags, cues (`Cues/`, with `[MovedFrom]` on the cue actions), `ActorAbilityGrantUseCase`, the tag and cue installers. | Core.Domain, Targeting, VContainer |
+| `TinCan.Humanoid` | `Features/HumanoidMovement/TinCan.Humanoid.asmdef` | Humanoid movement and prediction, `HumanoidInputState`, `HumanoidAttributeSet`, `HumanoidTargeter`, `ThirdPersonLookView`, `ParentLocalSpaceVolume`. | Core.Domain, Gas, NGO, VContainer |
+| `TinCan.Interaction` | `Features/Interaction/TinCan.Interaction.asmdef` | Interaction orchestration, handlers, vehicle boarding, the interaction installer. | Core.Domain, Gas, Humanoid, Possession, Targeting, NGO, VContainer |
+| `TinCan.Ship` | `Features/Airship/TinCan.Ship.asmdef` | The airship itself (root files) and `Fixtures/` (fixture spawning). The folder's feature subfolders are their own assemblies. | Core.Domain, Humanoid, Interaction, NGO, VContainer |
+| `TinCan.Items`, `TinCan.UI` | `Features/Items/`, `Features/UI/` | Items and equipment; the headless menu/HUD framework. | Items: Core.Domain, Gas, Interaction, NGO, VContainer. UI: Core.Domain, Possession, VContainer |
+| `TinCan.Features` | `Assets/Scripts/Features/TinCan.Features.asmdef` | The leftover shared block: only `Carry/` (net rack and net-swing visuals). Closed to new code. | Core.Domain, Interaction, NGO |
+| `TinCan.Features.<Feature>` | `Assets/Scripts/Features/<Feature>/TinCan.Features.<Feature>.asmdef` | One feature: its processors, use cases, mediators, installer. Today: `GasChallenge`, `SkyHazards`, `Stations`, `Weapons.Cannon` (references Stations), `DesignedEvents`, `Airship.Fuel`, `Airship.Fuel.Minigame` (references Fuel), `Airship.Damage` (references DesignedEvents), `Airship.PhysicalParts` (the door), `CloudBoundary` (with submersion), `FreeCamera`, `Environment`, `Events`. | Core.Domain, the core systems it uses, the features it builds on, and only the packages it uses |
+| `TinCan.Core.Infrastructure` | `Assets/Scripts/Core/Infrastructure/TinCan.Core.Infrastructure.asmdef` | Core implementations behind `Core.Domain` contracts: `ActorOrchestrator`, `ActorRegistry`, `AbilityRegistry`, `NetworkPrefabInterceptor`, `UnityInputService`, `ProjectTimeService`, `ShipStateProvider`, `Events/`. Unit-testable. | Core.Domain, Entities, Gas, Humanoid, Interaction, NGO, Input System, VContainer |
 | `Assembly-CSharp` | none (Unity default) | The top layer only: `App` (composition root `ProjectLifetimeScope`), `Network/Infrastructure` (NGO adapters for core actors), `Scripts/UI` (overlay views). | Everything |
-| `TinCan.DevTools` | `Assets/Scripts/DevTools/TinCan.DevTools.asmdef` | Network test harness: latency presets, input bot, movement telemetry, feature scenarios (`Scenarios/`). Inert unless its flags are set. | Core.Domain, Features, the feature assemblies its scenarios drive (the feature assemblies their scenarios drive), NGO, UTP, Input System, VContainer |
-| `TinCan.DevTools.Editor` | `Assets/Scripts/DevTools/Editor/` | **TinCan > Dev > Net Harness** menu: assigns MPPM player tags and launches Player 2. Scenario menus, the test-range scene builder and scene switching. Editor only. | Features, feature assemblies its builders use (the feature assemblies they build assets for), DevTools (and reflection into MPPM) |
-| `TinCan.Features.Interaction.Editor` | `Assets/Scripts/Features/Interaction/Editor/` | One property drawer (handler dropdown). Editor only. | Features, Core.Domain |
-| `TinCan.Tests.EditMode` | `Assets/Tests/EditMode/` | NUnit tests + `Fakes/`. Editor only. | Core.Domain, Features, each feature assembly it tests, DevTools, Tests.Shared |
+| `TinCan.DevTools` | `Assets/Scripts/DevTools/TinCan.DevTools.asmdef` | Network test harness: latency presets, input bot, movement telemetry, feature scenarios (`Scenarios/`). Inert unless its flags are set. | Core.Domain, the core systems and feature assemblies its scenarios drive, NGO, UTP, Input System, VContainer |
+| `TinCan.DevTools.Editor` | `Assets/Scripts/DevTools/Editor/` | **TinCan > Dev > Net Harness** menu: assigns MPPM player tags and launches Player 2. Scenario menus, the test-range scene builder and scene switching. Editor only. | The core systems and feature assemblies its builders use, DevTools (and reflection into MPPM) |
+| `TinCan.Features.Interaction.Editor`, `TinCan.Features.Abilities.Editor` | `Features/Interaction/Editor/`, `Features/Abilities/Editor/` | Property drawers (handler dropdown, cue action picker). Editor only. | Interaction or Gas, Core.Domain |
+| `TinCan.Tests.EditMode` | `Assets/Tests/EditMode/` | NUnit tests + `Fakes/`. Editor only. | Core.Domain, every core system and feature assembly it tests, DevTools, Tests.Shared |
 | `TinCan.Tests.Shared` | `Assets/Tests/Shared/` | Fakes usable outside Editor-only assemblies. | Core.Domain |
 
 **Consequence:** a class in `Assembly-CSharp` cannot be unit-tested. Put logic in a feature or core assembly; keep
@@ -74,7 +92,8 @@ only the composition root and things that need `NetworkManager`, `UnityTransport
 | `Assets/Scripts/App/` | Assembly-CSharp | `ProjectLifetimeScope` (composition root). |
 | `Assets/Scripts/Core/Infrastructure/` | Core.Infrastructure | `NetworkPrefabInterceptor` (injects before NGO spawn), `ActorOrchestrator` (registers spawned hierarchies), `ActorRegistry`, `AbilityRegistry`, `UnityInputService`, `ProjectTimeService`, `ShipStateProvider`, `Events/`, `Extensions/`. |
 | `Assets/Scripts/Network/Infrastructure/` | Assembly-CSharp | `NetworkSimulationScheduler` (the tick), `NetworkMediator` base, `HumanoidPlayer`, `AirshipNetworkMediator`, `NGONetworkService`, `NetworkPlayerSpawner`, `ModuleSpawningService`, `NgoInteractionTargetResolver`, `FlyingCanNetworkMediator`, ship-module mediators, `Abilities/AbilityNetworkMediator`. |
-| `Assets/Scripts/Features/<X>/` | Features | See the feature index below. |
+| `Core/Domain/Look/`, `Core/Domain/Hud/` | Core.Domain | Contracts shared by core systems: `IOrbitalLookView`, `IHasOrbitalCamera`; `IHudValues`. Also `IPossessionReceiver` and the `IHumanoidActor` / `IShipActor` markers (`ActorKinds.cs`) in `Core/Domain/`. |
+| `Assets/Scripts/Features/<X>/` | the core system or feature assembly in that folder | See the assembly table above and the feature index below. |
 | `Assets/Scripts/UI/` | Assembly-CSharp | `MenuOverlayView`, `HudOverlayView` (UI Toolkit, throwaway). |
 | `Assets/Tests/EditMode/` | Tests.EditMode | `*Tests.cs` and `Fakes/`. |
 
@@ -166,18 +185,18 @@ in `ProjectLifetimeScope.cs` (legacy; migrate when touched). Add a row when you 
 | Sky hazards (targets with health; drift and ship damage come in S2) | `SkyHazards/` | own assembly + installer (`Profile_FuelSandbox`, `Profile_Test_Cannon`) | `SkyHazardUseCase` (`ISkyHazards`; server: removes shot-down hazards, keeps a field on the ship's starboard side), `SkyHazardFieldProcessor`, `SkyHazardSpawningService` (`ISkyHazardSpawner`), `SkyHazardNetworkMediator` (`AbilityNetworkMediator` + `HealthAttributeSet`, `ITargetable`) | `Resources/Installers/SkyHazardsFeatureInstaller`, `Settings/SkyHazards/SkyHazardConfig`, `Prefabs/SkyHazards/SkyHazard` | `SkyHazardTests`; scenario `CannonShot` |
 | Menus + HUD framework | `UI/` (+ views in `Scripts/UI/`) | installer (Order -10) | `MenuUseCase`, `HudUseCase`, `MainMenuBootstrap`, `CommandLineSessionBootstrap`, `Commands/*` | `Resources/Installers/UiFeatureInstaller`, `UI/Menus/Menu_Main`, `Menu_Join`, overlays on `GameLifetimeScope.prefab` | `Menu*Tests`, `HudUseCaseTests`, `MainMenuBootstrapTests`, `CommandLineSessionBootstrapTests` |
 | Ship fixtures (generic spawner) | `Airship/Fixtures/` | direct (core) | `ShipFixtureSpawningUseCase` | any `Settings/Fixtures/*` | `ShipFixtureSpawningUseCaseTests`, `FeatureCompositionTests` |
-| Airship movement | `Airship/` | direct | `AirshipMovementUseCase`, `AirshipControllerView`, `Network/Infrastructure/AirshipNetworkMediator` | `Prefabs/Airship/Airship_Prefab`, `Attr_FlightSpeed`, `GA_FlightSpeed_Boost`, `IA_AcquireAirshipControl`, `IA_ToggleFlightBoost` | `AirshipMovementProcessorTests` |
+| Airship movement | `Airship/` | core `TinCan.Ship` (direct) | `AirshipMovementUseCase`, `AirshipControllerView`, `Network/Infrastructure/AirshipNetworkMediator` | `Prefabs/Airship/Airship_Prefab`, `Attr_FlightSpeed`, `GA_FlightSpeed_Boost`, `IA_AcquireAirshipControl`, `IA_ToggleFlightBoost` | `AirshipMovementProcessorTests` |
 | Airship door | `Airship/PhysicalParts/` | own assembly + installer (`Profile_Base`, `Profile_Test_Core`) | `AirshipDoor`, `DoorInteractionHandler` (`Resources/Installers/AirshipDoorFeatureInstaller`) | `IA_ToggleDoor`, `Interaction.Toggle.Door` | none |
-| Humanoid movement + look | `HumanoidMovement/` | direct | `HumanoidMovementUseCase`, `PlayerLookUseCase`, `HumanoidControllerView`, `Network/Infrastructure/HumanoidPlayer` | `Prefabs/NetworkPlayer`, `Attr_MoveSpeed`, `Attr_JumpForce`, `Attr_Stamina`, `GA_Sprint`, `GE_SprintBuff` | `HumanoidMovement*Tests`, `SimulationUseCaseTests` |
-| Possession | `Possession/` | direct | `PossessionUseCase`, `ServerPossessionManager`, `PossessionInputController`, `Infrastructure/PossessionNetworkMediator` | `Prefabs/Singletons/PossessionMediator` | none |
-| Interaction system | `Interaction/` | direct (core); targeting path via installer (`InteractionFeatureInstaller`, `Profile_Base`) | `InteractInputUseCase` (the only interaction path), `InteractionOrchestrator`, `InteractionHandlerRegistry`, `VehicleBoardingUseCase` | `Assets/Interactions/*` | `AirshipInteractionInvestigationTests`, `InteractInputUseCaseTests`; scenario `InteractRack` |
-| Abilities (GAS-like) | `Abilities/` | direct (core); tag registry via installer (Order -20, `Profile_Base`) | `AbilitySystemUseCase`, `Network/Infrastructure/Abilities/AbilityNetworkMediator`, `GameplayTagRegistry` | `Assets/Abilities/**`, `Abilities/GameplayTagDatabase`, `Resources/Installers/GameplayTagsFeatureInstaller` | `HealthAttributeSetTests`, `InstantGameplayEffectTests`, `GameplayTagRegistryTests`, `GasTickTimingTests` |
+| Humanoid movement + look | `HumanoidMovement/` | core `TinCan.Humanoid` (direct) | `HumanoidMovementUseCase`, `PlayerLookUseCase`, `HumanoidControllerView`, `Network/Infrastructure/HumanoidPlayer` | `Prefabs/NetworkPlayer`, `Attr_MoveSpeed`, `Attr_JumpForce`, `Attr_Stamina`, `GA_Sprint`, `GE_SprintBuff` | `HumanoidMovement*Tests`, `SimulationUseCaseTests` |
+| Possession | `Possession/` | core `TinCan.Possession` (direct) | `PossessionUseCase`, `ServerPossessionManager`, `PossessionInputController`, `Infrastructure/PossessionNetworkMediator` | `Prefabs/Singletons/PossessionMediator` | none |
+| Interaction system | `Interaction/` | core `TinCan.Interaction` (direct); targeting path via installer (`InteractionFeatureInstaller`, `Profile_Base`) | `InteractInputUseCase` (the only interaction path), `InteractionOrchestrator`, `InteractionHandlerRegistry`, `VehicleBoardingUseCase` | `Assets/Interactions/*` | `AirshipInteractionInvestigationTests`, `InteractInputUseCaseTests`; scenario `InteractRack` |
+| Abilities (GAS-like) | `Abilities/` | core `TinCan.Gas` (direct); tag registry via installer (Order -20, `Profile_Base`) | `AbilitySystemUseCase`, `Network/Infrastructure/Abilities/AbilityNetworkMediator`, `GameplayTagRegistry` | `Assets/Abilities/**`, `Abilities/GameplayTagDatabase`, `Resources/Installers/GameplayTagsFeatureInstaller` | `HealthAttributeSetTests`, `InstantGameplayEffectTests`, `GameplayTagRegistryTests`, `GasTickTimingTests` |
 | Ship modules (build mode removed 2026-09-27, `plans/trust-fixes.md`) | `Network/Infrastructure/ModuleSpawningService.cs`, `ShipModule*NetworkMediator.cs` | direct | `ModuleSpawningService` (also spawns fixtures) | `Prefabs/Modules/Cannon_Module`, `IA_RepairModule`, `IA_DamageModule` | none |
-| Cloud boundary + visuals + atmosphere | `CloudBoundary/` | installers: `CloudBoundaryFeatureInstaller` (boundary, `BeforeHumanoid` tick, cloud configs, `CloudEnvironmentView`) and `CloudSubmersionFeatureInstaller` (atmosphere) | `CloudBoundaryUseCase`, `CloudEnvironmentView` (also applies `CloudSubmersionProcessor` output: fog + directional light dimming from the local camera's cloud submersion, client-only, no gameplay effect) | `Settings/CloudBoundaryConfig`, `Settings/CloudVisualProfile`, `Settings/CloudSubmersionConfig`, `Resources/Installers/CloudBoundaryFeatureInstaller`, `Resources/Installers/CloudSubmersionFeatureInstaller` | `CloudBoundary*Tests`, `CloudSubmersionProcessorTests` |
+| Cloud boundary + visuals + atmosphere | `CloudBoundary/` | own assembly + installers: `CloudBoundaryFeatureInstaller` (boundary, `BeforeHumanoid` tick, cloud configs, `CloudEnvironmentView`) and `CloudSubmersionFeatureInstaller` (atmosphere) | `CloudBoundaryUseCase`, `CloudEnvironmentView` (also applies `CloudSubmersionProcessor` output: fog + directional light dimming from the local camera's cloud submersion, client-only, no gameplay effect) | `Settings/CloudBoundaryConfig`, `Settings/CloudVisualProfile`, `Settings/CloudSubmersionConfig`, `Resources/Installers/CloudBoundaryFeatureInstaller`, `Resources/Installers/CloudSubmersionFeatureInstaller` | `CloudBoundary*Tests`, `CloudSubmersionProcessorTests` |
 | Gas pocket challenge | `GasChallenge/` | own assembly + installer (`Profile_Base`, `Profile_Test_Core`) | `GasChallengeUseCase` (server, `AfterAirship` tick), `PhysicsGasPocketQuery`, `GasPocketVolume` | `Resources/Installers/GasChallengeFeatureInstaller`, `Prefabs/Hazards/GasPocket`, `GE_GasPocketExplosion`, scene `cvg_gaspocket_test` | `GasChallengeUseCaseTests`, `GasPocketDetonationProcessorTests` |
 | Network test harness + feature scenarios (dev only) | `Scripts/DevTools/` (own assembly) | installer | `NetworkConditionsUseCase`, `BotRouteUseCase`, `MovementTelemetryUseCase`, `NetHarnessOverlayView`, `Scenarios/ScenarioUseCase` (+ `ScenarioCatalog`, `*ScenarioLibrary`, menu `Editor/ScenarioMenu`, driver `.tools/verify.ps1`) | `Resources/Installers/NetTestHarnessFeatureInstaller` | `NetTestHarnessTests`, `BotRouteUseCaseTests`, `LaunchArgumentsTests`, `ScenarioRunnerTests` |
-| Free camera | `FreeCamera/` | installer (`Profile_Base`, `Profile_Test_Core`) | `FreeCameraMovementUseCase`, `FreeCameraTransformView` | `Resources/Installers/FreeCameraFeatureInstaller` | none |
-| Environment helpers | `Environment/` | none needed | `MovingPlatform`, `SimpleOscillator` | | `Tests/Shared/FakeMovingGround` |
+| Free camera | `FreeCamera/` | own assembly + installer (`Profile_Base`, `Profile_Test_Core`) | `FreeCameraMovementUseCase`, `FreeCameraTransformView` | `Resources/Installers/FreeCameraFeatureInstaller` | none |
+| Environment helpers | `Environment/` | own assembly (no installer) | `MovingPlatform`, `SimpleOscillator` | | `Tests/Shared/FakeMovingGround` |
 
 ## Aether equipment visuals
 
@@ -258,10 +277,8 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
   (`UnityInputService.GetActiveInputMask`); there is no latch. A normal tap (80–150 ms) outlasts a tick; an
   inhumanly short one can be missed. This applies to Interact and the ability inputs alike. Scenarios hold for 0.3 s.
 
-- **Empty scaffold folders** (only `.gitkeep`): `Core/Application`, `Core/Presentation`, `Player`, `Utils`,
-  `Features/Airship/Infrastructure`. Nothing is missing; they are leftovers from an initial folder layout.
-- `Features/ThirdPersonCharacter/` holds one used file (`ThirdPersonLookView`) that belongs next to
-  `IOrbitalLookView` in `HumanoidMovement`.
+- **Empty scaffold folder** (only `.gitkeep`): `Features/Airship/Infrastructure`. Nothing is missing; it is a leftover
+  from an initial folder layout.
 - **`ProjectLifetimeScope.cs` is core only** (its class comment lists what counts as core). Do not add feature
   registrations there; write an installer. The rules suite fails if its registration count grows.
 - **Profiles list their installers.** A feature missing from a scene usually means its installer is not in that

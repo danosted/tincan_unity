@@ -8,7 +8,7 @@ The framework separates three things so they can evolve independently:
 |---|---|---|
 | **Data** | `Assets/UI/Menus/*.asset` (`MenuDefinition`) | Which menus exist and which rows they contain. Authored in the Inspector, no code. |
 | **Headless model** | `Assets/Scripts/Features/UI/` (TinCan.Features) | `IMenuSystem` (menu stack + values), `IMenuCommand` (what a row does), `IHudValues` (named HUD texts), `MainMenuBootstrap` (owns the Cancel key). Pure C#, unit-tested, knows nothing about rendering. |
-| **Views** | `Assets/Scripts/UI/` (Assembly-CSharp) | `MenuOverlayView`, `HudOverlayView`: UI Toolkit code-built renderers of the model. Replace these when real UI arrives; nothing else changes. |
+| **Views** | `Assets/Scripts/App/Views/` (`TinCan.App`) | `MenuOverlayView`, `HudOverlayView`: UI Toolkit code-built renderers of the model. Replace these when real UI arrives; nothing else changes. |
 
 Gameplay code never talks to a view. It opens menus through `IMenuSystem`, reacts to rows through `IMenuCommand`, and shows numbers through `IHudValues`.
 
@@ -56,7 +56,7 @@ string GetValue(string itemId);
 
 ## Adding a command
 
-1. Implement `IMenuCommand` (anywhere in TinCan.Features or Assembly-CSharp):
+1. Implement `IMenuCommand` (in the core `TinCan.UI` assembly or any feature assembly that references it):
 
 ```csharp
 public class OpenSettingsMenuCommand : IMenuCommand

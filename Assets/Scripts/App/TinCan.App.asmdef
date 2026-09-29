@@ -1,16 +1,16 @@
 {
-    "name": "TinCan.Features.Airship.Fuel.Minigame",
-    "rootNamespace": "TinCan.Features.Airship.Fuel.Minigame",
+    "name": "TinCan.App",
+    "rootNamespace": "TinCan.App",
     "references": [
         "TinCan.Core.Domain",
-        "TinCan.Features",
+        "TinCan.Core.Infrastructure",
         "TinCan.Gas",
         "TinCan.Humanoid",
         "TinCan.Interaction",
-        "TinCan.Items",
         "TinCan.Network",
+        "TinCan.Possession",
         "TinCan.Ship",
-        "TinCan.Features.Airship.Fuel",
+        "TinCan.UI",
         "Unity.Netcode.Runtime",
         "VContainer"
     ],

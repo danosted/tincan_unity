@@ -19,7 +19,7 @@ namespace TinCan.Tests.EditMode
     public class EntityTests
     {
         private static readonly Type AbilityMediatorType =
-            Type.GetType("TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, Assembly-CSharp", true)!;
+            Type.GetType("TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, TinCan.Network", true)!;
 
         private readonly List<GameObject> _objects = new();
 

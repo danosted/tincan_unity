@@ -251,6 +251,20 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void FeatureProfiles_ListNoCoreInstallers()
+        {
+            // Core installers load in every scene (FeatureInstallerCatalog.LoadForScene); a profile listing one suggests
+            // it can be switched off, which it can't.
+            var offenders = LoadAssets<FeatureProfile>()
+                .SelectMany(p => p.Installers.Where(i => i != null && FeatureInstallerCatalog.IsCore(i)).Select(i => $"{p.name}: {i.name}"))
+                .ToList();
+
+            Assert.That(offenders, Is.Empty,
+                "Profiles list features only; core installers always load (FEATURE_INSTALLERS.md, \"Selecting features "
+                + "per scene\"). Remove them from the profile:\n  " + string.Join("\n  ", offenders));
+        }
+
+        [Test]
         public void FeatureProfiles_LoadTheFeaturesTheirFeaturesReference()
         {
             // A feature assembly's references to other feature assemblies are its requirements: the compiler already
@@ -343,7 +357,8 @@ namespace TinCan.Tests.EditMode
             // Some installers warn about unassigned optional config while installing; that is not this rule's concern.
             LogAssert.ignoreFailingMessages = true;
             var installers = LoadAssets<FeatureInstaller>().ToList();
-            var features = FeatureRegistrations(installers);
+            // Core services always load, so only a service that only a feature installer provides is optional.
+            var features = FeatureRegistrations(installers.Where(i => !FeatureInstallerCatalog.IsCore(i)));
             bool FeatureProvided(Type type) => features.Exists(type, includeInterfaceTypes: true);
 
             var granted = new HashSet<UnityEngine.Object>(installers
@@ -441,12 +456,12 @@ namespace TinCan.Tests.EditMode
             }
         }
 
-        /// <summary>Every installer in the project, installed into one builder: the service types only a feature provides.</summary>
+        /// <summary>The given installers, installed into one builder: with feature installers, the service types only a feature provides.</summary>
         private ContainerBuilder FeatureRegistrations(IEnumerable<FeatureInstaller> installers)
         {
             var builder = SceneBuilder();
             InstallerServiceCheck.Install(installers, builder);
-            Assert.That(builder.Exists(typeof(TinCan.Features.Targeting.ITargetingService), includeInterfaceTypes: true), Is.True,
+            Assert.That(builder.Exists(typeof(TinCan.Features.Airship.Damage.IShipBreakage), includeInterfaceTypes: true), Is.True,
                 "Installer discovery found no feature services, so this rule would check nothing.");
             return builder;
         }

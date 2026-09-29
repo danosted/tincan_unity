@@ -31,16 +31,9 @@ namespace TinCan.Core.Infrastructure
             _abilityRegistry = abilityRegistry;
         }
 
-        // The targetable registry belongs to the Targeting feature installer, which a profile can switch off, so it is
-        // resolved optionally rather than required.
+        // The targetable registry is a core service (TinCan.Targeting's installer always loads). The constructor above,
+        // without it, is a test seam for tests that don't care about targeting.
         [Inject]
-        public ActorOrchestrator(IActorRegistry actorRegistry, IInteractorRegistry interactorRegistry, IAbilityRegistry abilityRegistry, IObjectResolver resolver)
-            : this(actorRegistry, interactorRegistry, abilityRegistry)
-        {
-            _targetableRegistry = resolver.TryResolve<ITargetableRegistry>(out var targetables) ? targetables : null;
-        }
-
-        /// <summary>Test seam: an orchestrator that also registers targetables.</summary>
         public ActorOrchestrator(IActorRegistry actorRegistry, IInteractorRegistry interactorRegistry, IAbilityRegistry abilityRegistry, ITargetableRegistry targetableRegistry)
             : this(actorRegistry, interactorRegistry, abilityRegistry)
         {

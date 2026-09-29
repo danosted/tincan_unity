@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using VContainer;
 
-namespace TinCan.UI
+namespace TinCan.App.Views
 {
     /// <summary>
     /// Throwaway presentation for <see cref="IMenuSystem"/>: renders a plain UI Toolkit tree from the current

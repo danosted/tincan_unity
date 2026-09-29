@@ -31,7 +31,7 @@ namespace TinCan.Tests.EditMode
         public void SetUp()
         {
             _object = new GameObject("NetPredictionTest");
-            var mediatorType = Type.GetType("TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, Assembly-CSharp", true)!;
+            var mediatorType = Type.GetType("TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, TinCan.Network", true)!;
             _controller = (IAbilityControllerBase)_object.AddComponent(mediatorType);
             // Isolate an owning client's tag storage without starting a transport. Any attempted RPC is an error.
             typeof(NetworkBehaviour).GetProperty("IsOwner")!.SetValue(_controller, true);

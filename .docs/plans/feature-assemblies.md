@@ -1,4 +1,4 @@
-Status: Approved (phase 1 done)
+Status: Done (phases 1–6; follow-ups: the Carry socket, the booster fixture)
 
 # Feature assemblies: compiler-enforced boundaries
 
@@ -73,10 +73,19 @@ Rule tests in `ArchitectureRulesTests`:
    - **Carved out as features:** CloudBoundary (with submersion), FreeCamera, Environment, Events.
    - **The shared `TinCan.Features` block** is down to `Carry/`: the net rack and net-swing visuals, which need a
      socket before they can move.
-5. **Make core mandatory.** Core-system installers go in one core profile the scope always loads, and scene profiles
-   only add features. Core services are then guaranteed: drop `TryResolve` for them, and move the ability-grant
-   socket into the GAS core instead of `GameplayTagsFeatureInstaller`.
-6. **Empty Assembly-CSharp.** Unity compiles every script outside an asmdef into Assembly-CSharp, which sees
+5. **Make core mandatory (done).**
+   - **Which installers are core is decided by assembly** (the developer's choice over a core profile asset or an
+     `IsCore` flag): `FeatureInstallerCatalog.IsCore`. `LoadForScene` loads every core installer plus the profile's
+     features.
+   - **Profiles:** `Profile_Base` and `Profile_Test_Core` dropped the six core installers, and
+     `FeatureProfiles_ListNoCoreInstallers` keeps them out.
+   - **No more optional lookups for core services:** `ActorOrchestrator` (targetables), `AbilityNetworkMediator`
+     (tag registry, cue player), `AbilitySystemUseCase` (cue dispatcher) and `GameplayCuePresenter` (HUD) now inject
+     them directly. The tag registry is always registered; an unassigned database is an error.
+   - **The ability-grant socket** stays in `GameplayTagsFeatureInstaller`, which is now a GAS core installer. That was
+     the point of "into GAS core": it no longer relies on every profile happening to list the installer.
+   - **The shared-prefab rule** now only treats feature installers' services as optional.
+6. **Empty Assembly-CSharp (done).** Unity compiles every script outside an asmdef into Assembly-CSharp, which sees
    everything and which nothing can reference.
    - **Done early:** `Core/Infrastructure` became `TinCan.Core.Infrastructure`. The composition root
      (`ProjectLifetimeScope`) moved to `Assets/Scripts/App/`, with its GUID kept, so it stays on top.
@@ -84,16 +93,19 @@ Rule tests in `ArchitectureRulesTests`:
      runtime scripts to 18, then 17 when Visual Scripting was removed with its `GASVisualScriptingBridge`.
    - **Guard:** `AssemblyCSharp_HoldsOnlyTheTopLayer` allows only the folders in
      `ArchitectureRulesBaseline.AssemblyCSharpFolders`, so a script that forgets its asmdef fails the suite.
-   - **Remaining, after phase 4:**
-     - `Network/Infrastructure` becomes `TinCan.Network`, above the core systems it bridges.
-     - `App/` and `UI/` become `TinCan.App`, the one assembly allowed to reference everything.
-     - Then the folder list is empty, and so is Assembly-CSharp.
-     - Third-party scripts without an asmdef may still land there, which is harmless; the rule only covers
-       `Assets/Scripts`.
+   - **Done after phase 5:**
+     - `Network/Infrastructure` became `TinCan.Network`, above the core systems it bridges.
+     - `App/` became `TinCan.App`. The two overlay views moved from `Scripts/UI/` to `App/Views/` (namespace
+       `TinCan.App.Views`).
+     - `FlyingCanNetworkMediator` moved into the minigame, which references `TinCan.Network` for its base class.
+     - Eight type-name strings (`"…, Assembly-CSharp"`) in tests and `CannonAssetBuilder` now name `TinCan.Network` or
+       `TinCan.App`.
+     - `AssemblyCSharpFolders` is empty: no project script compiles into Assembly-CSharp. Third-party scripts
+       without an asmdef may still land there, which is harmless; the rule only covers `Assets/Scripts`.
 
 ## Watch out when moving a type between assemblies
 - Script GUIDs are unchanged, so prefab and scene references survive.
 - `InteractionDefinition` stores its handler as an assembly-qualified type name, so moving a handler blanks the
   `IA_*` dropdown. `InteractionDefinitions_ResolveTheirHandler` catches it; re-pick the handler in the Editor.
 - `[SerializeReference]` types need `[MovedFrom]`.
-- Assembly-CSharp cannot be referenced by an asmdef: features reach `Network/Infrastructure` only through interfaces.
+- Type-name strings (`Type.GetType("…, <assembly>")`) name the old assembly; grep for them after a move.

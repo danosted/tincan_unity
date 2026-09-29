@@ -3,6 +3,7 @@
     "rootNamespace": "",
     "references": [
         "TinCan.Core.Domain",
+        "TinCan.Core.Infrastructure",
         "TinCan.Entities",
         "TinCan.Features",
         "TinCan.Features.CloudBoundary",
@@ -14,7 +15,6 @@
         "TinCan.Ship",
         "TinCan.Targeting",
         "TinCan.UI",
-        "TinCan.Core.Infrastructure",
         "TinCan.Features.GasChallenge",
         "TinCan.Features.SkyHazards",
         "TinCan.Features.Stations",

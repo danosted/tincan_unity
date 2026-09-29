@@ -42,12 +42,10 @@ namespace TinCan.Core.Infrastructure
 
         protected override void Configure(IContainerBuilder builder)
         {
-            // Feature composition: every FeatureInstaller asset under Resources/Installers registers itself here,
-            // unless this scene assigns a FeatureProfile to restrict it to a curated subset.
+            // Composition: the core systems' installers always load; this scene's FeatureProfile adds its features.
+            // Without a profile, every installer under Resources/Installers loads.
             // Adding a feature must not require editing this file; see .docs/FEATURE_INSTALLERS.md.
-            _features = _featureProfile != null
-                ? FeatureInstallerCatalog.LoadFromProfile(_featureProfile)
-                : FeatureInstallerCatalog.LoadFromResources();
+            _features = FeatureInstallerCatalog.LoadForScene(_featureProfile);
             builder.RegisterInstance(_features).AsSelf();
             builder.Register<ShipFixtureCatalog>(Lifetime.Singleton).As<IShipFixtureCatalog>();
             builder.Register<ShipFixtureSpawningUseCase>(Lifetime.Singleton).As<IInitializable>().As<ITickable>();

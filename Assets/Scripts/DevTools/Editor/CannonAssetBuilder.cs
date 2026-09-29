@@ -37,7 +37,7 @@ namespace TinCan.DevTools.Editor
         private const string CannonPrefab = "Assets/Prefabs/Weapons/CannonStation.prefab";
         private const string HazardPrefab = "Assets/Prefabs/SkyHazards/SkyHazard.prefab";
         private const string Installers = "Assets/Resources/Installers/";
-        private const string AbilityMediatorType = "TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, Assembly-CSharp";
+        private const string AbilityMediatorType = "TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, TinCan.Network";
 
         // Starboard broadside on the mid deck, which sits at y = -3.49 in ship space on both the airship and the test ship;
         // 4 m forward of the fuel fixture's net rack (5.2, -3.5, 0). Aft of it (z -3) is the StairsTop staircase; z 2..6

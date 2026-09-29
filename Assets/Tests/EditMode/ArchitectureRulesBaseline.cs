@@ -58,15 +58,11 @@ namespace TinCan.Tests.EditMode
         };
 
         /// <summary>
-        /// The only folders whose scripts may compile into Assembly-CSharp: the top layer, until it gets its own
-        /// assemblies (<c>TinCan.App</c>, <c>TinCan.Network</c>; <c>.docs/plans/feature-assemblies.md</c>). Remove a
-        /// folder when it moves; never add one.
+        /// Folders under <c>Assets/Scripts</c> whose scripts may compile into Assembly-CSharp. Empty since the top layer
+        /// got its own assemblies (<c>TinCan.App</c>, <c>TinCan.Network</c>); keep it empty.
         /// </summary>
         public static readonly string[] AssemblyCSharpFolders =
         {
-            "Assets/Scripts/App/",
-            "Assets/Scripts/Network/Infrastructure/",
-            "Assets/Scripts/UI/",
         };
 
         /// <summary>Scripts under <c>Assets/Scripts</c> without <c>#nullable enable</c> (review C12).</summary>

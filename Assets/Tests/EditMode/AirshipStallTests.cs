@@ -22,7 +22,7 @@ namespace TinCan.Tests.EditMode
             try
             {
                 // Use the real mediator and authored ability to cover the attribute-to-movement wiring.
-                var mediatorType = Type.GetType("TinCan.Network.Infrastructure.AirshipNetworkMediator, Assembly-CSharp", true)!;
+                var mediatorType = Type.GetType("TinCan.Network.Infrastructure.AirshipNetworkMediator, TinCan.Network", true)!;
                 var mediator = (IAirshipView)gameObject.AddComponent(mediatorType);
                 var view = gameObject.GetComponent<AirshipControllerView>();
                 var controller = new FakeAbilityController();

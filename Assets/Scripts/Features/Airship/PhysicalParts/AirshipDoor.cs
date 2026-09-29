@@ -1,10 +1,10 @@
 ﻿using System.Collections;
 using TinCan.Core.Domain.Abilities.Tags;
-using TinCan.Features.Interaction;
+using TinCan.Core.Interaction;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace TinCan.Features.Airship
+namespace TinCan.Features.Airship.PhysicalParts
 {
     public class AirshipDoor : NetworkBehaviour, IInteractionTarget
     {

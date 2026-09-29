@@ -1,7 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using TinCan.Features.Abilities.Cues;
+using TinCan.Core.Gas.Cues;
 using UnityEngine;
 
 namespace TinCan.Tests.EditMode.Fakes

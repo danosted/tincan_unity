@@ -2,7 +2,7 @@
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Core.Domain.Targeting;
-using TinCan.Features.Abilities;
+using TinCan.Core.Gas;
 using TinCan.Features.Airship.Damage;
 using UnityEngine;
 

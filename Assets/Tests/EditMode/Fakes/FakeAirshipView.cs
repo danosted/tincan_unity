@@ -2,7 +2,7 @@
 using System;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
-using TinCan.Features.Airship;
+using TinCan.Core.Ship;
 using UnityEngine;
 
 namespace TinCan.Tests.EditMode.Fakes

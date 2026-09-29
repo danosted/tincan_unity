@@ -1,6 +1,6 @@
 #nullable enable
 using System.Collections.Generic;
-using TinCan.Features.Interaction;
+using TinCan.Core.Interaction;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -27,7 +27,7 @@ namespace TinCan.Features.Airship.Fuel
 
         public InteractionDefinition Definition => _interactionDefinition!;
         public int Count => _count.Value;
-        public TinCan.Features.Items.ItemDefinition? Item => GetComponentInParent<IFuelTank>()?.Config?.JerryCanItem;
+        public TinCan.Core.Items.ItemDefinition? Item => GetComponentInParent<IFuelTank>()?.Config?.JerryCanItem;
 
         private void Awake()
         {

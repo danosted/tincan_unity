@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Humanoid;
 using UnityEngine;
 
 namespace TinCan.DevTools

@@ -1,7 +1,7 @@
 #nullable enable
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
-using TinCan.Features.Interaction;
+using TinCan.Core.Interaction;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;

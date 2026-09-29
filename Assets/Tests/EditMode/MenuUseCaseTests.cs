@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Domain;
-using TinCan.Features.UI;
+using TinCan.Core.UI;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 

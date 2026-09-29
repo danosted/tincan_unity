@@ -1,7 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using NUnit.Framework;
-using TinCan.Features.Items;
+using TinCan.Core.Items;
 using UnityEngine;
 
 namespace TinCan.Tests.EditMode

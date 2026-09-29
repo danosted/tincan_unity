@@ -4,7 +4,7 @@ using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Airship;
+using TinCan.Core.Ship;
 using UnityEngine;
 using VContainer;
 

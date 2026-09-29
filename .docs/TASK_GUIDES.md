@@ -87,7 +87,7 @@ interaction a silent no-op. Settle the name before creating the asset.
   item. `_startingAbilities` on the shared prefabs is for core abilities only; the rules suite fails on a feature's
   ability there.
 
-**Read:** `Features/Abilities/AbilitySystemUseCase.cs` for activation, cost, cooldown and effect ticking.
+**Read:** `Core/Gas/AbilitySystemUseCase.cs` for activation, cost, cooldown and effect ticking.
 
 **Verify:** `HasTag` / attribute assertions with `Fakes/FakeAbilityController.cs` (it has
 `GrantsTagWhileActive`); in play, the tag shows up on both host and client.
@@ -152,7 +152,7 @@ both peers. Exact counts catch doubled bursts. Then listen and look in a host + 
 **When:** a button in the start menu, a sub-menu, a number on screen.
 
 **Touch:** see [`UI_FRAMEWORK.md`](UI_FRAMEWORK.md) sections "Adding a command", "Adding a menu", "Showing a HUD value".
-- Command: implement `IMenuCommand` in `Features/UI/Commands/`, register `.As<IMenuCommand>()` in
+- Command: implement `IMenuCommand` in `Core/UI/Commands/`, register `.As<IMenuCommand>()` in
   `UiFeatureInstaller` or your own installer, put a `Command` row with that `CommandId` in a `MenuDefinition`.
 - Menu: **TinCan > UI > Menu Definition** in `Assets/UI/Menus/`; reach it via a `Submenu` row (no code).
 - HUD value: an `ITickable` presenter that calls `IHudValues.Set(key, text)`. Copy
@@ -177,7 +177,7 @@ both peers. Exact counts catch doubled bursts. Then listen and look in a host + 
 - Definition: **TinCan > Features > Ship Fixture** in `Assets/Settings/Fixtures/`, pointing at the prefab.
 - Installer: yield it from both `ShipFixtures` and `NetworkedPrefabs` (see `FuelFeatureInstaller.cs`).
 
-`Features/Airship/Fixtures/ShipFixtureSpawningUseCase.cs` furnishes every airship once, server side. Details in
+`Core/Ship/Fixtures/ShipFixtureSpawningUseCase.cs` furnishes every airship once, server side. Details in
 [`FEATURE_INSTALLERS.md`](FEATURE_INSTALLERS.md).
 
 **Verify:** Start Host; the fixture appears under the airship in the hierarchy on host and on a virtual client.
@@ -205,7 +205,7 @@ For per-frame, all-peer work (HUD, visuals) use `ITickable` instead.
 **Trap:** `AbilitySystemUseCase.Tick` checks each controller in `IAbilityRegistry`, not the ship's movement
 view. The airship's separate `Network/Infrastructure/Abilities/AbilityNetworkMediator.cs` is not an
 `ISimulatedActor`, so its effects currently update on the global GAS tick while it is simulating.
-`Features/Airship/AirshipMovementUseCase.cs` does not call `ProcessAbilitySimulation`. This is a legacy
+`Core/Ship/AirshipMovementUseCase.cs` does not call `ProcessAbilitySimulation`. This is a legacy
 exception to the intended prediction-loop ownership in `ARCHITECTURE.md`; the movement interface alone
 does not suppress the separate controller's global tick. Use `ISimulationTickable` for periodic ship logic
 that needs a defined position in the network tick, such as fuel drain. GAS effects can still modify ship
@@ -246,7 +246,7 @@ in its window **Join** with `127.0.0.1` / `7777`. Verify both peers see the same
 right values.
 
 **Unattended client from a build:** a player build accepts `-autohost` or `-autojoin [address[:port]]`
-(`Features/UI/CommandLineSessionBootstrap.cs`). Standalone builds are currently blocked (see CODE_MAP traps).
+(`Core/UI/CommandLineSessionBootstrap.cs`). Standalone builds are currently blocked (see CODE_MAP traps).
 
 **Automation:** resolve `IScriptedInput` and `Tap("Interact")`, `Press("MoveForward")`; injected Input System
 events are dropped while the Editor is unfocused, this seam is not.

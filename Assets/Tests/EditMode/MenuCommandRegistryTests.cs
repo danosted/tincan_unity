@@ -1,6 +1,6 @@
 #nullable enable
 using NUnit.Framework;
-using TinCan.Features.UI;
+using TinCan.Core.UI;
 using TinCan.Tests.EditMode.Fakes;
 
 namespace TinCan.Tests.EditMode

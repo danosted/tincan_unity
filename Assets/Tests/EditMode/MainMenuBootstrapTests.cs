@@ -2,7 +2,7 @@
 using NUnit.Framework;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.UI;
+using TinCan.Core.UI;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 

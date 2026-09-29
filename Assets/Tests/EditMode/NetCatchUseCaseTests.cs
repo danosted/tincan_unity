@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Events;
-using TinCan.Features.Abilities;
+using TinCan.Core.Gas;
 using TinCan.Features.Airship.Fuel;
 using TinCan.Features.Airship.Fuel.Minigame;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Humanoid;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 

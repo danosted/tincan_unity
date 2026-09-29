@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Humanoid;
 using TinCan.Features.Stations;
 using UnityEngine;
 using VContainer.Unity;

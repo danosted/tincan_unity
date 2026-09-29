@@ -1,5 +1,5 @@
 using System;
-using TinCan.Features.Possession;
+using TinCan.Core.Possession;
 using UnityEngine;
 using VContainer;
 

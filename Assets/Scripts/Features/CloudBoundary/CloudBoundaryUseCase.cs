@@ -5,8 +5,8 @@ using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Airship;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Ship;
+using TinCan.Core.Humanoid;
 using UnityEngine;
 
 namespace TinCan.Features.CloudBoundary

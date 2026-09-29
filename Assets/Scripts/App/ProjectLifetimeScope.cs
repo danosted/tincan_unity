@@ -4,11 +4,11 @@ using VContainer.Unity;
 using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.HumanoidMovement;
-using TinCan.Features.Possession;
-using TinCan.Features.Airship;
-using TinCan.Features.Interaction;
-using TinCan.Features.Abilities;
+using TinCan.Core.Humanoid;
+using TinCan.Core.Possession;
+using TinCan.Core.Ship;
+using TinCan.Core.Interaction;
+using TinCan.Core.Gas;
 using TinCan.Network.Infrastructure;
 using UnityEngine;
 using Unity.Netcode;
@@ -17,7 +17,7 @@ using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Infrastructure.Events;
 using TinCan.Core.Domain.Features;
-using TinCan.Features.Airship.Fixtures;
+using TinCan.Core.Ship.Fixtures;
 namespace TinCan.Core.Infrastructure
 {
     /// <summary>
@@ -79,7 +79,7 @@ namespace TinCan.Core.Infrastructure
             builder.Register<InteractionHandlerRegistry>(Lifetime.Singleton).As<IInteractionHandlerRegistry>();
 
             // Register Possession Mediator Factory lazily
-            builder.RegisterFactory<IPossessionNetworkMediator>((c) => () => FindAnyObjectByType<Features.Possession.Infrastructure.PossessionNetworkMediator>(), Lifetime.Singleton);
+            builder.RegisterFactory<IPossessionNetworkMediator>((c) => () => FindAnyObjectByType<TinCan.Core.Possession.Infrastructure.PossessionNetworkMediator>(), Lifetime.Singleton);
 
             // Register Server Possession Manager
             builder.Register<ServerPossessionManager>(Lifetime.Singleton).AsImplementedInterfaces().AsSelf().As<IPossessionAuthority>();

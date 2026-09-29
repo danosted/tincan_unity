@@ -6,7 +6,7 @@ using NUnit.Framework;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
 using TinCan.DevTools;
-using TinCan.Features.Possession;
+using TinCan.Core.Possession;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 

@@ -4,7 +4,7 @@ using System.Linq;
 using NUnit.Framework;
 using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Core.Domain.Abilities.Tags;
-using TinCan.Features.Abilities;
+using TinCan.Core.Gas;
 using TinCan.Features.Airship.Damage;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;

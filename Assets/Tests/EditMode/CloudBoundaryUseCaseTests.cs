@@ -3,9 +3,9 @@ using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Domain.Events;
-using TinCan.Features.Airship;
+using TinCan.Core.Ship;
 using TinCan.Features.CloudBoundary;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Humanoid;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 

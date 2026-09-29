@@ -57,7 +57,7 @@ namespace TinCan.Core.Infrastructure
                     if (actor is Unity.Netcode.NetworkBehaviour netBehaviour && netBehaviour.IsOwner)
                     {
                         // Check if it's actually the humanoid character
-                        if (netBehaviour.GetComponent<Features.HumanoidMovement.HumanoidControllerView>() != null)
+                        if (netBehaviour.GetComponent<TinCan.Core.Humanoid.HumanoidControllerView>() != null)
                         {
                             return actorType;
                         }

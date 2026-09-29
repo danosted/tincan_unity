@@ -3,7 +3,7 @@ using System;
 using TinCan.Core.Domain;
 using TinCan.Features.Airship.Fuel;
 using TinCan.Features.Carry;
-using TinCan.Features.Items;
+using TinCan.Core.Items;
 using UnityEngine;
 
 namespace TinCan.Tests.EditMode.Fakes

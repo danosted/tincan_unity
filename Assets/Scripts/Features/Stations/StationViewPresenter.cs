@@ -1,7 +1,7 @@
 #nullable enable
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Humanoid;
 using UnityEngine;
 using VContainer.Unity;
 

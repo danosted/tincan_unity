@@ -1,6 +1,6 @@
 #nullable enable
-using TinCan.Features.HumanoidMovement;
-using TinCan.Features.Interaction;
+using TinCan.Core.Humanoid;
+using TinCan.Core.Interaction;
 
 namespace TinCan.Features.Stations
 {

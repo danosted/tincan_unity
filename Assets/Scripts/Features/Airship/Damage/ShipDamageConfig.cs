@@ -1,5 +1,5 @@
 #nullable enable
-using TinCan.Features.Abilities;
+using TinCan.Core.Gas;
 using UnityEngine;
 
 namespace TinCan.Features.Airship.Damage

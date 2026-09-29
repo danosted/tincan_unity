@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Domain.Abilities.Tags;
-using TinCan.Features.Abilities;
-using TinCan.Features.Abilities.Cues;
-using TinCan.Features.Abilities.Inputs;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Gas;
+using TinCan.Core.Gas.Cues;
+using TinCan.Core.Gas.Inputs;
+using TinCan.Core.Humanoid;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 using Object = UnityEngine.Object;

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Domain.Features;
-using TinCan.Features.Abilities;
+using TinCan.Core.Gas;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 using VContainer;

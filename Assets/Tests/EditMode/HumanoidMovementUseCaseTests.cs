@@ -1,7 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
-using TinCan.Features.HumanoidMovement;
-using TinCan.Features.Abilities;
+using TinCan.Core.Humanoid;
+using TinCan.Core.Gas;
 using TinCan.Tests.EditMode.Fakes;
 
 namespace TinCan.Tests.EditMode

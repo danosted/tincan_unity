@@ -20,7 +20,7 @@ Every flag works on a build's command line or as a **Multiplayer Play Mode playe
 
 | Tag | Command line | Effect |
 |---|---|---|
-| `autohost` | `-autohost` | Start Host on launch (`Features/UI/CommandLineSessionBootstrap.cs`). |
+| `autohost` | `-autohost` | Start Host on launch (`Core/UI/CommandLineSessionBootstrap.cs`). |
 | `autojoin` | `-autojoin [address[:port]]` | Join on launch; defaults to `127.0.0.1:7777`. |
 | `joindelay:<s>` | `-joindelay <seconds>` | With `autojoin`: join that many seconds after launch instead of at once (late-join checks). |
 | `netsim:<preset>` | `-netsim <preset>` | Delay, jitter and loss on this peer's outgoing packets (see presets). |

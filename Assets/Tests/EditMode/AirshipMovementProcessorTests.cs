@@ -1,6 +1,6 @@
 using NUnit.Framework;
 using UnityEngine;
-using TinCan.Features.Airship;
+using TinCan.Core.Ship;
 
 namespace TinCan.Tests.EditMode
 {

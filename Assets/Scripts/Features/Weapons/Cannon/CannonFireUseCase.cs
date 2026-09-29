@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Abilities;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Gas;
+using TinCan.Core.Humanoid;
 using TinCan.Features.Stations;
-using TinCan.Features.Targeting;
+using TinCan.Core.Targeting;
 using UnityEngine;
 
 namespace TinCan.Features.Weapons.Cannon

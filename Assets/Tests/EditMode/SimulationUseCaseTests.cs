@@ -2,7 +2,7 @@ using System;
 using NUnit.Framework;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Possession;
+using TinCan.Core.Possession;
 using TinCan.Tests.EditMode.Fakes;
 
 namespace TinCan.Tests.EditMode

@@ -5,9 +5,9 @@ using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Entities;
 using TinCan.Core.Domain.Targeting;
-using TinCan.Features.Abilities;
-using TinCan.Features.Entities;
-using TinCan.Features.Interaction;
+using TinCan.Core.Gas;
+using TinCan.Core.Entities;
+using TinCan.Core.Interaction;
 using VContainer;
 
 namespace TinCan.Core.Infrastructure

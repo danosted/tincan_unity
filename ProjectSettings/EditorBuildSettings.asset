@@ -9,12 +9,6 @@ EditorBuildSettings:
     path: Assets/Scenes/drm_cloud_environment.unity
     guid: 31802aa7b46373144b7a4cdcddba0ed4
   - enabled: 1
-    path: Assets/Scenes/Dev/drm_airship_environment.unity
-    guid: b5a9d8b14dc867047bb77d28e8c70c16
-  - enabled: 1
-    path: Assets/Scenes/Dev/drm_airship_environment 1.unity
-    guid: 34acea70782c90d498a10a622e6b9aca
-  - enabled: 1
     path: Assets/Scenes/cheesed_scene.unity
     guid: f49135517a9f79746b48d9cefd89226d
   - enabled: 1

@@ -1,8 +1,8 @@
 using System;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities.Attributes;
-using TinCan.Features.Abilities;
-using TinCan.Features.Interaction;
+using TinCan.Core.Gas;
+using TinCan.Core.Interaction;
 using TinCan.Network.Infrastructure.Abilities;
 using Unity.Netcode;
 using UnityEngine;

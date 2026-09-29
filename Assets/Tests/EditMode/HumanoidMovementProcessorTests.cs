@@ -1,6 +1,6 @@
 using NUnit.Framework;
 using UnityEngine;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Humanoid;
 
 namespace TinCan.Tests.EditMode
 {

@@ -4,9 +4,9 @@ using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
-using TinCan.Features.Airship;
-using TinCan.Features.HumanoidMovement;
-using TinCan.Features.Possession;
+using TinCan.Core.Ship;
+using TinCan.Core.Humanoid;
+using TinCan.Core.Possession;
 using VContainer.Unity;
 
 namespace TinCan.DevTools

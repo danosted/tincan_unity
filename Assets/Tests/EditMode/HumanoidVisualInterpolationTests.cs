@@ -1,6 +1,6 @@
 #nullable enable
 using NUnit.Framework;
-using TinCan.Features.HumanoidMovement;
+using TinCan.Core.Humanoid;
 using UnityEngine;
 
 namespace TinCan.Tests.EditMode

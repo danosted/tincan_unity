@@ -1,7 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using TinCan.Features.UI;
+using TinCan.Core.UI;
 using TinCan.Core.Domain.Hud;
 
 namespace TinCan.Tests.EditMode.Fakes

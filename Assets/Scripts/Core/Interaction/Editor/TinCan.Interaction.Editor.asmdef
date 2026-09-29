@@ -1,0 +1,19 @@
+{
+    "name": "TinCan.Interaction.Editor",
+    "rootNamespace": "",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Interaction"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Domain.Abilities.Tags;
-using TinCan.Features.Abilities;
+using TinCan.Core.Gas;
 using UnityEngine;
 
 namespace TinCan.Tests.EditMode

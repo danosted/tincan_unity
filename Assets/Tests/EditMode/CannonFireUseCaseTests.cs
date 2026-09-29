@@ -6,11 +6,11 @@ using TinCan.Core.Domain.Abilities.Inputs;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Entities;
 using TinCan.Core.Domain.Targeting;
-using TinCan.Features.Abilities;
-using TinCan.Features.HumanoidMovement;
-using TinCan.Features.Interaction;
+using TinCan.Core.Gas;
+using TinCan.Core.Humanoid;
+using TinCan.Core.Interaction;
 using TinCan.Features.Stations;
-using TinCan.Features.Targeting;
+using TinCan.Core.Targeting;
 using TinCan.Features.Weapons.Cannon;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
@@ -119,7 +119,7 @@ namespace TinCan.Tests.EditMode
             _targeting = new FakeTargeting();
             _occupancy = new FakeOccupancy();
 
-            _fireInput = Create<TinCan.Features.Abilities.Inputs.PrimaryInput>("Input_Primary");
+            _fireInput = Create<TinCan.Core.Gas.Inputs.PrimaryInput>("Input_Primary");
             _fireInput.BitIndex = 1;
             _config = Create<CannonConfig>("CannonConfig");
             _config.FireInput = _fireInput;

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
-using TinCan.Features.Abilities.Cues;
+using TinCan.Core.Gas.Cues;
 using TinCan.Features.DesignedEvents;
 using UnityEngine;
 using VContainer;

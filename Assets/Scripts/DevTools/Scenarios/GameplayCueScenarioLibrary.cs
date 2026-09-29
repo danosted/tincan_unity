@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using TinCan.Core.Domain.Cues;
-using TinCan.Features.Abilities.Cues;
+using TinCan.Core.Gas.Cues;
 using VContainer;
 
 namespace TinCan.DevTools.Scenarios

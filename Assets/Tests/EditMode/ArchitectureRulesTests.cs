@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 using NUnit.Framework;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
-using TinCan.Features.Abilities;
+using TinCan.Core.Gas;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -74,8 +74,12 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void Features_DoNotUseGlobalLookups()
         {
+            // Features and the core systems (Core/<System>); Core/Domain and Core/Infrastructure are not gameplay code.
+            var gameplay = Sources("Scripts/Features").Concat(Sources("Scripts/Core")
+                .Where(s => !s.Path.StartsWith("Scripts/Core/Domain/", StringComparison.Ordinal)
+                            && !s.Path.StartsWith("Scripts/Core/Infrastructure/", StringComparison.Ordinal)));
             var actual = new List<string>();
-            foreach (var (path, text) in Sources("Scripts/Features"))
+            foreach (var (path, text) in gameplay)
             {
                 var code = WithoutCommentLines(text);
                 foreach (var (name, pattern) in GlobalLookups)
@@ -142,8 +146,8 @@ namespace TinCan.Tests.EditMode
                 var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (prefab == null || prefab.GetComponent<NetworkObject>() == null) continue;
 
-                int entities = prefab.GetComponentsInChildren<TinCan.Features.Entities.EntityNetworkMediator>(true).Length;
-                bool onRoot = prefab.GetComponent<TinCan.Features.Entities.EntityNetworkMediator>() != null;
+                int entities = prefab.GetComponentsInChildren<TinCan.Core.Entities.EntityNetworkMediator>(true).Length;
+                bool onRoot = prefab.GetComponent<TinCan.Core.Entities.EntityNetworkMediator>() != null;
                 if (entities != 1 || !onRoot) offenders.Add($"{path} ({entities} entities, on root: {onRoot})");
             }
 
@@ -206,7 +210,7 @@ namespace TinCan.Tests.EditMode
         {
             // The handler is stored as an assembly-qualified type name, so moving a handler to another assembly (or
             // renaming it) leaves the IA_* asset pointing at nothing and the interaction silently does nothing.
-            var offenders = LoadAssets<TinCan.Features.Interaction.InteractionDefinition>()
+            var offenders = LoadAssets<TinCan.Core.Interaction.InteractionDefinition>()
                 .Select(d => (Asset: d, Name: new UnityEditor.SerializedObject(d).FindProperty("_handlerTypeName").stringValue))
                 .Where(d => !string.IsNullOrEmpty(d.Name) && d.Asset.HandlerType == null)
                 .Select(d => $"{UnityEditor.AssetDatabase.GetAssetPath(d.Asset)}: {d.Name.Split(',')[0]} (stored as {string.Join(",", d.Name.Split(',').Skip(1).Take(1)).Trim()})")
@@ -222,7 +226,7 @@ namespace TinCan.Tests.EditMode
         {
             // Cue actions are [SerializeReference] data stored with their class, namespace and assembly name. Moving an
             // action type to another assembly or namespace without [MovedFrom] silently drops it from every GCN_* asset.
-            var notifies = LoadAssets<TinCan.Features.Abilities.Cues.GameplayCueNotify>().ToList();
+            var notifies = LoadAssets<TinCan.Core.Gas.Cues.GameplayCueNotify>().ToList();
             Assert.That(notifies, Is.Not.Empty, "No GameplayCueNotify assets found, so this rule would check nothing.");
 
             var offenders = notifies

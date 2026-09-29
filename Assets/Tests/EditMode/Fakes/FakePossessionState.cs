@@ -1,6 +1,6 @@
 #nullable enable
 using TinCan.Core.Domain;
-using TinCan.Features.Possession;
+using TinCan.Core.Possession;
 
 namespace TinCan.Tests.EditMode.Fakes
 {

@@ -1,7 +1,7 @@
 #nullable enable
 using TinCan.Core.Domain.Abilities.Inputs;
-using TinCan.Features.Abilities;
-using TinCan.Features.Targeting;
+using TinCan.Core.Gas;
+using TinCan.Core.Targeting;
 using UnityEngine;
 
 namespace TinCan.Features.Weapons.Cannon

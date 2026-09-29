@@ -229,6 +229,9 @@ function Invoke-Compile {
         $result = (Invoke-Unity @("eval", "--code", 'return UnityEditor.EditorUtility.scriptCompilationFailed ? "failed" : "ok";') 30).result
     }
     if ($result -eq "ok") {
+        # Unity only rewrites the IDE's .csproj/.slnx files when the IDE asks. After an asmdef is added, the stale
+        # projects list a file in two assemblies and the IDE reports "type exists in both". Keep them in step.
+        Invoke-Unity @("eval", "--code", 'Unity.CodeEditor.CodeEditor.CurrentEditor.SyncAll(); return "ok";') 60 | Out-Null
         Write-Tier "Compile" "PASS" "$([int]$clock.Elapsed.TotalSeconds) s"
         return $true
     }
@@ -359,10 +362,28 @@ function Restore-StartScene {
     Write-Tier "Editor" "note" "reopened $script:ReturnScene"
 }
 
+# Play runs happen while the developer works elsewhere. A Game view set to "Play Focused" brings the Editor (or Player
+# 2) to the front on every Play, so set every Game view to "Play Unfocused" before playing. The setting has been seen to
+# revert, so it is enforced per run rather than trusted. PlayModeView is internal, hence reflection.
+function Set-PlayUnfocused([string]$ProjectPath = "") {
+    $code = 'var t = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.PlayModeView"); ' +
+            'var p = t?.GetProperty("enterPlayModeBehavior", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic); ' +
+            'if (p == null) return "unsupported"; var changed = 0; ' +
+            'foreach (var v in UnityEngine.Resources.FindObjectsOfTypeAll(t)) { if (p.GetValue(v).ToString() != "PlayUnfocused") { p.SetValue(v, System.Enum.Parse(p.PropertyType, "PlayUnfocused")); changed++; } } ' +
+            'return changed.ToString();'
+    $arguments = @("eval", "--code", $code)
+    if ($ProjectPath) { $arguments += @("--project-path", $ProjectPath) }
+    $result = (Invoke-Unity $arguments 20).result
+    $where = if ($ProjectPath) { "clone $(Split-Path $ProjectPath -Leaf)" } else { "Editor" }
+    if ($result -eq "unsupported") { Write-Tier "Editor" "note" "$where has no PlayModeView.enterPlayModeBehavior; Play may take focus" }
+    elseif ($result -and $result -ne "0") { Write-Tier "Editor" "note" "$where Game view set to Play Unfocused ($result changed)" }
+}
+
 function Invoke-Scenario([string]$Scenario, [string]$mode) {
     Confirm-ScenesClean
     Open-ScenarioScene $Scenario
-    if ($mode -eq "Duo") { Sync-CloneScenes; Confirm-NetworkPrefabsMatch }
+    Set-PlayUnfocused
+    if ($mode -eq "Duo") { Sync-CloneScenes; Confirm-NetworkPrefabsMatch; foreach ($clone in Get-ClonePaths) { Set-PlayUnfocused $clone } }
     $status = Invoke-Unity @("editor_status") 15
     if ($status.playMode -and $status.playMode -ne "stopped") {
         Invoke-Unity @("editor_stop") 30 | Out-Null

@@ -1,0 +1,20 @@
+{
+    "name": "TinCan.Features.Airship.Damage",
+    "rootNamespace": "TinCan.Features.Airship.Damage",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Features",
+        "TinCan.Features.DesignedEvents",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

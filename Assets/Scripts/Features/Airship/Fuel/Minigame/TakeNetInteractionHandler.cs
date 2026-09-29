@@ -1,10 +1,10 @@
 #nullable enable
 using TinCan.Core.Domain.Events;
-using TinCan.Features.Airship.Fuel.Minigame;
+using TinCan.Features.Carry;
 using TinCan.Features.Interaction;
 using TinCan.Features.Items;
 
-namespace TinCan.Features.Carry
+namespace TinCan.Features.Airship.Fuel.Minigame
 {
     /// <summary>
     /// Server-side handler for IA_TakeNet: empty-handed takes the net (<see cref="FlyingCanConfig.NetItem"/>),

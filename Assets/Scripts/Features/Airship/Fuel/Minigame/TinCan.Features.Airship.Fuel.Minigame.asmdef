@@ -1,0 +1,20 @@
+{
+    "name": "TinCan.Features.Airship.Fuel.Minigame",
+    "rootNamespace": "TinCan.Features.Airship.Fuel.Minigame",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Features",
+        "TinCan.Features.Airship.Fuel",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

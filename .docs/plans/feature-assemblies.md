@@ -39,10 +39,33 @@ Rule tests in `ArchitectureRulesTests`:
 
    Done: `Stations` and `Weapons.Cannon`. Cannon references Stations, the first feature-to-feature reference, so
    every profile loading Cannon must load Stations; both cannon profiles already do. `IA_OccupyCannon` was re-pointed.
-   Next: DesignedEvents. ShipDamage references it, so it becomes a feature reference once ShipDamage moves in
-   phase 3.
-3. **Split `Features/Airship/`.** Separate the ship itself (core) from the features in it: Fuel, Damage, FlyingCan
-   (FlyingCan references Fuel), and the door.
+   DesignedEvents moved with phase 3, because ShipDamage references it.
+3. **Split `Features/Airship/` (done).** The ship itself stays in the shared block: the root files and `Fixtures/`.
+   Its features are now assemblies:
+   - `Airship.Fuel`;
+   - `Airship.Fuel.Minigame` (FlyingCan and net catch; references Fuel);
+   - `Airship.Damage` (references `DesignedEvents`);
+   - `Airship.PhysicalParts` (the door);
+   - `DesignedEvents`.
+
+   Two tangles had to go first:
+   - **Events ↔ Damage.** `EventCatalog` defined ship damage's HullStress event, while ShipDamage implemented its
+     handlers: a cycle. Features now contribute their events through `FeatureInstaller.IExtension<EventDefinition>`,
+     and ship damage authors HullStress in `ShipDamageDesignedEvents`.
+   - **Carry → Minigame.** `TakeNetInteractionHandler` lived in `Features/Carry/` in the shared block while it
+     referenced the minigame. It moved into the minigame.
+
+   Re-pointed interactions: `IA_PourFuel`, `IA_TakeJerryCan`, `IA_TakeNet`, `IA_ToggleDoor`.
+
+   **Follow-ups found on the way:**
+   - `Carry/NetRackNetworkMediator` sits on the fuel fixture prefab, and `Carry/NetSwingVisualView` on the shared
+     player prefab. Both are net-minigame content that other prefabs carry. Moving them into the minigame needs a
+     socket for fixture parts and player visuals, not a file move.
+   - `FlyingCanNetworkMediator` stays in Assembly-CSharp's `Network/Infrastructure`, because it derives from
+     `NetworkMediator`, which lives there. It moves when that base moves down (phase 6).
+   - ShipDamage now requires the events feature in every profile. It used to register its event handlers "for when
+     events are loaded"; the compile-time reference makes that a hard requirement. Both profiles that load ShipDamage
+     already load Events.
 4. **Untangle the core systems and give them assemblies.** The folder-level scan shows cycles, which assemblies
    forbid:
    - Abilities ↔ Airship

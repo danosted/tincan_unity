@@ -147,6 +147,10 @@ out, or a modal dialog is open). The script guards against the MPPM and Editor f
   for the clone to leave Play mode from the previous run, since a playing clone refuses to open a scene. Afterwards
   it confirms the clone's active scene and stops with `STOP` if it doesn't match, or if no clone is running at all.
   Before this check, a failed switch went unnoticed and only showed up as the client never joining.
+- Before every play tier it sets each Game view, in the Editor and in every clone, to **Play Unfocused**, so Play
+  doesn't pull Unity or Player 2 in front of whatever the developer is working in. The setting has been seen to
+  revert, so the script enforces it each run. A focus log of a full InteractRack run (compile, tests, solo, host +
+  client) showed the developer's window keeping focus throughout.
 - The harness only starts a scenario in the scene it belongs to (`Scenario.ScenePath`). A scenario player tag left
   over from an interrupted run logs a warning in any other scene instead of breaking it.
 - Each scenario tier line shows how long the run took.

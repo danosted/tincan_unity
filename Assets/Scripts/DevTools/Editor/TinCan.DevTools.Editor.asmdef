@@ -7,6 +7,11 @@
         "TinCan.Features.SkyHazards",
         "TinCan.Features.Stations",
         "TinCan.Features.Weapons.Cannon",
+        "TinCan.Features.Airship.Damage",
+        "TinCan.Features.Airship.Fuel",
+        "TinCan.Features.Airship.Fuel.Minigame",
+        "TinCan.Features.Airship.PhysicalParts",
+        "TinCan.Features.DesignedEvents",
         "TinCan.DevTools",
         "Unity.Netcode.Runtime"
     ],

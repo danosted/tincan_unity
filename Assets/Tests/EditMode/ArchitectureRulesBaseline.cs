@@ -55,18 +55,13 @@ namespace TinCan.Tests.EditMode
         /// </summary>
         public static readonly string[] InstallersInSharedAssemblies =
         {
-            "AirshipDoorFeatureInstaller",
             "CloudBoundaryFeatureInstaller",
             "CloudSubmersionFeatureInstaller",
-            "EventsFeatureInstaller",
-            "FlyingCanFeatureInstaller",
             "FreeCameraFeatureInstaller",
-            "FuelFeatureInstaller",
             "GameplayCuesFeatureInstaller",
             "GameplayTagsFeatureInstaller",
             "InteractionFeatureInstaller",
             "ItemsFeatureInstaller",
-            "ShipDamageFeatureInstaller",
             "TargetingFeatureInstaller",
             "UiFeatureInstaller",
         };

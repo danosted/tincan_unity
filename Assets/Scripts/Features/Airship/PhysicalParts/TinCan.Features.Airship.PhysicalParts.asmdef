@@ -1,0 +1,19 @@
+{
+    "name": "TinCan.Features.Airship.PhysicalParts",
+    "rootNamespace": "TinCan.Features.Airship.PhysicalParts",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Features",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

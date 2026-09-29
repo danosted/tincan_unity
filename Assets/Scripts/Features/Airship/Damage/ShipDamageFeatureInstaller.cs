@@ -19,7 +19,8 @@ namespace TinCan.Features.Airship.Damage
     /// GameplayCuesFeatureInstaller).
     /// </summary>
     [CreateAssetMenu(fileName = "ShipDamageFeatureInstaller", menuName = "TinCan/Features/Ship Damage Feature Installer")]
-    public class ShipDamageFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<ShipFixtureDefinition>, FeatureInstaller.IExtension<GameplayCueNotify>
+    public class ShipDamageFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<ShipFixtureDefinition>, FeatureInstaller.IExtension<GameplayCueNotify>,
+        FeatureInstaller.IExtension<EventDefinition>
     {
         [SerializeField] private ShipDamageConfig? _config;
         [Tooltip("Networked ShipDamageSockets prefab and where it sits on the ship.")]
@@ -45,7 +46,7 @@ namespace TinCan.Features.Airship.Damage
             builder.Register<ShipRepairUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
             builder.Register<ShipDamageHudPresenter>(Lifetime.Singleton).As<ITickable>();
 
-            // Designed-event vocabulary for ship damage (used when the events feature is loaded).
+            // Designed-event vocabulary for ship damage; its events are ShipDamageDesignedEvents, contributed below.
             builder.Register<BreakShipPartActionHandler>(Lifetime.Singleton).As<IEventActionHandler>();
             builder.Register<BrokenPartsAtMostConditionHandler>(Lifetime.Singleton).As<IEventConditionHandler>();
         }
@@ -69,5 +70,7 @@ namespace TinCan.Features.Airship.Damage
         }
 
         IEnumerable<GameplayCueNotify> FeatureInstaller.IExtension<GameplayCueNotify>.Contributions => _cueNotifies;
+
+        IEnumerable<EventDefinition> FeatureInstaller.IExtension<EventDefinition>.Contributions => ShipDamageDesignedEvents.All;
     }
 }

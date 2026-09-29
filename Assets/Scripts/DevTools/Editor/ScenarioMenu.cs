@@ -76,6 +76,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "CannonShot (Host + Client, Lag100)")]
         public static void CannonShotDuo() => RunDuo("CannonShot", "Lag100");
 
+        [MenuItem(Root + "HazardStrike (Host)")]
+        public static void HazardStrikeSolo() => RunSolo("HazardStrike");
+
+        [MenuItem(Root + "HazardStrike (Host + Client, Lag100)")]
+        public static void HazardStrikeDuo() => RunDuo("HazardStrike", "Lag100");
+
         public static void RunSolo(string scenario)
         {
             if (!ScenarioSceneSwitcher.OpenFor(scenario)) return;

@@ -235,7 +235,7 @@ move the subject.
 | `Test_Core` | nothing (core and the base features only) | CoreBoot |
 | `Test_ShipDamage` | Fuel, ShipDamage | ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack |
 | `Test_NetCatch` | Fuel, FlyingCan | NetCatch, EquipCycle (its items belong to those features) |
-| `Test_Cannon` | Stations, Cannon, SkyHazards | CannonShot |
+| `Test_Cannon` | Stations, Cannon, SkyHazards | CannonShot, HazardStrike |
 
 **The scenes are generated.** `DevTools/Editor/TestRangeSceneBuilder.cs` (**TinCan > Dev > Test Range > Rebuild
 Scenes**) builds every scene from its `Areas` table and adds them to the build list. Clients load the host's scene

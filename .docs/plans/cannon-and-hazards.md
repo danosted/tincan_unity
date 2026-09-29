@@ -145,6 +145,13 @@ This plan covers E2 (targets) and E3 (gunner) of `.docs/plans/designed-events.md
 - Run solo and host + client, with the latency preset.
 
 ## S2: Streamed hazards that damage the ship
+**Built differently (2026-09-29, developer decision; `first-voyage.md` V1).** A hazard that reaches the ship lowers the
+ship's health (`GE_HazardImpact`, −50 on the airship's `HealthAttributeSet`); it does not break a socket. The developer's
+reason: breaking the nearest part raises too many questions about what that means for the state of the game. What
+was built: drift (`HazardDriftProcessor`, field hazards only), contact (`IShipContactQuery`), the impact, a
+`NetworkTransformMediator` on the hazard prefab, `SkyHazardTests` cases, and scenario `HazardStrike`. The design below
+is kept for reference.
+
 - `DriftTowardShipMotion` and a pure `HazardDriftProcessor`.
 - Streaming on the `FlyingCanUseCase` horizon rules (Enabled toggle, MaxAlive, spacing, removal distance).
 - Ship contact:

@@ -102,7 +102,7 @@ namespace TinCan.Tests.EditMode
             _useCase.Tick();
             _useCase.Tick();
 
-            Assert.That(_points[0].Health01, Is.EqualTo(0.5f).Within(0.001f), "Two intervals of +25 on a 100 max.");
+            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0.5f).Within(0.001f), "Two intervals of +25 on a 100 max.");
             Assert.That(_events.Events.OfType<ShipPartRepairTickEvent>().Count(), Is.EqualTo(2));
         }
 
@@ -114,8 +114,8 @@ namespace TinCan.Tests.EditMode
 
             for (int i = 0; i < 5; i++) _useCase.Tick();
 
-            Assert.That(_points[0].Health01, Is.EqualTo(1f));
-            Assert.That(_points[0].IsBroken, Is.False);
+            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(1f));
+            Assert.That(_points[0].Controller.IsDamaged(), Is.False);
             Assert.That(_events.Events.OfType<ShipPartRepairTickEvent>().Count(), Is.EqualTo(1), "No ticks on a repaired part.");
         }
 
@@ -126,7 +126,7 @@ namespace TinCan.Tests.EditMode
 
             _useCase.Tick();
 
-            Assert.That(_points[0].Health01, Is.EqualTo(0f));
+            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0f));
         }
 
         [Test]
@@ -141,7 +141,7 @@ namespace TinCan.Tests.EditMode
             client.Tick();
 
             Assert.That(client.PredictedTarget, Is.SameAs(_points[0]));
-            Assert.That(_points[0].Health01, Is.EqualTo(0f), "Only the server applies repair effects.");
+            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0f), "Only the server applies repair effects.");
 
             _player.RemoveTag(_repairing);
             client.Tick();
@@ -167,12 +167,12 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void PartWithoutTheDamagedTag_IsNotTargeted()
         {
-            _points[0].SetHealth01(0f);
+            _points[0].SetHealthFraction(0f);
             _player.AddTag(_repairing);
 
             _useCase.Tick();
 
-            Assert.That(_points[0].Health01, Is.EqualTo(0f), "TD_RepairScan requires State.Damaged on the target.");
+            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0f), "TD_RepairScan requires State.Damaged on the target.");
         }
 
         [Test]
@@ -183,7 +183,7 @@ namespace TinCan.Tests.EditMode
 
             _useCase.Tick();
 
-            Assert.That(_points[1].Health01, Is.EqualTo(0f));
+            Assert.That(FakeShipDamage.HealthFraction(_points[1]), Is.EqualTo(0f));
         }
 
         [Test]
@@ -195,10 +195,10 @@ namespace TinCan.Tests.EditMode
 
             _useCase.Tick();
             _useCase.Tick();
-            Assert.That(_points[0].Health01, Is.EqualTo(0f), "0.2 s is less than one interval.");
+            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0f), "0.2 s is less than one interval.");
 
             _useCase.Tick();
-            Assert.That(_points[0].Health01, Is.EqualTo(0.25f).Within(0.001f));
+            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0.25f).Within(0.001f));
         }
 
         [Test]
@@ -214,13 +214,13 @@ namespace TinCan.Tests.EditMode
             _player.AddTag(_repairing);
             _useCase.Tick();
 
-            Assert.That(_points[0].Health01, Is.EqualTo(0f), "Banked progress is dropped when the player lets go.");
+            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0f), "Banked progress is dropped when the player lets go.");
         }
 
         // In the game the breakage reconcile grants State.Damaged to a broken part; the repair scan filters on it.
-        private void Break(FakeShipDamagePoint point, float health01)
+        private void Break(FakeShipDamagePoint point, float fraction)
         {
-            point.SetHealth01(health01);
+            point.SetHealthFraction(fraction);
             point.FakeController.AddTag(_damaged);
         }
 

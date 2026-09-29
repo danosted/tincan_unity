@@ -26,6 +26,9 @@ namespace TinCan.Core.Domain.Abilities
 
         bool TryGetAttributeSet<TAttributeSet>(out TAttributeSet set) where TAttributeSet : class, IAttributeSet;
 
+        /// <summary>Makes a set findable through <see cref="TryGetAttributeSet{TAttributeSet}"/>; one set per type.</summary>
+        void RegisterAttributeSet(IAttributeSet set);
+
         void GrantAbility(IAbilityDefinition definition);
         void RemoveAbility(IAbilityDefinition definition);
         bool TryActivateAbility(IAbilityDefinition definition, IAbilityControllerBase target = null);

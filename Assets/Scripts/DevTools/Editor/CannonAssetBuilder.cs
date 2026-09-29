@@ -38,6 +38,7 @@ namespace TinCan.DevTools.Editor
         private const string HazardPrefab = "Assets/Prefabs/SkyHazards/SkyHazard.prefab";
         private const string Installers = "Assets/Resources/Installers/";
         private const string AbilityMediatorType = "TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, TinCan.Network";
+        private const string TransformMediatorType = "TinCan.Network.Infrastructure.NetworkTransformMediator, TinCan.Network";
 
         // Starboard broadside on the mid deck, which sits at y = -3.49 in ship space on both the airship and the test ship;
         // 4 m forward of the fuel fixture's net rack (5.2, -3.5, 0). Aft of it (z -3) is the StairsTop staircase; z 2..6
@@ -88,6 +89,16 @@ namespace TinCan.DevTools.Editor
                 };
             });
 
+            var impact = Asset<GameplayEffectDefinition>(Effects + "GE_HazardImpact.asset", effect =>
+            {
+                effect.DurationType = DurationType.Instant;
+                effect.GrantedTags = new List<GameplayTag>();
+                effect.Modifiers = new List<AttributeModifier>
+                {
+                    new() { Attribute = health, Operation = ModifierOp.Add, Value = -50f, ClampMaxAttribute = maxHealth }
+                };
+            });
+
             // Abilities
             var occupyAbility = Asset<AbilityDefinition>(Abilities + "GA_OccupyCannon.asset", ability =>
             {
@@ -129,6 +140,7 @@ namespace TinCan.DevTools.Editor
             var cannon = BuildCannonPrefab(occupyInteraction, occupyAbility, fireAbility);
             EnsureCameraMount(CannonPrefab);
             var hazard = BuildHazardPrefab(health, maxHealth);
+            EnsureTransformSync(HazardPrefab);
             var fixture = Asset<ShipFixtureDefinition>("Assets/Settings/Fixtures/CannonStationFixture.asset", definition =>
             {
                 definition.Prefab = cannon;
@@ -139,6 +151,13 @@ namespace TinCan.DevTools.Editor
             {
                 config.Prefab = hazard;
                 config.FieldEnabled = true;
+                // First tuning for the voyage (first-voyage.md V1): a hazard every 6 s, homing at 4 m/s from 30-110 m out,
+                // 20 unanswered hits sink a 1000-health ship.
+                config.MaxAlive = 4;
+                config.SpawnInterval = 6f;
+                config.DriftSpeed = 4f;
+                config.ContactRadius = 1.5f;
+                config.ImpactEffect = impact;
             });
 
             // Installers and profiles
@@ -220,6 +239,26 @@ namespace TinCan.DevTools.Editor
                 camera.nearClipPlane = 0.1f;
                 camera.fieldOfView = 60f;
                 mount.gameObject.AddComponent<AudioListener>().enabled = false;
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        /// <summary>Hazards move on the server (drift), so clients follow their position through an interpolated transform sync.</summary>
+        private static void EnsureTransformSync(string path)
+        {
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                if (root.GetComponent<Unity.Netcode.Components.NetworkTransform>() != null) return;
+
+                var mediator = Type.GetType(TransformMediatorType) ?? throw new InvalidOperationException($"Type {TransformMediatorType} not found.");
+                var sync = (Unity.Netcode.Components.NetworkTransform)root.AddComponent(mediator);
+                sync.Interpolate = true;
+                sync.SyncScaleX = sync.SyncScaleY = sync.SyncScaleZ = false;
                 PrefabUtility.SaveAsPrefabAsset(root, path);
             }
             finally

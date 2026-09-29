@@ -33,6 +33,10 @@ namespace TinCan.Tests.EditMode.Fakes
             }
             return points;
         }
+
+        /// <summary>Test assertions: the point's health as a fraction of max, read from its controller (-1 without health).</summary>
+        public static float HealthFraction(IShipDamagePoint point) =>
+            point.Controller.TryGetHealth(out var health) ? health.HealthPercentage : -1f;
     }
 
     public class FakeShipDamagePoint : MonoBehaviour, IShipDamagePoint, ITargetable
@@ -41,8 +45,6 @@ namespace TinCan.Tests.EditMode.Fakes
         private HealthAttributeSet _health = null!;
 
         public int Index => transform.GetSiblingIndex();
-        public float Health01 => _health.HealthPercentage;
-        public bool IsBroken => Health01 < 1f;
         public Transform? Transform => transform;
         public IAbilityControllerBase? Controller => _controller;
         public Vector3 AimPoint => transform.position;
@@ -53,10 +55,11 @@ namespace TinCan.Tests.EditMode.Fakes
         {
             _health = new HealthAttributeSet(_controller, health, maxHealth);
             _health.InitializeBaseValues(FakeShipDamage.MaxHealth);
+            _controller.RegisterAttributeSet(_health);
         }
 
         /// <summary>Test shortcut: sets health directly, as an effect from outside the breakage use case would.</summary>
-        public void SetHealth01(float health01) =>
-            _controller.SetAttribute(_health.HealthDef, new AttributeValue(Mathf.Clamp01(health01) * FakeShipDamage.MaxHealth));
+        public void SetHealthFraction(float fraction) =>
+            _controller.SetAttribute(_health.HealthDef, new AttributeValue(Mathf.Clamp01(fraction) * FakeShipDamage.MaxHealth));
     }
 }

@@ -105,11 +105,11 @@ namespace TinCan.Features.Airship.Damage
                 : (Target: point.Index, Accumulated: 0f);
 
             progress.Accumulated += _time.DeltaTime;
-            while (progress.Accumulated >= _config.RepairInterval && point.IsBroken && point.Controller != null)
+            while (progress.Accumulated >= _config.RepairInterval && point.Controller.IsDamaged())
             {
                 progress.Accumulated -= _config.RepairInterval;
-                _abilities.ApplyEffect(point.Controller, _config.RepairEffect!);
-                _events.Publish(new ShipPartRepairTickEvent(player.Id, point.Index, point.Health01));
+                _abilities.ApplyEffect(point.Controller!, _config.RepairEffect!);
+                _events.Publish(new ShipPartRepairTickEvent(player.Id, point.Index));
             }
 
             _progress[player.Id] = progress;

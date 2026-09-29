@@ -36,6 +36,12 @@ namespace TinCan.Core.Gas
         public float HealthPercentage => Percentage();
         public bool IsBroken => HealthPercentage <= Mathf.Clamp01(_brokenThreshold);
 
+        /// <summary>Below max health. False until max health is seeded (a fresh actor is not damaged).</summary>
+        public bool IsDamaged => MaxHealth > 0f && Health < MaxHealth;
+
+        /// <summary>No health left. False until max health is seeded.</summary>
+        public bool IsDepleted => MaxHealth > 0f && Health <= 0f;
+
         public void InitializeBaseValues(float maxHealth)
         {
             _controller.SetAttribute(MaxHealthDef, new AttributeValue(maxHealth));

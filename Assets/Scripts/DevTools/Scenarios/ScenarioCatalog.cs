@@ -413,7 +413,31 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<CannonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot };
+        public static readonly ScenarioEntry HazardStrike = new(
+            new Scenario.Builder("HazardStrike")
+                .InScene(TestScenes.Cannon)
+                .Describe("A hazard drifts at the ship from starboard -> it hits -> the ship loses health on every peer, the hazard is gone.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("HazardField", "off")
+                    .Do("SpawnDriftingHazard", "30"))
+                .Act(s => s
+                    .WaitUntil("ShipHealthBelow", 30f, "1000")
+                    .Checkpoint("hit-seen"))
+                .Assert(s => s
+                    .WaitUntil("HazardHits", 30f, "1")
+                    .WaitUntil("ShipHealthBelow", 5f, "1000")
+                    .WaitUntil("HazardsVisible", 5f, "0"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<CannonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

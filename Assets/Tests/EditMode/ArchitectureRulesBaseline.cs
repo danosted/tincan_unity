@@ -37,7 +37,6 @@ namespace TinCan.Tests.EditMode
             "FreeCameraMovementUseCase",
             "FreeCameraRotationProcessor",
             "NetworkConditionsUseCase",
-            "PlayerLookUseCase",
             "PossessionInteractionHandler",
             "PossessionUseCase",
             "ScenarioUseCase",

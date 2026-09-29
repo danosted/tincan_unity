@@ -5,6 +5,7 @@ using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Networking;
+using TinCan.Core.Gas;
 using TinCan.Core.Ship;
 using TinCan.Features.Airship.Damage;
 using TinCan.Features.Airship.Fuel;
@@ -134,8 +135,10 @@ namespace TinCan.DevTools.Scenarios
             var point = Point(index);
             if (point == null) return ScenarioCheck.Fail($"no damage point {index}");
 
-            string detail = $"part {index} health {point.Health01:0.00}";
-            return point.IsBroken == broken ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+            string detail = point.Controller.TryGetHealth(out var health)
+                ? $"part {index} health {health.Health:0} / {health.MaxHealth:0}"
+                : $"part {index} has no health yet";
+            return point.Controller.IsDamaged() == broken ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
         private ScenarioCheck CheckMarker(string index, bool shown)

@@ -53,5 +53,7 @@ namespace TinCan.Tests.EditMode.Fakes
             set = null!;
             return false;
         }
+
+        public void RegisterAttributeSet(TinCan.Core.Domain.Abilities.Attributes.IAttributeSet set) { }
     }
 }

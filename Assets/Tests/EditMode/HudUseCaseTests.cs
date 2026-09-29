@@ -35,5 +35,36 @@ namespace TinCan.Tests.EditMode
             Assert.That(hud.All.ContainsKey("Fuel"), Is.False);
             Assert.That(changed, Is.EqualTo(1));
         }
+
+        [Test]
+        public void SetMeter_ClampsTheFill_AndRedrawsOnlyOnVisibleChange()
+        {
+            var hud = new HudUseCase();
+            int changed = 0;
+            hud.Changed += () => changed++;
+
+            hud.SetMeter("Hull", 1.5f);
+            hud.SetMeter("Hull", 1f);
+            hud.SetMeter("Hull", 0.9999f);
+            hud.SetMeter("Hull", 0.95f);
+
+            Assert.That(hud.Meters["Hull"], Is.EqualTo(0.95f));
+            Assert.That(changed, Is.EqualTo(2), "set once at 1 (clamped), then 0.95; the tiny step does not redraw");
+        }
+
+        [Test]
+        public void RemoveMeter_DropsIt_AndIgnoresMissingKeys()
+        {
+            var hud = new HudUseCase();
+            hud.SetMeter("Hull", 0.5f);
+            int changed = 0;
+            hud.Changed += () => changed++;
+
+            hud.RemoveMeter("Hull");
+            hud.RemoveMeter("Hull");
+
+            Assert.That(hud.Meters.ContainsKey("Hull"), Is.False);
+            Assert.That(changed, Is.EqualTo(1));
+        }
     }
 }

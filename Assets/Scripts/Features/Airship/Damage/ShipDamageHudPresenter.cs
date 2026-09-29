@@ -3,6 +3,7 @@ using System.Linq;
 using TinCan.Core.Domain;
 using VContainer.Unity;
 using TinCan.Core.Domain.Hud;
+using TinCan.Core.Gas;
 using TinCan.Core.Ship;
 
 namespace TinCan.Features.Airship.Damage
@@ -28,7 +29,7 @@ namespace TinCan.Features.Airship.Damage
         {
             int broken = _actors.GetActors<IAirshipView>()
                 .SelectMany(ShipDamageLocator.FindPoints)
-                .Count(point => point.IsBroken);
+                .Count(point => point.Controller.IsDamaged());
 
             if (broken == 0) _hud.Remove(HudKey);
             else _hud.Set(HudKey, broken.ToString());

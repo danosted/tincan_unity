@@ -38,10 +38,13 @@ namespace TinCan.Core.Humanoid
             // Process all actors with an orbital camera
             foreach (var character in _registry.GetActors<IHasOrbitalCamera>())
             {
-                if (!character.IsSimulating) continue;
-
-                // Only process look if the local player currently controls this actor
-                if (character is IPossessable possessable && !possessable.IsCapturedBy(localId)) continue;
+                // The camera belongs to whoever controls the actor, whichever peer simulates it: a client pilot does
+                // not simulate the ship (the server does), yet the ship's camera is theirs.
+                if (character is IPossessable possessable)
+                {
+                    if (!possessable.IsCapturedBy(localId)) continue;
+                }
+                else if (!character.IsSimulating) continue;
 
                 ApplyLook(character.Look, mouseDelta);
             }

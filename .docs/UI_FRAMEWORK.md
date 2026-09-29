@@ -7,7 +7,7 @@ The framework separates three things so they can evolve independently:
 | Layer | Lives in | What it is |
 |---|---|---|
 | **Data** | `Assets/UI/Menus/*.asset` (`MenuDefinition`) | Which menus exist and which rows they contain. Authored in the Inspector, no code. |
-| **Headless model** | `Assets/Scripts/Core/UI/` (TinCan.Features) | `IMenuSystem` (menu stack + values), `IMenuCommand` (what a row does), `IHudValues` (named HUD texts), `MainMenuBootstrap` (owns the Cancel key). Pure C#, unit-tested, knows nothing about rendering. |
+| **Headless model** | `Assets/Scripts/Core/UI/` (TinCan.Features) | `IMenuSystem` (menu stack + values), `IMenuCommand` (what a row does), `IHudValues` (named HUD texts and meters), `MainMenuBootstrap` (owns the Cancel key). Pure C#, unit-tested, knows nothing about rendering. |
 | **Views** | `Assets/Scripts/App/Views/` (`TinCan.App`) | `MenuOverlayView`, `HudOverlayView`: UI Toolkit code-built renderers of the model. Replace these when real UI arrives; nothing else changes. |
 
 Gameplay code never talks to a view. It opens menus through `IMenuSystem`, reacts to rows through `IMenuCommand`, and shows numbers through `IHudValues`.
@@ -103,6 +103,14 @@ public class FuelHudPresenter : ITickable
 ```
 
 Register the presenter as `.As<ITickable>()`. `Set` with an unchanged text does not raise `Changed`, so calling it every frame is fine.
+
+## Showing a HUD meter
+
+A meter is a labelled bar: `IHudValues.SetMeter(key, fill)` with a fill in [0, 1] (clamped), and `RemoveMeter(key)`
+when it no longer applies. `HudOverlayView` draws meters above the text lines, filled red (empty) to green (full). A
+change below a tenth of a percent does not raise `Changed`, so presenters can set a meter every frame. Example: the
+ship's health, `Features/Airship/Damage/ShipHealthHudPresenter.cs`, which reads the ship controller's replicated
+`HealthAttributeSet` on every peer.
 
 ## Input: who owns Cancel
 

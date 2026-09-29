@@ -14,6 +14,8 @@ section is built.
   1. **What is a session?** (a voyage from A to B, survive N minutes, deliveries, ...). It decides how events trigger:
      pacing after a quiet gap, place (regions on a route), voyage beats, or consequences of player state. Without a
      session loop a director mostly relabels random breakage.
+     **Answered 2026-09-29:** a session is a voyage from A to B, lost when hull integrity reaches 0
+     (`first-voyage.md`). Events come back in V5 there, as pacing over voyage progress.
   2. **Scope.** Claude's assessment: the full design below (E1a–E1d: DI recipes, staged builder, branching,
      variation) pays off at dozens of events, not the three or four the current vocabulary allows. Suggested next
      step when resumed: rename, replicate the state (E1b), hand-write two or three more events on the POC API,

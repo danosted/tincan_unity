@@ -13,7 +13,7 @@ namespace TinCan.Features.Airship.Damage
 {
     /// <summary>
     /// Ship damage: breakable spots on the deck (the ShipDamageSockets fixture), random breakage, the hull-breach
-    /// effect on the ship (fuel leak) and a HUD line. Switch it on or off by listing it in a scene's feature profile.
+    /// effect on the ship (fuel leak), a HUD line, and the ship's health as a HUD meter. Switch it on or off by listing it in a scene's feature profile.
     /// Players repair with the repair tool from the tool rack fixture: holding it grants GA_RepairShip, and
     /// <see cref="ShipRepairUseCase"/> applies the repair effect to the broken part they face. Presentation comes as
     /// gameplay cues: the notifies listed here, and the marker's ToggleObjectCueHandler in the sockets prefab (both need
@@ -48,6 +48,7 @@ namespace TinCan.Features.Airship.Damage
             builder.Register<ShipBreakageUseCase>(Lifetime.Singleton).AsSelf().As<IShipBreakage>().As<ISimulationTickable>();
             builder.Register<ShipRepairUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
             builder.Register<ShipDamageHudPresenter>(Lifetime.Singleton).As<ITickable>();
+            builder.Register<ShipHealthHudPresenter>(Lifetime.Singleton).As<ITickable>();
 
             // Designed-event vocabulary for ship damage; its events are ShipDamageDesignedEvents, contributed below.
             builder.Register<BreakShipPartActionHandler>(Lifetime.Singleton).As<IEventActionHandler>();

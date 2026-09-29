@@ -309,6 +309,8 @@ namespace TinCan.Network.Infrastructure
         public bool TryGetAttributeSet<TAttributeSet>(out TAttributeSet set) where TAttributeSet : class, IAttributeSet
             => _abilitySync.TryGetAttributeSet(out set);
 
+        public void RegisterAttributeSet(IAttributeSet set) => _abilitySync.RegisterAttributeSet(set);
+
         public bool TryGetAttribute(GameplayAttribute attribute, out AttributeValue value) => _abilitySync.TryGetAttribute(attribute, out value);
         public void SetAttribute(GameplayAttribute attribute, AttributeValue value) => _abilitySync.SetAttribute(attribute, value);
         public void ResetAttributesToBase() => _abilitySync.ResetAttributesToBase();

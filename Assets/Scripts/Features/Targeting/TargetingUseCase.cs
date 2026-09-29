@@ -23,6 +23,21 @@ namespace TinCan.Features.Targeting
         }
     }
 
+    /// <summary>What ended a swept segment: a target (<see cref="Target"/> set) or a solid collider that is not one.</summary>
+    public readonly struct SegmentHit
+    {
+        public readonly ITargetable? Target;
+        public readonly Vector3 Point;
+        public readonly float Distance;
+
+        public SegmentHit(ITargetable? target, Vector3 point, float distance)
+        {
+            Target = target;
+            Point = point;
+            Distance = distance;
+        }
+    }
+
     /// <summary>
     /// The one place features and abilities ask "what is this actor aiming at?". Runs on any peer from simulated state;
     /// owners use it to predict (prompts, predicted abilities), the server's answer is authoritative.
@@ -30,6 +45,14 @@ namespace TinCan.Features.Targeting
     public interface ITargetingService
     {
         bool TryAcquire(ITargeter targeter, TargetingDefinition definition, out TargetResult result);
+
+        /// <summary>
+        /// Sweeps one straight piece of a path (a projectile's step this tick) with the definition's Radius and tag
+        /// filters. The first accepted target or solid non-target collider ends it; triggers, filtered-out targets and
+        /// colliders <paramref name="ignore"/> accepts are passed. The definition's aim source, shape and range are not
+        /// used: the segment is the shape.
+        /// </summary>
+        bool TryAcquireSegment(Vector3 from, Vector3 to, TargetingDefinition definition, Func<Collider, bool>? ignore, out SegmentHit hit);
     }
 
     /// <summary>
@@ -71,6 +94,45 @@ namespace TinCan.Features.Targeting
             // Queries often run on the network tick, not every frame; hold the lines long enough to bridge ticks.
             if (TargetingDebug.DrawAllQueries) TargetingGizmos.DrawDebug(origin, definition, acquired ? result.Target : null, DebugLineSeconds);
             return acquired;
+        }
+
+        public bool TryAcquireSegment(Vector3 from, Vector3 to, TargetingDefinition definition, Func<Collider, bool>? ignore, out SegmentHit hit)
+        {
+            hit = default;
+            Vector3 delta = to - from;
+            float length = delta.magnitude;
+            if (length <= Mathf.Epsilon) return false;
+
+            var ray = new Ray(from, delta / length);
+            int count = definition.Radius > 0f
+                ? Physics.SphereCastNonAlloc(ray, definition.Radius, _hits, length, ~0, QueryTriggerInteraction.Collide)
+                : Physics.RaycastNonAlloc(ray, _hits, length, ~0, QueryTriggerInteraction.Collide);
+
+            Array.Sort(_hits, 0, count, HitDistanceComparer.Instance);
+            bool ended = false;
+            for (int i = 0; i < count && !ended; i++)
+            {
+                var collider = _hits[i].collider;
+                if (ignore != null && ignore(collider)) continue;
+
+                // A cast that starts inside a collider reports distance 0 and no point; the segment's start stands in.
+                Vector3 point = _hits[i].distance > 0f ? _hits[i].point : from;
+                var targetable = collider.GetComponentInParent<ITargetable>();
+                if (targetable == null)
+                {
+                    if (collider.isTrigger) continue;
+                    hit = new SegmentHit(null, point, _hits[i].distance);
+                    ended = true;
+                }
+                else if (Accepts(targetable, definition))
+                {
+                    hit = new SegmentHit(targetable, point, _hits[i].distance);
+                    ended = true;
+                }
+            }
+
+            if (TargetingDebug.DrawAllQueries) Debug.DrawLine(from, ended ? hit.Point : to, ended ? Color.red : Color.yellow, DebugLineSeconds);
+            return ended;
         }
 
         private void GatherRegistered(Vector3 source, TargetingDefinition definition)

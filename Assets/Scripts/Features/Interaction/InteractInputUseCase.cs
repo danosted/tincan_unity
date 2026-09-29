@@ -7,6 +7,7 @@ using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
 using TinCan.Features.HumanoidMovement;
 using TinCan.Features.Targeting;
+using VContainer;
 
 namespace TinCan.Features.Interaction
 {
@@ -21,6 +22,15 @@ namespace TinCan.Features.Interaction
 
         public GameplayInput Input { get; }
         public TargetingDefinition Targeting { get; }
+    }
+
+    /// <summary>
+    /// Server: a feature that gives Interact another meaning for some players (occupying a station: Interact leaves it).
+    /// Asked first on every press; returning true consumes the press before any target is acquired.
+    /// </summary>
+    public interface IInteractOverride
+    {
+        bool TryHandleInteract(IHumanoidCharacterView player);
     }
 
     /// <summary>Server: a player pressed Interact and the server acquired this target for them.</summary>
@@ -54,6 +64,7 @@ namespace TinCan.Features.Interaction
         private readonly IInteractionOrchestrator _orchestrator;
         private readonly InteractionTargetingSettings _settings;
         private readonly IEventPublisher _events;
+        private readonly IInteractOverride? _override; // Null without a feature that overrides Interact (stations)
         private readonly Dictionary<Guid, bool> _wasPressed = new();
 
         public InteractInputUseCase(
@@ -62,7 +73,8 @@ namespace TinCan.Features.Interaction
             ITargetingService targeting,
             IInteractionOrchestrator orchestrator,
             InteractionTargetingSettings settings,
-            IEventPublisher events)
+            IEventPublisher events,
+            IInteractOverride? interactOverride = null)
         {
             _network = network;
             _actors = actors;
@@ -70,6 +82,21 @@ namespace TinCan.Features.Interaction
             _orchestrator = orchestrator;
             _settings = settings;
             _events = events;
+            _override = interactOverride;
+        }
+
+        [Inject]
+        public InteractInputUseCase(
+            INetworkService network,
+            IActorRegistry actors,
+            ITargetingService targeting,
+            IInteractionOrchestrator orchestrator,
+            InteractionTargetingSettings settings,
+            IEventPublisher events,
+            IObjectResolver resolver)
+            : this(network, actors, targeting, orchestrator, settings, events,
+                resolver.TryResolve<IInteractOverride>(out var interactOverride) ? interactOverride : null)
+        {
         }
 
         public void Tick()
@@ -90,6 +117,8 @@ namespace TinCan.Features.Interaction
 
         private void Interact(IHumanoidCharacterView player)
         {
+            if (_override != null && _override.TryHandleInteract(player)) return;
+
             if (!_targeting.TryAcquire(new HumanoidTargeter(player), _settings.Targeting, out var result) ||
                 result.Target is not IInteractionTarget target)
             {

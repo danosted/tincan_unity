@@ -22,14 +22,14 @@ namespace TinCan.DevTools.Editor
         private const string NetworkPrefab = "Assets/Prefabs/Singletons/NetworkService.prefab";
         private const string TestShipPrefab = "Assets/Prefabs/Test/TestShip_Prefab.prefab";
         private const string GroundMaterial = "Assets/Prefabs/Test/TestRange_Rail.mat";
-        private const string DoorTag = "Assets/Abilities/Tags/Interaction.Toggle.Door.asset"; // as the POC scene sets it
 
         /// <summary>Each test-range scene and the feature profile its scope loads.</summary>
         public static readonly (string Scene, string Profile)[] Areas =
         {
             (TestScenes.Core, "Profile_Test_Core"),
             (TestScenes.ShipDamage, "Profile_Test_ShipDamage"),
-            (TestScenes.NetCatch, "Profile_Test_NetCatch")
+            (TestScenes.NetCatch, "Profile_Test_NetCatch"),
+            (TestScenes.Cannon, "Profile_Test_Cannon")
         };
 
         [MenuItem("TinCan/Dev/Test Range/Rebuild Scenes")]
@@ -66,7 +66,6 @@ namespace TinCan.DevTools.Editor
             var fields = new SerializedObject(scopeComponent);
             fields.FindProperty("_airshipPrefab").objectReferenceValue = Load<GameObject>(TestShipPrefab);
             fields.FindProperty("_featureProfile").objectReferenceValue = profile;
-            fields.FindProperty("_doorInteractionTag").objectReferenceValue = Load<Object>(DoorTag);
             fields.ApplyModifiedPropertiesWithoutUndo();
 
             PrefabUtility.InstantiatePrefab(Load<GameObject>(NetworkPrefab), scene);

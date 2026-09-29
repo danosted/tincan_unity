@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fa970bdbaf54e3488fd3c1a2a97a1cd, type: 3}
+  m_Name: CannonConfig
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Weapons.Cannon.CannonConfig
+  FireInput: {fileID: 11400000, guid: 228c6f632dea57046a0b40d23fb4e13d, type: 2}
+  FireAbility: {fileID: 11400000, guid: 3d6b067c0cce506428c919f6575f76ed, type: 2}
+  HitEffect: {fileID: 11400000, guid: f1660795b39f3184f897b36279ce1fcf, type: 2}
+  Sweep: {fileID: 11400000, guid: 25b41cd27ef18964fb593ba4f7093e3b, type: 2}
+  MuzzleSpeed: 70
+  Gravity: 9.81
+  MaxLifetime: 6
+  MaxRange: 400
+  YawLimit: 75
+  MinElevation: -15
+  MaxElevation: 40
+  ProxyAimSharpness: 15
+  BallDiameter: 0.5
+  MuzzleBlendSeconds: 0.2
+  AimPreviewSeconds: 2.5
+  AimPreviewPoints: 40

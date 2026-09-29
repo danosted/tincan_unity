@@ -343,7 +343,53 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<DesignedEventsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent };
+        /// <summary>
+        /// The cannon with real input: the subject walks up to the cannon, presses Interact to man it (it stays in its
+        /// body: State.Occupying.Cannon), points its camera along the barrel, and the server puts a target on the arc the
+        /// barrel now points along. One Primary press fires; the server's per-tick sweep hits the target and shoots it
+        /// down, and the subject's peer drew the ball. Interact again leaves the cannon. Plan: cannon-and-hazards.md.
+        /// </summary>
+        public static readonly ScenarioEntry CannonShot = new(
+            new Scenario.Builder("CannonShot")
+                .InScene(TestScenes.Cannon)
+                .Describe("Man the cannon -> target on the barrel's arc -> press Primary -> target shot down, ball drawn -> Interact leaves.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("HazardField", "off")
+                    .Do("PlaceSubjectAtCannon"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtCannon", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceObject", "CannonStation")
+                    .WaitUntil("InteractTargetIs", 5f, "CannonStation")
+                    .Hold(0.3f, ActionNames.Interact)
+                    .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Cannon")
+                    .WaitUntil("CannonManned", 5f)
+                    .Do("AimCannon", "0")
+                    .Checkpoint("manned")
+                    .WaitUntil("HazardsVisible", 15f, "1")
+                    .Hold(0.3f, ActionNames.AbilityPrimary)
+                    .WaitUntil("BallsShown", 5f, "1")
+                    .WaitUntil("HazardsVisible", 10f, "0")
+                    .Checkpoint("shot-down")
+                    .Hold(0.3f, ActionNames.Interact)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Cannon"))
+                .Assert(s => s
+                    .WaitUntil("CannonManned", 60f)
+                    .Wait(1.5f, "the barrel follows the subject's aim")
+                    .Do("SpawnTargetOnArc", "35")
+                    .WaitUntil("HazardsDestroyed", 15f, "1")
+                    .WaitUntil("CannonFree", 15f))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<CannonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

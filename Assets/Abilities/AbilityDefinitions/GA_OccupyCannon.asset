@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d594b84eed27c94c9306075992bbe69, type: 3}
+  m_Name: GA_OccupyCannon
+  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Abilities.AbilityDefinition
+  AbilityTag: {fileID: 11400000, guid: ad3ee4dabc405b94cb2151b7184dc4fc, type: 2}
+  CancelAbilitiesWithTag: []
+  BlockAbilitiesWithTag: []
+  TriggerInput: {fileID: 0}
+  InputPolicy: 0
+  IsToggleable: 0
+  EndsImmediately: 0
+  ActivationRequiredTagsOnActor: []
+  ActivationBlockedTagsOnActor:
+  - {fileID: 11400000, guid: 3043b69338007d4428de4b2d26e19807, type: 2}
+  ActivationRequiredTagsOnTarget: []
+  ActivationBlockedTagsOnTarget: []
+  TriggerTag: {fileID: 0}
+  TimingTagWindows: []
+  ActiveEffect: {fileID: 11400000, guid: f2fcbc2f8b59eb444b36f3b891f8a2d2, type: 2}
+  ActiveEffectTarget: 0
+  CostEffect: {fileID: 0}
+  CooldownEffect: {fileID: 0}
+  Targeting: {fileID: 0}

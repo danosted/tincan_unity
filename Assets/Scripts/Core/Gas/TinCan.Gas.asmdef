@@ -4,6 +4,7 @@
     "references": [
         "TinCan.Core.Domain",
         "TinCan.Targeting",
+        "UnityEngine.UI",
         "VContainer"
     ],
     "includePlatforms": [],

@@ -74,6 +74,23 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void ResetForSession_FillsTheTank_AndPutsTheCrateBackToItsStartingSupply()
+        {
+            _config.InitialSupply = 2;
+            _tank.Inner.Level = 10f;
+            var crowded = FakeJerryCanSupplyBehaviour.AttachTo(_airship.GameObject, 5);
+
+            _useCase.ResetForSession();
+
+            Assert.That(_tank.Inner.Level, Is.EqualTo(_tank.Inner.Capacity));
+            Assert.That(crowded.Count, Is.EqualTo(2), "cans caught last voyage go back");
+
+            crowded.Inner.Count = 0;
+            _useCase.ResetForSession();
+            Assert.That(crowded.Count, Is.EqualTo(2), "an empty crate is restocked");
+        }
+
+        [Test]
         public void Tick_NotServer_DoesNothing()
         {
             var clientNetwork = new ClientNetworkService();

@@ -30,7 +30,7 @@ namespace TinCan.Features.SkyHazards
             builder.Register<HazardDriftProcessor>(Lifetime.Transient);
             builder.Register<PhysicsShipContactQuery>(Lifetime.Singleton).As<IShipContactQuery>();
             builder.Register<SkyHazardSpawningService>(Lifetime.Singleton).As<ISkyHazardSpawner>();
-            builder.Register<SkyHazardUseCase>(Lifetime.Singleton).As<ISkyHazards>().As<ISimulationTickable>();
+            builder.Register<SkyHazardUseCase>(Lifetime.Singleton).As<ISkyHazards>().As<ISimulationTickable>().As<ISessionParticipant>();
         }
 
         public override IEnumerable<GameObject> NetworkedPrefabs

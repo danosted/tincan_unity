@@ -179,6 +179,15 @@ scope checks that every installed service's dependencies are registered, and ref
 (`InstallerServiceCheck`). Rule tests enforce both per prefab and per profile; see
 [Features and shared prefabs](FEATURE_INSTALLERS.md#features-and-shared-prefabs).
 
+**Play sessions pace features without knowing them.** The Voyage feature (a voyage to a destination, won or lost,
+then Restart) never references the features it paces. Any feature with state to restore, or pressure to switch,
+registers `.As<ISessionParticipant>()` (`Core/Domain/ISessionParticipant.cs`):
+- `ResetForSession()` restores the start state;
+- `SetSessionActive(bool)` switches the pressure on (underway) or off (briefing, end screen).
+
+Today these are sky hazards, ship damage, fuel and the designed-events director. In a scene without Voyage, nothing
+calls them and features keep their defaults. Plan: [plans/voyage-session.md](plans/voyage-session.md).
+
 ## A Play session, end to end
 
 What happens between pressing Play and the first simulation tick.

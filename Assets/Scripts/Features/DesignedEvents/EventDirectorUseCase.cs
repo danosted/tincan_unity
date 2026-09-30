@@ -13,9 +13,10 @@ namespace TinCan.Features.DesignedEvents
     /// its actions), asks <see cref="EventRunProcessor"/> each tick whether to stay, move on or finish, then runs the
     /// success or failure actions. With <see cref="AutoStart"/> it starts the catalog's events in rotation, with a
     /// quiet gap between them. Time is in simulation ticks, converted from the authored seconds when a phase starts.
-    /// POC: state is server-local (no replication yet).
+    /// In a play session (a voyage) the rotation runs only while the session is underway. POC: state is server-local
+    /// (no replication yet).
     /// </summary>
-    public sealed class EventDirectorUseCase : ISimulationTickable, IEventDirector
+    public sealed class EventDirectorUseCase : ISimulationTickable, IEventDirector, ISessionParticipant
     {
         public SimulationPhase Phase => SimulationPhase.AfterAirship;
 
@@ -85,6 +86,23 @@ namespace TinCan.Features.DesignedEvents
             }
         }
 
+        /// <summary>Session start: a running event is dropped (no outcome actions) and the first event waits its delay again.</summary>
+        public void ResetForSession()
+        {
+            Abort();
+            _nextAutoStartTick = -1;
+        }
+
+        /// <summary>
+        /// The rotation runs only while the session is underway, and only where the settings switch it on. Stopping also
+        /// drops a running event, so nothing breaks during the briefing or on the end screen.
+        /// </summary>
+        public void SetSessionActive(bool active)
+        {
+            AutoStart = active && _settings.AutoStart;
+            if (!active) Abort();
+        }
+
         public bool TryStart(int eventId, out string reason)
         {
             var definition = _catalog.FirstOrDefault(candidate => candidate.Id == eventId);
@@ -142,6 +160,14 @@ namespace TinCan.Features.DesignedEvents
             _events.LogInfo(LogSource, $"{finished} {outcome.ToString().ToLowerInvariant()}.");
             Run(outcome == EventOutcome.Succeeded ? finished.SuccessActions : finished.FailureActions);
             _nextAutoStartTick = now + GameplayTicks.FromSeconds(_settings.QuietGap, _time.TickRate);
+        }
+
+        private void Abort()
+        {
+            if (Active == null) return;
+            _events.LogInfo(LogSource, $"{Active} dropped (the session changed).");
+            Active = null;
+            _phaseIndex = 0;
         }
 
         private void Run(IEnumerable<IEventAction> actions)

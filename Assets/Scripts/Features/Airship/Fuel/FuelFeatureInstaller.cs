@@ -26,7 +26,7 @@ namespace TinCan.Features.Airship.Fuel
         public override void Install(IContainerBuilder builder)
         {
             builder.Register<FuelConsumptionProcessor>(Lifetime.Transient);
-            builder.Register<FuelConsumptionUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
+            builder.Register<FuelConsumptionUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>().As<ISessionParticipant>();
             builder.Register<PourFuelInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
             builder.Register<TakeJerryCanInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
             builder.Register<FuelHudPresenter>(Lifetime.Singleton).As<ITickable>();

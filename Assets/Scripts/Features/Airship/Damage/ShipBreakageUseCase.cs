@@ -11,16 +11,6 @@ using TinCan.Core.Ship;
 
 namespace TinCan.Features.Airship.Damage
 {
-    /// <summary>Server-side control over ship damage, for other features (repair) and dev tooling (scenarios).</summary>
-    public interface IShipBreakage
-    {
-        /// <summary>Random breakage on/off; starts from <see cref="ShipDamageConfig.AutoBreak"/>.</summary>
-        bool AutoBreak { get; set; }
-        int BrokenCount { get; }
-        bool TryBreak(int pointIndex);
-        bool TryRestore(int pointIndex);
-    }
-
     /// <summary>
     /// Application Layer, server only, after airship movement. Breaks a random healthy part on a timer by applying the
     /// break effect to that part's own GAS controller. Every tick it reconciles each part's health with the effects it
@@ -28,7 +18,7 @@ namespace TinCan.Features.Airship.Damage
     /// itself (State.Damaged); a fully repaired part releases both. Reconciling rather than reacting keeps breaks and
     /// repairs from any source (timer, repair tool, other damage effects, scenarios) consistent.
     /// </summary>
-    public class ShipBreakageUseCase : ISimulationTickable, IShipBreakage
+    public class ShipBreakageUseCase : ISimulationTickable, IShipBreakage, ISessionParticipant
     {
         public SimulationPhase Phase => SimulationPhase.AfterAirship;
 
@@ -87,6 +77,30 @@ namespace TinCan.Features.Airship.Damage
 
             Reconcile(airship, points);
         }
+
+        /// <summary>
+        /// Session start: every broken part is restored, the ship's own health is restored (the same restore effect: it
+        /// overrides Attr_Health up to Attr_MaxHealth, which the ship carries too), and the first break waits again.
+        /// </summary>
+        public void ResetForSession()
+        {
+            if (!_network.IsServer || !TryResolveShip(out var airship, out var points)) return;
+
+            if (_config.RestoreEffect != null)
+            {
+                foreach (var point in points)
+                {
+                    if (point.Controller.IsDamaged()) _abilities.ApplyEffect(point.Controller!, _config.RestoreEffect);
+                }
+                if ((airship as IShipState)?.Controller is { } ship) _abilities.ApplyEffect(ship, _config.RestoreEffect);
+            }
+
+            Reconcile(airship, points);
+            _nextBreakAt = _elapsed + _config.FirstBreakDelay;
+        }
+
+        /// <summary>Random breakage runs only while the session is underway, and only where the config switches it on.</summary>
+        public void SetSessionActive(bool active) => AutoBreak = active && _config.AutoBreak;
 
         public bool TryBreak(int pointIndex) => ApplyToPoint(pointIndex, _config.BreakEffect);
 

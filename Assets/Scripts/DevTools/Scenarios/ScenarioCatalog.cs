@@ -445,7 +445,43 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<CannonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike };
+        // The server arrives, the subject restarts from its end screen (a server RPC from the client), the server sinks
+        // the ship. Lanes run side by side and meet on the replicated voyage phase.
+        public static readonly ScenarioEntry VoyageLoop = new(
+            new Scenario.Builder("VoyageLoop")
+                .InScene(TestScenes.Voyage)
+                .Describe("Voyage underway -> arrive -> end screen on both peers -> the subject presses Restart -> briefing, " +
+                          "ship whole -> sink the ship -> Lost on both peers.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("VoyageBegin")
+                    .WaitUntil("VoyagePhase", 5f, "Briefing")
+                    .Do("VoyageCastOff")
+                    .WaitUntil("VoyagePhase", 5f, "Underway")
+                    .Do("VoyageArriveNow"))
+                .Act(s => s
+                    .WaitUntil("VoyagePhase", 60f, "Arrived")
+                    .WaitUntil("MenuShown", 5f, "voyage_arrived")
+                    .Checkpoint("arrived")
+                    .Do("RecordVoyage")
+                    .Do("PressMenuItem", "restart")
+                    .WaitUntil("VoyageAdvanced", 10f)
+                    .WaitUntil("VoyagePhase", 60f, "Lost")
+                    .WaitUntil("MenuShown", 5f, "voyage_lost")
+                    .Checkpoint("lost"))
+                .Assert(s => s
+                    .WaitUntil("VoyagePhase", 60f, "Briefing")
+                    .WaitUntil("ShipHealthFull", 5f)
+                    .Do("VoyageCastOff")
+                    .WaitUntil("VoyagePhase", 5f, "Underway")
+                    .Do("SinkShip")
+                    .WaitUntil("VoyagePhase", 5f, "Lost"))
+                .Build(),
+            builder => builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

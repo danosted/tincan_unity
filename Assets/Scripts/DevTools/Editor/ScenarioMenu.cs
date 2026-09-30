@@ -82,6 +82,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "HazardStrike (Host + Client, Lag100)")]
         public static void HazardStrikeDuo() => RunDuo("HazardStrike", "Lag100");
 
+        [MenuItem(Root + "VoyageLoop (Host)")]
+        public static void VoyageLoopSolo() => RunSolo("VoyageLoop");
+
+        [MenuItem(Root + "VoyageLoop (Host + Client, Lag100)")]
+        public static void VoyageLoopDuo() => RunDuo("VoyageLoop", "Lag100");
+
         public static void RunSolo(string scenario)
         {
             if (!ScenarioSceneSwitcher.OpenFor(scenario)) return;

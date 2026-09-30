@@ -175,5 +175,26 @@ namespace TinCan.Tests.EditMode
             RunTicks(director, 100 * TickRate);
             Assert.That(director.Active, Is.Null);
         }
+
+        [Test]
+        public void Session_StoppingDropsTheRunningEvent_AndTheRotationRunsOnlyWhileActive()
+        {
+            _settings.AutoStart = true;
+            var director = Director(Stress);
+            director.TryStart(1, out _);
+
+            director.SetSessionActive(false);
+            Assert.That(director.Active, Is.Null, "dropped: nothing breaks during the briefing or on the end screen");
+            Assert.That(director.AutoStart, Is.False);
+            RunTicks(director, 100 * TickRate);
+            Assert.That(director.Active, Is.Null);
+
+            director.ResetForSession();
+            director.SetSessionActive(true);
+            RunTicks(director, 2 * TickRate);
+            Assert.That(director.Active, Is.Null, "the first event waits its delay again");
+            RunTicks(director, 1);
+            Assert.That(director.Active, Is.SameAs(Stress));
+        }
     }
 }

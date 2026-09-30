@@ -1,14 +1,11 @@
 #nullable enable
 using UnityEngine;
 
-namespace TinCan.Features.CloudBoundary
+namespace TinCan.Core.Ship
 {
-    public interface IAirshipRespawnPoint
-    {
-        Vector3 Position { get; }
-        Quaternion Rotation { get; }
-    }
-
+    /// <summary>
+    /// Marks a ship's boarding spot. Optional: a ship without one uses the caller's ship-local fallback offset.
+    /// </summary>
     public class AirshipRespawnPoint : MonoBehaviour, IAirshipRespawnPoint
     {
         public Vector3 Position => transform.position;

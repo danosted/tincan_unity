@@ -20,6 +20,7 @@
         "TinCan.Features.Airship.PhysicalParts",
         "TinCan.Features.DesignedEvents",
         "TinCan.Features.Voyage",
+        "TinCan.Features.Boarding",
         "TinCan.UI",
         "Unity.Netcode.Runtime",
         "Unity.Networking.Transport",

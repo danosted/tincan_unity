@@ -124,24 +124,10 @@ namespace TinCan.Features.CloudBoundary
                 IAirshipView nearestAirship = airships
                     .OrderBy(airship => (airship.Transform.position - position).sqrMagnitude)
                     .First();
-                ResolveRespawnPose(nearestAirship, out Vector3 respawnPosition, out Quaternion respawnRotation);
+                var (respawnPosition, respawnRotation) = AirshipBoardingPose.Resolve(nearestAirship, _config.FallbackRespawnOffset);
                 _respawnService.ResetCharacter(character, respawnPosition, respawnRotation);
                 _eventPublisher.Publish(new CloudCharacterResetEvent(character.Id, nearestAirship.Id));
             }
-        }
-
-        private void ResolveRespawnPose(IAirshipView airship, out Vector3 position, out Quaternion rotation)
-        {
-            IAirshipRespawnPoint? respawnPoint = airship.Transform.GetComponentInChildren<IAirshipRespawnPoint>(true);
-            if (respawnPoint != null)
-            {
-                position = respawnPoint.Position;
-                rotation = respawnPoint.Rotation;
-                return;
-            }
-
-            position = airship.Transform.TransformPoint(_config.FallbackRespawnOffset);
-            rotation = airship.Transform.rotation;
         }
     }
 }

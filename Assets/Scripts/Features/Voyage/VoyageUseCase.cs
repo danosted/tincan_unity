@@ -15,8 +15,10 @@ namespace TinCan.Features.Voyage
     /// <see cref="ISessionParticipant"/> (a full tank, a whole hull, a clear sky), holds the pressure off and sets a
     /// destination ahead of the ship; after the briefing it casts off and switches the pressure on. Underway, the ship
     /// arriving wins and its health running out loses; either way the pressure stops and the end screen shows until a
-    /// player asks for a restart. The replicated state lives on the VoyageState fixture (<see cref="IVoyageState"/>).
-    /// Plan: .docs/plans/voyage-session.md.
+    /// player asks for a restart. A voyage starts by itself only once <see cref="VoyageConfig.MinCrew"/> players are
+    /// aboard, and stands down to Idle whenever nobody is (<see cref="CrewQueries"/>). The replicated state lives on the
+    /// VoyageState fixture (<see cref="IVoyageState"/>). Plans: .docs/plans/voyage-session.md,
+    /// .docs/plans/crew-gate-and-boarding.md.
     /// </summary>
     public class VoyageUseCase : ISimulationTickable, IVoyage
     {
@@ -64,6 +66,14 @@ namespace TinCan.Features.Voyage
 
             if (!TryResolve(out var ship, out var state)) return;
 
+            int crew = _actors.CrewCount();
+            if (crew == 0)
+            {
+                state.ConsumeRestartRequest();
+                if (state.Phase != VoyagePhase.Idle) StandDown(state);
+                return;
+            }
+
             if (state.ConsumeRestartRequest())
             {
                 Begin(ship, state);
@@ -72,7 +82,7 @@ namespace TinCan.Features.Voyage
 
             switch (state.Phase)
             {
-                case VoyagePhase.Idle when _config.AutoStart:
+                case VoyagePhase.Idle when _config.AutoStart && crew >= _config.MinCrew:
                     Begin(ship, state);
                     break;
                 case VoyagePhase.Briefing:
@@ -141,6 +151,15 @@ namespace TinCan.Features.Voyage
             state.ServerSetPhase(outcome);
             _events.Publish(new VoyageEndedEvent(_voyage, outcome, _underwayFor));
             _events.LogInfo(LogSource, $"Voyage {_voyage}: {outcome} after {_underwayFor:0} s.");
+        }
+
+        /// <summary>Nobody is aboard: the pressure stops and the voyage waits in Idle; the next crew starts a fresh one.</summary>
+        private void StandDown(IVoyageState state)
+        {
+            SetPressure(false);
+            state.ServerSetBriefingSecondsLeft(0);
+            state.ServerSetPhase(VoyagePhase.Idle);
+            _events.LogInfo(LogSource, $"Voyage {_voyage}: the crew left, standing down.");
         }
 
         private void SetPressure(bool active)

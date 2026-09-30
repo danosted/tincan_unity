@@ -98,6 +98,7 @@ namespace TinCan.Tests.EditMode.Fakes
     {
         public Guid Id { get; } = Guid.NewGuid();
         public bool IsSimulating { get; set; } = true;
+        public bool IsPlayerCharacter { get; set; } = true;
         public HumanoidInputState InputState { get; set; }
         public ulong? PossessorId { get; private set; }
         public IHumanoidMovementView Movement { get; }

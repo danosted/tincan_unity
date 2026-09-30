@@ -91,14 +91,18 @@ Existing commands: `StartHost`, `JoinGame`, `Quit` (`Assets/Scripts/Core/UI/Comm
 
 ## Showing a HUD value
 
-`IHudValues` is a tiny key-to-text store. Write a presenter (an `ITickable` in TinCan.Features) that computes the text and calls `Set`; call `Remove` when the value no longer applies. `HudOverlayView` renders every key as a label; keys are shown in insertion order.
+`IHudValues` is a tiny key-to-text store. Write a presenter (an `ITickable` in TinCan.Features) that computes the text and calls `Set`; call `Remove` when the value no longer applies. `HudOverlayView` renders every key as a label on a grey card at the top left (hidden while the HUD is empty); keys are shown in insertion order.
 
 ```csharp
-public class FuelHudPresenter : ITickable
+public class ShipDamageHudPresenter : ITickable
 {
-    public const string HudKey = "Fuel";
+    public const string HudKey = "Hull breaches";
     ...
-    public void Tick() => _hud.Set(HudKey, Mathf.RoundToInt(tank.Level).ToString());
+    public void Tick()
+    {
+        if (broken == 0) _hud.Remove(HudKey);
+        else _hud.Set(HudKey, broken.ToString());
+    }
 }
 ```
 
@@ -108,9 +112,10 @@ Register the presenter as `.As<ITickable>()`. `Set` with an unchanged text does 
 
 A meter is a labelled bar: `IHudValues.SetMeter(key, fill)` with a fill in [0, 1] (clamped), and `RemoveMeter(key)`
 when it no longer applies. `HudOverlayView` draws meters above the text lines, filled red (empty) to green (full). A
-change below a tenth of a percent does not raise `Changed`, so presenters can set a meter every frame. Example: the
-ship's health, `Features/Airship/Damage/ShipHealthHudPresenter.cs`, which reads the ship controller's replicated
-`HealthAttributeSet` on every peer.
+change below a tenth of a percent does not raise `Changed`, so presenters can set a meter every frame. Examples:
+- the ship's health, `Features/Airship/Damage/ShipHealthHudPresenter.cs`, which reads the ship controller's replicated
+  `HealthAttributeSet` on every peer;
+- the fuel tank, `Features/Airship/Fuel/FuelHudPresenter.cs` (level over capacity).
 
 ## Input: who owns Cancel
 

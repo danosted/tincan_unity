@@ -30,11 +30,11 @@ namespace TinCan.Tests.EditMode
         {
             _presenter.Tick();
 
-            Assert.That(_hud.All.ContainsKey(FuelHudPresenter.HudKey), Is.False);
+            Assert.That(_hud.Meters.ContainsKey(FuelHudPresenter.HudKey), Is.False);
         }
 
         [Test]
-        public void Tick_WithTank_ShowsRoundedLevel()
+        public void Tick_WithTank_ShowsTheLevelAsAFill()
         {
             _airship = new FakeAirshipView();
             var tank = FakeFuelTankBehaviour.AttachTo(_airship.GameObject, null);
@@ -43,7 +43,7 @@ namespace TinCan.Tests.EditMode
 
             _presenter.Tick();
 
-            Assert.That(_hud.All[FuelHudPresenter.HudKey], Is.EqualTo("87"));
+            Assert.That(_hud.Meters[FuelHudPresenter.HudKey], Is.EqualTo(0.866f).Within(1e-4f));
         }
 
         [Test]
@@ -57,7 +57,7 @@ namespace TinCan.Tests.EditMode
             _time.Time = 5f;
             _presenter.Tick();
 
-            Assert.That(_hud.All[FuelHudPresenter.HudKey], Is.EqualTo("100"));
+            Assert.That(_hud.Meters[FuelHudPresenter.HudKey], Is.EqualTo(1f));
         }
 
         [Test]
@@ -74,7 +74,7 @@ namespace TinCan.Tests.EditMode
             _time.Time = 5f;
             _presenter.Tick();
 
-            Assert.That(_hud.All.ContainsKey(FuelHudPresenter.HudKey), Is.False);
+            Assert.That(_hud.Meters.ContainsKey(FuelHudPresenter.HudKey), Is.False);
         }
     }
 }

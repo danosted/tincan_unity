@@ -13,7 +13,7 @@ namespace TinCan.Features.Airship.Fuel
     /// Application Layer: burns fuel while an airship is being driven and toggles the engine-stall ability
     /// when the tank runs dry. Ticked from the network tick right after airship movement; server only.
     /// </summary>
-    public class FuelConsumptionUseCase : ISimulationTickable
+    public class FuelConsumptionUseCase : ISimulationTickable, ISessionParticipant
     {
         public SimulationPhase Phase => SimulationPhase.AfterAirship;
 
@@ -40,6 +40,29 @@ namespace TinCan.Features.Airship.Fuel
             _eventPublisher = eventPublisher;
             _processor = processor;
         }
+
+        /// <summary>Session start: every ship's tank is full and its jerry-can crate holds the configured supply again.</summary>
+        public void ResetForSession()
+        {
+            if (!_networkService.IsServer) return;
+
+            foreach (var airship in _actorRegistry.GetActors<IAirshipView>())
+            {
+                var tank = ResolveTank(airship);
+                if (tank?.Config == null) continue;
+
+                tank.Refill(tank.Capacity);
+                var supply = FuelTankLocator.FindFixture<IJerryCanSupply>(airship);
+                if (supply == null) continue;
+
+                int start = tank.Config.InitialSupply;
+                if (supply.Count < start) supply.Add(start - supply.Count);
+                while (supply.Count > start && supply.TryTake()) { } // cans caught last voyage go back
+            }
+        }
+
+        /// <summary>Fuel keeps working between voyages: nothing to switch.</summary>
+        public void SetSessionActive(bool active) { }
 
         public void Tick()
         {

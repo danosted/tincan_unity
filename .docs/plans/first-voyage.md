@@ -61,11 +61,18 @@ airship's existing `HealthAttributeSet` (`AirshipNetworkMediator`, 1000 max) is 
 **V2 Hull display and the fail state.** The hull is the ship's `Attr_Health`; no new attribute.
 - Done 2026-09-29: a screen HUD meter "Hull" for everyone (`ShipHealthHudPresenter` in the Damage feature; meters are
   new in the headless HUD, `UI_FRAMEWORK.md`). Developer's choice: on screen, not in the world.
-- `HullFailedEvent` fires at 0 (it feeds V3's Lost phase).
-- Open: should an unrepaired broken part also drain health? Today broken parts only leak fuel, which keeps repair
-  tied to fuel instead of the hull.
+- Done 2026-09-30: the fail state is read from GAS. The voyage loses when the ship controller's health is depleted
+  (`HealthQueries.IsDepleted`), so no `HullFailedEvent` was needed; the voyage publishes `VoyageEndedEvent`.
+- Open (left as is, pending the playtest): should an unrepaired broken part also drain health? Today broken parts only
+  leak fuel, which keeps repair tied to fuel instead of the hull.
 
-**V3 Voyage session (new feature `TinCan.Features.Voyage`, installer in `Profile_FuelSandbox` plus a test profile).**
+**V3 Voyage session: built 2026-09-30, unattended.** See `voyage-session.md` for what was built and the decisions taken
+with the recommended option. They differ from the sketch below in three places:
+- The route starts where the ship is, so Restart does not teleport the ship.
+- Features reset themselves through `ISessionParticipant`; the voyage references no other feature.
+- The scenario is named `VoyageLoop`.
+
+The original sketch:
 - `VoyageConfig`: route length, destination.
 - A pure `VoyageProgressProcessor`: progress = distance covered toward the destination.
 - `VoyageUseCase` (server): phases `Briefing → Underway → Arrived | Lost`. Win on arrival, lose on `HullFailedEvent`.

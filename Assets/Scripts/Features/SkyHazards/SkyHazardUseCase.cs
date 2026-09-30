@@ -1,5 +1,4 @@
 #nullable enable
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using TinCan.Core.Domain;
@@ -12,57 +11,13 @@ using VContainer;
 
 namespace TinCan.Features.SkyHazards
 {
-    /// <summary>Server-side control over hazards, for scenarios and (later) designed events.</summary>
-    public interface ISkyHazards
-    {
-        /// <summary>Hazards spawned and not yet removed.</summary>
-        IReadOnlyList<ISkyHazard> Alive { get; }
-
-        /// <summary>Hazards shot down since the session started.</summary>
-        int Destroyed { get; }
-
-        /// <summary>Hazards that reached the ship since the session started.</summary>
-        int Hits { get; }
-
-        bool FieldEnabled { get; set; }
-
-        /// <summary>A hazard here. It hangs still (a target) unless <paramref name="drifts"/>, when it homes on the ship like the field's.</summary>
-        ISkyHazard? SpawnAt(Vector3 position, bool drifts = false);
-    }
-
-    /// <summary>Server: a hazard was shot down.</summary>
-    public readonly struct SkyHazardDestroyedEvent
-    {
-        public readonly string Hazard;
-        public readonly int Destroyed;
-
-        public SkyHazardDestroyedEvent(string hazard, int destroyed)
-        {
-            Hazard = hazard;
-            Destroyed = destroyed;
-        }
-    }
-
-    /// <summary>Server: a hazard reached the ship and hurt it.</summary>
-    public readonly struct SkyHazardHitShipEvent
-    {
-        public readonly Guid AirshipId;
-        public readonly int Hits;
-
-        public SkyHazardHitShipEvent(Guid airshipId, int hits)
-        {
-            AirshipId = airshipId;
-            Hits = hits;
-        }
-    }
-
     /// <summary>
     /// Application Layer, server only, after airship movement. Removes hazards that were shot down (after a short
     /// delay, so their last health update reaches the clients first). Drifting hazards home on the first ship; any
     /// hazard that touches it applies the impact effect to the ship (its health) and is removed. While the field is on,
     /// it keeps up to MaxAlive drifting hazards in a box beside the ship, removing those left far behind.
     /// </summary>
-    public class SkyHazardUseCase : ISimulationTickable, ISkyHazards
+    public class SkyHazardUseCase : ISimulationTickable, ISkyHazards, ISessionParticipant
     {
         public SimulationPhase Phase => SimulationPhase.AfterAirship;
 
@@ -113,6 +68,20 @@ namespace TinCan.Features.SkyHazards
         public int Destroyed { get; private set; }
         public int Hits { get; private set; }
         public bool FieldEnabled { get; set; }
+
+        /// <summary>Session start: every hazard leaves the sky.</summary>
+        public void ResetForSession()
+        {
+            if (!_network.IsServer) return;
+            foreach (var hazard in _alive) _spawner.Despawn(hazard);
+            _alive.Clear();
+            _drifting.Clear();
+            _destroyedAt.Clear();
+            _nextSpawnAt = _elapsed;
+        }
+
+        /// <summary>The field runs only while the session is underway, and only where the config switches it on.</summary>
+        public void SetSessionActive(bool active) => FieldEnabled = active && _config.FieldEnabled;
 
         public ISkyHazard? SpawnAt(Vector3 position, bool drifts = false)
         {

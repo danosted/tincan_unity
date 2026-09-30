@@ -268,6 +268,34 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void ResetForSession_ClearsTheSky()
+        {
+            var hazards = UseCase(fieldEnabled: false);
+            var drifting = hazards.SpawnAt(new Vector3(40f, 0f, 0f), drifts: true)!;
+            var target = hazards.SpawnAt(new Vector3(0f, 0f, 40f))!;
+
+            hazards.ResetForSession();
+
+            Assert.That(hazards.Alive, Is.Empty);
+            Assert.That(_spawner.Despawned, Is.EquivalentTo(new[] { drifting, target }));
+        }
+
+        [Test]
+        public void SetSessionActive_RunsTheFieldOnlyWhileActive_AndOnlyWhereTheConfigAllowsIt()
+        {
+            var hazards = UseCase(fieldEnabled: true);
+
+            hazards.SetSessionActive(false);
+            Assert.That(hazards.FieldEnabled, Is.False);
+            hazards.SetSessionActive(true);
+            Assert.That(hazards.FieldEnabled, Is.True);
+
+            _config.FieldEnabled = false;
+            hazards.SetSessionActive(true);
+            Assert.That(hazards.FieldEnabled, Is.False);
+        }
+
+        [Test]
         public void FieldHazards_Drift()
         {
             var hazards = UseCase(fieldEnabled: true);

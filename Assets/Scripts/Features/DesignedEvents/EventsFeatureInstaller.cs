@@ -25,7 +25,7 @@ namespace TinCan.Features.DesignedEvents
             builder.Register<IReadOnlyList<EventDefinition>>(resolver => EventCatalog.Collect(resolver.Resolve<FeatureInstallerCatalog>()), Lifetime.Singleton);
             builder.Register<EventRunProcessor>(Lifetime.Transient);
             builder.Register<EventHandlerRegistry>(Lifetime.Singleton);
-            builder.Register<EventDirectorUseCase>(Lifetime.Singleton).AsSelf().As<IEventDirector>().As<ISimulationTickable>();
+            builder.Register<EventDirectorUseCase>(Lifetime.Singleton).AsSelf().As<IEventDirector>().As<ISimulationTickable>().As<ISessionParticipant>();
             builder.Register<AnnounceActionHandler>(Lifetime.Singleton).As<IEventActionHandler>();
         }
     }

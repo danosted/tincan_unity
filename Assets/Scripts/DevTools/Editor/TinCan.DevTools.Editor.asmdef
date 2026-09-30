@@ -16,6 +16,7 @@
         "TinCan.Features.Airship.Fuel.Minigame",
         "TinCan.Features.Airship.PhysicalParts",
         "TinCan.Features.DesignedEvents",
+        "TinCan.Features.Voyage",
         "TinCan.DevTools",
         "TinCan.Humanoid",
         "TinCan.Input",

@@ -29,7 +29,8 @@ namespace TinCan.DevTools.Editor
             (TestScenes.Core, "Profile_Test_Core"),
             (TestScenes.ShipDamage, "Profile_Test_ShipDamage"),
             (TestScenes.NetCatch, "Profile_Test_NetCatch"),
-            (TestScenes.Cannon, "Profile_Test_Cannon")
+            (TestScenes.Cannon, "Profile_Test_Cannon"),
+            (TestScenes.Voyage, "Profile_Test_Voyage")
         };
 
         [MenuItem("TinCan/Dev/Test Range/Rebuild Scenes")]

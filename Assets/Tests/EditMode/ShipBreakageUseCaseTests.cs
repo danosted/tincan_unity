@@ -90,6 +90,39 @@ namespace TinCan.Tests.EditMode
         private float LeakRate => _shipController.TryGetAttribute(_leak, out var value) ? value.CurrentValue : -1f;
 
         [Test]
+        public void ResetForSession_RestoresBrokenParts_AndTheShipsHealth()
+        {
+            var useCase = UseCase();
+            useCase.TryBreak(1);
+            var shipHealth = new HealthAttributeSet(_shipController, _health, _maxHealth);
+            shipHealth.InitializeBaseValues(1000f);
+            _shipController.SetAttribute(_health, new AttributeValue(400f));
+
+            useCase.ResetForSession();
+
+            Assert.That(_points[1].Controller.IsDamaged(), Is.False);
+            Assert.That(useCase.BrokenCount, Is.Zero, "the breach went with the repair");
+            Assert.That(LeakRate, Is.EqualTo(0f).Within(1e-4f));
+            Assert.That(shipHealth.Health, Is.EqualTo(1000f), "the same restore effect, on the ship");
+        }
+
+        [Test]
+        public void SetSessionActive_RunsBreakageOnlyWhileActive_AndOnlyWhereTheConfigAllowsIt()
+        {
+            _config.AutoBreak = true;
+            var useCase = UseCase();
+
+            useCase.SetSessionActive(false);
+            Assert.That(useCase.AutoBreak, Is.False);
+            useCase.SetSessionActive(true);
+            Assert.That(useCase.AutoBreak, Is.True);
+
+            _config.AutoBreak = false;
+            useCase.SetSessionActive(true);
+            Assert.That(useCase.AutoBreak, Is.False);
+        }
+
+        [Test]
         public void TryBreak_AppliesOneBreachPerPart_AndLeaksStack()
         {
             var useCase = UseCase();

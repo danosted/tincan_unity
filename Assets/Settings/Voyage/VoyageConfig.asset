@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca09832740aaca948ac61d3e18ca2d5c, type: 3}
+  m_Name: VoyageConfig
+  m_EditorClassIdentifier: TinCan.Features.Voyage::TinCan.Features.Voyage.VoyageConfig
+  AutoStart: 1
+  BriefingSeconds: 10
+  RouteLength: 4000
+  ArrivalRadius: 60
+  ArrivedMenu: {fileID: 11400000, guid: 2dd75c01b4be8df458060ae57e760a02, type: 2}
+  LostMenu: {fileID: 11400000, guid: 812bd07cbdf238e4f93f5f6019d109c2, type: 2}
+  BeaconMaterial: {fileID: 2100000, guid: 54fb95bcf90e2e849ad29fcab9910e6f, type: 2}
+  BeaconHeight: 600
+  BeaconWidth: 12

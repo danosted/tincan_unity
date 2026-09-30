@@ -12,7 +12,8 @@ namespace TinCan.DevTools.Scenarios
         public const string ShipDamage = "Assets/Scenes/Test/Test_ShipDamage.unity";
         public const string NetCatch = "Assets/Scenes/Test/Test_NetCatch.unity";
         public const string Cannon = "Assets/Scenes/Test/Test_Cannon.unity";
+        public const string Voyage = "Assets/Scenes/Test/Test_Voyage.unity";
 
-        public static readonly string[] All = { Core, ShipDamage, NetCatch, Cannon };
+        public static readonly string[] All = { Core, ShipDamage, NetCatch, Cannon, Voyage };
     }
 }

@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b62658fcf13b7ef42bfb877bd9a0014e, type: 3}
+  m_Name: Profile_Test_Voyage
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Features.FeatureProfile
+  _includes:
+  - {fileID: 11400000, guid: da0f16431bcca1b41ae1bf663726e451, type: 2}
+  _installers:
+  - {fileID: 11400000, guid: 517f831c92a4fa5419acd4a2062a3879, type: 2}
+  - {fileID: 11400000, guid: ad2003bf1338d4543af1dc80cec3c6d0, type: 2}
+  - {fileID: 11400000, guid: f85a8c1b33563d049a54dfd0fc5be4ab, type: 2}
+  - {fileID: 11400000, guid: a8ef061bc1f38a449b10b7e7c04de654, type: 2}
+  - {fileID: 11400000, guid: 6ac5edc980a933942ab5fb59da23b7e3, type: 2}
+  - {fileID: 11400000, guid: 7d5f8397c77e8aa478518825b1f52759, type: 2}
+  - {fileID: 11400000, guid: 4b95d6ea37d1dbb4cba7624941ada3c9, type: 2}

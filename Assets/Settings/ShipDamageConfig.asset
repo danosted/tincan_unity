@@ -26,3 +26,4 @@ MonoBehaviour:
   RepairEffect: {fileID: 11400000, guid: 8d3fb3903820fff46bc7a5cae130cd47, type: 2}
   RepairInterval: 0.25
   RepairAbility: {fileID: 11400000, guid: 13c99e26664fd6b40892ea4711510510, type: 2}
+  AimHighlightBrightness: 0.45

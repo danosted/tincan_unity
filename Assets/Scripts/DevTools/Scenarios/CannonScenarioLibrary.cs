@@ -58,6 +58,7 @@ namespace TinCan.DevTools.Scenarios
         public IEnumerable<ScenarioCommand> Commands => new[]
         {
             new ScenarioCommand("PlaceSubjectAtCannon", _ => PlaceAtCannon()),
+            new ScenarioCommand("FaceCannon", _ => FaceCannon()),
             new ScenarioCommand("HazardField", SetField),
             new ScenarioCommand("AimCannon", Aim),
             new ScenarioCommand("RecordSubjectFacing", _ => RecordFacing()),
@@ -91,6 +92,21 @@ namespace TinCan.DevTools.Scenarios
             Vector3 stand = ScenarioPlacement.OnGround(body, cannon.position - cannon.forward * StandBehind, cannon.up);
             _respawn.ResetCharacter(subject, stand, body.rotation);
             return ScenarioCheck.Pass($"subject placed {StandBehind} m behind the cannon");
+        }
+
+        /// <summary>Subject peer: turns the subject's camera toward the scenario's cannon (FaceObject would take the first by name).</summary>
+        private ScenarioCheck FaceCannon()
+        {
+            var subject = _subject.Resolve();
+            var body = subject?.Movement?.Transform;
+            var cannon = Cannon()?.Base;
+            if (subject?.Look == null || body == null || cannon == null) return ScenarioCheck.Fail("no subject look view, or no cannon");
+            if (((IPossessable)subject).OwnerId != _network.LocalClientId) return ScenarioCheck.Fail("subject-peer command: only the owner can turn its camera");
+
+            Vector3 to = cannon.position - body.position;
+            float yaw = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
+            subject.Look.ApplyLook(0f, yaw);
+            return ScenarioCheck.Pass($"camera yaw {yaw:0} deg toward {cannon.name}");
         }
 
         /// <summary>The subject stands behind the cannon on this peer, within reach (a lagged client sees its ship a little behind).</summary>
@@ -243,7 +259,12 @@ namespace TinCan.DevTools.Scenarios
             return _presenter.BallsShown >= int.Parse(count, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
-        private ICannon? Cannon() => _actors.GetActors<ICannon>().FirstOrDefault();
+        // The ship carries a cannon on each side; scenarios use the starboard one. Picked by where it sits on the ship, so
+        // every peer names the same cannon whatever order they spawned in.
+        private ICannon? Cannon() => _actors.GetActors<ICannon>()
+            .Where(cannon => cannon.Base != null)
+            .OrderByDescending(cannon => cannon.ShipRoot != null ? cannon.ShipRoot.InverseTransformPoint(cannon.Base!.position).x : cannon.Base!.position.x)
+            .FirstOrDefault();
 
         private static float Parse(string value) => float.Parse(value, CultureInfo.InvariantCulture);
     }

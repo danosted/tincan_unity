@@ -15,7 +15,8 @@ namespace TinCan.Features.SkyHazards
     /// Application Layer, server only, after airship movement. Removes hazards that were shot down (after a short
     /// delay, so their last health update reaches the clients first). Drifting hazards home on the first ship; any
     /// hazard that touches it applies the impact effect to the ship (its health) and is removed. While the field is on,
-    /// it keeps up to MaxAlive drifting hazards in a box beside the ship, removing those left far behind.
+    /// it keeps a field of drifting hazards in a box ahead of the ship, sized for the crew aboard (each extra player
+    /// raises the limit and speeds up spawning), removing those left far behind.
     /// </summary>
     public class SkyHazardUseCase : ISimulationTickable, ISkyHazards, ISessionParticipant
     {
@@ -110,12 +111,13 @@ namespace TinCan.Features.SkyHazards
             if (!FieldEnabled) return;
 
             RemoveDistant(ship.Transform.position);
-            if (_alive.Count < _config.MaxAlive && _elapsed >= _nextSpawnAt)
+            var (maxAlive, spawnInterval) = _field.ForCrew(_actors.GetActors<IHumanoidActor>().Count(), _config.CrewScaling);
+            if (_alive.Count < maxAlive && _elapsed >= _nextSpawnAt)
             {
                 var position = _field.SpawnPoint(ship.Transform.position, ship.Transform.rotation, _config.FieldShape,
                     (float)_random.NextDouble(), (float)_random.NextDouble(), (float)_random.NextDouble());
                 SpawnAt(position, drifts: true);
-                _nextSpawnAt = _elapsed + _config.SpawnInterval;
+                _nextSpawnAt = _elapsed + spawnInterval;
             }
         }
 

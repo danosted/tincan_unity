@@ -40,11 +40,14 @@ namespace TinCan.DevTools.Editor
         private const string AbilityMediatorType = "TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, TinCan.Network";
         private const string TransformMediatorType = "TinCan.Network.Infrastructure.NetworkTransformMediator, TinCan.Network";
 
-        // Starboard broadside on the mid deck, which sits at y = -3.49 in ship space on both the airship and the test ship;
-        // 4 m forward of the fuel fixture's net rack (5.2, -3.5, 0). Aft of it (z -3) is the StairsTop staircase; z 2..6
-        // is clear for the cannon and its seat (overlap-checked against the airship and fixtures, 2026-09-29).
-        private static readonly Vector3 CannonLocalPosition = new(4.6f, -3.49f, 4f);
-        private static readonly Vector3 CannonLocalEuler = new(0f, 90f, 0f);
+        // A pair of broadsides on the foredeck (y = -1.815 in ship space on the airship's FloorFront and the test ship's
+        // Foredeck), mirrored about the centreline x = 1. At z 17 the deck is clear between the front mast (ends z 16.2)
+        // and the bow fencing, for x -2..4 (overlap-checked against the airship, 2026-09-30); the seats face inboard.
+        // Hazards come from ahead, so CannonConfig.YawLimit lets each barrel swing past 90 deg across the bow.
+        private static readonly Vector3 StarboardCannonLocalPosition = new(3.9f, -1.815f, 17f);
+        private static readonly Vector3 StarboardCannonLocalEuler = new(0f, 90f, 0f);
+        private static readonly Vector3 PortCannonLocalPosition = new(-1.9f, -1.815f, 17f);
+        private static readonly Vector3 PortCannonLocalEuler = new(0f, -90f, 0f);
 
         [MenuItem("TinCan/Dev/Cannon/Build Assets")]
         public static void Build()
@@ -135,27 +138,39 @@ namespace TinCan.DevTools.Editor
                 config.HitEffect = hit;
                 config.Sweep = sweep;
                 config.BallMaterial = Material("M_CannonIron", new Color(0.18f, 0.18f, 0.2f)); // an asset, so builds include its shader
+                config.YawLimit = 105f;
             });
 
-            // Prefabs and the fixture
+            // Prefabs and the fixtures
             var cannon = BuildCannonPrefab(occupyInteraction, occupyAbility, fireAbility);
             EnsureCameraMount(CannonPrefab);
             var hazard = BuildHazardPrefab(health, maxHealth);
             EnsureTransformSync(HazardPrefab);
-            var fixture = Asset<ShipFixtureDefinition>("Assets/Settings/Fixtures/CannonStationFixture.asset", definition =>
+            var starboardFixture = Asset<ShipFixtureDefinition>("Assets/Settings/Fixtures/CannonStationFixture.asset", definition =>
             {
                 definition.Prefab = cannon;
-                definition.LocalPosition = CannonLocalPosition;
-                definition.LocalEulerAngles = CannonLocalEuler;
+                definition.LocalPosition = StarboardCannonLocalPosition;
+                definition.LocalEulerAngles = StarboardCannonLocalEuler;
+            });
+            var portFixture = Asset<ShipFixtureDefinition>("Assets/Settings/Fixtures/CannonStationPortFixture.asset", definition =>
+            {
+                definition.Prefab = cannon;
+                definition.LocalPosition = PortCannonLocalPosition;
+                definition.LocalEulerAngles = PortCannonLocalEuler;
             });
             var hazardConfig = Asset<SkyHazardConfig>("Assets/Settings/SkyHazards/SkyHazardConfig.asset", config =>
             {
                 config.Prefab = hazard;
                 config.FieldEnabled = true;
-                // First tuning for the voyage (first-voyage.md V1): a hazard every 6 s, homing at 4 m/s from 30-110 m out,
-                // 20 unanswered hits sink a 1000-health ship.
+                // First tuning for the voyage (first-voyage.md V1): a hazard every 6 s, homing at 4 m/s, 20 unanswered hits
+                // sink a 1000-health ship. Playtest 2026-09-30: they come from ahead of the bow, 90-170 m out, and each
+                // player beyond the first adds two to the field and spawns them 20% sooner.
                 config.MaxAlive = 4;
+                config.MaxAlivePerExtraPlayer = 2;
                 config.SpawnInterval = 6f;
+                config.SpawnIntervalScalePerExtraPlayer = 0.8f;
+                config.FieldMin = new Vector3(-45f, -10f, 90f);
+                config.FieldMax = new Vector3(45f, 25f, 170f);
                 config.DriftSpeed = 4f;
                 config.ContactRadius = 1.5f;
                 config.ImpactEffect = impact;
@@ -166,7 +181,7 @@ namespace TinCan.DevTools.Editor
             var cannons = Asset<CannonFeatureInstaller>(Installers + "CannonFeatureInstaller.asset", installer =>
             {
                 SetField(installer, "_config", cannonConfig);
-                SetList(installer, "_cannonFixtures", new Object[] { fixture });
+                SetList(installer, "_cannonFixtures", new Object[] { starboardFixture, portFixture });
             });
             var hazards = Asset<SkyHazardsFeatureInstaller>(Installers + "SkyHazardsFeatureInstaller.asset", installer =>
                 SetField(installer, "_config", hazardConfig));

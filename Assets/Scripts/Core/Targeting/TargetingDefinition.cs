@@ -53,7 +53,9 @@ namespace TinCan.Core.Targeting
     {
         [Header("Aim")]
         public AimSource Source = AimSource.BodyForward;
-        [Tooltip("Body-space offset of the aim source point (BodyOffset only).")]
+        [Tooltip("Body-space offset (x right, y up, z ahead) added to the aim source point, for every source: from the " +
+                 "body for BodyOffset, from the eye or orbit centre otherwise. Up and back (-z) lets a cone take in what is " +
+                 "at the player's feet.")]
         public Vector3 SourceOffset;
 
         [Header("Shape")]

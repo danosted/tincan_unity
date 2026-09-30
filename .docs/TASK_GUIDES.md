@@ -113,7 +113,10 @@ actor changes. Persistent values (fuel level) live in `BaseValue`.
    - `EyeAim` and `CameraAim` follow where the player looks (pitch included). `BodyForward` ignores pitch, which is
      better for close, forgiving scans.
    - Pick the required or blocked tags on the target, and the selection rule.
-   - Example: `TD_RepairScan` is a 2.5 m, 100° cone that requires `State.Damaged`, nearest first.
+   - `SourceOffset` moves the source point in body space, for any source. Up and back lets a cone take in what is
+     at the player's feet.
+   - Example: `TD_RepairScan` is an `EyeAim` 4 m, 100° cone from 0.5 m above and 1 m behind the eye that requires
+     `State.Damaged`, nearest first.
 3. **Link it:** set `AbilityDefinition.Targeting` to the `TD_*`.
 4. **Act on the result** in the feature's server use case:
    `ITargetingService.TryAcquire(new HumanoidTargeter(player), ability.Targeting, out var result)`, then apply

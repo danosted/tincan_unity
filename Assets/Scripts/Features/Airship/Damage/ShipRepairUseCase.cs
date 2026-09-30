@@ -13,12 +13,13 @@ using UnityEngine;
 namespace TinCan.Features.Airship.Damage
 {
     /// <summary>
-    /// Application Layer, server only, after humanoid movement. The repair ability only expresses intent: while a player
+    /// Application Layer, after humanoid movement; repairs on the server only. The repair ability only expresses intent: while a player
     /// carries the repairing tag (GA_RepairShip, predicted from the held Primary input), this asks the targeting service
     /// which broken part they aim at (the ability's TargetingDefinition, TD_RepairScan) and applies the repair effect
     /// to it every RepairInterval, so the rate does not depend on the tick rate. When the part reaches full health,
     /// ShipBreakageUseCase releases its breach on its next reconcile. Same shape as NetCatchUseCase: the ability sets a
-    /// tag window, the feature performs the world effect.
+    /// tag window, the feature performs the world effect. On the local player's own peer it also runs that query every
+    /// tick while they hold the tool (<see cref="AimedTarget"/>), so what a press would repair can be shown beforehand.
     /// </summary>
     public class ShipRepairUseCase : ISimulationTickable
     {
@@ -53,20 +54,24 @@ namespace TinCan.Features.Airship.Damage
 
         /// <summary>
         /// On a client: the broken part the local player is predicted to be repairing (same query as the server, no effect
-        /// applied). For feedback such as highlighting; the server's own query decides what is actually repaired.
+        /// applied). The server's own query decides what is actually repaired.
         /// </summary>
         public IShipDamagePoint? PredictedTarget { get; private set; }
+
+        /// <summary>
+        /// On the local player's own peer (host or client): the broken part a repair would work on right now, while they
+        /// hold the repair tool, whether or not they are repairing. The same query the server runs on a press, so the
+        /// player can see what they aim at before they pull the trigger (<see cref="RepairAimHighlightPresenter"/>).
+        /// </summary>
+        public IShipDamagePoint? AimedTarget { get; private set; }
 
         public void Tick()
         {
             var targeting = _config.RepairAbility?.Targeting;
             if (_config.RepairingTag == null || _config.RepairEffect == null || targeting == null) return;
 
-            if (!_network.IsServer)
-            {
-                PredictLocalTarget(targeting);
-                return;
-            }
+            AimLocalPlayer(targeting);
+            if (!_network.IsServer) return;
 
             foreach (var player in _actors.GetActors<IHumanoidCharacterView>())
             {
@@ -86,15 +91,19 @@ namespace TinCan.Features.Airship.Damage
             }
         }
 
-        // The owner predicts: its repairing tag is predicted from the held input, so it can run the same query the server
-        // will, on the same input. Only the local player; proxies are the server's business.
-        private void PredictLocalTarget(TargetingDefinition targeting)
+        // The owner runs the query the server will, on the same input: while it holds the tool (the ability is granted on
+        // the owner too, for prediction) to show what it aims at, and while repairing to predict the target. Only the
+        // local player; proxies are the server's business.
+        private void AimLocalPlayer(TargetingDefinition targeting)
         {
             var local = _actors.GetLocalPlayerActor<IHumanoidCharacterView>();
-            PredictedTarget = local != null && local.HasTag(_config.RepairingTag!) &&
-                              _targeting.TryAcquire(new HumanoidTargeter(local), targeting, out var result)
+            bool repairing = local != null && local.HasTag(_config.RepairingTag!);
+            bool holdsTool = local != null && (repairing || _abilities.HasAbility(local, _config.RepairAbility!));
+
+            AimedTarget = holdsTool && _targeting.TryAcquire(new HumanoidTargeter(local!), targeting, out var result)
                 ? result.Target as IShipDamagePoint
                 : null;
+            PredictedTarget = !_network.IsServer && repairing ? AimedTarget : null;
         }
 
         private void Advance(IHumanoidCharacterView player, IShipDamagePoint point)

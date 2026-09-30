@@ -41,12 +41,20 @@ namespace TinCan.Core.Targeting
     /// </summary>
     public class TargetingProcessor
     {
-        public Vector3 SourcePoint(in TargetingOrigin origin, TargetingDefinition definition) => definition.Source switch
+        /// <summary>
+        /// Where the query measures from: the source's base point (body, orbit centre or eye) moved by the definition's
+        /// body-space offset, for example up and back so the cone also takes in what is right at the player's feet.
+        /// </summary>
+        public Vector3 SourcePoint(in TargetingOrigin origin, TargetingDefinition definition)
         {
-            AimSource.BodyOffset => origin.BodyPosition + origin.BodyRotation * definition.SourceOffset,
-            AimSource.CameraAim => origin.OrbitCentre,
-            _ => origin.Eye
-        };
+            Vector3 basePoint = definition.Source switch
+            {
+                AimSource.BodyOffset => origin.BodyPosition,
+                AimSource.CameraAim => origin.OrbitCentre,
+                _ => origin.Eye
+            };
+            return basePoint + origin.BodyRotation * definition.SourceOffset;
+        }
 
         /// <summary>The direction a ray follows: the pitched aim for Eye/CameraAim, the body's level facing otherwise.</summary>
         public Vector3 Direction(in TargetingOrigin origin, TargetingDefinition definition) =>

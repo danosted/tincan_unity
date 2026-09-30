@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8c09b5765edc578479b81815a2f36133, type: 3}
-  m_Name: CannonStationFixture
+  m_Name: CannonStationPortFixture
   m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Features.ShipFixtureDefinition
   Prefab: {fileID: 1808055983637199317, guid: 51920a2119834fb4aa466005ce5e0ea1, type: 3}
-  LocalPosition: {x: 3.9, y: -1.815, z: 17}
-  LocalEulerAngles: {x: 0, y: 90, z: 0}
+  LocalPosition: {x: -1.9, y: -1.815, z: 17}
+  LocalEulerAngles: {x: 0, y: -90, z: 0}

@@ -163,6 +163,40 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void FieldOn_ABiggerCrew_KeepsMoreHazards()
+        {
+            _config.DriftSpeed = 0f;
+            _config.MaxAlivePerExtraPlayer = 2;
+            var movement = new FakeHumanoidMovementView("Player");
+            try
+            {
+                _actors.Register(new FakeHumanoidCharacterView(movement));
+                _actors.Register(new FakeHumanoidCharacterView(movement));
+                var hazards = UseCase(fieldEnabled: true);
+
+                for (int i = 0; i < 40; i++) hazards.Tick();
+
+                Assert.That(hazards.Alive, Has.Count.EqualTo(5), "3 for the first player, 2 more for the second");
+            }
+            finally
+            {
+                movement.Destroy();
+            }
+        }
+
+        [Test]
+        public void ForCrew_EachExtraPlayer_RaisesTheLimit_AndShortensTheInterval()
+        {
+            var scaling = new SkyHazardCrewScaling(maxAlive: 4, maxAlivePerExtraPlayer: 2, spawnInterval: 6f, spawnIntervalScalePerExtraPlayer: 0.5f);
+
+            Assert.That(_field.ForCrew(1, scaling), Is.EqualTo((4, 6f)));
+            Assert.That(_field.ForCrew(0, scaling), Is.EqualTo((4, 6f)), "an empty ship counts as one player");
+            var (maxAlive, interval) = _field.ForCrew(3, scaling);
+            Assert.That(maxAlive, Is.EqualTo(8));
+            Assert.That(interval, Is.EqualTo(1.5f).Within(1e-4f));
+        }
+
+        [Test]
         public void ShotDown_IsCounted_ThenDespawnedAfterTheDelay()
         {
             var hazards = UseCase(fieldEnabled: false);

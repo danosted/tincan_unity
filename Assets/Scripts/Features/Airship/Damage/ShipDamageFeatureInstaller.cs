@@ -48,6 +48,7 @@ namespace TinCan.Features.Airship.Damage
             builder.Register<ShipBreakageUseCase>(Lifetime.Singleton).AsSelf().As<IShipBreakage>().As<ISimulationTickable>().As<ISessionParticipant>();
             builder.Register<ShipRepairUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
             builder.Register<ShipDamageHudPresenter>(Lifetime.Singleton).As<ITickable>();
+            builder.Register<RepairAimHighlightPresenter>(Lifetime.Singleton).As<ITickable>();
             builder.Register<ShipHealthHudPresenter>(Lifetime.Singleton).As<ITickable>();
 
             // Designed-event vocabulary for ship damage; its events are ShipDamageDesignedEvents, contributed below.

@@ -17,6 +17,7 @@ using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Infrastructure.Events;
 using TinCan.Core.Domain.Features;
+using TinCan.Core.Domain.Input;
 using TinCan.Core.Ship.Fixtures;
 namespace TinCan.Core.Infrastructure
 {
@@ -33,7 +34,6 @@ namespace TinCan.Core.Infrastructure
 
         [Header("APIs & Configs")]
         [SerializeField] private GameObject _possessionMediatorPrefab;
-        [SerializeField] private TinCan.Core.Domain.Abilities.InputBindingConfig _inputBindingConfig;
 
         [Header("Feature Composition")]
         [SerializeField] private FeatureProfile _featureProfile;
@@ -49,9 +49,6 @@ namespace TinCan.Core.Infrastructure
             builder.RegisterInstance(_features).AsSelf();
             builder.Register<ShipFixtureCatalog>(Lifetime.Singleton).As<IShipFixtureCatalog>();
             builder.Register<ShipFixtureSpawningUseCase>(Lifetime.Singleton).As<IInitializable>().As<ITickable>();
-
-            // Register Configs
-            builder.RegisterInstance(_inputBindingConfig);
 
             // Register Events
             builder.Register<DebugLogEventObserver>(Lifetime.Singleton).As<IEventObserver>();
@@ -85,7 +82,6 @@ namespace TinCan.Core.Infrastructure
             builder.Register<ServerPossessionManager>(Lifetime.Singleton).AsImplementedInterfaces().AsSelf().As<IPossessionAuthority>();
             builder.Register<PossessedViewCamera>(Lifetime.Singleton).As<ILocalViewCamera>();
 
-            // builder.Register<VehicleBoardingUseCase>(Lifetime.Singleton).As<IVehicleBoardingUseCase>();
             builder.Register<InteractionOrchestrator>(Lifetime.Singleton).As<IInteractionOrchestrator>();
             builder.Register<ModuleSpawningService>(Lifetime.Singleton).As<IModuleSpawningService>();
 
@@ -101,14 +97,12 @@ namespace TinCan.Core.Infrastructure
 
             var installed = InstallerServiceCheck.Install(_features.Installers, builder);
 
+            // Input itself (actions, contexts, the reader and the router) is the core InputFeatureInstaller.
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
                 entryPoints.Add<PlayerLookUseCase>();
-                entryPoints.Add<VehicleBoardingUseCase>().As<IVehicleBoardingUseCase>();
-                entryPoints.Add<PossessionInputController>();
-                builder.Register<ScriptedInput>(Lifetime.Singleton).AsSelf().As<IScriptedInput>().As<ILateTickable>();
-                builder.Register<InputGate>(Lifetime.Singleton);
-                entryPoints.Add<UnityInputService>().As<IInputService>();
+                builder.Register<VehicleBoardingUseCase>(Lifetime.Singleton).As<IVehicleBoardingUseCase>();
+                builder.Register<SwitchPossessionInputHandler>(Lifetime.Singleton).As<IInputCommandHandler>();
             });
 
             // Every feature's services must be buildable from what this scene loads; refuse to start otherwise.

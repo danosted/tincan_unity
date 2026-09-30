@@ -25,20 +25,6 @@ namespace TinCan.Tests.EditMode.Fakes
         }
     }
 
-    public class FakeInputService : IInputService
-    {
-        public HashSet<string> PressedActions { get; } = new();
-        public HashSet<string> TriggeredActions { get; } = new();
-
-        public bool IsActionPressed(string actionName) => PressedActions.Contains(actionName);
-        public bool WasActionTriggered(string actionName) => TriggeredActions.Contains(actionName);
-        public float GetAxis(string positiveAction, string negativeAction) =>
-            (PressedActions.Contains(positiveAction) ? 1f : 0f) - (PressedActions.Contains(negativeAction) ? 1f : 0f);
-        public Vector2 MouseDelta { get; set; }
-        public Vector2 GetMouseDelta() => MouseDelta;
-        public ulong GetActiveInputMask() => 0UL;
-    }
-
     public class FakeNetworkService : INetworkService
     {
         public NetworkState State => NetworkState.Offline;

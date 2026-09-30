@@ -46,7 +46,8 @@ Pick the path that matches what you want to do right now.
 | [`TUTORIAL_NEW_FEATURE.md`](TUTORIAL_NEW_FEATURE.md) | You are building a whole feature and want the build order with a real file to copy at each step. |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | You want the why: DI, input-driven simulation, possession, registries, and what happens from Play to the tick loop. |
 | [`FEATURE_INSTALLERS.md`](FEATURE_INSTALLERS.md) | Reference for `FeatureInstaller`, ship fixtures, networked prefabs, and the UnityYAMLMerge setup. |
-| [`UI_FRAMEWORK.md`](UI_FRAMEWORK.md) | Reference for menus (`MenuDefinition`), `IMenuSystem`, `IMenuCommand`, `IHudValues`, Cancel-key ownership. |
+| [`UI_FRAMEWORK.md`](UI_FRAMEWORK.md) | Reference for menus (`MenuDefinition`), `IMenuSystem`, `IMenuCommand`, `IHudValues`, the Controls menu. |
+| [`INPUT.md`](INPUT.md) | Keys, input contexts (what listens when), routed commands, rebinding, and how to add an action. [`INPUT_MAP.md`](INPUT_MAP.md) is the generated table of what listens to what. |
 | [`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md) | You need to feel or measure what a remote client feels: simulated latency, an input bot, and movement telemetry. |
 | [`Network_Initialization_Flow.md`](Network_Initialization_Flow.md) | Deep dive: how VContainer and NGO initialise across host, server and client. |
 | [`CODE_STANDARDS.md`](CODE_STANDARDS.md) | C# rules everyone follows (naming, guard clauses, nullable, no regions). |

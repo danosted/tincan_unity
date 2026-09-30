@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b5321edf577c434c95c9a5e7c7bf9c8, type: 3}
+  m_Name: InputConfig
+  m_EditorClassIdentifier: TinCan.Input::TinCan.Core.Input.InputConfig
+  Actions: {fileID: -944628639613478452, guid: 8f06ff7ef37e54447bb888f4a51ef6df, type: 3}
+  ActionIds:
+  - {fileID: 11400000, guid: d4c2589aa24d2d849be5e35a6b405ca8, type: 2}
+  - {fileID: 11400000, guid: f6883270642444841bc2717cc7faa331, type: 2}
+  - {fileID: 11400000, guid: 6a6d37829965ece45be9e202f6971ae9, type: 2}
+  - {fileID: 11400000, guid: fbdd2a5f57525434d887c99871a38ae9, type: 2}
+  - {fileID: 11400000, guid: 54293a3bd99c05e4a9b717347c5de601, type: 2}
+  - {fileID: 11400000, guid: d9da40c57dcec92489a9616f6d28dd11, type: 2}
+  - {fileID: 11400000, guid: 2c88a2ff6516312488aca96ddb360237, type: 2}
+  - {fileID: 11400000, guid: 98e7d9d7c6111c34ba8d060541ab1793, type: 2}
+  - {fileID: 11400000, guid: a2db9af6d6aa8234b9c5a48bc2f14f80, type: 2}
+  - {fileID: 11400000, guid: 04592c9c41bd41f4294ed250f9f0ecc0, type: 2}
+  - {fileID: 11400000, guid: 50117f4f0ebff774eb6ca8d30298fefa, type: 2}
+  - {fileID: 11400000, guid: ae7c7073e82d6db44b972d92d4d55d3b, type: 2}
+  - {fileID: 11400000, guid: b0670fc22ff30c24ab2dd013a14a7419, type: 2}
+  - {fileID: 11400000, guid: f2cf521b5587f6340ac9e916581e7605, type: 2}
+  - {fileID: 11400000, guid: 3d828dec439b5774794d7377290a7e96, type: 2}
+  - {fileID: 11400000, guid: 962df1083f529f548b62ce73e3e8af58, type: 2}
+  - {fileID: 11400000, guid: 5dd9ab0838f588544852bbf7493b191c, type: 2}
+  Contexts:
+  - {fileID: 11400000, guid: 04f939f8149f34a499a69d2dad5d798b, type: 2}
+  - {fileID: 11400000, guid: b4d97b62d0750274aae06cc332a65f1c, type: 2}
+  - {fileID: 11400000, guid: 51e1eda036de54a49ab5b0a581f06940, type: 2}
+  - {fileID: 11400000, guid: 3ae349ca054144f42b5a4e1edfed0610, type: 2}
+  - {fileID: 11400000, guid: e644c3eebf24ea84d81622da56bea3a8, type: 2}
+  - {fileID: 11400000, guid: b38e27d5d2bcb484abb0cab39b8c6dd2, type: 2}
+  GameplayInputs:
+  - {fileID: 11400000, guid: 426ccfbff63aa644eb62af51e7922718, type: 2}
+  - {fileID: 11400000, guid: 228c6f632dea57046a0b40d23fb4e13d, type: 2}
+  - {fileID: 11400000, guid: bff3306d7cef08f4497bfc5f839ba352, type: 2}

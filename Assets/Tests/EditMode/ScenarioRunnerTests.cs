@@ -12,23 +12,23 @@ namespace TinCan.Tests.EditMode
         private sealed class FakeWorld : IScenarioWorld
         {
             public readonly List<string> Log = new();
-            public readonly HashSet<string> Held = new();
+            public readonly HashSet<ScriptedAction> Held = new();
             public readonly Dictionary<string, bool> Probes = new();
             public readonly Dictionary<string, bool> Commands = new();
 
-            public void Press(string action)
+            public void Press(ScriptedAction action)
             {
                 Held.Add(action);
                 Log.Add("press " + action);
             }
 
-            public void Release(string action)
+            public void Release(ScriptedAction action)
             {
                 Held.Remove(action);
                 Log.Add("release " + action);
             }
 
-            public void Tap(string action) => Log.Add("tap " + action);
+            public void Tap(ScriptedAction action) => Log.Add("tap " + action);
 
             public ScenarioCheck Execute(string command, string argument)
             {
@@ -62,10 +62,10 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void Hold_PressesForItsDurationThenReleases()
         {
-            var runner = Runner(new ScenarioSteps().Hold(1f, "Fire").Wait(1f));
+            var runner = Runner(new ScenarioSteps().Hold(1f, ScriptedAction.Primary).Wait(1f));
 
             runner.Tick(0f);
-            Assert.That(_world.Held, Does.Contain("Fire"));
+            Assert.That(_world.Held, Does.Contain(ScriptedAction.Primary));
 
             runner.Tick(1.1f);
             Assert.That(_world.Held, Is.Empty);
@@ -92,7 +92,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void WaitUntil_BlocksUntilProbePasses()
         {
-            var runner = Runner(new ScenarioSteps().WaitUntil("Ready", 5f).Tap("Jump"));
+            var runner = Runner(new ScenarioSteps().WaitUntil("Ready", 5f).Tap(ScriptedAction.Jump));
 
             runner.Tick(0f);
             runner.Tick(1f);
@@ -107,7 +107,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void WaitUntil_Timeout_FailsWithTheProbeDetail()
         {
-            var runner = Runner(new ScenarioSteps().WaitUntil("Never", 1f).Tap("Jump"));
+            var runner = Runner(new ScenarioSteps().WaitUntil("Never", 1f).Tap(ScriptedAction.Jump));
 
             runner.Tick(0f);
             runner.Tick(1.5f);
@@ -120,7 +120,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void FailedCommand_AbortsTheRun()
         {
-            var runner = Runner(new ScenarioSteps().Do("Missing").Tap("Jump"));
+            var runner = Runner(new ScenarioSteps().Do("Missing").Tap(ScriptedAction.Jump));
 
             runner.Tick(0f);
 
@@ -131,7 +131,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void FailedExpect_IsRecordedAndTheRunContinues()
         {
-            var runner = Runner(new ScenarioSteps().Expect("Ready").Tap("Jump", 0f));
+            var runner = Runner(new ScenarioSteps().Expect("Ready").Tap(ScriptedAction.Jump, 0f));
 
             runner.Tick(0f);
 
@@ -143,7 +143,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void Abort_WhileHolding_ReleasesInput()
         {
-            var runner = Runner(new ScenarioSteps().Hold(10f, "Fire"));
+            var runner = Runner(new ScenarioSteps().Hold(10f, ScriptedAction.Primary));
             runner.Tick(0f);
 
             runner.Abort("timeout");

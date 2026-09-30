@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe51ddf62abf27344aac709f12b5f6aa, type: 3}
+  m_Name: Context_Gunner
+  m_EditorClassIdentifier: TinCan.Features.Weapons.Cannon::TinCan.Features.Weapons.Cannon.GunnerInputContext
+  _description: 'Manning a cannon (State.Occupying.Cannon). Silences walking and
+    looking: the mouse swings the barrel (GunnerAimUseCase). Fire and Leave are the
+    Primary and Interact ability bits.'
+  _activation: 2
+  _possessedKind: 0
+  _tag: {fileID: 11400000, guid: 96655d472b869934e93fbbb6a7faa854, type: 2}
+  _priority: 400
+  _blocksAllLower: 0
+  _blocks:
+  - {fileID: 11400000, guid: 51e1eda036de54a49ab5b0a581f06940, type: 2}
+  - {fileID: 11400000, guid: b4d97b62d0750274aae06cc332a65f1c, type: 2}
+  _actions: []
+  _routes: []
+  Aim: {fileID: 11400000, guid: b0670fc22ff30c24ab2dd013a14a7419, type: 2}
+  Fire: {fileID: 11400000, guid: f2cf521b5587f6340ac9e916581e7605, type: 2}
+  Leave: {fileID: 11400000, guid: 3d828dec439b5774794d7377290a7e96, type: 2}

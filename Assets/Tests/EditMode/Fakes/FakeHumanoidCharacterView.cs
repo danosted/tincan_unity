@@ -112,7 +112,9 @@ namespace TinCan.Tests.EditMode.Fakes
         public void AuthoritativeSetPossessor(ulong? playerId) => PossessorId = playerId;
         public bool CanPossess(ulong playerId) => true;
 
-        public bool HasTag(GameplayTag tag) => false;
+        /// <summary>Tags a test says the body carries (AddTag stays a no-op).</summary>
+        public HashSet<GameplayTag> HeldTags { get; } = new();
+        public bool HasTag(GameplayTag tag) => HeldTags.Contains(tag);
         public void AddTag(GameplayTag tag) { }
         public void RemoveTag(GameplayTag tag) { }
 

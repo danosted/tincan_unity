@@ -46,7 +46,7 @@ extra package is needed.
 |---|---|---|
 | `DeckWalk` | client | Starts, stops, strafes, jumps and sprints, three times over (~50 s). |
 | `Pilot` | host | Takes the helm through the server's possession authority, then cruises, turns both ways and brakes (~58 s). The deck moves under the client. |
-| `PilotTilt` | host | Takes the helm, pitches the deck down and up (Jump/Sprint at the helm), then banks through turns both ways (~40 s). |
+| `PilotTilt` | host | Takes the helm, pitches the deck up and down (the Airship context's Pitch; Space/Shift by default), then banks through turns both ways (~40 s). |
 | `Idle` | either | Stands still for 45 s: measures deck creep (`idleDriftCmPerS`) and snaps. |
 
 **TinCan > Dev > Net Harness > Run Tilt Test (Lag100)** runs `PilotTilt` on the host and `Idle` on the client.
@@ -164,7 +164,8 @@ A scenario (`ScenarioCatalog.cs`) has three phases:
 
 - **Arrange** runs on the server and sets up the world around the *subject*: it spawns, equips or breaks things
   through `Do(...)` commands. The subject is the client's player, or the host's own player in a solo run.
-- **Act** runs on the subject's peer through real input (`Hold`, `Tap`), so prediction and replication are
+- **Act** runs on the subject's peer through real input (`Hold`, `Tap` with `ScriptedAction` intents, which obey the input
+  contexts like keys; see `INPUT.md`), so prediction and replication are
   exercised. It checks what that peer sees (`WaitUntil`, `Expect`) and takes screenshots (`Checkpoint`).
 - **Assert** runs on the server and checks the authoritative outcome.
 

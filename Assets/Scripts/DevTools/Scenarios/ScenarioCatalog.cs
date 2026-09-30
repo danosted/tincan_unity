@@ -32,7 +32,7 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("SubjectHasTag", 10f, "State.Carrying.Net")
                     .WaitUntil("CanInNetReach", 10f)
                     .Checkpoint("can-in-reach")
-                    .Hold(0.3f, ActionNames.AbilityPrimary)
+                    .Hold(0.3f, ScriptedAction.Primary)
                     .WaitUntil("NoCanInNetReach", 5f)
                     .Checkpoint("caught"))
                 .Assert(s => s
@@ -64,7 +64,7 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("SubjectHasTag", 3f, "State.Carrying.Net")
                     .Expect("SubjectVisualShown", "Carry_Net")
                     .Checkpoint("net-held")
-                    .Hold(0.3f, ActionNames.AbilityPrimary)
+                    .Hold(0.3f, ScriptedAction.Primary)
                     .WaitUntil("SubjectHolds", 10f, "ITEM_JerryCan")
                     .WaitUntil("SubjectLacksAbility", 3f, "GA_SwingNet")
                     .WaitUntil("SubjectLacksTag", 3f, "State.Carrying.Net")
@@ -190,7 +190,7 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("SubjectFacesPoint", 5f, "0")
                     .Expect("SubjectVisualShown", "Carry_RepairTool")
                     .Checkpoint("tool-ready")
-                    .Hold(6f, ActionNames.AbilityPrimary)
+                    .Hold(6f, ScriptedAction.Primary)
                     .WaitUntil("PointHealthy", 3f, "0")
                     .WaitUntil("MarkerHidden", 3f, "0")
                     .WaitUntil("SubjectLacksTag", 3f, "State.Repairing")
@@ -311,10 +311,10 @@ namespace TinCan.DevTools.Scenarios
                     .Do("FaceObject", "RepairToolRack")
                     .WaitUntil("InteractTargetIs", 5f, "RepairToolRack")
                     .Checkpoint("facing-rack")
-                    .Hold(0.3f, ActionNames.Interact)
+                    .Hold(0.3f, ScriptedAction.Interact)
                     .WaitUntil("SubjectHolds", 5f, "ITEM_RepairTool")
                     .Wait(0.5f, "let go")
-                    .Hold(0.3f, ActionNames.Interact)
+                    .Hold(0.3f, ScriptedAction.Interact)
                     .WaitUntil("SubjectHolds", 5f, "none"))
                 .Assert(s => s
                     .WaitUntil("SubjectHolds", 20f, "ITEM_RepairTool")
@@ -369,14 +369,16 @@ namespace TinCan.DevTools.Scenarios
 
         /// <summary>
         /// The cannon with real input: the subject walks up to the cannon, presses Interact to man it (it stays in its
-        /// body: State.Occupying.Cannon), points its camera along the barrel, and the server puts a target on the arc the
-        /// barrel now points along. One Primary press fires; the server's per-tick sweep hits the target and shoots it
-        /// down, and the subject's peer drew the ball. Interact again leaves the cannon. Plan: cannon-and-hazards.md.
+        /// body: State.Occupying.Cannon, which turns the Gunner input context on), aims the barrel along its rest
+        /// direction, and the server puts a target on the arc the barrel now points along. One Fire press shoots; the
+        /// server's per-tick sweep hits the target and shoots it down, and the subject's peer drew the ball. Then the mouse
+        /// swings the barrel to its yaw limit (held there, not wrapped) while the body keeps facing where it was, and Leave
+        /// steps away. Plans: cannon-and-hazards.md, input-contexts.md.
         /// </summary>
         public static readonly ScenarioEntry CannonShot = new(
             new Scenario.Builder("CannonShot")
                 .InScene(TestScenes.Cannon)
-                .Describe("Man the cannon -> target on the barrel's arc -> press Primary -> target shot down, ball drawn -> Interact leaves.")
+                .Describe("Man the cannon -> target on the barrel's arc -> Fire -> target shot down, ball drawn -> aim to the limit, body still -> Leave.")
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
@@ -388,17 +390,23 @@ namespace TinCan.DevTools.Scenarios
                     .Wait(0.5f, "teleport settles")
                     .Do("FaceObject", "CannonStation")
                     .WaitUntil("InteractTargetIs", 5f, "CannonStation")
-                    .Hold(0.3f, ActionNames.Interact)
+                    .Hold(0.3f, ScriptedAction.Interact)
                     .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Cannon")
                     .WaitUntil("CannonManned", 5f)
                     .Do("AimCannon", "0")
                     .Checkpoint("manned")
                     .WaitUntil("HazardsVisible", 15f, "1")
-                    .Hold(0.3f, ActionNames.AbilityPrimary)
+                    .Hold(0.3f, ScriptedAction.GunnerFire)
                     .WaitUntil("BallsShown", 5f, "1")
                     .WaitUntil("HazardsVisible", 10f, "0")
                     .Checkpoint("shot-down")
-                    .Hold(0.3f, ActionNames.Interact)
+                    // The Gunner context: the mouse swings the barrel to its limit (never wrapping) and the body holds still.
+                    .Do("RecordSubjectFacing")
+                    .Hold(1f, ScriptedAction.GunnerAimRight)
+                    .Expect("GunnerAimYaw", "75")
+                    .Expect("SubjectFacingHeld")
+                    .Checkpoint("aimed-to-limit")
+                    .Hold(0.3f, ScriptedAction.GunnerLeave)
                     .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Cannon"))
                 .Assert(s => s
                     .WaitUntil("CannonManned", 60f)

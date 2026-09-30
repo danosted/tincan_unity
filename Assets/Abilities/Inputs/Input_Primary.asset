@@ -12,3 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 708eb75023caeb8479ffaac8e171772d, type: 3}
   m_Name: Input_Primary
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Abilities.Inputs.PrimaryInput
+  _actions:
+  - {fileID: 11400000, guid: 98e7d9d7c6111c34ba8d060541ab1793, type: 2}
+  - {fileID: 11400000, guid: f2cf521b5587f6340ac9e916581e7605, type: 2}

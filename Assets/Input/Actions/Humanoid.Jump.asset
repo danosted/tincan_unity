@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a96585f2c3b74842862d874ada10b6d, type: 3}
+  m_Name: Humanoid.Jump
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.InputActionId
+  _actionId: 2a8efc5c-92d3-444f-be6a-60d3fb59d3df
+  _path: Humanoid/Jump
+  _displayName: Jump
+  _description: Jump.
+  _rebindable: 1

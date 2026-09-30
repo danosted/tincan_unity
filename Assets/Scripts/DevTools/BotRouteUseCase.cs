@@ -12,7 +12,7 @@ using VContainer.Unity;
 namespace TinCan.DevTools
 {
     /// <summary>
-    /// Plays the <c>-bot</c> route through <see cref="IScriptedInput"/>, so gameplay reads it exactly like a keyboard.
+    /// Plays the <c>-bot</c> route through scripted input (<see cref="ScriptedActionDriver"/>), so gameplay reads it exactly like a keyboard.
     /// The clock starts once the local player exists. Ship commands take or release the helm through the server's
     /// possession authority, so they only work on the host.
     /// </summary>
@@ -22,14 +22,14 @@ namespace TinCan.DevTools
 
         private readonly HarnessOptions _options;
         private readonly HarnessSession _session;
-        private readonly IScriptedInput _input;
+        private readonly ScriptedActionDriver _input;
         private readonly IActorRegistry _registry;
         private readonly INetworkService _network;
         private readonly IPossessionAuthority _possession;
         private readonly ITimeService _time;
         private readonly IEventPublisher _events;
         private readonly List<BotStep> _entered = new();
-        private readonly HashSet<string> _held = new();
+        private readonly HashSet<ScriptedAction> _held = new();
 
         private BotRoute? _route;
         private BotRouteCursor? _cursor;
@@ -40,7 +40,7 @@ namespace TinCan.DevTools
         public BotRouteUseCase(
             HarnessOptions options,
             HarnessSession session,
-            IScriptedInput input,
+            ScriptedActionDriver input,
             IActorRegistry registry,
             INetworkService network,
             IPossessionAuthority possession,

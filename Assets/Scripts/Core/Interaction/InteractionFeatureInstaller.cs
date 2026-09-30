@@ -2,6 +2,7 @@
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities.Inputs;
 using TinCan.Core.Domain.Features;
+using TinCan.Core.Domain.Input;
 using TinCan.Core.Targeting;
 using UnityEngine;
 using VContainer;
@@ -17,7 +18,7 @@ namespace TinCan.Core.Interaction
     [CreateAssetMenu(fileName = "InteractionFeatureInstaller", menuName = "TinCan/Features/Interaction Feature Installer")]
     public class InteractionFeatureInstaller : FeatureInstaller
     {
-        [Tooltip("The Interact input bit (Input_Interact), bound in DefaultInputBindingConfig.")]
+        [Tooltip("The Interact input bit (Input_Interact); its actions and bit order live in Assets/Input/InputConfig.")]
         [SerializeField] private GameplayInput? _interactInput;
         [Tooltip("How the Interact target is acquired (TD_Interact).")]
         [SerializeField] private TargetingDefinition? _targeting;
@@ -26,6 +27,9 @@ namespace TinCan.Core.Interaction
 
         public override void Install(IContainerBuilder builder)
         {
+            // Cancel at the helm (routed by the Airship input context).
+            builder.Register<ExitVehicleInputHandler>(Lifetime.Singleton).As<IInputCommandHandler>();
+
             if (_interactInput == null || _targeting == null)
             {
                 Debug.LogWarning($"[{name}] Interact input or targeting definition missing; interaction stays on the legacy RPC path.", this);

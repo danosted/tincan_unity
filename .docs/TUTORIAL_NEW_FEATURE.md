@@ -37,7 +37,8 @@ These are shared files. A feature built on the installer pattern never edits the
 - `Assets/Prefabs/NetworkPlayer.prefab` (unless the feature genuinely lives on the player; then one child only,
   resolving its services optionally. Abilities go in an `ActorAbilityGrant`, not `_startingAbilities`.)
 - `Assets/Scripts/Core/Domain/` (unless you are adding a contract several features share)
-- `Assets/Abilities/Inputs/DefaultInputBindingConfig.asset` (unless you add a new predicted input)
+- `Assets/Input/TinCanControls.inputactions` and `Assets/Input/InputConfig.asset` (unless you add an action or a
+  predicted input; then follow [`INPUT.md`](INPUT.md) and rerun **TinCan > Dev > Input > Build Assets**)
 
 ## Build order
 

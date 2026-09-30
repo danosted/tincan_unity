@@ -93,29 +93,27 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void Aim_FollowsTheBodyInTheBaseFrame_WithinLimits()
+        public void ClampAim_KeepsTheAimWithinTheLimits()
         {
             var limits = new CannonAimLimits(yawLimit: 60f, minElevation: -10f, maxElevation: 45f);
-            var shipTurned = Quaternion.Euler(0f, 90f, 0f);
 
-            var ahead = _aim.BarrelAngles(shipTurned, shipTurned * Vector3.forward, 0f, limits);
-            Assert.That(ahead.Yaw, Is.EqualTo(0f).Within(Tolerance), "the rest direction turns with the ship");
-
-            var right = _aim.BarrelAngles(shipTurned, shipTurned * Quaternion.Euler(0f, 30f, 0f) * Vector3.forward, 0f, limits);
-            Assert.That(right.Yaw, Is.EqualTo(30f).Within(Tolerance));
-
-            var behind = _aim.BarrelAngles(shipTurned, shipTurned * Vector3.back * 1f + shipTurned * Vector3.left * 0.1f, 0f, limits);
-            Assert.That(Mathf.Abs(behind.Yaw), Is.EqualTo(60f).Within(Tolerance), "clamped to the yaw limit");
+            Assert.That(_aim.ClampAim(new Vector2(30f, 20f), limits), Is.EqualTo((30f, 20f)));
+            Assert.That(_aim.ClampAim(new Vector2(-170f, 80f), limits), Is.EqualTo((-60f, 45f)));
+            Assert.That(_aim.ClampAim(new Vector2(0f, -50f), limits).Elevation, Is.EqualTo(-10f).Within(Tolerance));
         }
 
         [Test]
-        public void Aim_LookPitchUpIsElevation_Clamped()
+        public void Steer_SweepsToTheLimit_HoldsThere_AndTurnsBackAtOnce()
         {
             var limits = new CannonAimLimits(yawLimit: 60f, minElevation: -10f, maxElevation: 45f);
+            var aim = Vector2.zero;
 
-            Assert.That(_aim.BarrelAngles(Quaternion.identity, Vector3.forward, -20f, limits).Elevation, Is.EqualTo(20f).Within(Tolerance), "Unity pitch -20 looks up");
-            Assert.That(_aim.BarrelAngles(Quaternion.identity, Vector3.forward, -80f, limits).Elevation, Is.EqualTo(45f).Within(Tolerance));
-            Assert.That(_aim.BarrelAngles(Quaternion.identity, Vector3.forward, 50f, limits).Elevation, Is.EqualTo(-10f).Within(Tolerance));
+            for (int frame = 0; frame < 100; frame++) aim = _aim.Steer(aim, new Vector2(20f, 0f), 0.5f, limits);
+            Assert.That(aim.x, Is.EqualTo(60f).Within(Tolerance), "a long sweep right stops at the limit: no 180 deg wrap");
+
+            aim = _aim.Steer(aim, new Vector2(-20f, 10f), 0.5f, limits);
+            Assert.That(aim.x, Is.EqualTo(50f).Within(Tolerance), "turning back moves off the limit immediately");
+            Assert.That(aim.y, Is.EqualTo(5f).Within(Tolerance), "mouse up is elevation up");
         }
 
         [Test]

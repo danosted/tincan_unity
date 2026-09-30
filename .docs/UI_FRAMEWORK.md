@@ -7,7 +7,7 @@ The framework separates three things so they can evolve independently:
 | Layer | Lives in | What it is |
 |---|---|---|
 | **Data** | `Assets/UI/Menus/*.asset` (`MenuDefinition`) | Which menus exist and which rows they contain. Authored in the Inspector, no code. |
-| **Headless model** | `Assets/Scripts/Core/UI/` (TinCan.Features) | `IMenuSystem` (menu stack + values), `IMenuCommand` (what a row does), `IHudValues` (named HUD texts and meters), `MainMenuBootstrap` (owns the Cancel key). Pure C#, unit-tested, knows nothing about rendering. |
+| **Headless model** | `Assets/Scripts/Core/UI/` (TinCan.Features) | `IMenuSystem` (menu stack + values), `IMenuCommand` (what a row does), `IHudValues` (named HUD texts and meters), `MainMenuBootstrap` (opens and closes the main menu with the session), the Cancel handlers. Pure C#, unit-tested, knows nothing about rendering. |
 | **Views** | `Assets/Scripts/App/Views/` (`TinCan.App`) | `MenuOverlayView`, `HudOverlayView`: UI Toolkit code-built renderers of the model. Replace these when real UI arrives; nothing else changes. |
 
 Gameplay code never talks to a view. It opens menus through `IMenuSystem`, reacts to rows through `IMenuCommand`, and shows numbers through `IHudValues`.
@@ -114,13 +114,16 @@ ship's health, `Features/Airship/Damage/ShipHealthHudPresenter.cs`, which reads 
 
 ## Input: who owns Cancel
 
-`MainMenuBootstrap` is the **single** reader of `ActionNames.Cancel` for menus. It:
+Nothing in the UI reads a key. Cancel reaches the menus through the input contexts ([`INPUT.md`](INPUT.md)):
 
-- opens the main menu while offline and closes it when a session becomes Host/Client;
-- on Cancel: goes `Back()` when a menu is open, otherwise opens the main menu, but only when the local player is in their own body (vehicles and the free camera own Cancel while possessed) and only if possession did not change this frame (so the Cancel that exits a vehicle does not also open the menu);
-- sets `InputGate.GameplayBlocked` while a menu is open. `UnityInputService` then returns no gameplay input except Cancel, and no mouse delta.
+- `MainMenuBootstrap` opens the main menu while offline and closes it when a session becomes Host/Client.
+- While a menu is open the **Menu** context is live: it silences every gameplay context (no movement, look or ability
+  input) and routes Cancel to `MenuBackInputHandler` (`Back()`; the last Back closes the menu).
+- Otherwise Cancel goes to the highest live context that wants it: the helm lets go (`ExitVehicleInputHandler`), the
+  free camera frees the cursor, and only if nobody took it does the **Global** context open the main menu
+  (`OpenMenuInputHandler`: offline, or in your own body). One press, one effect.
 
-Do not read Cancel elsewhere to toggle UI; add behaviour to the bootstrap instead.
+To give Cancel a new meaning somewhere, add a route to that situation's context and a handler; do not read the key.
 
 `MenuOverlayView` frees the cursor while a menu is open and re-locks it on close when a session is active.
 
@@ -128,10 +131,17 @@ Do not read Cancel elsewhere to toggle UI; add behaviour to the bootstrap instea
 
 `CommandLineSessionBootstrap` reads the process arguments: `-autohost`, or `-autojoin [address[:port]]` (defaults `127.0.0.1:7777`). Useful for builds acting as unattended test clients.
 
+## Controls menu (key bindings)
+
+A `MenuItemKind.Bindings` row expands at snapshot time into one `Binding` row per key the player can change
+(`IInputBindings.Slots`: "Humanoid: Jump - Space"). Invoking a Binding row waits for a key (the value reads
+"Press a key..."; Esc cancels); a refused key adds a `Note` row saying why. The Reset to Defaults row runs
+`ResetBindingsMenuCommand`. `MenuOverlayView` renders rows in a scroll view, so long menus fit the screen.
+
 ## Automation and tests
 
-- Model tests: `MenuUseCaseTests`, `MenuCommandRegistryTests`, `MenuCommandTests`, `HudUseCaseTests`, `MainMenuBootstrapTests`, `CommandLineSessionBootstrapTests`. Build menus in code with `MenuDefinition.Create(...)`; `Fakes/FakeMenuCommand`, `Fakes/FakeHudValues`, `Fakes/FakePossessionState` exist.
-- Play-mode automation: resolve `IScriptedInput` from the container and `Tap("Interact")`, `Press("MoveForward")` / `Release(...)`; it is merged with the real keyboard inside `UnityInputService`. Injecting Input System events does not work while the Editor is unfocused; use this seam instead.
+- Model tests: `MenuUseCaseTests`, `MenuBindingRowsTests`, `MenuCommandRegistryTests`, `MenuCommandTests`, `HudUseCaseTests`, `MainMenuBootstrapTests`, `CommandLineSessionBootstrapTests`. Build menus in code with `MenuDefinition.Create(...)`; `Fakes/FakeMenuCommand`, `Fakes/FakeHudValues`, `Fakes/FakePossessionState` exist.
+- Play-mode automation: scenarios and bots press `ScriptedAction` intents (`DevTools/ScriptedAction.cs`), which `ScriptedActionMap` turns into context actions on `IScriptedInput`; the input reader merges them with the keyboard under the same context rules. Injecting Input System events does not work while the Editor is unfocused; use this seam instead.
 
 ## Replacing the views
 

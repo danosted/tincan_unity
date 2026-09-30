@@ -17,6 +17,13 @@
         "TinCan.Features.Airship.PhysicalParts",
         "TinCan.Features.DesignedEvents",
         "TinCan.DevTools",
+        "TinCan.Humanoid",
+        "TinCan.Input",
+        "TinCan.Possession",
+        "TinCan.Ship",
+        "TinCan.UI",
+        "TinCan.Features.FreeCamera",
+        "Unity.InputSystem",
         "Unity.Netcode.Runtime"
     ],
     "includePlatforms": [

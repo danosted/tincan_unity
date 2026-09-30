@@ -1,5 +1,7 @@
 #nullable enable
+using System.Collections.Generic;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Input;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Features;
 using TinCan.DevTools.Scenarios;
@@ -15,8 +17,16 @@ namespace TinCan.DevTools
     /// nothing, so normal play is unaffected. See .docs/NETWORK_TEST_HARNESS.md.
     /// </summary>
     [CreateAssetMenu(fileName = "NetTestHarnessFeatureInstaller", menuName = "TinCan/Features/Net Test Harness Installer")]
-    public class NetTestHarnessFeatureInstaller : FeatureInstaller
+    public class NetTestHarnessFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<InputContext>
     {
+        [Tooltip("Assets/Input/Contexts/Context_DevTools: F3 toggles the readout. Contributed only while the harness runs.")]
+        [SerializeField] private InputContext? _controls;
+
+        public IEnumerable<InputContext> Contributions
+        {
+            get { if (_controls != null && HarnessOptions.Parse(LaunchArguments.Current).IsActive) yield return _controls; }
+        }
+
         public override void Install(IContainerBuilder builder)
         {
             var options = HarnessOptions.Parse(LaunchArguments.Current);
@@ -27,10 +37,13 @@ namespace TinCan.DevTools
 
             builder.RegisterInstance(options);
             builder.Register<HarnessSession>(Lifetime.Singleton);
+            builder.Register<ScriptedActionMap>(Lifetime.Singleton);
+            builder.Register<ScriptedActionDriver>(Lifetime.Singleton);
             builder.Register<NetworkConditionsUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>();
             builder.Register<BotRouteUseCase>(Lifetime.Singleton).As<ITickable>();
             builder.Register<HarnessGameplayOverrides>(Lifetime.Singleton).As<IInitializable>();
-            builder.Register<MovementTelemetryUseCase>(Lifetime.Singleton).As<IInitializable>().As<IPostLateTickable>();
+            builder.Register<MovementTelemetryUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>().As<IPostLateTickable>();
+            builder.Register<ToggleNetOverlayInputHandler>(Lifetime.Singleton).As<IInputCommandHandler>();
             InstallScenario(builder, options);
         }
 

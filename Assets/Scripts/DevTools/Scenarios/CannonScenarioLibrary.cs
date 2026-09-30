@@ -15,10 +15,12 @@ using UnityEngine;
 namespace TinCan.DevTools.Scenarios
 {
     /// <summary>
-    /// Scenario steps for the cannon and sky hazards. Commands: switch the hazard field (server), point the subject's
-    /// camera along the cannon (subject peer, as the mouse would), and put a target on the arc the barrel points along now
-    /// (server), so a shot with no further aiming hits it. Probes read replicated state on this peer: who mans the cannon,
-    /// how many hazards exist, and how many balls this peer drew; the server also counts hazards shot down.
+    /// Scenario steps for the cannon and sky hazards. Commands: switch the hazard field (server), point the barrel along
+    /// the cannon's rest direction (subject peer, through the gunner's aim as the mouse would), and put a target on the
+    /// arc the barrel points along now (server), so a shot with no further aiming hits it. Probes read replicated state
+    /// on this peer: who mans the cannon, how many hazards exist, and how many balls this peer drew; the server also
+    /// counts hazards shot down. The subject peer can also check that aiming holds at the yaw limit and leaves the body
+    /// facing where it was (the Gunner input context).
     /// </summary>
     public sealed class CannonScenarioLibrary : IScenarioLibrary
     {
@@ -30,6 +32,8 @@ namespace TinCan.DevTools.Scenarios
         private readonly CannonConfig _config;
         private readonly CannonAimProcessor _aim;
         private readonly IHumanoidRespawnService _respawn;
+        private readonly GunnerAimUseCase _gunner;
+        private float? _recordedFacing;
 
         // Where PlaceSubjectAtCannon stands the subject: this far behind the cannon, on its seat side; within Interact reach.
         private const float StandBehind = 2.2f;
@@ -38,7 +42,7 @@ namespace TinCan.DevTools.Scenarios
         private int _hitsBeforeSpawn;
 
         public CannonScenarioLibrary(ScenarioSubject subject, INetworkService network, IActorRegistry actors, ISkyHazards hazards,
-            CannonShotPresenter presenter, CannonConfig config, CannonAimProcessor aim, IHumanoidRespawnService respawn)
+            CannonShotPresenter presenter, CannonConfig config, CannonAimProcessor aim, IHumanoidRespawnService respawn, GunnerAimUseCase gunner)
         {
             _subject = subject;
             _network = network;
@@ -48,6 +52,7 @@ namespace TinCan.DevTools.Scenarios
             _config = config;
             _aim = aim;
             _respawn = respawn;
+            _gunner = gunner;
         }
 
         public IEnumerable<ScenarioCommand> Commands => new[]
@@ -55,6 +60,7 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioCommand("PlaceSubjectAtCannon", _ => PlaceAtCannon()),
             new ScenarioCommand("HazardField", SetField),
             new ScenarioCommand("AimCannon", Aim),
+            new ScenarioCommand("RecordSubjectFacing", _ => RecordFacing()),
             new ScenarioCommand("SpawnTargetOnArc", SpawnOnArc),
             new ScenarioCommand("SpawnDriftingHazard", SpawnDrifting)
         };
@@ -68,7 +74,9 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("HazardsDestroyed", CheckDestroyed),
             new ScenarioProbe("BallsShown", CheckBalls),
             new ScenarioProbe("HazardHits", CheckHits),
-            new ScenarioProbe("ShipHealthBelow", CheckShipHealthBelow)
+            new ScenarioProbe("ShipHealthBelow", CheckShipHealthBelow),
+            new ScenarioProbe("GunnerAimYaw", CheckGunnerYaw),
+            new ScenarioProbe("SubjectFacingHeld", _ => CheckFacingHeld())
         };
 
         /// <summary>Server: stands the subject behind the cannon on the deck, through the respawn service (the owner snaps).</summary>
@@ -108,18 +116,44 @@ namespace TinCan.DevTools.Scenarios
             return ScenarioCheck.Pass($"hazard field {state}, cleared");
         }
 
-        /// <summary>Subject peer: turns the camera to the cannon's rest direction at this pitch (Unity pitch: negative looks up).</summary>
-        private ScenarioCheck Aim(string pitch)
+        /// <summary>Subject peer: points the barrel along the cannon's rest direction at this elevation, as the mouse would.</summary>
+        private ScenarioCheck Aim(string elevation)
         {
-            var subject = _subject.Resolve();
-            var cannon = Cannon();
-            if (subject?.Look == null || cannon?.Base == null) return ScenarioCheck.Fail("no subject look view or no cannon");
-            if (((IPossessable)subject).OwnerId != _network.LocalClientId) return ScenarioCheck.Fail("subject-peer command: only the owner can turn its camera");
+            if (!_gunner.TrySetAim(new Vector2(0f, Parse(elevation)))) return ScenarioCheck.Fail("subject-peer command: this peer does not man a cannon");
+            return ScenarioCheck.Pass($"barrel yaw 0 deg, elevation {elevation} deg");
+        }
 
-            Vector3 forward = cannon.Base.forward;
-            float yaw = Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
-            subject.Look.ApplyLook(Parse(pitch), yaw);
-            return ScenarioCheck.Pass($"camera yaw {yaw:0} deg, pitch {pitch}");
+        /// <summary>Subject peer: remembers which way the body faces in the cannon's frame, for SubjectFacingHeld.</summary>
+        private ScenarioCheck RecordFacing()
+        {
+            if (FacingInCannonFrame() is not { } facing) return ScenarioCheck.Fail("no subject or no cannon");
+            _recordedFacing = facing;
+            return ScenarioCheck.Pass($"body faces {facing:0.#} deg from the barrel's rest");
+        }
+
+        /// <summary>Subject peer: the gunner's aim yaw is at this many degrees (the barrel is held at its limit, not wrapped).</summary>
+        private ScenarioCheck CheckGunnerYaw(string degrees)
+        {
+            if (_gunner.LocalAim is not { } aim) return ScenarioCheck.Fail("this peer does not man a cannon");
+            string detail = $"aim yaw {aim.Aim.x:0.#} deg (limit {_config.YawLimit:0.#})";
+            return Mathf.Abs(aim.Aim.x - Parse(degrees)) <= 0.5f ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
+
+        /// <summary>Subject peer: the body still faces where RecordSubjectFacing saw it; aiming turned the barrel, not the body.</summary>
+        private ScenarioCheck CheckFacingHeld()
+        {
+            if (_recordedFacing is not { } recorded || FacingInCannonFrame() is not { } facing) return ScenarioCheck.Fail("no recorded facing, subject or cannon");
+            float drift = Mathf.Abs(Mathf.DeltaAngle(recorded, facing));
+            string detail = $"body turned {drift:0.#} deg while aiming";
+            return drift <= 3f ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
+
+        private float? FacingInCannonFrame()
+        {
+            var body = _subject.Body;
+            var cannon = Cannon()?.Base;
+            if (body == null || cannon == null) return null;
+            return Vector3.SignedAngle(Vector3.ProjectOnPlane(cannon.forward, cannon.up), Vector3.ProjectOnPlane(body.forward, cannon.up), cannon.up);
         }
 
         /// <summary>Server: a target this far along the arc the barrel points along now.</summary>

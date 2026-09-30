@@ -15,3 +15,4 @@ MonoBehaviour:
   _config: {fileID: 11400000, guid: cd2c0928748a2554aa2278a47978d55a, type: 2}
   _cannonFixtures:
   - {fileID: 11400000, guid: a3426bcaf5141cb4ab1c3d9c6368c83c, type: 2}
+  _controls: {fileID: 11400000, guid: 1d672656a0560834bb10146cc52eb567, type: 2}

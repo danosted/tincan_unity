@@ -31,7 +31,7 @@ namespace TinCan.Tests.EditMode
             _actorRegistry = new FakeActorRegistry();
             _processor = new HumanoidMovementProcessor();
             _abilitySystem = new AbilitySystemUseCase(new FakeAbilityRegistry(), _actorRegistry, _timeService, new FakeEventPublisher());
-            _useCase = new HumanoidMovementUseCase(new FakeInputService(), new FakeNetworkService(), _processor, _abilitySystem, _actorRegistry, _timeService);
+            _useCase = new HumanoidMovementUseCase(new FakeInputReader(), FakeInputContexts.Humanoid(), new FakeNetworkService(), _processor, _abilitySystem, _actorRegistry, _timeService, FakeInputContexts.NoContributors);
 
             _shipRoot = new GameObject("ShipRoot");
 

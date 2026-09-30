@@ -19,6 +19,7 @@ namespace TinCan.App.Views
         private INetworkService? _networkService;
         private UIDocument? _document;
         private VisualElement? _panel;
+        private VisualElement? _rows;
         private MenuSnapshot? _renderedSnapshot;
 
         [Inject]
@@ -77,13 +78,16 @@ namespace TinCan.App.Views
                 for (int i = 0; i < snapshot.Items.Count; i++)
                 {
                     var value = snapshot.Items[i].Value;
-                    switch (_panel.ElementAt(i + 1))
+                    switch (_rows!.ElementAt(i))
                     {
                         case TextField field when field.value != value:
                             field.SetValueWithoutNotify(value);
                             break;
                         case Toggle toggle when toggle.value != (value == bool.TrueString):
                             toggle.SetValueWithoutNotify(value == bool.TrueString);
+                            break;
+                        case Button button when snapshot.Items[i].Kind == MenuItemKind.Binding:
+                            button.text = BindingText(snapshot.Items[i]);
                             break;
                     }
                 }
@@ -93,9 +97,13 @@ namespace TinCan.App.Views
 
             _panel.Clear();
             _panel.Add(new Label(snapshot.Title) { style = { fontSize = 28, marginBottom = 12, unityFontStyleAndWeight = FontStyle.Bold } });
+            // Long menus (Controls) scroll instead of running off the screen.
+            var scroll = new ScrollView(ScrollViewMode.Vertical) { style = { flexShrink = 1 } };
+            _panel.Add(scroll);
+            _rows = scroll.contentContainer;
             foreach (var row in snapshot.Items)
             {
-                _panel.Add(BuildRow(row));
+                _rows.Add(BuildRow(row));
             }
             _renderedSnapshot = snapshot;
         }
@@ -131,6 +139,16 @@ namespace TinCan.App.Views
                     toggle.RegisterValueChangedCallback(evt => menus.SetValue(row.ItemId, evt.newValue ? bool.TrueString : bool.FalseString));
                     return toggle;
                 }
+                case MenuItemKind.Binding:
+                {
+                    var button = new Button(() => menus.Invoke(row.ItemId)) { text = BindingText(row) };
+                    button.style.marginTop = 1;
+                    button.style.height = 22;
+                    button.style.unityTextAlign = TextAnchor.MiddleLeft;
+                    return button;
+                }
+                case MenuItemKind.Note:
+                    return new Label(row.Label) { style = { marginTop = 6, color = new Color(1f, 0.75f, 0.3f), whiteSpace = WhiteSpace.Normal } };
                 default:
                 {
                     var button = new Button(() => menus.Invoke(row.ItemId)) { text = row.Label };
@@ -141,6 +159,8 @@ namespace TinCan.App.Views
             }
         }
 
+        private static string BindingText(MenuItemRow row) => $"{row.Label}  -  {row.Value}";
+
         private static VisualElement BuildPanel()
         {
             var panel = new VisualElement();
@@ -149,6 +169,7 @@ namespace TinCan.App.Views
             panel.style.top = Length.Percent(50);
             panel.style.translate = new Translate(Length.Percent(-50), Length.Percent(-50));
             panel.style.minWidth = 320;
+            panel.style.maxHeight = Length.Percent(92);
             panel.style.paddingTop = 16;
             panel.style.paddingBottom = 16;
             panel.style.paddingLeft = 24;

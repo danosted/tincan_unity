@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2002fe40ba6317a4180a2d8b05e179e1, type: 3}
+  m_Name: Context_DevTools
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.InputContext
+  _description: 'Only while the net harness runs (contributed by its installer):
+    F3 toggles the readout.'
+  _activation: 0
+  _possessedKind: 0
+  _tag: {fileID: 0}
+  _priority: 950
+  _blocksAllLower: 0
+  _blocks: []
+  _actions: []
+  _routes:
+  - Action: {fileID: 11400000, guid: 5dd9ab0838f588544852bbf7493b191c, type: 2}
+    Command: {fileID: 11400000, guid: e91b7331f9138674db0742f7f920e718, type: 2}

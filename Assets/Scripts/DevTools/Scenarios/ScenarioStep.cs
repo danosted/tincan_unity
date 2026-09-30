@@ -29,17 +29,17 @@ namespace TinCan.DevTools.Scenarios
         public readonly string Label;
         /// <summary>Wait/Hold length, Tap settle time, or WaitUntil timeout, in seconds.</summary>
         public readonly float Duration;
-        public readonly string[] Actions;
+        public readonly ScriptedAction[] Actions;
         /// <summary>Command, probe or checkpoint name.</summary>
         public readonly string Name;
         public readonly string Argument;
 
-        public ScenarioStep(ScenarioStepKind kind, string label, float duration = 0f, string[]? actions = null, string name = "", string argument = "")
+        public ScenarioStep(ScenarioStepKind kind, string label, float duration = 0f, ScriptedAction[]? actions = null, string name = "", string argument = "")
         {
             Kind = kind;
             Label = label;
             Duration = Math.Max(0f, duration);
-            Actions = actions ?? Array.Empty<string>();
+            Actions = actions ?? Array.Empty<ScriptedAction>();
             Name = name;
             Argument = argument;
         }

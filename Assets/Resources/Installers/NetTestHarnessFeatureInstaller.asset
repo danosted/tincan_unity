@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69c62d3fb324b634884b326cd690b883, type: 3}
   m_Name: NetTestHarnessFeatureInstaller
   m_EditorClassIdentifier: TinCan.DevTools::TinCan.DevTools.NetTestHarnessFeatureInstaller
+  _controls: {fileID: 11400000, guid: 7af3935694bb6d644a1852e437803a9d, type: 2}

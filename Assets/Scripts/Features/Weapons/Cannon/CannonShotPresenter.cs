@@ -12,8 +12,8 @@ using Object = UnityEngine.Object;
 namespace TinCan.Features.Weapons.Cannon
 {
     /// <summary>
-    /// Presentation, every peer, every frame. Turns each cannon's barrel: the local occupant's own aim at once (their
-    /// look is local and predicted), everyone else's replicated aim smoothed. Shows the local occupant the arc a shot
+    /// Presentation, every peer, every frame. Turns each cannon's barrel: the local occupant's own aim at once
+    /// (<see cref="GunnerAimUseCase.LocalAim"/>, local and predicted), everyone else's replicated aim smoothed. Shows the local occupant the arc a shot
     /// would fly. Draws the balls: a ball is placed on its arc by the time since this peer heard of it (ticks are not
     /// comparable across peers), starting at this peer's own muzzle and blending onto the server's path, because a
     /// client sees its ship slightly behind the server's.
@@ -48,6 +48,7 @@ namespace TinCan.Features.Weapons.Cannon
         private readonly ITimeService _time;
         private readonly CannonConfig _config;
         private readonly CannonAimProcessor _aim;
+        private readonly GunnerAimUseCase _gunner;
         private readonly List<Ball> _balls = new();
         private readonly Stack<Transform> _pool = new();
         private readonly Dictionary<Guid, AimState> _aims = new();
@@ -55,13 +56,15 @@ namespace TinCan.Features.Weapons.Cannon
         private Vector3[] _preview = Array.Empty<Vector3>();
         private Transform? _root;
 
-        public CannonShotPresenter(IActorRegistry actors, INetworkService network, ITimeService time, CannonConfig config, CannonAimProcessor aim)
+        public CannonShotPresenter(IActorRegistry actors, INetworkService network, ITimeService time, CannonConfig config, CannonAimProcessor aim,
+            GunnerAimUseCase gunner)
         {
             _actors = actors;
             _network = network;
             _time = time;
             _config = config;
             _aim = aim;
+            _gunner = gunner;
         }
 
         /// <summary>Balls drawn so far on this peer (scenario probe: the client saw the shot).</summary>
@@ -94,12 +97,11 @@ namespace TinCan.Features.Weapons.Cannon
             }
 
             var local = LocalOccupant(cannon);
-            if (local != null)
+            if (local != null && _gunner.LocalAim is { } gunning && gunning.Cannon == cannon.Id)
             {
-                // The live look (the orbital camera's yaw and pitch, updated every frame from the mouse), not the body's
-                // facing, which only turns in simulation ticks: the gunner's camera rides the barrel, so steps would show.
-                var movement = local.Movement;
-                (state.Yaw, state.Elevation) = _aim.BarrelAngles(cannon.Base.rotation, movement.LookRotation * Vector3.forward, movement.LookPitch, _config.AimLimits);
+                // The gunner's live aim (steered every frame from the mouse), not the replicated one, which only moves in
+                // simulation ticks: the gunner's camera rides the barrel, so steps would show.
+                (state.Yaw, state.Elevation) = _aim.ClampAim(gunning.Aim, _config.AimLimits);
             }
             else if (!state.Initialized)
             {

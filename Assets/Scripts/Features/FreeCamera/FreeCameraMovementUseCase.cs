@@ -1,28 +1,36 @@
+#nullable enable
 using UnityEngine;
 using VContainer.Unity;
 using TinCan.Core.Domain;
-using System.Collections.Generic;
+using TinCan.Core.Domain.Input;
 
 namespace TinCan.Features.FreeCamera
 {
     /// <summary>
     /// Application Layer: Coordinates input and logic to move the camera view.
-    /// Implements ITickable to run in the VContainer-managed update loop.
+    /// Implements ITickable to run in the VContainer-managed update loop. Reads the Free Camera context's Move and the
+    /// Camera context's Look; both read zero while their context is not live.
     /// </summary>
     public class FreeCameraMovementUseCase : ITickable
     {
-        private readonly IInputService _inputService;
+        private readonly IInputReader _input;
+        private readonly FreeCameraInputContext _controls;
+        private readonly CameraInputContext _camera;
         private readonly FreeCameraMovementProcessor _moveProcessor;
         private readonly FreeCameraRotationProcessor _rotationProcessor;
         private readonly IActorRegistry _registry;
 
         public FreeCameraMovementUseCase(
-            IInputService inputService,
+            IInputReader input,
+            FreeCameraInputContext controls,
+            CameraInputContext camera,
             FreeCameraMovementProcessor moveProcessor,
             FreeCameraRotationProcessor rotationProcessor,
             IActorRegistry registry)
         {
-            _inputService = inputService;
+            _input = input;
+            _controls = controls;
+            _camera = camera;
             _moveProcessor = moveProcessor;
             _rotationProcessor = rotationProcessor;
             _registry = registry;
@@ -30,42 +38,18 @@ namespace TinCan.Features.FreeCamera
 
         public void Tick()
         {
-            bool anyActive = false;
             foreach (var view in _registry.GetActors<IFreeCameraView>())
             {
                 if (!view.IsActive) continue;
-                anyActive = true;
 
                 HandleRotation(view);
                 HandleMovement(view);
-            }
-
-            if (anyActive)
-            {
-                HandleCursorToggle();
-            }
-        }
-
-        private void HandleCursorToggle()
-        {
-            if (_inputService.WasActionTriggered(ActionNames.Cancel))
-            {
-                if (Cursor.lockState == CursorLockMode.Locked)
-                {
-                    Cursor.lockState = CursorLockMode.None;
-                    Cursor.visible = true;
-                }
-                else
-                {
-                    Cursor.lockState = CursorLockMode.Locked;
-                    Cursor.visible = false;
-                }
             }
         }
 
         private void HandleRotation(IFreeCameraView view)
         {
-            Vector2 mouseDelta = _inputService.GetMouseDelta();
+            Vector2 mouseDelta = _input.ReadVector2(_camera.Look);
             if (mouseDelta.sqrMagnitude < 0.001f) return;
 
             var result = _rotationProcessor.CalculateRotation(
@@ -80,7 +64,8 @@ namespace TinCan.Features.FreeCamera
 
         private void HandleMovement(IFreeCameraView view)
         {
-            Vector3 inputDirection = CalculateInputDirection();
+            Vector2 move = _input.ReadVector2(_controls.Move);
+            Vector3 inputDirection = new Vector3(move.x, 0, move.y).normalized;
             if (inputDirection.sqrMagnitude < 0.001f) return;
 
             // Transform input direction to camera-relative world direction
@@ -92,14 +77,6 @@ namespace TinCan.Features.FreeCamera
                 Time.deltaTime);
 
             view.CameraTransform.position += displacement;
-        }
-
-        private Vector3 CalculateInputDirection()
-        {
-            float horizontal = _inputService.GetAxis(ActionNames.MoveRight, ActionNames.MoveLeft);
-            float vertical = _inputService.GetAxis(ActionNames.MoveForward, ActionNames.MoveBackward);
-
-            return new Vector3(horizontal, 0, vertical).normalized;
         }
     }
 }

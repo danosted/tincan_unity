@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Input;
+using VContainer;
 using TinCan.Core.Domain.Networking;
 using TinCan.DevTools;
 using TinCan.Core.Possession;
@@ -74,6 +76,8 @@ namespace TinCan.Tests.EditMode
         private SessionNetwork _network = null!;
         private RecordingPossessionAuthority _possession = null!;
         private ScriptedInput _input = null!;
+        private TinCan.Core.Humanoid.HumanoidInputContext _humanoid = null!;
+        private ScriptedActionDriver _driver = null!;
         private HarnessSession _session = null!;
         private FakeTimeService _time = null!;
 
@@ -85,6 +89,11 @@ namespace TinCan.Tests.EditMode
             _network = new SessionNetwork();
             _possession = new RecordingPossessionAuthority();
             _input = new ScriptedInput();
+            _humanoid = FakeInputContexts.Humanoid();
+            var contexts = new VContainer.ContainerBuilder();
+            contexts.RegisterInstance(_humanoid);
+            contexts.RegisterInstance(FakeInputContexts.Airship());
+            _driver = new ScriptedActionDriver(_input, new ScriptedActionMap(contexts.Build()), new FakeEventPublisher());
             _session = new HarnessSession();
             _time = new FakeTimeService { DeltaTime = 0.1f };
         }
@@ -97,7 +106,7 @@ namespace TinCan.Tests.EditMode
         }
 
         private BotRouteUseCase Create(string route) => new(
-            new HarnessOptions(null, route, false), _session, _input, _registry, _network, _possession, _time, new FakeEventPublisher());
+            new HarnessOptions(null, route, false), _session, _driver, _registry, _network, _possession, _time, new FakeEventPublisher());
 
         private void Tick(BotRouteUseCase useCase, float seconds)
         {
@@ -122,10 +131,10 @@ namespace TinCan.Tests.EditMode
             var useCase = Create("DeckWalk");
 
             Tick(useCase, 4.5f); // past the 4 s settle, inside "hold MoveForward"
-            Assert.That(_input.IsPressed(ActionNames.MoveForward), Is.True);
+            Assert.That(_input.IsPressed(_humanoid.Move!), Is.True);
 
             Tick(useCase, 1f); // into the following wait
-            Assert.That(_input.IsPressed(ActionNames.MoveForward), Is.False);
+            Assert.That(_input.IsPressed(_humanoid.Move!), Is.False);
         }
 
         [Test]
@@ -140,8 +149,8 @@ namespace TinCan.Tests.EditMode
 
             Assert.That(completed, Is.True);
             Assert.That(_session.IsRouteComplete, Is.True);
-            Assert.That(_input.IsPressed(ActionNames.MoveForward), Is.False);
-            Assert.That(_input.IsPressed(ActionNames.Sprint), Is.False);
+            Assert.That(_input.IsPressed(_humanoid.Move!), Is.False);
+            Assert.That(_input.IsPressed(_humanoid.Sprint!), Is.False);
         }
 
         [Test]

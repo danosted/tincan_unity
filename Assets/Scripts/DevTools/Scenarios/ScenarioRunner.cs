@@ -14,9 +14,9 @@ namespace TinCan.DevTools.Scenarios
     /// <summary>What a <see cref="ScenarioRunner"/> needs from the running game. The use case implements it; tests fake it.</summary>
     public interface IScenarioWorld
     {
-        void Press(string action);
-        void Release(string action);
-        void Tap(string action);
+        void Press(ScriptedAction action);
+        void Release(ScriptedAction action);
+        void Tap(ScriptedAction action);
         ScenarioCheck Execute(string command, string argument);
         ScenarioCheck Evaluate(string probe, string argument);
         /// <summary>Captures a screenshot and returns where it will be written.</summary>
@@ -41,7 +41,7 @@ namespace TinCan.DevTools.Scenarios
         private readonly IReadOnlyList<ScenarioStep> _steps;
         private readonly IScenarioWorld _world;
         private readonly ScenarioTimeline _timeline;
-        private readonly HashSet<string> _held = new();
+        private readonly HashSet<ScriptedAction> _held = new();
         private readonly List<string> _failures = new();
         private readonly List<ScenarioExpectation> _expectations = new();
         private readonly List<string> _captures = new();

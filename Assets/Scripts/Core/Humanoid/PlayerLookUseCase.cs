@@ -1,36 +1,40 @@
+#nullable enable
 using UnityEngine;
 using VContainer.Unity;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Input;
 using TinCan.Core.Domain.Networking;
-using System.Collections.Generic;
-using System.Linq;
 using TinCan.Core.Domain.Look;
 
 namespace TinCan.Core.Humanoid
 {
     /// <summary>
-    /// Application Layer: Coordinates input for looking around.
-    /// Renamed internally to support generic orbital cameras across different actors.
+    /// Application Layer: turns the Camera context's Look into the orbital camera of whatever the local player controls
+    /// (their body or the airship). While the Camera context is blocked (a menu, a station that aims with the mouse)
+    /// Look reads zero and the camera holds still.
     /// </summary>
     public class PlayerLookUseCase : ITickable
     {
-        private readonly IInputService _inputService;
+        private readonly IInputReader _input;
+        private readonly CameraInputContext _controls;
         private readonly INetworkService _networkService;
         private readonly IActorRegistry _registry;
 
         public PlayerLookUseCase(
-            IInputService inputService,
+            IInputReader input,
+            CameraInputContext controls,
             INetworkService networkService,
             IActorRegistry registry)
         {
-            _inputService = inputService;
+            _input = input;
+            _controls = controls;
             _networkService = networkService;
             _registry = registry;
         }
 
         public void Tick()
         {
-            Vector2 mouseDelta = _inputService.GetMouseDelta();
+            Vector2 mouseDelta = _input.ReadVector2(_controls.Look);
             if (mouseDelta.sqrMagnitude < 0.001f) return;
 
             ulong localId = _networkService.LocalClientId;

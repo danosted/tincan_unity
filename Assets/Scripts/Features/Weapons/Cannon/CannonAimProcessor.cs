@@ -19,21 +19,25 @@ namespace TinCan.Features.Weapons.Cannon
     }
 
     /// <summary>
-    /// Domain, pure: turns the occupant's aim into barrel angles and the muzzle direction. The occupant stays in their
-    /// body, so the aim is the body's facing plus its look pitch (Unity pitch: positive looks down); the barrel follows it
-    /// within the limits, measured in the cannon base's own frame so it turns with the ship.
+    /// Domain, pure: the gunner's aim and what it does to the barrel. The aim is the station aim of the occupant's input
+    /// (<c>HumanoidInputState.StationAim</c>): yaw and elevation in degrees in the cannon base's own frame, so it turns
+    /// with the ship. It is steered by the Gunner context's Aim and never leaves the limits, so it cannot wrap; the body's
+    /// own look plays no part.
     /// </summary>
     public class CannonAimProcessor
     {
-        /// <summary>Barrel yaw and elevation (degrees, base frame) for an occupant facing <paramref name="bodyForward"/>.</summary>
-        public (float Yaw, float Elevation) BarrelAngles(Quaternion baseRotation, Vector3 bodyForward, float lookPitch, in CannonAimLimits limits)
-        {
-            Vector3 up = baseRotation * Vector3.up;
-            Vector3 flat = Vector3.ProjectOnPlane(bodyForward, up);
-            float yaw = flat.sqrMagnitude > 1e-6f ? Vector3.SignedAngle(baseRotation * Vector3.forward, flat, up) : 0f;
+        /// <summary>An aim (x yaw, y elevation) within the limits, as barrel angles.</summary>
+        public (float Yaw, float Elevation) ClampAim(Vector2 aim, in CannonAimLimits limits) =>
+            (Mathf.Clamp(aim.x, -limits.YawLimit, limits.YawLimit), Mathf.Clamp(aim.y, limits.MinElevation, limits.MaxElevation));
 
-            return (Mathf.Clamp(yaw, -limits.YawLimit, limits.YawLimit),
-                Mathf.Clamp(-lookPitch, limits.MinElevation, limits.MaxElevation));
+        /// <summary>
+        /// The aim after a look delta (mouse counts; x right, y up) at <paramref name="sensitivity"/> degrees per count,
+        /// held within the limits: pushing past a limit leaves the aim on it, and turning back moves it at once.
+        /// </summary>
+        public Vector2 Steer(Vector2 aim, Vector2 delta, float sensitivity, in CannonAimLimits limits)
+        {
+            var (yaw, elevation) = ClampAim(aim + delta * sensitivity, limits);
+            return new Vector2(yaw, elevation);
         }
 
         /// <summary>The barrel's local rotation for the angles, relative to the base.</summary>

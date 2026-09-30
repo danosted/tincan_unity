@@ -11,6 +11,7 @@ namespace TinCan.Core.Interaction
     public interface IVehicleBoardingUseCase
     {
         void BoardVehicle(Guid requesterActorId, IVehicleBoardable boardable);
-        void ExitVehicle();
+        /// <summary>Lets go of the vehicle this player controls; false when they are in their own body.</summary>
+        bool ExitVehicle();
     }
 }

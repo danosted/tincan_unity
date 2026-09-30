@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2002fe40ba6317a4180a2d8b05e179e1, type: 3}
+  m_Name: Context_Rebinding
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.InputContext
+  _description: 'The Controls menu waits for a key: every action is silent until
+    it has one.'
+  _activation: 4
+  _possessedKind: 0
+  _tag: {fileID: 0}
+  _priority: 1000
+  _blocksAllLower: 1
+  _blocks: []
+  _actions: []
+  _routes: []

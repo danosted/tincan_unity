@@ -25,7 +25,7 @@ namespace TinCan.Tests.EditMode
         };
 
         /// <summary>Registration calls in <c>ProjectLifetimeScope.cs</c> (review B5).</summary>
-        public const int ProjectLifetimeScopeRegistrationLimit = 37;
+        public const int ProjectLifetimeScopeRegistrationLimit = 33;
 
         /// <summary>Processors, use cases and interaction handlers no test file mentions (review C13).</summary>
         public static readonly string[] UntestedTypes =
@@ -65,6 +65,6 @@ namespace TinCan.Tests.EditMode
         };
 
         /// <summary>Scripts under <c>Assets/Scripts</c> without <c>#nullable enable</c> (review C12).</summary>
-        public const int FilesWithoutNullableLimit = 104;
+        public const int FilesWithoutNullableLimit = 96;
     }
 }

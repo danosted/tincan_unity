@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bf2ac331508f9246a580a50f4b98296, type: 3}
+  m_Name: Context_Global
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.GlobalInputContext
+  _description: 'Always on, lowest: Cancel opens the main menu when nothing above
+    wanted it; Tab switches control.'
+  _activation: 0
+  _possessedKind: 0
+  _tag: {fileID: 0}
+  _priority: 0
+  _blocksAllLower: 0
+  _blocks: []
+  _actions: []
+  _routes:
+  - Action: {fileID: 11400000, guid: d4c2589aa24d2d849be5e35a6b405ca8, type: 2}
+    Command: {fileID: 11400000, guid: 19ccb884f66eb364db7c67bb11520d5e, type: 2}
+  - Action: {fileID: 11400000, guid: f6883270642444841bc2717cc7faa331, type: 2}
+    Command: {fileID: 11400000, guid: 4d4194740b54c95499e960175f2f5805, type: 2}
+  Cancel: {fileID: 11400000, guid: d4c2589aa24d2d849be5e35a6b405ca8, type: 2}
+  SwitchPossession: {fileID: 11400000, guid: f6883270642444841bc2717cc7faa331, type: 2}

@@ -12,3 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06e89af78a0cbc04db5786832fc04f9c, type: 3}
   m_Name: Input_Sprint
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Abilities.Inputs.SprintInput
+  _actions:
+  - {fileID: 11400000, guid: d9da40c57dcec92489a9616f6d28dd11, type: 2}

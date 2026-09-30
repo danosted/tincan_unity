@@ -1,23 +1,36 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using TinCan.Core.Domain.Input;
+using VContainer;
 
 namespace TinCan.Core.UI
 {
     /// <summary>
-    /// Application Layer: owns the menu stack and per-menu values and dispatches commands. Input is handled by MainMenuBootstrap.
+    /// Application Layer: owns the menu stack and per-menu values and dispatches commands. Cancel reaches it through the
+    /// input contexts (MenuBackInputHandler, OpenMenuInputHandler). A <see cref="MenuItemKind.Bindings"/> row expands into
+    /// one row per key the player can change (<see cref="IInputBindings"/>); invoking one waits for the new key.
     /// Pure C# apart from the ScriptableObject definitions it is handed.
     /// </summary>
     public class MenuUseCase : IMenuSystem
     {
+        public const string WaitingForKey = "Press a key... (Esc cancels)";
+
         private readonly IMenuCommandRegistry _commands;
+        private readonly IInputBindings? _bindings;
         private readonly List<MenuDefinition> _stack = new();
         private readonly Dictionary<string, string> _values = new();
+        private readonly Dictionary<string, InputBindingSlot> _bindingRows = new();
         private MenuSnapshot? _current;
 
-        public MenuUseCase(IMenuCommandRegistry commands)
+        public MenuUseCase(IMenuCommandRegistry commands) : this(commands, null) { }
+
+        [Inject]
+        public MenuUseCase(IMenuCommandRegistry commands, IInputBindings? bindings)
         {
             _commands = commands;
+            _bindings = bindings;
+            if (_bindings != null) _bindings.Changed += OnBindingsChanged;
         }
 
         public MenuSnapshot? Current => _current;
@@ -41,6 +54,7 @@ namespace TinCan.Core.UI
         public void Back()
         {
             if (!IsOpen) return;
+            _bindings?.CancelRebind();
             _stack.RemoveAt(_stack.Count - 1);
             Rebuild();
         }
@@ -48,12 +62,19 @@ namespace TinCan.Core.UI
         public void CloseAll()
         {
             if (!IsOpen) return;
+            _bindings?.CancelRebind();
             _stack.Clear();
             Rebuild();
         }
 
         public void Invoke(string itemId)
         {
+            if (IsOpen && _bindingRows.TryGetValue(itemId, out var slot))
+            {
+                _bindings!.StartRebind(slot);
+                return;
+            }
+
             if (!TryGetItem(itemId, out var menu, out var item)) return;
 
             switch (item.Kind)
@@ -117,14 +138,42 @@ namespace TinCan.Core.UI
 
             var menu = _stack[_stack.Count - 1];
             var rows = new List<MenuItemRow>(menu.Items.Count);
+            _bindingRows.Clear();
             foreach (var item in menu.Items)
             {
+                if (item.Kind == MenuItemKind.Bindings)
+                {
+                    AddBindingRows(item, rows);
+                    continue;
+                }
+
                 _values.TryGetValue(ValueKey(menu.MenuId, item.ItemId), out var value);
                 rows.Add(new MenuItemRow(item.ItemId, item.Label, item.Kind, value ?? string.Empty));
             }
 
             _current = new MenuSnapshot(menu.MenuId, menu.Title, rows, _stack.Count > 1);
             Changed?.Invoke();
+        }
+
+        private void AddBindingRows(MenuItemDefinition item, List<MenuItemRow> rows)
+        {
+            if (_bindings == null) return;
+
+            for (int i = 0; i < _bindings.Slots.Count; i++)
+            {
+                var slot = _bindings.Slots[i];
+                string rowId = $"{item.ItemId}/{i}";
+                bool waiting = _bindings.Rebinding is { } rebinding && rebinding.SameAs(slot);
+                rows.Add(new MenuItemRow(rowId, $"{slot.Group}: {slot.Label}", MenuItemKind.Binding, waiting ? WaitingForKey : _bindings.Describe(slot)));
+                _bindingRows[rowId] = slot;
+            }
+
+            if (_bindings.LastMessage is { } message) rows.Add(new MenuItemRow(item.ItemId + "/note", message, MenuItemKind.Note, string.Empty));
+        }
+
+        private void OnBindingsChanged()
+        {
+            if (IsOpen) Rebuild();
         }
 
         private static string ValueKey(string menuId, string itemId) => menuId + "/" + itemId;

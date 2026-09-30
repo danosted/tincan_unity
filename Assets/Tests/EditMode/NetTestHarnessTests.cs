@@ -59,8 +59,8 @@ namespace TinCan.Tests.EditMode
     {
         private static BotRoute ThreeSteps() => new BotRoute.Builder("Test")
             .Wait(1f)
-            .Tap(ActionNames.Jump, 0.5f)
-            .Hold(2f, ActionNames.MoveForward)
+            .Tap(ScriptedAction.Jump, 0.5f)
+            .Hold(2f, ScriptedAction.MoveForward)
             .Build();
 
         [Test]
@@ -77,7 +77,7 @@ namespace TinCan.Tests.EditMode
 
             Assert.That(cursor.Advance(0f, entered), Has.Count.EqualTo(1));
             Assert.That(cursor.Advance(0.5f, entered), Is.Empty);
-            Assert.That(cursor.Advance(1.2f, entered)[0].Taps, Does.Contain(ActionNames.Jump));
+            Assert.That(cursor.Advance(1.2f, entered)[0].Taps, Does.Contain(ScriptedAction.Jump));
             Assert.That(cursor.Advance(1.3f, entered), Is.Empty);
             Assert.That(cursor.IsComplete, Is.False);
         }
@@ -91,8 +91,8 @@ namespace TinCan.Tests.EditMode
             cursor.Advance(2f, entered);
 
             Assert.That(entered, Has.Count.EqualTo(3));
-            Assert.That(entered[1].Taps, Does.Contain(ActionNames.Jump));
-            Assert.That(entered[2].Held, Does.Contain(ActionNames.MoveForward));
+            Assert.That(entered[1].Taps, Does.Contain(ScriptedAction.Jump));
+            Assert.That(entered[2].Held, Does.Contain(ScriptedAction.MoveForward));
         }
 
         [Test]

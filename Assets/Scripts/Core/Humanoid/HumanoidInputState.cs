@@ -27,6 +27,13 @@ namespace TinCan.Core.Humanoid
         /// </summary>
         public ulong ActiveInputMask;
 
+        /// <summary>
+        /// While occupying a station that aims (a cannon): its aim in degrees in the station's own frame, x yaw and y
+        /// elevation (positive up), already within the station's limits. Written by the station's
+        /// <see cref="IHumanoidInputContributor"/>; zero otherwise. The body's look stays where it was.
+        /// </summary>
+        public Vector2 StationAim;
+
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref Sequence);
@@ -36,6 +43,7 @@ namespace TinCan.Core.Humanoid
             serializer.SerializeValue(ref LookRotation);
             serializer.SerializeValue(ref LookPitch);
             serializer.SerializeValue(ref ActiveInputMask);
+            serializer.SerializeValue(ref StationAim);
         }
     }
 }

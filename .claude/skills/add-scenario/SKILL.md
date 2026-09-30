@@ -19,7 +19,9 @@ The canonical description is `.docs/NETWORK_TEST_HARNESS.md` ("Anatomy", "Adding
    - Never edit a test scene by hand.
 2. **Design the three lanes** before writing code:
    - Arrange (server) sets the world up.
-   - Act (the subject's peer) uses real input (`Hold`, `Tap`) and checks what that peer sees.
+   - Act (the subject's peer) uses real input (`Hold`, `Tap` with a `ScriptedAction` intent such as
+     `ScriptedAction.Interact`; add an intent to `DevTools/ScriptedAction.cs` + `ScriptedActionMap` for a new action)
+     and checks what that peer sees.
    - Assert (server) checks the authoritative outcome.
    - Lanes synchronise through `WaitUntil` on replicated state, never through fixed waits.
 3. **Write a library** `DevTools/Scenarios/<Feature>ScenarioLibrary.cs` (`IScenarioLibrary`), one type per file.

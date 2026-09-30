@@ -1,7 +1,7 @@
 #nullable enable
 using NUnit.Framework;
-using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
+using TinCan.Core.Domain.Input;
 using TinCan.Core.UI;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
@@ -9,8 +9,8 @@ using UnityEngine;
 namespace TinCan.Tests.EditMode
 {
     /// <summary>
-    /// Covers the single-owner Cancel handling: open/back/close, the vehicle-exit guard, session transitions,
-    /// and the gameplay input gate.
+    /// The main menu's lifecycle (opens offline, closes when a session starts) and the two Cancel handlers the input
+    /// contexts route to: Back while a menu is open, Open when nothing above wanted Cancel.
     /// </summary>
     public class MainMenuBootstrapTests
     {
@@ -30,26 +30,30 @@ namespace TinCan.Tests.EditMode
             public void Shutdown() => State = NetworkState.Offline;
         }
 
-        private FakeInputService _input = null!;
         private SwitchableNetwork _network = null!;
         private FakePossessionState _possession = null!;
-        private InputGate _gate = null!;
         private MenuUseCase _menus = null!;
         private MenuDefinition _main = null!;
         private MainMenuBootstrap _bootstrap = null!;
+        private IInputCommandHandler _open = null!;
+        private IInputCommandHandler _back = null!;
+        private OpenMenuCommand _openCommand = null!;
+        private MenuBackCommand _backCommand = null!;
         private FakeAirshipView _body = null!;
         private FakeAirshipView _vehicle = null!;
 
         [SetUp]
         public void SetUp()
         {
-            _input = new FakeInputService();
             _network = new SwitchableNetwork();
             _possession = new FakePossessionState();
-            _gate = new InputGate();
             _menus = new MenuUseCase(new MenuCommandRegistry(new IMenuCommand[0]));
             _main = MenuDefinition.Create("main", "Main", new MenuItemDefinition { ItemId = "quit", Label = "Quit", Kind = MenuItemKind.Command, CommandId = "Quit" });
-            _bootstrap = new MainMenuBootstrap(_menus, _network, _input, _possession, _gate, _main);
+            _bootstrap = new MainMenuBootstrap(_menus, _network, _main);
+            _open = new OpenMenuInputHandler(_menus, _network, _possession, _main);
+            _back = new MenuBackInputHandler(_menus);
+            _openCommand = ScriptableObject.CreateInstance<OpenMenuCommand>();
+            _backCommand = ScriptableObject.CreateInstance<MenuBackCommand>();
             _body = new FakeAirshipView("Body");
             _vehicle = new FakeAirshipView("Vehicle");
             _possession.PlayerActor = _body;
@@ -62,19 +66,20 @@ namespace TinCan.Tests.EditMode
             _body.Destroy();
             _vehicle.Destroy();
             Object.DestroyImmediate(_main);
+            Object.DestroyImmediate(_openCommand);
+            Object.DestroyImmediate(_backCommand);
         }
 
         [Test]
-        public void Initialize_Offline_OpensMenuAndBlocksGameplay()
+        public void Initialize_Offline_OpensMenu()
         {
             _bootstrap.Initialize();
 
             Assert.That(_menus.IsOpen, Is.True);
-            Assert.That(_gate.GameplayBlocked, Is.True);
         }
 
         [Test]
-        public void SessionStarts_ClosesMenuAndUnblocksGameplay()
+        public void SessionStarts_ClosesMenu()
         {
             _bootstrap.Initialize();
             _network.StartHost();
@@ -82,67 +87,64 @@ namespace TinCan.Tests.EditMode
             _bootstrap.Tick();
 
             Assert.That(_menus.IsOpen, Is.False);
-            Assert.That(_gate.GameplayBlocked, Is.False);
         }
 
         [Test]
-        public void Cancel_InOwnBody_OpensMenu_ThenCancelClosesIt_WithoutReopening()
+        public void SessionEnds_ReopensMenu()
         {
             _bootstrap.Initialize();
             _network.StartHost();
             _bootstrap.Tick();
 
-            _input.TriggeredActions.Add(ActionNames.Cancel);
+            _network.Shutdown();
             _bootstrap.Tick();
+
             Assert.That(_menus.IsOpen, Is.True);
-            Assert.That(_gate.GameplayBlocked, Is.True);
-
-            _bootstrap.Tick();
-            Assert.That(_menus.IsOpen, Is.False);
-            Assert.That(_gate.GameplayBlocked, Is.False);
         }
 
         [Test]
-        public void Cancel_WhileInVehicle_DoesNotOpenMenu()
+        public void OpenMenu_InOwnBody_Opens_ThenBackClosesIt()
         {
-            _bootstrap.Initialize();
             _network.StartHost();
-            _bootstrap.Tick();
-            _possession.CurrentPossession = _vehicle;
-            _bootstrap.Tick();
 
-            _input.TriggeredActions.Add(ActionNames.Cancel);
-            _bootstrap.Tick();
+            Assert.That(_open.TryHandle(_openCommand), Is.True);
+            Assert.That(_menus.IsOpen, Is.True);
 
+            Assert.That(_back.TryHandle(_backCommand), Is.True);
             Assert.That(_menus.IsOpen, Is.False);
         }
 
         [Test]
-        public void Cancel_ThatExitedAVehicleThisFrame_DoesNotAlsoOpenMenu()
+        public void OpenMenu_WhileInVehicle_Declines()
         {
-            _bootstrap.Initialize();
             _network.StartHost();
-            _bootstrap.Tick();
             _possession.CurrentPossession = _vehicle;
-            _bootstrap.Tick();
 
-            // The vehicle use case handled the same Cancel earlier this frame and restored the body.
-            _possession.CurrentPossession = _body;
-            _input.TriggeredActions.Add(ActionNames.Cancel);
-            _bootstrap.Tick();
+            Assert.That(_open.TryHandle(_openCommand), Is.False);
             Assert.That(_menus.IsOpen, Is.False);
-
-            _bootstrap.Tick();
-            Assert.That(_menus.IsOpen, Is.True, "a fresh press on the next frame opens it");
         }
 
         [Test]
-        public void InputGate_AlwaysAllowsCancel()
+        public void OpenMenu_Offline_OpensWhateverIsPossessed()
         {
-            _gate.GameplayBlocked = true;
+            _possession.CurrentPossession = null;
 
-            Assert.That(_gate.Allows(ActionNames.Cancel), Is.True);
-            Assert.That(_gate.Allows(ActionNames.MoveForward), Is.False);
+            Assert.That(_open.TryHandle(_openCommand), Is.True);
+            Assert.That(_menus.IsOpen, Is.True);
+        }
+
+        [Test]
+        public void MenuBack_WithNoMenuOpen_Declines()
+        {
+            Assert.That(_back.TryHandle(_backCommand), Is.False);
+        }
+
+        [Test]
+        public void Handlers_IgnoreOtherCommands()
+        {
+            Assert.That(_open.TryHandle(_backCommand), Is.False);
+            Assert.That(_open.CommandType, Is.EqualTo(typeof(OpenMenuCommand)));
+            Assert.That(_back.CommandType, Is.EqualTo(typeof(MenuBackCommand)));
         }
     }
 }

@@ -48,7 +48,7 @@ namespace TinCan.Tests.EditMode
             public IOrbitalLookView Look { get; } = new FakeLook();
         }
 
-        private FakeInputService _input = null!;
+        private FakeInputReader _input = null!;
         private FakeNetworkService _network = null!;
         private FakeActorRegistry _actors = null!;
         private PlayerLookUseCase _look = null!;
@@ -56,10 +56,12 @@ namespace TinCan.Tests.EditMode
         [SetUp]
         public void SetUp()
         {
-            _input = new FakeInputService { MouseDelta = new Vector2(10f, 0f) };
+            _input = new FakeInputReader();
+            var camera = FakeInputContexts.Camera();
+            _input.Vectors[camera.Look!] = new Vector2(10f, 0f);
             _network = new FakeNetworkService { LocalClientId = 1 };
             _actors = new FakeActorRegistry();
-            _look = new PlayerLookUseCase(_input, _network, _actors);
+            _look = new PlayerLookUseCase(_input, camera, _network, _actors);
         }
 
         [Test]

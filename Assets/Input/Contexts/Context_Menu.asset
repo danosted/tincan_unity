@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2002fe40ba6317a4180a2d8b05e179e1, type: 3}
+  m_Name: Context_Menu
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.InputContext
+  _description: 'A menu is open: everything below is silent; Cancel steps back.'
+  _activation: 3
+  _possessedKind: 0
+  _tag: {fileID: 0}
+  _priority: 900
+  _blocksAllLower: 1
+  _blocks: []
+  _actions: []
+  _routes:
+  - Action: {fileID: 11400000, guid: d4c2589aa24d2d849be5e35a6b405ca8, type: 2}
+    Command: {fileID: 11400000, guid: 0fa4192f7a197c646abe393fccd027c1, type: 2}

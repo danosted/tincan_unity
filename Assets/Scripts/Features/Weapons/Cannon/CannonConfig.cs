@@ -30,6 +30,8 @@ namespace TinCan.Features.Weapons.Cannon
         [Range(0f, 180f)] public float YawLimit = 75f;
         [Range(-90f, 0f)] public float MinElevation = -15f;
         [Range(0f, 90f)] public float MaxElevation = 40f;
+        [Tooltip("Degrees the barrel turns per mouse count while manning it (the Gunner context's Aim).")]
+        [Min(0.01f)] public float AimSensitivity = 0.3f;
         [Tooltip("How fast other peers' barrels follow the replicated aim (1/s).")]
         [Min(0f)] public float ProxyAimSharpness = 15f;
 

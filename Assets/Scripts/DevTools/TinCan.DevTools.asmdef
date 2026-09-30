@@ -22,7 +22,6 @@
         "Unity.Netcode.Runtime",
         "Unity.Networking.Transport",
         "Unity.Collections",
-        "Unity.InputSystem",
         "VContainer"
     ],
     "includePlatforms": [],

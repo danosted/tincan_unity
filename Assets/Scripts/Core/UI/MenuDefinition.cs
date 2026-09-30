@@ -10,7 +10,13 @@ namespace TinCan.Core.UI
         TextField,
         Toggle,
         Submenu,
-        Back
+        Back,
+        /// <summary>Placeholder in a definition: expands to one <see cref="Binding"/> row per key the player can change.</summary>
+        Bindings,
+        /// <summary>Generated: one rebindable key (its value is the key); invoking it waits for a new key.</summary>
+        Binding,
+        /// <summary>Generated: a line of text (why the last rebind was refused).</summary>
+        Note
     }
 
     /// <summary>

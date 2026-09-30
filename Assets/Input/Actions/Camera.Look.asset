@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a96585f2c3b74842862d874ada10b6d, type: 3}
+  m_Name: Camera.Look
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.InputActionId
+  _actionId: a974287d-856f-4336-86de-90794fd1ab2b
+  _path: Camera/Look
+  _displayName: Look
+  _description: Turn the camera of whatever you control.
+  _rebindable: 0

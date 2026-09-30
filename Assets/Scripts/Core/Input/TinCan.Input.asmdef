@@ -1,0 +1,20 @@
+{
+    "name": "TinCan.Input",
+    "rootNamespace": "TinCan.Core.Input",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Possession",
+        "TinCan.UI",
+        "Unity.InputSystem",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -14,7 +14,7 @@ namespace TinCan.Tests.EditMode
     public class HumanoidMovementUseCaseTests
     {
         private FakeTimeService _timeService;
-        private FakeInputService _inputService;
+        private FakeInputReader _inputService;
         private FakeNetworkService _networkService;
         private FakeActorRegistry _actorRegistry;
         private FakeAbilityRegistry _abilityRegistry;
@@ -32,14 +32,14 @@ namespace TinCan.Tests.EditMode
         public void SetUp()
         {
             _timeService = new FakeTimeService { DeltaTime = 1f / 30f };
-            _inputService = new FakeInputService();
+            _inputService = new FakeInputReader();
             _networkService = new FakeNetworkService();
             _actorRegistry = new FakeActorRegistry();
             _abilityRegistry = new FakeAbilityRegistry();
             _eventPublisher = new FakeEventPublisher();
             _processor = new HumanoidMovementProcessor();
             _abilitySystem = new AbilitySystemUseCase(_abilityRegistry, _actorRegistry, _timeService, _eventPublisher);
-            _useCase = new HumanoidMovementUseCase(_inputService, _networkService, _processor, _abilitySystem, _actorRegistry, _timeService);
+            _useCase = new HumanoidMovementUseCase(_inputService, FakeInputContexts.Humanoid(), _networkService, _processor, _abilitySystem, _actorRegistry, _timeService, FakeInputContexts.NoContributors);
 
             // Wide, solid platform collider positioned just below the character so a downward
             // raycast hits it, and stays under the character even after a single large test-only jump.

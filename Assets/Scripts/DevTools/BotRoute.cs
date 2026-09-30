@@ -16,16 +16,16 @@ namespace TinCan.DevTools
     {
         public readonly string Label;
         public readonly float Duration;
-        public readonly string[] Held;
-        public readonly string[] Taps;
+        public readonly ScriptedAction[] Held;
+        public readonly ScriptedAction[] Taps;
         public readonly BotShipCommand Ship;
 
-        public BotStep(string label, float duration, string[]? held = null, string[]? taps = null, BotShipCommand ship = BotShipCommand.None)
+        public BotStep(string label, float duration, ScriptedAction[]? held = null, ScriptedAction[]? taps = null, BotShipCommand ship = BotShipCommand.None)
         {
             Label = label;
             Duration = Math.Max(0f, duration);
-            Held = held ?? Array.Empty<string>();
-            Taps = taps ?? Array.Empty<string>();
+            Held = held ?? Array.Empty<ScriptedAction>();
+            Taps = taps ?? Array.Empty<ScriptedAction>();
             Ship = ship;
         }
     }
@@ -54,8 +54,8 @@ namespace TinCan.DevTools
             public Builder(string name) => _name = name;
 
             public Builder Wait(float seconds, string label = "wait") => Add(new BotStep(label, seconds));
-            public Builder Hold(float seconds, params string[] actions) => Add(new BotStep("hold " + string.Join("+", actions), seconds, actions));
-            public Builder Tap(string action, float settleSeconds) => Add(new BotStep("tap " + action, settleSeconds, taps: new[] { action }));
+            public Builder Hold(float seconds, params ScriptedAction[] actions) => Add(new BotStep("hold " + string.Join("+", actions), seconds, actions));
+            public Builder Tap(ScriptedAction action, float settleSeconds) => Add(new BotStep("tap " + action, settleSeconds, taps: new[] { action }));
             public Builder Ship(BotShipCommand command, float settleSeconds) => Add(new BotStep("ship " + command, settleSeconds, ship: command));
 
             public Builder Repeat(int times, Action<Builder> body)

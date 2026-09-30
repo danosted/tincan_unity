@@ -78,9 +78,11 @@ interaction a silent no-op. Settle the name before creating the asset.
 - Ability: **TinCan > Abilities > Ability Definition** in `Assets/Abilities/AbilityDefinitions/` (`GA_*`):
   required/blocked tags, `ActiveEffect`, cost, cooldown, `TriggerInput`. Example: `GA_SwingNet` requires
   `State.Carrying.Net`.
-- Key binding: an input asset under `Assets/Abilities/Inputs/` (**TinCan > Abilities > Inputs > ...**) bound in
-  `DefaultInputBindingConfig.asset`. This becomes a bit in `HumanoidInputState.ActiveInputMask`, so the ability
-  is predicted on the client and replayed on the server. Never trigger simulated actions with a bare `ServerRpc`.
+- Key binding: an ability input under `Assets/Abilities/Inputs/` (**TinCan > Abilities > Inputs > ...**) that lists
+  the actions pressing it, appended to `InputConfig.GameplayInputs` (both set in `InputAssetBuilder`; see
+  [`INPUT.md`](INPUT.md), "Make a key an ability input"). It becomes a bit in `HumanoidInputState.ActiveInputMask`,
+  so the ability is predicted on the client and replayed on the server. Never trigger simulated actions with a bare
+  `ServerRpc`.
 - Granting: a feature's ability comes from its installer as an `ActorAbilityGrant` (implement
   `FeatureInstaller.IExtension<ActorAbilityGrant>`), so it only exists where the feature is loaded. You can also grant
   it at runtime with `IAbilityControllerBase.GrantAbility` (see `FuelConsumptionUseCase.UpdateStall`), or through an
@@ -239,7 +241,8 @@ class usually means its assembly (a new feature's, for example) isn't listed the
 ## 8. Run and playtest with a second player
 
 **Host:** open `Assets/Scenes/drm_cloud_environment.unity`, Play, **Start Host**. Esc opens and closes the menu
-(Cancel is owned by `MainMenuBootstrap`; in a vehicle Esc exits the vehicle first).
+(Cancel is routed by the input contexts: at the helm Esc lets go first; see [`INPUT.md`](INPUT.md)). Main menu >
+**Controls** rebinds keys.
 
 **Second player in the Editor:** Window > Multiplayer > Multiplayer Play Mode, activate one virtual player, then
 in its window **Join** with `127.0.0.1` / `7777`. Verify both peers see the same state and a late joiner sees the
@@ -248,8 +251,9 @@ right values.
 **Unattended client from a build:** a player build accepts `-autohost` or `-autojoin [address[:port]]`
 (`Core/UI/CommandLineSessionBootstrap.cs`). Standalone builds are currently blocked (see CODE_MAP traps).
 
-**Automation:** resolve `IScriptedInput` and `Tap("Interact")`, `Press("MoveForward")`; injected Input System
-events are dropped while the Editor is unfocused, this seam is not.
+**Automation:** scenarios and bots press `ScriptedAction` intents (`Hold(0.3f, ScriptedAction.Interact)`), which
+`ScriptedActionMap` turns into context actions on `IScriptedInput`; injected Input System events are dropped while
+the Editor is unfocused, this seam is not.
 
 **Under real latency, hands-free:** **TinCan > Dev > Net Harness > Run Host + Client (Lag100)**. Both peers
 connect under ~100 ms simulated round trip, the bots play fixed routes, and each peer writes a report to

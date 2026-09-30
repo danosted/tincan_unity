@@ -11,10 +11,10 @@ namespace TinCan.DevTools.Scenarios
         public ScenarioSteps Wait(float seconds, string label = "wait") =>
             Add(new ScenarioStep(ScenarioStepKind.Wait, label, seconds));
 
-        public ScenarioSteps Hold(float seconds, params string[] actions) =>
+        public ScenarioSteps Hold(float seconds, params ScriptedAction[] actions) =>
             Add(new ScenarioStep(ScenarioStepKind.Hold, "hold " + string.Join("+", actions), seconds, actions));
 
-        public ScenarioSteps Tap(string action, float settleSeconds = 0.2f) =>
+        public ScenarioSteps Tap(ScriptedAction action, float settleSeconds = 0.2f) =>
             Add(new ScenarioStep(ScenarioStepKind.Tap, "tap " + action, settleSeconds, new[] { action }));
 
         public ScenarioSteps Do(string command, string argument = "") =>

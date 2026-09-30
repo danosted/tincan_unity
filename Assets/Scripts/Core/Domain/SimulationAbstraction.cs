@@ -1,5 +1,6 @@
 using System;
 using VContainer.Unity;
+using TinCan.Core.Domain.Input;
 using TinCan.Core.Domain.Networking;
 
 namespace TinCan.Core.Domain
@@ -29,18 +30,19 @@ namespace TinCan.Core.Domain
     public abstract class SimulationUseCase<TView, TInput> : ITickable
         where TView : ISimulatedActor<TInput>
     {
-        protected readonly IInputService InputService;
+        /// <summary>Reads the actions of the context the subclass listens to.</summary>
+        protected readonly IInputReader Input;
         protected readonly INetworkService NetworkService;
         protected readonly IActorRegistry Registry;
         protected readonly ITimeService TimeService;
 
         protected SimulationUseCase(
-            IInputService inputService,
+            IInputReader input,
             INetworkService networkService,
             IActorRegistry registry,
             ITimeService timeService)
         {
-            InputService = inputService;
+            Input = input;
             NetworkService = networkService;
             Registry = registry;
             TimeService = timeService;
@@ -79,7 +81,7 @@ namespace TinCan.Core.Domain
         }
 
         /// <summary>
-        /// Gather input from the local InputService for the captured actor.
+        /// Gather input for the captured actor from its context's actions (<see cref="Input"/>).
         /// </summary>
         protected abstract TInput GatherLocalInput(TView actor);
 

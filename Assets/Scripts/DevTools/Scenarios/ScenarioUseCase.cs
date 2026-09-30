@@ -35,7 +35,7 @@ namespace TinCan.DevTools.Scenarios
         private readonly HarnessOptions _options;
         private readonly ScenarioEntry _entry;
         private readonly ScenarioTimeline _timeline;
-        private readonly IScriptedInput _input;
+        private readonly ScriptedActionDriver _input;
         private readonly INetworkService _network;
         private readonly IActorRegistry _registry;
         private readonly IReadOnlyList<IScenarioLibrary> _libraries;
@@ -58,7 +58,7 @@ namespace TinCan.DevTools.Scenarios
             HarnessOptions options,
             ScenarioEntry entry,
             ScenarioTimeline timeline,
-            IScriptedInput input,
+            ScriptedActionDriver input,
             INetworkService network,
             IActorRegistry registry,
             IReadOnlyList<IScenarioLibrary> libraries,
@@ -293,9 +293,9 @@ namespace TinCan.DevTools.Scenarios
 #endif
         }
 
-        void IScenarioWorld.Press(string action) => _input.Press(action);
-        void IScenarioWorld.Release(string action) => _input.Release(action);
-        void IScenarioWorld.Tap(string action) => _input.Tap(action);
+        void IScenarioWorld.Press(ScriptedAction action) => _input.Press(action);
+        void IScenarioWorld.Release(ScriptedAction action) => _input.Release(action);
+        void IScenarioWorld.Tap(ScriptedAction action) => _input.Tap(action);
 
         ScenarioCheck IScenarioWorld.Execute(string command, string argument) =>
             _commands.TryGetValue(command, out var found)

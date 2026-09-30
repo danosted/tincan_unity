@@ -27,6 +27,12 @@ MonoBehaviour:
     CommandId: 
     Submenu: {fileID: 11400000, guid: 455b0fd50187cfa488accb3caba3b579, type: 2}
     DefaultValue: 
+  - ItemId: controls
+    Label: Controls
+    Kind: 3
+    CommandId: 
+    Submenu: {fileID: 11400000, guid: 3fa08c49629d3664987fef0e1a2d740f, type: 2}
+    DefaultValue: 
   - ItemId: quit
     Label: Quit
     Kind: 0

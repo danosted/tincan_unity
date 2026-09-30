@@ -1,5 +1,6 @@
 using UnityEngine;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Input;
 using TinCan.Core.Domain.Networking;
 using System.Collections.Generic;
 using System;
@@ -18,36 +19,29 @@ namespace TinCan.Core.Ship
             public Vector3 CurrentAngularVelocity;
         }
 
+        private readonly AirshipInputContext _controls;
         private readonly AirshipMovementProcessor _processor;
         private readonly Dictionary<Guid, MovementState> _states = new();
 
         public AirshipMovementUseCase(
-            IInputService inputService,
+            IInputReader input,
+            AirshipInputContext controls,
             INetworkService networkService,
             IActorRegistry registry,
             ITimeService timeService,
             AirshipMovementProcessor processor)
-            : base(inputService, networkService, registry, timeService)
+            : base(input, networkService, registry, timeService)
         {
+            _controls = controls;
             _processor = processor;
         }
 
-        protected override AirshipInputState GatherLocalInput(IAirshipView airship)
+        protected override AirshipInputState GatherLocalInput(IAirshipView airship) => new()
         {
-            // Pitch mapped to Jump (Up) and Sprint (Down) for testing
-            float pitch = 0f;
-            if (InputService.IsActionPressed(ActionNames.Jump)) pitch = -1f;
-            else if (InputService.IsActionPressed(ActionNames.Sprint)) pitch = 1f;
-
-            var input = new AirshipInputState
-            {
-                Throttle = InputService.GetAxis(ActionNames.MoveForward, ActionNames.MoveBackward),
-                Yaw = InputService.GetAxis(ActionNames.MoveRight, ActionNames.MoveLeft),
-                Pitch = pitch
-            };
-
-            return input;
-        }
+            Throttle = Input.ReadAxis(_controls.Throttle),
+            Yaw = Input.ReadAxis(_controls.Yaw),
+            Pitch = Input.ReadAxis(_controls.Pitch)
+        };
 
         protected override void ProcessSimulation(IAirshipView airship, AirshipInputState input, bool isCaptured)
         {

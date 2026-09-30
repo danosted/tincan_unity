@@ -1,6 +1,7 @@
 #nullable enable
 using UnityEngine;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Input;
 using TinCan.Core.Domain.Networking;
 using System.Collections.Generic;
 using System;
@@ -15,8 +16,10 @@ namespace TinCan.Core.Humanoid
     /// </summary>
     public class HumanoidMovementUseCase : SimulationUseCase<IHumanoidCharacterView, HumanoidInputState>, IHumanoidRespawnService
     {
+        private readonly HumanoidInputContext _controls;
         private readonly HumanoidMovementProcessor _processor;
         private readonly AbilitySystemUseCase _abilitySystem;
+        private readonly IReadOnlyList<IHumanoidInputContributor> _contributors;
         // Horizontal momentum, in the yaw frame of _velocityFrames[id] (the platform underfoot; world when absent).
         private readonly Dictionary<Guid, Vector3> _horizontalVelocities = new();
         private readonly Dictionary<Guid, Transform?> _velocityFrames = new();
@@ -39,16 +42,20 @@ namespace TinCan.Core.Humanoid
         private readonly Dictionary<Guid, byte> _teleportEpochs = new();
 
         public HumanoidMovementUseCase(
-            IInputService inputService,
+            IInputReader input,
+            HumanoidInputContext controls,
             INetworkService networkService,
             HumanoidMovementProcessor processor,
             AbilitySystemUseCase abilitySystem,
             IActorRegistry registry,
-            ITimeService timeService)
-            : base(inputService, networkService, registry, timeService)
+            ITimeService timeService,
+            IReadOnlyList<IHumanoidInputContributor> contributors)
+            : base(input, networkService, registry, timeService)
         {
+            _controls = controls;
             _processor = processor;
             _abilitySystem = abilitySystem;
+            _contributors = contributors;
         }
 
         /// <summary>
@@ -70,13 +77,12 @@ namespace TinCan.Core.Humanoid
             var movement = character.Movement;
             if (movement.IsControlsEnabled == false) return character.InputState; // Return last known input if controls are disabled
 
-            float horizontal = InputService.GetAxis(ActionNames.MoveRight, ActionNames.MoveLeft);
-            float vertical = InputService.GetAxis(ActionNames.MoveForward, ActionNames.MoveBackward);
-            Vector3 inputDirection = new Vector3(horizontal, 0, vertical).normalized;
-            bool jumpTriggered = InputService.WasActionTriggered(ActionNames.Jump) || InputService.IsActionPressed(ActionNames.Jump);
-            bool isSprinting = InputService.IsActionPressed(ActionNames.Sprint);
+            Vector2 move = Input.ReadVector2(_controls.Move);
+            Vector3 inputDirection = new Vector3(move.x, 0, move.y).normalized;
+            bool jumpTriggered = Input.WasPressedThisFrame(_controls.Jump) || Input.IsPressed(_controls.Jump);
+            bool isSprinting = Input.IsPressed(_controls.Sprint);
 
-            return new HumanoidInputState
+            var input = new HumanoidInputState
             {
                 MovementDirection = inputDirection,
                 IsJumping = jumpTriggered,
@@ -84,8 +90,11 @@ namespace TinCan.Core.Humanoid
                 // Relative to the platform underfoot, so the server applies it against its own view of that platform.
                 LookRotation = Quaternion.Inverse(FrameYaw(movement.CurrentGround.MovingGroundTransform)) * movement.LookRotation,
                 LookPitch = movement.LookPitch,
-                ActiveInputMask = InputService.GetActiveInputMask()
+                ActiveInputMask = Input.GameplayInputMask()
             };
+
+            foreach (var contributor in _contributors) contributor.Contribute(character, ref input);
+            return input;
         }
 
         protected override void ProcessSimulation(IHumanoidCharacterView character, HumanoidInputState input, bool isCaptured)

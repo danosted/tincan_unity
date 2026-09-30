@@ -185,16 +185,32 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void Aim_FollowsTheGunnersLookInput_NotTheBodysFacing()
+        public void Aim_FollowsTheGunnersStationAim_NotTheBodysLook()
         {
             _occupancy.Occupant = _gunner;
-            _body.Transform.rotation = Quaternion.Euler(0f, -50f, 0f); // still turning toward the look: ignored
-            _gunner.InputState = new HumanoidInputState { LookRotation = Quaternion.Euler(0f, 30f, 0f), LookPitch = -10f };
+            _body.Transform.rotation = Quaternion.Euler(0f, -50f, 0f);
+            _gunner.InputState = new HumanoidInputState
+            {
+                LookRotation = Quaternion.Euler(0f, -90f, 0f), LookPitch = 40f, // the body's look: ignored
+                StationAim = new Vector2(30f, 10f),
+            };
 
             _useCase.Tick();
 
             Assert.That(_cannon.Yaw, Is.EqualTo(30f).Within(1e-3f));
             Assert.That(_cannon.Elevation, Is.EqualTo(10f).Within(1e-3f));
+        }
+
+        [Test]
+        public void Aim_OutsideTheLimits_IsClampedByTheServer()
+        {
+            _occupancy.Occupant = _gunner;
+            _gunner.InputState = new HumanoidInputState { StationAim = new Vector2(170f, 89f) };
+
+            _useCase.Tick();
+
+            Assert.That(_cannon.Yaw, Is.EqualTo(_config.YawLimit).Within(1e-3f), "held at the limit, never wrapped");
+            Assert.That(_cannon.Elevation, Is.EqualTo(_config.MaxElevation).Within(1e-3f));
         }
 
         [Test]

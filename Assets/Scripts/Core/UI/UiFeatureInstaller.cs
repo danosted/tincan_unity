@@ -1,5 +1,6 @@
 #nullable enable
 using TinCan.Core.Domain.Features;
+using TinCan.Core.Domain.Input;
 using TinCan.Core.UI.Commands;
 using UnityEngine;
 using VContainer;
@@ -28,6 +29,7 @@ namespace TinCan.Core.UI
             builder.Register<StartHostMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
             builder.Register<JoinGameMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
             builder.Register<QuitMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
+            builder.Register<ResetBindingsMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
 
             if (_mainMenu == null)
             {
@@ -37,6 +39,10 @@ namespace TinCan.Core.UI
 
             builder.RegisterInstance(_mainMenu);
             builder.Register<MainMenuBootstrap>(Lifetime.Singleton).As<IInitializable>().As<ITickable>();
+
+            // Cancel, routed by the Menu and Global input contexts.
+            builder.Register<MenuBackInputHandler>(Lifetime.Singleton).As<IInputCommandHandler>();
+            builder.Register<OpenMenuInputHandler>(Lifetime.Singleton).As<IInputCommandHandler>();
         }
     }
 }

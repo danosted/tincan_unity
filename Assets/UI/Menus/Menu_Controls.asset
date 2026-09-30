@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdc5d24807772234b917f80104cfb899, type: 3}
+  m_Name: Menu_Controls
+  m_EditorClassIdentifier: TinCan.UI::TinCan.Core.UI.MenuDefinition
+  _menuId: controls
+  _title: Controls
+  _items:
+  - ItemId: keys
+    Label: Keys
+    Kind: 5
+    CommandId: 
+    Submenu: {fileID: 0}
+    DefaultValue: 
+  - ItemId: reset
+    Label: Reset to Defaults
+    Kind: 0
+    CommandId: ResetBindings
+    Submenu: {fileID: 0}
+    DefaultValue: 
+  - ItemId: back
+    Label: Back
+    Kind: 4
+    CommandId: 
+    Submenu: {fileID: 0}
+    DefaultValue: 

@@ -50,6 +50,17 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
 - **State-Driven Synchronization (State Sync):** The server is the source of truth for high-level state changes (Tags, Attributes, Inventory). Mediators sync these back to clients via `NetworkVariable` or `ClientRpc` for visual confirmation.
   Persistent state replicates as state (`NetworkVariable`/`NetworkList`), never as change RPCs, so a late joiner receives it whole with the spawn. GAS tags follow this: `AbilityNetworkMediator` keeps a server-written `NetworkList` of tag names, and a client's `HasTag` combines it with the owner's predicted effect tags (`Core/Gas/ClientTagState.cs`). Clients never write tags: only the server and effects change them (there is no tag-request RPC). Every peer matches tags the same way: a held tag matches the query tag or any of its parents (`GameplayTag.IsChildOf`); clients resolve held names through `IGameplayTagRegistry`.
 - **Avoid Side-Channels:** Do not use independent `ServerRpc` calls for actions that are part of the core simulation loop (like ability triggers or jumping). These should be bits in the `InputState` to ensure they are processed at the correct simulation tick.
+- **Input is contexts, not keys** ([`INPUT.md`](INPUT.md)):
+  - Keys live in one Input System asset that only `TinCan.Input` reads. Code names actions through typed
+    `InputActionId`s, grouped into `InputContext`s.
+  - A context is live while its condition holds (what you possess, a tag such as `State.Occupying.Cannon`, an open
+    menu) and may silence other contexts. Only a live context's actions listen.
+  - Continuous actions are read into the `InputState` by the system that owns the context. Discrete ones are routed
+    to one `InputCommandHandler`, and the highest live context consumes the press.
+  - A station that takes over the controls is a context (tag condition, silences the body) plus an
+    `IHumanoidInputContributor` that writes its part of the predicted input (`StationAim`). It is still one input
+    stream, predicted and tick-exact.
+  - The generated [`INPUT_MAP.md`](INPUT_MAP.md) shows what listens to what.
 
 - **Equipment grants abilities.** What a player holds is an `ItemDefinition` whose id the server writes into
   `EquipmentNetworkMediator`. The item carries its capabilities as data: an Infinite `EquippedEffect` whose tags say

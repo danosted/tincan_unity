@@ -42,6 +42,11 @@ namespace TinCan.Tests.EditMode
         private static readonly Regex TestedSuffix = new(@"(Processor|UseCase|InteractionHandler)$");
         private static readonly Regex EntityRegistration = new(@"\.(Register|Unregister)Entity\(");
         private static readonly Regex NewGuid = new(@"\bGuid\.NewGuid\(");
+        private static readonly Regex DirectInput = new(
+            @"\b(Keyboard|Mouse|Gamepad|Pointer|Touchscreen|Joystick)\.current\b|\bUnityEngine\.Input\.|\bInput\.(GetKey|GetAxis|GetButton|GetMouseButton)\w*\b|\bFindAction\(|""<(Keyboard|Mouse|Gamepad|Pointer)>/");
+
+        /// <summary>The assemblies allowed to reference Unity's Input System (the input system, its asset builder, tests).</summary>
+        private static readonly HashSet<string> InputSystemAssemblies = new() { "TinCan.Input", "TinCan.DevTools.Editor", "TinCan.Tests.EditMode" };
 
         /// <summary>Prefabs every scene spawns whatever its profile loads, so nothing on them may need a feature.</summary>
         private static readonly string[] SharedPrefabs =
@@ -238,6 +243,26 @@ namespace TinCan.Tests.EditMode
                 "These cue assets reference action types that no longer resolve. Give the moved action type "
                 + "[MovedFrom(false, sourceAssembly: \"<old assembly>\")] (CODE_MAP.md, \"Legacy, oddities and traps\"):\n  "
                 + string.Join("\n  ", offenders));
+        }
+
+        [Test]
+        public void Input_IsReadOnlyThroughContexts()
+        {
+            // Devices, Unity actions and binding paths live in one place (Core/Input, plus the asset builder), so what
+            // listens to what is decided by the context assets and nothing polls a key behind their back.
+            var assemblies = UnityEditor.Compilation.CompilationPipeline.GetAssemblies()
+                .Where(a => a.name.StartsWith("TinCan.", StringComparison.Ordinal) && !InputSystemAssemblies.Contains(a.name))
+                .Where(a => a.assemblyReferences.Any(r => r.name == "Unity.InputSystem"))
+                .Select(a => $"{a.name} references Unity.InputSystem");
+            var sources = Sources("Scripts")
+                .Where(s => !s.Path.StartsWith("Scripts/Core/Input/", StringComparison.Ordinal) && !s.Path.StartsWith("Scripts/DevTools/Editor/", StringComparison.Ordinal))
+                .Where(s => DirectInput.IsMatch(WithoutCommentLines(s.Text)))
+                .Select(s => $"{s.Path} reads a device, an action by name or a binding path");
+
+            var offenders = assemblies.Concat(sources).ToList();
+            Assert.That(offenders, Is.Empty,
+                "Read input through IInputReader and a context's typed actions, and route discrete actions to an "
+                + "InputCommandHandler (.docs/INPUT.md). Only TinCan.Input touches Unity's Input System:\n  " + string.Join("\n  ", offenders));
         }
 
         [Test]

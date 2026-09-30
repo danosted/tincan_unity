@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63d44a52f28e7f04cbf594e06c307ae1, type: 3}
+  m_Name: Context_Camera
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.CameraInputContext
+  _description: Mouse look for whatever you control. Blocked by menus and by stations
+    that aim with the mouse.
+  _activation: 0
+  _possessedKind: 0
+  _tag: {fileID: 0}
+  _priority: 100
+  _blocksAllLower: 0
+  _blocks: []
+  _actions: []
+  _routes: []
+  Look: {fileID: 11400000, guid: 6a6d37829965ece45be9e202f6971ae9, type: 2}

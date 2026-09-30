@@ -1,29 +1,26 @@
+#nullable enable
 using System;
-using TinCan.Core.Domain;
 using TinCan.Core.Possession;
 using UnityEngine;
-using VContainer.Unity;
 
 namespace TinCan.Core.Interaction
 {
     /// <summary>
     /// Application Layer: Handles the logic of boarding and exiting vehicles.
     /// Manages the "parked" state of humanoid characters while their player is controlling a vehicle.
+    /// Exiting on Cancel is routed by the Airship input context (<see cref="ExitVehicleInputHandler"/>).
     /// </summary>
-    public class VehicleBoardingUseCase : IVehicleBoardingUseCase, ITickable
+    public class VehicleBoardingUseCase : IVehicleBoardingUseCase
     {
         private readonly PossessionUseCase _possessionUseCase;
         private readonly IPossessionAuthority _possessionAuthority;
-        private readonly IInputService _inputService;
 
         public VehicleBoardingUseCase(
             PossessionUseCase possessionUseCase,
-            IPossessionAuthority possessionAuthority,
-            IInputService inputService)
+            IPossessionAuthority possessionAuthority)
         {
             _possessionUseCase = possessionUseCase;
             _possessionAuthority = possessionAuthority;
-            _inputService = inputService;
         }
 
         public void BoardVehicle(Guid requesterActorId, IVehicleBoardable boardable)
@@ -34,25 +31,17 @@ namespace TinCan.Core.Interaction
             }
         }
 
-        public void ExitVehicle()
+        public bool ExitVehicle()
         {
             // Return to body (identity handled by API)
             if (_possessionUseCase.CurrentPossession == null || _possessionUseCase.CurrentPossession == _possessionUseCase.PlayerActor)
             {
-                return;
+                return false;
             }
 
             _possessionUseCase.ReleaseCurrentPossession();
             Debug.Log($"[VehicleBoardingUseCase] Requested vehicle exit.");
-        }
-
-        public void Tick()
-        {
-            if (_inputService.WasActionTriggered(ActionNames.Cancel))
-            {
-                // 1. Check if we are currently in a vehicle and want to exit
-                ExitVehicle();
-            }
+            return true;
         }
     }
 }

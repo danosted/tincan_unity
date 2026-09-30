@@ -100,15 +100,13 @@ fires in the middle leg. Scaling with crew size can wait until a 2-player playte
 - Cannon S3: crosshair, reload line, owner-predicted muzzle flash.
 - Screen shake on impact.
 
-## Known issues, left for input contexts (next session)
-Found 2026-09-29. The developer's decision is not to patch these symptoms. They go away with **input contexts**: data
-mappings that GAS pushes while you occupy a station, like Unreal's Enhanced Input mapping contexts (Unity's Input
-System action maps). The mouse would then drive the station's aim, sent in the predicted input, instead of the body's
-look. Plan it in its own session.
-- **The gunner's body turns with the aim:** `HumanoidMovementUseCase` turns the body to the look every tick.
-- **The cannon's yaw wraps at 180°:** `CannonAimProcessor.BarrelAngles` clamps a signed angle, and the look itself is
-  never limited.
-- Input today: hardcoded keys in `UnityInputService` plus one global `InputBindingConfig`.
+## Known issues, left for input contexts (resolved 2026-09-30)
+Found 2026-09-29 and deliberately not patched; both went away with **input contexts** (`.docs/plans/input-contexts.md`,
+`.docs/INPUT.md`). The Gunner context, live while `State.Occupying.Cannon` is on the body, silences the body's walking
+and looking. The mouse steers the barrel within its limits (`GunnerAimUseCase`), and the aim travels in the predicted
+input as `HumanoidInputState.StationAim`. The `CannonShot` scenario asserts both.
+- ~~The gunner's body turns with the aim~~: the body's look no longer moves while gunning.
+- ~~The cannon's yaw wraps at 180°~~: the aim is an accumulated angle clamped to the yaw limit, so it cannot wrap.
 
 ## Reuse (don't rebuild)
 - `IShipBreakage` (`TryRestore`, `BrokenCount`) for Restart.

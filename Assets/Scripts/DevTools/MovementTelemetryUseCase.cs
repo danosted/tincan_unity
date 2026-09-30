@@ -69,6 +69,14 @@ namespace TinCan.DevTools
             _overlay = NetHarnessOverlayView.Create(DescribeLive);
         }
 
+        /// <summary>Shows or hides the live readout (F3, routed by the DevTools input context).</summary>
+        public bool ToggleOverlay()
+        {
+            if (_overlay == null) return false;
+            _overlay.Toggle();
+            return true;
+        }
+
         public void PostLateTick()
         {
             if (!_options.TelemetryEnabled || _written || !_network.IsActive) return;

@@ -186,7 +186,8 @@ namespace TinCan.Tests.EditMode
 
         private FakeTimeService _time = null!;
         private FakeActorRegistry _registry = null!;
-        private FakeInputService _inputService = null!;
+        private FakeInputReader _inputService = null!;
+        private HumanoidInputContext _controls = null!;
         private HumanoidMovementUseCase _useCase = null!;
         private FakeHumanoidMovementView _movement = null!;
         private PredictedCharacter _character = null!;
@@ -197,8 +198,9 @@ namespace TinCan.Tests.EditMode
             _time = new FakeTimeService();
             _registry = new FakeActorRegistry();
             var abilities = new AbilitySystemUseCase(new FakeAbilityRegistry(), _registry, _time, new FakeEventPublisher());
-            _inputService = new FakeInputService();
-            _useCase = new HumanoidMovementUseCase(_inputService, new FakeNetworkService(), new HumanoidMovementProcessor(), abilities, _registry, _time);
+            _inputService = new FakeInputReader();
+            _controls = FakeInputContexts.Humanoid();
+            _useCase = new HumanoidMovementUseCase(_inputService, _controls, new FakeNetworkService(), new HumanoidMovementProcessor(), abilities, _registry, _time, FakeInputContexts.NoContributors);
             _movement = new FakeHumanoidMovementView("Predicted") { Gravity = 0f };
             _character = new PredictedCharacter(_movement);
             _registry.Register(_character);
@@ -264,7 +266,7 @@ namespace TinCan.Tests.EditMode
         {
             // Reference run: walk forward four ticks with no server feedback.
             MakeOwner();
-            _inputService.PressedActions.Add(ActionNames.MoveForward);
+            _inputService.Vectors[_controls.Move!] = Vector2.up;
             Vector3 start = _movement.Transform.position;
             for (int i = 0; i < 4; i++) _useCase.Tick();
             Vector3 uncorrected = _movement.Transform.position - start;
@@ -276,7 +278,7 @@ namespace TinCan.Tests.EditMode
             _registry.Unregister(_character);
             _registry.Register(replayed);
             var abilities = new AbilitySystemUseCase(new FakeAbilityRegistry(), _registry, _time, new FakeEventPublisher());
-            var useCase = new HumanoidMovementUseCase(_inputService, new FakeNetworkService(), new HumanoidMovementProcessor(), abilities, _registry, _time);
+            var useCase = new HumanoidMovementUseCase(_inputService, _controls, new FakeNetworkService(), new HumanoidMovementProcessor(), abilities, _registry, _time, FakeInputContexts.NoContributors);
 
             useCase.Tick();
             Vector3 afterFirst = _movement.Transform.position;

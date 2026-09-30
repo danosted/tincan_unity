@@ -1,6 +1,7 @@
 using System;
 using NUnit.Framework;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Input;
 using TinCan.Core.Domain.Networking;
 using TinCan.Core.Possession;
 using TinCan.Tests.EditMode.Fakes;
@@ -29,8 +30,8 @@ namespace TinCan.Tests.EditMode
             public int ProcessSimulationCallCount;
             public bool LastIsCaptured;
 
-            public TestSimulationUseCase(IInputService inputService, INetworkService networkService, IActorRegistry registry, ITimeService timeService)
-                : base(inputService, networkService, registry, timeService) { }
+            public TestSimulationUseCase(IInputReader input, INetworkService networkService, IActorRegistry registry, ITimeService timeService)
+                : base(input, networkService, registry, timeService) { }
 
             protected override int GatherLocalInput(ISimulatedActor<int> actor)
             {
@@ -54,7 +55,7 @@ namespace TinCan.Tests.EditMode
         {
             _registry = new FakeActorRegistry();
             _networkService = new FakeNetworkService { LocalClientId = 5 };
-            _useCase = new TestSimulationUseCase(new FakeInputService(), _networkService, _registry, new FakeTimeService());
+            _useCase = new TestSimulationUseCase(new FakeInputReader(), _networkService, _registry, new FakeTimeService());
         }
 
         [Test]

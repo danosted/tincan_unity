@@ -85,8 +85,26 @@ namespace TinCan.Network.Infrastructure
             transport.SetConnectionData(address, port, transport.ConnectionData.ServerListenAddress ?? string.Empty);
         }
 
+        public void SetListenEndpoint(string listenAddress, ushort port)
+        {
+            var transport = _manager != null ? _manager.GetComponent<UnityTransport>() : null;
+            if (transport == null)
+            {
+                Debug.LogWarning("[NGONetworkService] No UnityTransport on the NetworkManager; cannot set the listen endpoint.");
+                return;
+            }
+            // Forced: the explicit endpoint wins over NGO's own -port / -ip command-line overrides.
+            transport.SetConnectionData(true, transport.ConnectionData.Address, port, listenAddress);
+        }
+
         public void StartHost() => _manager.StartHost();
-        public void StartServer() => _manager.StartServer();
+        public void StartServer()
+        {
+            // A dedicated server draws nothing and has no vsync to pace it: uncapped, its main loop spins on every core
+            // it can get (measured 3.5 cores idle in a container). Nothing needs frames faster than the network tick.
+            Application.targetFrameRate = (int)_manager.NetworkConfig.TickRate;
+            _manager.StartServer();
+        }
         public void StartClient() => _manager.StartClient();
         public void Shutdown() => _manager.Shutdown();
     }

@@ -76,3 +76,19 @@ sequenceDiagram
         NMd->>AO: RegisterEntity(entity)
     end
 ```
+
+## Starting a session
+
+| Mode | How | Listens on | Local player |
+|---|---|---|---|
+| Host (listen server) | Host button, or `-autohost` | the transport's `ServerListenAddress`:`Port` on `NetworkService.prefab` or its scene instance (tick **Allow Remote Connections** for `0.0.0.0`) | yes |
+| Dedicated server | `-server [address][:port]` (default `0.0.0.0:7777`) | that endpoint, set through `INetworkService.SetListenEndpoint` and forced over NGO's own `-port` / `-ip` overrides | no |
+| Client | Join menu, or `-autojoin [address[:port]]` (default `127.0.0.1:7777`) | n/a | yes |
+
+The flags are parsed by `Core/UI/CommandLineSessionBootstrap.cs`. `0.0.0.0` accepts players from other machines;
+`127.0.0.1` only from this one. The transport is UDP: allow the port through the host's firewall for LAN play.
+
+A dedicated server spawns the ship on server start and a player per connecting client, so a voyage waits in Idle
+until someone is aboard and joiners start on the ship's deck ([`plans/crew-gate-and-boarding.md`](plans/crew-gate-and-boarding.md)).
+The Linux build and its container: [`plans/dedicated-server-container.md`](plans/dedicated-server-container.md),
+`.tools/build-server.ps1`, `Docker/server/`.

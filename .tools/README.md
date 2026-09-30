@@ -49,6 +49,20 @@ Windows App Installer, which provides `winget`, is the only manual prerequisite.
 
 Note: `ProjectSettings/ProjectVersion.txt` is owned by the Unity Editor and is left untouched — it updates itself the next time the project is opened with the new Editor version.
 
+### `build-server.ps1`
+
+**Purpose:** Build the Linux dedicated server, its Docker image and (with `-Client`) the matching Windows client
+**When to use:** Before running the server in a container (plan: `.docs/plans/dedicated-server-container.md`)
+**Needs:** the Editor module `linux-server` (`unity editors module add <version> -m linux-server`, asks for admin rights; restart the Editor afterwards) and Docker
+**Usage:**
+```powershell
+.\.tools\build-server.ps1             # Builds/LinuxServer/TinCanServer.x86_64 (in the open Editor, else batch mode)
+.\.tools\build-server.ps1 -Image -Client  # then the image tincan-server:<commit> and :local, and Builds/Win64/TinCan.exe
+.\.tools\build-server.ps1 -ImageOnly  # rebuild only the image
+docker compose -f Docker/server/compose.yaml up   # run it: UDP 7777
+```
+Players join with `TinCan.exe -autojoin <server IP>:7777`. Clients and server must come from the same commit.
+
 ## Unity MCP
 
 The workspace MCP configuration launches `unity mcp` through the Unity CLI. The required `com.unity.pipeline` package is pinned in `Packages/manifest.json`.

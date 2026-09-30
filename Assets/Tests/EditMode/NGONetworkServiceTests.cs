@@ -40,5 +40,31 @@ namespace TinCan.Tests.EditMode
                 Object.DestroyImmediate(gameObject);
             }
         }
+
+        [Test]
+        public void SetListenEndpoint_SetsTheBindAddressAndPort_AndKeepsTheConnectAddress()
+        {
+            var gameObject = new GameObject("NetworkServiceTest");
+            try
+            {
+                var transport = gameObject.AddComponent<UnityTransport>();
+                var manager = gameObject.AddComponent<NetworkManager>();
+                transport.ConnectionData.Address = "127.0.0.1";
+                transport.ConnectionData.ServerListenAddress = "127.0.0.1";
+
+                var serviceType = Type.GetType("TinCan.Network.Infrastructure.NGONetworkService, TinCan.Network", true)!;
+                var service = (INetworkService)Activator.CreateInstance(serviceType, new object?[] { manager, null })!;
+
+                service.SetListenEndpoint("0.0.0.0", 9000);
+
+                Assert.That(transport.ConnectionData.ServerListenAddress, Is.EqualTo("0.0.0.0"));
+                Assert.That(transport.ConnectionData.Port, Is.EqualTo(9000));
+                Assert.That(transport.ConnectionData.Address, Is.EqualTo("127.0.0.1"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+            }
+        }
     }
 }

@@ -11,15 +11,19 @@ using VContainer.Unity;
 namespace TinCan.Core.UI
 {
     /// <summary>
-    /// Starts a session from command-line arguments so builds can be used as unattended test clients:
-    /// <c>-autohost</c> or <c>-autojoin [address[:port]]</c>, optionally with <c>-joindelay &lt;seconds&gt;</c> so a
-    /// client joins a session that is already running (late-join tests). In the Editor the same flags can come from
+    /// Starts a session from command-line arguments so builds can be used as unattended test clients or servers:
+    /// <c>-autohost</c>, <c>-server [address][:port]</c> (a dedicated server with no local player, listening on
+    /// <c>0.0.0.0:7777</c> unless told otherwise) or <c>-autojoin [address[:port]]</c>, optionally with
+    /// <c>-joindelay &lt;seconds&gt;</c> so a client joins a session that is already running (late-join tests). In the
+    /// Editor the same flags can come from
     /// Multiplayer Play Mode player tags (see <see cref="LaunchArguments"/>). Runs after the menu bootstrap; the menu
     /// closes itself once the session is up.
     /// </summary>
     public class CommandLineSessionBootstrap : IStartable, ITickable
     {
         public const string HostFlag = "-autohost";
+        public const string ServerFlag = "-server";
+        public const string DefaultListenAddress = "0.0.0.0";
         public const string JoinFlag = "-autojoin";
         public const string JoinDelayFlag = "-joindelay";
 
@@ -50,6 +54,11 @@ namespace TinCan.Core.UI
                 case SessionRequestKind.Host:
                     _eventPublisher.LogInfo("Session", "Auto-hosting from command line.");
                     _networkService.StartHost();
+                    break;
+                case SessionRequestKind.Server:
+                    _eventPublisher.LogInfo("Session", $"Starting a dedicated server on {request.Address}:{request.Port} from command line.");
+                    _networkService.SetListenEndpoint(request.Address, request.Port);
+                    _networkService.StartServer();
                     break;
                 case SessionRequestKind.Join when request.DelaySeconds > 0f:
                     _eventPublisher.LogInfo("Session", $"Auto-joining {request.Address}:{request.Port} in {request.DelaySeconds:0.#} s (late join).");
@@ -93,15 +102,25 @@ namespace TinCan.Core.UI
                     return true;
                 }
 
+                if (string.Equals(args[i], ServerFlag, StringComparison.OrdinalIgnoreCase))
+                {
+                    string listen = EndpointAfter(args, i);
+                    request = new SessionRequest(SessionRequestKind.Server, ParseAddress(listen, DefaultListenAddress), ParsePort(listen));
+                    return true;
+                }
+
                 if (!string.Equals(args[i], JoinFlag, StringComparison.OrdinalIgnoreCase)) continue;
 
-                string endpoint = i + 1 < args.Count && !args[i + 1].StartsWith("-") ? args[i + 1] : string.Empty;
-                request = new SessionRequest(SessionRequestKind.Join, ParseAddress(endpoint), ParsePort(endpoint), ParseDelay(args));
+                string endpoint = EndpointAfter(args, i);
+                request = new SessionRequest(SessionRequestKind.Join, ParseAddress(endpoint, JoinGameMenuCommandDefaults.Address), ParsePort(endpoint), ParseDelay(args));
                 return true;
             }
 
             return false;
         }
+
+        private static string EndpointAfter(IReadOnlyList<string> args, int flag) =>
+            flag + 1 < args.Count && !args[flag + 1].StartsWith("-") ? args[flag + 1] : string.Empty;
 
         private static float ParseDelay(IReadOnlyList<string> args) =>
             LaunchArguments.TryGetValue(args, JoinDelayFlag, out var value) &&
@@ -109,11 +128,12 @@ namespace TinCan.Core.UI
                 ? seconds
                 : 0f;
 
-        private static string ParseAddress(string endpoint)
+        /// <summary>The address part of <c>address[:port]</c>; <paramref name="fallback"/> when there is none (<c>""</c>, <c>:9000</c>).</summary>
+        private static string ParseAddress(string endpoint, string fallback)
         {
-            if (string.IsNullOrWhiteSpace(endpoint)) return JoinGameMenuCommandDefaults.Address;
             int colon = endpoint.LastIndexOf(':');
-            return colon > 0 ? endpoint.Substring(0, colon) : endpoint;
+            string address = colon >= 0 ? endpoint.Substring(0, colon) : endpoint;
+            return string.IsNullOrWhiteSpace(address) ? fallback : address;
         }
 
         private static ushort ParsePort(string endpoint)

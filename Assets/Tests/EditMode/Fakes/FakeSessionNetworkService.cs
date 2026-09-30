@@ -16,6 +16,7 @@ namespace TinCan.Tests.EditMode.Fakes
 
         public void SetPlayerPrefab(GameObject prefab) { }
         public void SetConnection(string address, ushort port) { }
+        public void SetListenEndpoint(string listenAddress, ushort port) { }
         public void StartHost() { }
         public void StartServer() { }
         public void StartClient() { }

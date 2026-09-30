@@ -22,6 +22,12 @@ namespace TinCan.Core.Domain.Networking
 
         /// <summary>Address and port used by the next StartClient (and the listen port for the next StartHost/StartServer).</summary>
         void SetConnection(string address, ushort port);
+
+        /// <summary>
+        /// Local address and port the next StartServer/StartHost listens on (0.0.0.0 = every interface). Keeps the
+        /// client connect address.
+        /// </summary>
+        void SetListenEndpoint(string listenAddress, ushort port);
         void StartHost();
         void StartServer();
         void StartClient();

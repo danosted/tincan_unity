@@ -24,6 +24,7 @@ namespace TinCan.Tests.EditMode
             public ulong LocalClientId => 0;
             public void SetPlayerPrefab(GameObject prefab) { }
             public void SetConnection(string address, ushort port) { }
+            public void SetListenEndpoint(string listenAddress, ushort port) { }
             public void StartHost() => State = NetworkState.Host;
             public void StartServer() => State = NetworkState.Server;
             public void StartClient() => State = NetworkState.Client;

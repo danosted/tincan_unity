@@ -1,7 +1,6 @@
 #nullable enable
 using System.Linq;
 using TinCan.Core.Domain;
-using UnityEngine;
 using VContainer.Unity;
 using TinCan.Core.Domain.Hud;
 using TinCan.Core.Ship;
@@ -9,8 +8,8 @@ using TinCan.Core.Ship;
 namespace TinCan.Features.Airship.Fuel
 {
     /// <summary>
-    /// Pushes the first airship's fuel level into the headless HUD as "Fuel". Runs on every peer (the level is a
-    /// replicated attribute). Replaced by the in-world gauge in slice 5.
+    /// Shows the first airship's tank on the headless HUD as the "Fuel" meter (level over capacity), next to the Hull
+    /// meter. Runs on every peer (the level is a replicated attribute). The in-world gauge at the helm shows it too.
     /// </summary>
     public class FuelHudPresenter : ITickable
     {
@@ -33,13 +32,13 @@ namespace TinCan.Features.Airship.Fuel
         public void Tick()
         {
             var tank = ResolveTank();
-            if (tank == null)
+            if (tank == null || tank.Capacity <= 0f)
             {
-                _hud.Remove(HudKey);
+                _hud.RemoveMeter(HudKey);
                 return;
             }
 
-            _hud.Set(HudKey, Mathf.RoundToInt(tank.Level).ToString());
+            _hud.SetMeter(HudKey, tank.Level / tank.Capacity);
         }
 
         private IFuelTank? ResolveTank()

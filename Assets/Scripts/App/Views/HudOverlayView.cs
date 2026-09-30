@@ -9,7 +9,8 @@ using TinCan.Core.Domain.Hud;
 namespace TinCan.App.Views
 {
     /// <summary>
-    /// Throwaway presentation for <see cref="IHudValues"/>, top-left: a labelled bar per meter, then one label per value.
+    /// Throwaway presentation for <see cref="IHudValues"/>, top-left on a grey card: a labelled bar per meter, then one
+    /// label per value.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class HudOverlayView : MonoBehaviour, IInjectedView
@@ -55,10 +56,18 @@ namespace TinCan.App.Views
                 _panel.style.left = 12;
                 _panel.style.top = 12;
                 _panel.style.color = Color.white;
+                // A grey card behind the readouts keeps them legible over bright sky and deck.
+                _panel.style.backgroundColor = new Color(0.25f, 0.25f, 0.25f, 0.75f);
+                _panel.style.paddingTop = _panel.style.paddingBottom = 8;
+                _panel.style.paddingLeft = _panel.style.paddingRight = 12;
+                _panel.style.borderTopLeftRadius = _panel.style.borderTopRightRadius = 6;
+                _panel.style.borderBottomLeftRadius = _panel.style.borderBottomRightRadius = 6;
                 _panel.pickingMode = PickingMode.Ignore;
                 root.Add(_panel);
             }
 
+            // An empty HUD shows no card at all.
+            _panel.style.display = _hud.Meters.Count + _hud.All.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
             _panel.Clear();
             foreach (var meter in _hud.Meters) _panel.Add(Meter(meter.Key, meter.Value));
             foreach (var pair in _hud.All)

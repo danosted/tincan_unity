@@ -35,7 +35,10 @@ namespace TinCan.Tests.EditMode.Fakes
         public ulong LocalClientId { get; set; } = 0;
         public string LastAddress { get; private set; } = string.Empty;
         public ushort LastPort { get; private set; }
+        public string LastListenAddress { get; private set; } = string.Empty;
+        public ushort LastListenPort { get; private set; }
         public int StartHostCalls { get; private set; }
+        public int StartServerCalls { get; private set; }
         public int StartClientCalls { get; private set; }
 
         public void SetPlayerPrefab(GameObject prefab) { }
@@ -44,8 +47,13 @@ namespace TinCan.Tests.EditMode.Fakes
             LastAddress = address;
             LastPort = port;
         }
+        public void SetListenEndpoint(string listenAddress, ushort port)
+        {
+            LastListenAddress = listenAddress;
+            LastListenPort = port;
+        }
         public void StartHost() => StartHostCalls++;
-        public void StartServer() { }
+        public void StartServer() => StartServerCalls++;
         public void StartClient() => StartClientCalls++;
         public void Shutdown() { }
     }

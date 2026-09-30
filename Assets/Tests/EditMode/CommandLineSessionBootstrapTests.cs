@@ -31,6 +31,35 @@ namespace TinCan.Tests.EditMode
             Assert.That(request.Port, Is.EqualTo(7777));
         }
 
+        [TestCase("-server", "0.0.0.0", 7777)]
+        [TestCase("-server :9000", "0.0.0.0", 9000)]
+        [TestCase("-server 10.0.0.5:7778", "10.0.0.5", 7778)]
+        [TestCase("-server 10.0.0.5", "10.0.0.5", 7777)]
+        [TestCase("-server -logFile -", "0.0.0.0", 7777)]
+        public void TryParse_Server_ListensOnEveryInterfaceByDefault(string arguments, string address, int port)
+        {
+            var args = ("game.x86_64 " + arguments).Split(' ');
+
+            Assert.That(CommandLineSessionBootstrap.TryParse(args, out var request), Is.True);
+            Assert.That(request.Kind, Is.EqualTo(SessionRequestKind.Server));
+            Assert.That(request.Address, Is.EqualTo(address));
+            Assert.That(request.Port, Is.EqualTo(port));
+        }
+
+        [Test]
+        public void Begin_Server_SetsTheListenEndpoint_ThenStartsAServer()
+        {
+            var network = new FakeNetworkService();
+            var bootstrap = new CommandLineSessionBootstrap(network, new FakeEventPublisher(), new FakeTimeService());
+
+            bootstrap.Begin(new[] { "-server", ":9000" });
+
+            Assert.That(network.LastListenAddress, Is.EqualTo("0.0.0.0"));
+            Assert.That(network.LastListenPort, Is.EqualTo(9000));
+            Assert.That(network.StartServerCalls, Is.EqualTo(1));
+            Assert.That(network.StartHostCalls, Is.Zero);
+        }
+
         [Test]
         public void TryParse_NoFlags_ReturnsFalse()
         {

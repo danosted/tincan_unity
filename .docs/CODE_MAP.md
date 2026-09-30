@@ -164,7 +164,7 @@ Both can be unit-tested directly.
 | Possession (who drives what) | `Core/Possession/` (`PossessionUseCase` client side, `ServerPossessionManager` authority, `Infrastructure/PossessionNetworkMediator`). |
 | RPCs and NetworkVariables | Only inside `*NetworkMediator` classes. |
 | Events / logging | `IEventPublisher.Publish` and `LogInfo(source, message)`; observed by `Core/Infrastructure/Events/DebugLogEventObserver.cs`. |
-| Command-line session start | `Core/UI/CommandLineSessionBootstrap.cs`: `-autohost`, `-autojoin [address[:port]]`, also as MPPM player tags via `Core/Domain/LaunchArguments.cs`. |
+| Command-line session start | `Core/UI/CommandLineSessionBootstrap.cs`: `-autohost`, `-server [address][:port]` (dedicated, default `0.0.0.0:7777`), `-autojoin [address[:port]]`, also as MPPM player tags via `Core/Domain/LaunchArguments.cs`. |
 | Simulated latency, input bot, movement telemetry | `DevTools/` ([`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md)); reports in `Logs/net-telemetry/`. |
 | Feature scenarios and the scenes they run in | `DevTools/Scenarios/ScenarioCatalog.cs` (`.InScene(TestScenes.X)`), scenes built by `DevTools/Editor/TestRangeSceneBuilder.cs`; driver `.tools/verify.ps1`; agent procedures `.claude/skills/verify-feature`, `add-scenario`. |
 | Scripted input for automation | `DevTools/ScriptedAction.cs` intents (`MoveForward`, `GunnerFire`, ...) mapped to context actions by `ScriptedActionMap`, pressed through `Core/Domain/Input/ScriptedInput.cs`, which `InputSystemReader` merges under the same context rules as keys. |
@@ -310,9 +310,15 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
   clients (interpolated ship, late joiners) end up with the fixture floating off the ship.
 - **UniTask is not installed** even though `CODE_STANDARDS.md` names it. No async or coroutine code exists yet.
 - **`ProjectSettings/EditorBuildSettings.asset`** still lists two deleted scenes under `Assets/Scenes/Dev/`.
-- **Standalone builds are blocked** by a Fantasy Skybox sample terrain that fails to load. (The other blocker,
-  Visual Scripting AOT stubs, went with the package; a build hasn't been retried since.) Playtesting is Editor +
-  Multiplayer Play Mode for now.
+- **Player builds work**: **TinCan > Build > Windows Client** (`Builds/Win64/`) and **TinCan > Build > Linux Server**
+  (`Builds/LinuxServer/`), both in `DevTools/Editor/PlayerBuild.cs`, or `.tools/build-server.ps1 -Image -Client`.
+  The Linux server needs the Editor module `linux-server`, installed before the Editor started: an Editor that was
+  already running reports "Build Finished, Result: Success" but writes no player (`PlayerBuild` checks for the file).
+  A build that throws can leave `Assets/Resources/PerformanceTestRunInfo.json` / `PerformanceTestRunSettings.json`
+  behind (the performance-testing package's pre-build step); delete them. Playtesting is still mostly Editor +
+  Multiplayer Play Mode.
+- **A dedicated server caps its frame rate at the network tick** (`NGONetworkService.StartServer`). Headless there is
+  no vsync; uncapped, the idle server used 3.5 cores in a container, capped about 0.1.
 - **Never compare or simulate player motion on a ship in world space.** Host and client see the ship at different
   poses, so use the platform-local helpers in `Core/Humanoid/HumanoidPrediction.cs`
   (`HumanoidAuthoritativeState.FromWorld`) and the yaw frame in `HumanoidMovementUseCase`.

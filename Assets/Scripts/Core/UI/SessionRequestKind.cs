@@ -5,6 +5,8 @@ namespace TinCan.Core.UI
     {
         None,
         Host,
-        Join
+        Join,
+        /// <summary>A dedicated server: no local player; the address and port are the listen endpoint.</summary>
+        Server
     }
 }

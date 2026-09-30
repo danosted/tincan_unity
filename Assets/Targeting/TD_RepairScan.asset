@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: TD_RepairScan
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Targeting.TargetingDefinition
   Source: 2
-  SourceOffset: {x: 0, y: 0, z: 0}
+  SourceOffset: {x: 0, y: 0.5, z: -1}
   Shape: 1
-  Range: 3
+  Range: 4
   Radius: 0
   HorizontalAngle: 100
   VerticalAngle: 120

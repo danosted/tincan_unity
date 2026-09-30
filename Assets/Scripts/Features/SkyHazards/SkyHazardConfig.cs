@@ -14,15 +14,20 @@ namespace TinCan.Features.SkyHazards
         [Header("Field around the ship")]
         [Tooltip("Keep a field of hazards around the ship. Off: they only appear on demand (scenarios, events).")]
         public bool FieldEnabled;
+        [Tooltip("Hazards alive at once with one player aboard.")]
         [Min(0)] public int MaxAlive = 6;
+        [Tooltip("Hazards added to MaxAlive for each player beyond the first.")]
+        [Min(0)] public int MaxAlivePerExtraPlayer = 2;
         [Tooltip("The box hazards appear in, in metres in the ship's level heading frame: x starboard, y up, z ahead. " +
-                 "Keep it inside the cannons' arcs (the first cannon points starboard).")]
-        public Vector3 FieldMin = new(30f, -10f, -20f);
-        public Vector3 FieldMax = new(110f, 25f, 120f);
+                 "Ahead of the bow: the foredeck cannons, one on each side, swing across it.")]
+        public Vector3 FieldMin = new(-45f, -10f, 90f);
+        public Vector3 FieldMax = new(45f, 25f, 170f);
         [Tooltip("A hazard this far from the ship is removed (and replaced).")]
         [Min(1f)] public float RemoveDistance = 260f;
-        [Tooltip("Seconds between spawns while the field is below MaxAlive.")]
+        [Tooltip("Seconds between spawns while the field is below its limit, with one player aboard.")]
         [Min(0f)] public float SpawnInterval = 1.5f;
+        [Tooltip("Each player beyond the first multiplies the spawn interval by this (below 1: a bigger crew, faster spawns).")]
+        [Range(0.1f, 1f)] public float SpawnIntervalScalePerExtraPlayer = 0.8f;
 
         [Header("Drift and ship contact")]
         [Tooltip("Metres per second a field hazard homes on the ship. 0: field hazards hang still. Targets placed with " +
@@ -38,5 +43,6 @@ namespace TinCan.Features.SkyHazards
         [Min(0f)] public float DespawnDelay = 0.5f;
 
         public SkyHazardFieldShape FieldShape => new(FieldMin, FieldMax);
+        public SkyHazardCrewScaling CrewScaling => new(MaxAlive, MaxAlivePerExtraPlayer, SpawnInterval, SpawnIntervalScalePerExtraPlayer);
     }
 }

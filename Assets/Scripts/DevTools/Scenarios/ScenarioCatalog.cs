@@ -388,7 +388,7 @@ namespace TinCan.DevTools.Scenarios
                 .Act(s => s
                     .WaitUntil("SubjectAtCannon", 45f)
                     .Wait(0.5f, "teleport settles")
-                    .Do("FaceObject", "CannonStation")
+                    .Do("FaceCannon")
                     .WaitUntil("InteractTargetIs", 5f, "CannonStation")
                     .Hold(0.3f, ScriptedAction.Interact)
                     .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Cannon")
@@ -403,7 +403,7 @@ namespace TinCan.DevTools.Scenarios
                     // The Gunner context: the mouse swings the barrel to its limit (never wrapping) and the body holds still.
                     .Do("RecordSubjectFacing")
                     .Hold(1f, ScriptedAction.GunnerAimRight)
-                    .Expect("GunnerAimYaw", "75")
+                    .Expect("GunnerAimYaw", "105")
                     .Expect("SubjectFacingHeld")
                     .Checkpoint("aimed-to-limit")
                     .Hold(0.3f, ScriptedAction.GunnerLeave)

@@ -148,6 +148,26 @@ namespace TinCan.Tests.EditMode
             Assert.That(client.PredictedTarget, Is.Null);
         }
 
+        [Test]
+        public void HoldingTheTool_AimsAtTheLocalPlayersTarget_BeforeTheTriggerIsPulled()
+        {
+            Break(_points[0], 0f);
+            _actors.LocalPlayer = _player;
+
+            _useCase.Tick();
+            Assert.That(_useCase.AimedTarget, Is.Null, "Empty hands aim at nothing.");
+
+            _abilities.GrantAbility(_player, _config.RepairAbility!);
+            _useCase.Tick();
+            Assert.That(_useCase.AimedTarget, Is.SameAs(_points[0]), "The part in front, with no repairing tag.");
+            Assert.That(_useCase.PredictedTarget, Is.Null, "Not repairing, and the host predicts nothing.");
+            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0f), "Aiming repairs nothing.");
+
+            _movement.Transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+            _useCase.Tick();
+            Assert.That(_useCase.AimedTarget, Is.Null, "Turned toward a part that is not broken: nothing to aim at.");
+        }
+
         private sealed class ClientNetwork : TinCan.Core.Domain.Networking.INetworkService
         {
             public TinCan.Core.Domain.Networking.NetworkState State => TinCan.Core.Domain.Networking.NetworkState.Client;

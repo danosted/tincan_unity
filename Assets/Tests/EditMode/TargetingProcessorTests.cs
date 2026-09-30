@@ -55,6 +55,20 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void SourceOffset_MovesAnEyeSource_UpAndBack_SoTheConeReachesTheFeet()
+        {
+            var cone = Definition(TargetShape.Cone);
+            cone.Source = AimSource.EyeAim;
+            cone.Range = 3f;
+            var atTheFeet = new Vector3(0f, 0f, 0.5f);
+            Assert.That(Select(cone, atTheFeet), Is.EqualTo(-1), "From the eye, a point just ahead of the feet is below the cone.");
+
+            cone.SourceOffset = new Vector3(0f, 0.5f, -1f);
+            Assert.That(_processor.SourcePoint(_origin, cone), Is.EqualTo(new Vector3(0f, 2f, -1f)));
+            Assert.That(Select(cone, atTheFeet), Is.EqualTo(0), "From above and behind the eye, it falls inside.");
+        }
+
+        [Test]
         public void Cone_IncludesInFrontWithinRange_ExcludesBehindAndFar()
         {
             var cone = Definition(TargetShape.Cone);

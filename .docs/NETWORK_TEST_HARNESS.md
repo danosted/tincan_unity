@@ -223,7 +223,7 @@ see the timings in `.docs/plans/test-range.md`.
 
 | Part | Where | What |
 |---|---|---|
-| Test ship | `Assets/Prefabs/Test/TestShip_Prefab.prefab` | Variant of `Airship_Prefab`: same components, no art. A flat deck with its top at ship-local y -3.49 (the real mid deck), so authored fixture poses still land on a deck. Low rails. |
+| Test ship | `Assets/Prefabs/Test/TestShip_Prefab.prefab` | Variant of `Airship_Prefab`: same components, no art. A flat deck with its top at ship-local y -3.49 (the real mid deck) and a raised foredeck from z 10 to the bow with its top at -1.815 (the real `FloorFront`, where the cannons stand), reached by a ramp at z 6..10, so authored fixture poses still land on a deck. Low rails. |
 | Area scenes | `Assets/Scenes/Test/` (`TestScenes.cs`) | One per feature area. Root objects: the `GameLifetimeScope` and `NetworkService` prefabs, a sun, a fall catcher, and the cloud view with its visuals off. Only the scope's feature profile differs. |
 | Profiles | `Assets/Settings/FeatureProfiles/Test/` | `Profile_Test_Core` (UI, cloud submersion, harness, tags, items, targeting, interaction, test range), plus one profile per area that includes it. |
 | Test-range installer | `Assets/Settings/FeatureProfiles/Test/TestRangeFeatureInstaller.asset` | Registers the test ship with NGO at runtime. The real ship is registered through `DefaultNetworkPrefabs`, which is not edited. |

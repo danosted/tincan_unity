@@ -16,9 +16,26 @@ namespace TinCan.Features.SkyHazards
         }
     }
 
+    /// <summary>How the field grows with the crew: its limit and spawn interval for one player, and what each extra player changes.</summary>
+    public readonly struct SkyHazardCrewScaling
+    {
+        public readonly int MaxAlive;
+        public readonly int MaxAlivePerExtraPlayer;
+        public readonly float SpawnInterval;
+        public readonly float SpawnIntervalScalePerExtraPlayer;
+
+        public SkyHazardCrewScaling(int maxAlive, int maxAlivePerExtraPlayer, float spawnInterval, float spawnIntervalScalePerExtraPlayer)
+        {
+            MaxAlive = maxAlive;
+            MaxAlivePerExtraPlayer = maxAlivePerExtraPlayer;
+            SpawnInterval = spawnInterval;
+            SpawnIntervalScalePerExtraPlayer = spawnIntervalScalePerExtraPlayer;
+        }
+    }
+
     /// <summary>
     /// Domain, pure: picks spawn points in a box around the ship, in its heading frame (level with the horizon, whatever
-    /// the ship's pitch and bank), and says when a hazard has fallen too far behind to keep.
+    /// the ship's pitch and bank), sizes the field for the crew, and says when a hazard has fallen too far behind to keep.
     /// </summary>
     public class SkyHazardFieldProcessor
     {
@@ -34,6 +51,17 @@ namespace TinCan.Features.SkyHazards
                 Mathf.Lerp(shape.Min.y, shape.Max.y, height01),
                 Mathf.Lerp(shape.Min.z, shape.Max.z, ahead01));
             return shipPosition + heading * local;
+        }
+
+        /// <summary>
+        /// The field's limit and spawn interval for a crew of <paramref name="players"/> (fewer than one counts as one):
+        /// each player beyond the first raises the limit and shortens the interval.
+        /// </summary>
+        public (int MaxAlive, float SpawnInterval) ForCrew(int players, in SkyHazardCrewScaling scaling)
+        {
+            int extra = Mathf.Max(0, players - 1);
+            return (scaling.MaxAlive + scaling.MaxAlivePerExtraPlayer * extra,
+                scaling.SpawnInterval * Mathf.Pow(scaling.SpawnIntervalScalePerExtraPlayer, extra));
         }
 
         public bool IsTooFar(Vector3 shipPosition, Vector3 hazardPosition, float removeDistance) =>

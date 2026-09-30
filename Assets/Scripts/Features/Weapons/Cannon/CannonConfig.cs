@@ -27,7 +27,8 @@ namespace TinCan.Features.Weapons.Cannon
         [Min(1f)] public float MaxRange = 400f;
 
         [Header("Aim (degrees, from the cannon's rest direction)")]
-        [Range(0f, 180f)] public float YawLimit = 75f;
+        [Tooltip("Either way from the rest direction. Past 90 a broadside cannon swings across the bow, where hazards come from.")]
+        [Range(0f, 180f)] public float YawLimit = 105f;
         [Range(-90f, 0f)] public float MinElevation = -15f;
         [Range(0f, 90f)] public float MaxElevation = 40f;
         [Tooltip("Degrees the barrel turns per mouse count while manning it (the Gunner context's Aim).")]

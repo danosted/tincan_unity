@@ -47,5 +47,10 @@ namespace TinCan.Features.Airship.Damage
 
         [Tooltip("The repair tool's ability. Its TargetingDefinition (TD_RepairScan) decides which broken part a repairing player works on.")]
         public AbilityDefinition? RepairAbility;
+
+        [Header("Repair aim (the local player's view)")]
+        [Tooltip("How far the marker of the broken part the repair tool points at moves from its own colour toward white, " +
+                 "shown while the tool is held, trigger or not. 0: no highlight.")]
+        [Range(0f, 1f)] public float AimHighlightBrightness = 0.45f;
     }
 }

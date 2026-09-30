@@ -68,6 +68,7 @@ namespace TinCan.Tests.EditMode
         private FakeAirshipView _ship = null!;
         private HealthAttribute _health = null!;
         private MaxHealthAttribute _maxHealth = null!;
+        private FakeCrewMember _crew = null!;
 
         [SetUp]
         public void SetUp()
@@ -92,8 +93,11 @@ namespace TinCan.Tests.EditMode
             _shipController.RegisterAttributeSet(health);
             _ship = new FakeAirshipView("Airship", _shipController);
 
+            _crew = new FakeCrewMember();
+
             _actors.Register(_ship);
             _actors.Register(_state);
+            _actors.Register(_crew);
         }
 
         [TearDown]
@@ -214,6 +218,77 @@ namespace TinCan.Tests.EditMode
             for (int i = 0; i < 5; i++) voyage.Tick();
 
             Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Lost));
+        }
+
+        [Test]
+        public void NobodyAboard_DoesNotBegin()
+        {
+            _actors.Unregister(_crew);
+            _actors.Register(new FakeCrewMember(isPlayerCharacter: false));
+            var voyage = UseCase();
+
+            for (int i = 0; i < 5; i++) voyage.Tick();
+
+            Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Idle));
+            Assert.That(_participant.Calls, Does.Not.Contain("reset"));
+        }
+
+        [Test]
+        public void BelowMinCrew_Waits_ThenBeginsWhenEnoughAreAboard()
+        {
+            _config.MinCrew = 2;
+            var voyage = UseCase();
+
+            voyage.Tick();
+            Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Idle));
+
+            _actors.Register(new FakeCrewMember());
+            voyage.Tick();
+            Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Briefing));
+        }
+
+        [TestCase(false, TestName = "CrewLeaves_DuringTheBriefing_StandsDownToIdle")]
+        [TestCase(true, TestName = "CrewLeaves_Underway_StandsDownToIdle_AndReleasesThePressure")]
+        public void CrewLeaves_StandsDownToIdle(bool underway)
+        {
+            var voyage = underway ? Underway() : UseCase();
+            if (!underway) voyage.Tick();
+
+            _actors.Unregister(_crew);
+            voyage.Tick();
+
+            Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Idle));
+            Assert.That(_state.BriefingSecondsLeft, Is.Zero);
+            Assert.That(_participant.Calls.Last(), Is.EqualTo("off"));
+        }
+
+        [Test]
+        public void CrewLeaves_OnTheEndScreen_StandsDownToIdle()
+        {
+            var voyage = Underway();
+            _shipController.SetAttribute(_health, new AttributeValue(0f));
+            voyage.Tick();
+            Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Lost));
+
+            _actors.Unregister(_crew);
+            voyage.Tick();
+
+            Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Idle));
+        }
+
+        [Test]
+        public void AfterAStandDown_TheNextCrew_BeginsAFreshVoyage()
+        {
+            var voyage = Underway();
+            _actors.Unregister(_crew);
+            voyage.Tick();
+
+            _actors.Register(new FakeCrewMember());
+            voyage.Tick();
+
+            Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Briefing));
+            Assert.That(_state.Voyage, Is.EqualTo(2));
+            Assert.That(_participant.Calls.Count(call => call == "reset"), Is.EqualTo(2));
         }
 
         [Test]

@@ -111,7 +111,7 @@ namespace TinCan.Features.SkyHazards
             if (!FieldEnabled) return;
 
             RemoveDistant(ship.Transform.position);
-            var (maxAlive, spawnInterval) = _field.ForCrew(_actors.GetActors<IHumanoidActor>().Count(), _config.CrewScaling);
+            var (maxAlive, spawnInterval) = _field.ForCrew(_actors.CrewCount(), _config.CrewScaling);
             if (_alive.Count < maxAlive && _elapsed >= _nextSpawnAt)
             {
                 var position = _field.SpawnPoint(ship.Transform.position, ship.Transform.rotation, _config.FieldShape,

@@ -481,7 +481,31 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop };
+        /// <summary>
+        /// A late joiner boards the ship: the host is aboard before the client connects (the client joins after a delay),
+        /// and the client's player must start at the ship's boarding pose, not at the player prefab's spawn point. The
+        /// client checks where it stands; the server checks the same in its own view. A solo run checks the host.
+        /// Plan: crew-gate-and-boarding.md.
+        /// </summary>
+        public static readonly ScenarioEntry LateJoinBoarding = new(
+            new Scenario.Builder("LateJoinBoarding")
+                .InScene(TestScenes.Voyage)
+                .Describe("Host aboard -> the client joins late -> its player starts on the ship at the boarding point, on both peers.")
+                .Timeout(90f)
+                .JoinLate(12f)
+                .Arrange(s => s
+                    .Expect("NoRemotePlayers")
+                    .WaitUntil("SubjectReady", 60f))
+                .Act(s => s
+                    .WaitUntil("SubjectReady", 30f)
+                    .WaitUntil("SubjectAboard", 10f, "4")
+                    .Checkpoint("boarded"))
+                .Assert(s => s
+                    .WaitUntil("SubjectAboard", 10f, "4"))
+                .Build(),
+            builder => builder.Register<BoardingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

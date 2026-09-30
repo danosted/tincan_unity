@@ -88,6 +88,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "VoyageLoop (Host + Client, Lag100)")]
         public static void VoyageLoopDuo() => RunDuo("VoyageLoop", "Lag100");
 
+        [MenuItem(Root + "LateJoinBoarding (Host)")]
+        public static void LateJoinBoardingSolo() => RunSolo("LateJoinBoarding");
+
+        [MenuItem(Root + "LateJoinBoarding (Host + Client, Lag100)")]
+        public static void LateJoinBoardingDuo() => RunDuo("LateJoinBoarding", "Lag100");
+
         public static void RunSolo(string scenario)
         {
             if (!ScenarioSceneSwitcher.OpenFor(scenario)) return;

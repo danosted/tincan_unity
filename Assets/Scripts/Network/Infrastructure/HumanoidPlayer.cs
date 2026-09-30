@@ -33,6 +33,7 @@ namespace TinCan.Network.Infrastructure
     public class HumanoidPlayer : NetworkMediator, IHumanoidCharacterView, IBufferedInputSource, IPredictedHumanoid, IGameplayCueRelay
     {
         public override bool IsSimulating => IsSpawned && (IsServer || IsOwner);
+        public bool IsPlayerCharacter => IsSpawned && NetworkObject.IsPlayerObject;
 
         // IPossessable, forwarded to the possession component.
         private PossessableNetworkMediator? _possession;

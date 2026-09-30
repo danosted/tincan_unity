@@ -2,6 +2,9 @@ Status: Done (2026-09-30, built unattended; awaiting the developer's review)
 
 # Voyage session (first-voyage.md V2 fail state + V3)
 
+> Follow-up: auto-start now waits for a crew and a voyage stands down to Idle when nobody is aboard; see
+> [`crew-gate-and-boarding.md`](crew-gate-and-boarding.md).
+
 ## Goal
 A session loop for the first playtest: every voyage starts where the ship is, runs to a destination ahead of it, and ends
 in **Arrived** (win) or **Lost** (the ship's health reaches 0). An end screen offers **Restart**, which resets the crew's

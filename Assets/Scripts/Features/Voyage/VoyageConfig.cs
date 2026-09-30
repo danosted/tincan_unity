@@ -14,6 +14,10 @@ namespace TinCan.Features.Voyage
         [Tooltip("The host starts the first voyage by itself once the ship exists. Off: only Restart starts one.")]
         public bool AutoStart = true;
 
+        [Tooltip("Players aboard before a voyage starts by itself. With nobody aboard a running voyage stands down to " +
+                 "idle, so an empty dedicated server does not play on alone.")]
+        [Min(1)] public int MinCrew = 1;
+
         [Tooltip("Seconds of countdown before cast-off; hazards and breakage wait for it.")]
         [Min(0f)] public float BriefingSeconds = 10f;
 

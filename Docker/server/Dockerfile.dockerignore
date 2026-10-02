@@ -1,4 +1,0 @@
-# Applies to the build context Builds/LinuxServer (BuildKit reads <Dockerfile>.dockerignore next to the Dockerfile).
-*_BurstDebugInformation_DoNotShip
-*_BackUpThisFolder_ButDontShipItWithYourGame
-build-result.txt

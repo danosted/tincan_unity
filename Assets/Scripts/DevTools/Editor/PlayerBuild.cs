@@ -17,7 +17,7 @@ namespace TinCan.DevTools.Editor
     /// refuses a client whose network prefabs differ).</item>
     /// </list>
     /// The menus queue the build so a <c>unity cmd menu</c> call returns at once; the outcome is written to the build
-    /// folder's <c>build-result.txt</c> for <c>.tools/build-server.ps1</c> to poll. The <c>*FromCommandLine</c> methods
+    /// folder's <c>build-result.txt</c> for <c>.tools/build.ps1</c> to poll. The <c>*FromCommandLine</c> methods
     /// are the <c>-executeMethod</c> entries for a batch-mode Editor. Plan: .docs/plans/dedicated-server-container.md.
     /// </summary>
     public static class PlayerBuild

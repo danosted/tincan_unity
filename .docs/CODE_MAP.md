@@ -120,6 +120,15 @@ Both can be unit-tested directly.
 | `Assets/Scenes/` | | `drm_cloud_environment` (main, build index 0), `cvg_airship_default`, `cheesed_scene`, `cvg_gaspocket_test`. Scenes are nearly empty on purpose; gameplay spawns at runtime. |
 | `Assets/Scenes/Test/`, `Assets/Prefabs/Test/`, `Assets/Settings/FeatureProfiles/Test/` | TinCan > Dev > Test Range > Rebuild Scenes | The test range scenario runs use: generated area scenes (`Test_Core`, `Test_ShipDamage`, `Test_NetCatch`, `Test_Cannon`), the bare `TestShip_Prefab`, and one feature profile per area. Do not edit the scenes by hand; see [`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md#test-range). |
 
+### Tooling (outside Assets)
+
+| Folder | Holds |
+|---|---|
+| `.tools/` | Entry scripts: `setup.cmd`/`setup.ps1`, `upgrade-unity.ps1`, `verify.ps1` (compile, tests, scenarios), `build.ps1` (player builds, server image). See [`.tools/README.md`](../.tools/README.md). |
+| `.tools/modules/` | The scripts' shared PowerShell modules (`TinCan.Common`, `Editor`, `Mppm`, `Verify`, `Build`, `Container`). Rules for module code: `.tools/README.md`, "Modules". |
+| `Container/server/` | `Containerfile`, `Containerfile.containerignore` and `compose.yaml` for the dedicated server image (Podman). |
+| `Builds/` (git-ignored) | Player builds: `LinuxServer/`, `Win64/`. |
+
 ## Naming glossary
 
 | Suffix | Role | Lifecycle | Lives in | Tested? | Example |
@@ -311,7 +320,7 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
 - **UniTask is not installed** even though `CODE_STANDARDS.md` names it. No async or coroutine code exists yet.
 - **`ProjectSettings/EditorBuildSettings.asset`** still lists two deleted scenes under `Assets/Scenes/Dev/`.
 - **Player builds work**: **TinCan > Build > Windows Client** (`Builds/Win64/`) and **TinCan > Build > Linux Server**
-  (`Builds/LinuxServer/`), both in `DevTools/Editor/PlayerBuild.cs`, or `.tools/build-server.ps1 -Image -Client`.
+  (`Builds/LinuxServer/`), both in `DevTools/Editor/PlayerBuild.cs`, or `.tools/build.ps1 -Image -Client`.
   The Linux server needs the Editor module `linux-server`, installed before the Editor started: an Editor that was
   already running reports "Build Finished, Result: Success" but writes no player (`PlayerBuild` checks for the file).
   A build that throws can leave `Assets/Resources/PerformanceTestRunInfo.json` / `PerformanceTestRunSettings.json`

@@ -1,4 +1,4 @@
-Status: Approved (2026-09-30)
+Status: Done (2026-10-01)
 
 # Dedicated server in a container
 
@@ -95,7 +95,16 @@ guard. Add `bool IsHeadless` to a Core.Domain service (for example `IRuntimeEnvi
   - D4: image 100 MB build on `debian:bookworm-slim`, no extra packages; `docker compose` up/down verified.
   - D5 (same PC): `TinCan.exe -autojoin 127.0.0.1:7777` joined the container; server log: the voyage began once the
     player existed, the player boarded, and when the client quit, "the crew left, standing down".
-  - Left: a LAN PC join (host firewall for Docker Desktop's UDP 7777), a two-player voyage, and a late join mid-voyage.
+  - 2026-10-01: the developer joined the containerized server from a second PC on the LAN: works.
+- 2026-10-02: the image is now built and run with Podman, `build-server.ps1` is `build.ps1`, and `Docker/server/`
+  is `Container/server/` (`Containerfile`, `Containerfile.containerignore`) ([`tools-modules.md`](tools-modules.md), T2). The LAN join above was through Docker Desktop; through Podman it is
+  not re-checked yet.
+- 2026-10-02: same PC through Podman: a headless Windows client (`TinCan.exe -batchmode -nographics -autojoin
+  127.0.0.1:7777 -bot DeckWalk`) joined, the voyage started, the player boarded, the route completed and wrote its
+  telemetry; after the client quit, "the crew left, standing down". WSL runs `networkingMode=mirrored`, so the Podman
+  machine shares the PC's LAN address (192.168.0.190) and no Windows process owns UDP 7777. A join from this PC to its
+  own LAN IP did not connect; in mirrored mode that needs `hostAddressLoopback=true`, so it says nothing about other
+  PCs. The WSL Hyper-V firewall's default inbound action is Allow. Left: a join from the LAN PC.
 
 ## Risks and open questions
 - **Unknown headless surface.** D3 can be small or large; it is sized by the first run, not guessed now.

@@ -91,4 +91,4 @@ The flags are parsed by `Core/UI/CommandLineSessionBootstrap.cs`. `0.0.0.0` acce
 A dedicated server spawns the ship on server start and a player per connecting client, so a voyage waits in Idle
 until someone is aboard and joiners start on the ship's deck ([`plans/crew-gate-and-boarding.md`](plans/crew-gate-and-boarding.md)).
 The Linux build and its container: [`plans/dedicated-server-container.md`](plans/dedicated-server-container.md),
-`.tools/build-server.ps1`, `Docker/server/`.
+`.tools/build.ps1`, `Container/server/` (Podman).

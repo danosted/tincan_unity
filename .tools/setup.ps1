@@ -30,36 +30,15 @@ param(
 # Configuration
 # ============================================================================
 
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectRoot = Split-Path -Parent $ScriptDir
-$LogDir = Join-Path $ScriptDir "logs"
-$LogFile = Join-Path $LogDir "setup-$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').log"
+Import-Module (Join-Path $PSScriptRoot "modules/TinCan.Common.psm1") -Force
+
+$ProjectRoot = Get-ProjectRoot
+$LogFile = Start-ToolLog "setup"
 
 # Folders git cannot guarantee (tracked project folders carry .gitkeep files instead)
 $RequiredFolders = @(
     ".tools\logs"
 )
-
-# Create log directory if it doesn't exist
-if (-not (Test-Path $LogDir)) {
-    New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
-}
-
-function Write-Log {
-    param([string]$Message, [string]$Level = "INFO")
-    $Timestamp = Get-Date -Format "HH:mm:ss"
-    $LogMessage = "[$Timestamp] [$Level] $Message"
-    Write-Host $LogMessage
-    Add-Content -Path $LogFile -Value $LogMessage
-}
-
-function Write-Section {
-    param([string]$Title)
-    Write-Host "`n" -NoNewline
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host $Title -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-}
 
 function Update-ProcessPath {
     $MachinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")

@@ -9,8 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 670682824750992585}
-  - component: {fileID: 6391721554318614017}
   - component: {fileID: 2560391056988798864}
+  - component: {fileID: 8248965295797668852}
   m_Layer: 8
   m_Name: Control_Station
   m_TagString: Untagged
@@ -27,14 +27,28 @@ Transform:
   m_GameObject: {fileID: 3712927881756365506}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.100523, y: 2.1527586, z: -7.8172817}
+  m_LocalPosition: {x: 1.100523, y: 2.48, z: -7.78}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1664714398448823971}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!135 &6391721554318614017
-SphereCollider:
+--- !u!114 &2560391056988798864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3712927881756365506}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a5544fdc7c2ac74b86d6f0691d5ab8b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Airship.AirshipControlPanel
+  ShowTopMostFoldoutHeaderGroup: 1
+  _interactionDefinition: {fileID: 11400000, guid: 060282e2f7c15bd42827c8c7a44f1803, type: 2}
+--- !u!136 &8248965295797668852
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -51,23 +65,11 @@ SphereCollider:
   m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 2
-  m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
---- !u!114 &2560391056988798864
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3712927881756365506}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0a5544fdc7c2ac74b86d6f0691d5ab8b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Airship.AirshipControlPanel
-  ShowTopMostFoldoutHeaderGroup: 1
-  _interactionDefinition: {fileID: 11400000, guid: 060282e2f7c15bd42827c8c7a44f1803, type: 2}
+  serializedVersion: 2
+  m_Radius: 0.6
+  m_Height: 3
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4741218207008056854
 GameObject:
   m_ObjectHideFlags: 0

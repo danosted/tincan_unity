@@ -52,7 +52,7 @@ Pick the path that matches what you want to do right now.
 | [`Network_Initialization_Flow.md`](Network_Initialization_Flow.md) | Deep dive: how VContainer and NGO initialise across host, server and client. |
 | [`CODE_STANDARDS.md`](CODE_STANDARDS.md) | C# rules everyone follows (naming, guard clauses, nullable, no regions). |
 | [`AI_CONFIGURATION.md`](AI_CONFIGURATION.md) | How AI assistants are expected to behave here. Read it so you know what to expect from them. |
-| [`../.tools/README.md`](../.tools/README.md) | Setup and upgrade scripts, Unity CLI and MCP configuration. |
+| [`../.tools/README.md`](../.tools/README.md) | Setup, upgrade, verify and build scripts, their shared modules, the server container (Podman), Unity CLI and MCP configuration. |
 
 ## Daily commands
 

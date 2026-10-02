@@ -1,0 +1,4 @@
+# Applies to the build context Builds/LinuxServer. Podman needs it passed as --ignorefile (.tools/build.ps1 does).
+*_BurstDebugInformation_DoNotShip
+*_BackUpThisFolder_ButDontShipItWithYourGame
+build-result.txt

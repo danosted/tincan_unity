@@ -1,6 +1,6 @@
 # TinCan Unity - Tools README
 
-This folder contains automation scripts for project setup, maintenance, and CI/CD integration. Windows + PowerShell is the only officially supported and maintained path.
+This folder contains automation scripts for project setup, maintenance, verification and builds. Windows + PowerShell is the only officially supported and maintained path.
 
 ## Prerequisites
 
@@ -49,19 +49,65 @@ Windows App Installer, which provides `winget`, is the only manual prerequisite.
 
 Note: `ProjectSettings/ProjectVersion.txt` is owned by the Unity Editor and is left untouched — it updates itself the next time the project is opened with the new Editor version.
 
-### `build-server.ps1`
+### `verify.ps1`
 
-**Purpose:** Build the Linux dedicated server, its Docker image and (with `-Client`) the matching Windows client
-**When to use:** Before running the server in a container (plan: `.docs/plans/dedicated-server-container.md`)
-**Needs:** the Editor module `linux-server` (`unity editors module add <version> -m linux-server`, asks for admin rights; restart the Editor afterwards) and Docker
+**Purpose:** The feedback loop for a feature: compile, EditMode tests, then live scenarios (solo, host + client)
+**Needs:** the Unity Editor open on the project, and Unity Hub running
 **Usage:**
 ```powershell
-.\.tools\build-server.ps1             # Builds/LinuxServer/TinCanServer.x86_64 (in the open Editor, else batch mode)
-.\.tools\build-server.ps1 -Image -Client  # then the image tincan-server:<commit> and :local, and Builds/Win64/TinCan.exe
-.\.tools\build-server.ps1 -ImageOnly  # rebuild only the image
-docker compose -f Docker/server/compose.yaml up   # run it: UDP 7777
+.\.tools\verify.ps1 -UpTo Tests            # compile + EditMode tests
+.\.tools\verify.ps1 -Scenario NetCatch     # + the scenario, solo and host + client (takes over the Editor)
+.\.tools\verify.ps1 -All                   # every scenario
+```
+Exit code 0 pass, 1 a tier failed, 2 the Editor was not usable. Tiers, flags and the guards against Editor and MPPM
+failures: [`.docs/NETWORK_TEST_HARNESS.md`](../.docs/NETWORK_TEST_HARNESS.md), "Scenarios".
+
+### `build.ps1`
+
+**Purpose:** Build the Linux dedicated server, its container image and (with `-Client`) the matching Windows client
+**When to use:** Before running the server in a container (plan: `.docs/plans/dedicated-server-container.md`)
+**Needs:** the Editor module `linux-server` (`unity editors module add <version> -m linux-server`, asks for admin rights; restart the Editor afterwards) and Podman with its machine running (`podman machine start`)
+**Usage:**
+```powershell
+.\.tools\build.ps1             # Builds/LinuxServer/TinCanServer.x86_64 (in the open Editor, else batch mode)
+.\.tools\build.ps1 -Image -Client  # then the image tincan-server:<commit> and :local, and Builds/Win64/TinCan.exe
+.\.tools\build.ps1 -ImageOnly  # rebuild only the image
+podman run -d --name tincan-server -p 7777:7777/udp --restart unless-stopped tincan-server:local   # run it: UDP 7777
+podman logs -f tincan-server   # the Unity log
+podman rm -f tincan-server     # stop it
 ```
 Players join with `TinCan.exe -autojoin <server IP>:7777`. Clients and server must come from the same commit.
+`podman compose -f Container/server/compose.yaml up` also works, but `podman compose` needs a compose provider
+installed (today it borrows Docker Desktop's `docker-compose`). The machine's CPU and memory come from WSL
+(`%UserProfile%\.wslconfig`), not from `podman machine set`.
+
+## Modules
+
+Entry scripts (`verify.ps1`, `build.ps1`, …) only parse their parameters, import what they need from `modules/` and run their
+flow. Shared logic lives in the modules (plan: `.docs/plans/tools-modules.md`):
+
+| Module | Holds |
+|---|---|
+| `TinCan.Common` | project root, `Start-ToolLog` + `Write-Log` (console and `logs/<name>-<time>.log`), `Write-Section`, `Write-Tier`, exit codes, `Stop-Unusable` |
+| `TinCan.Editor` | `Invoke-Unity`, Editor readiness and recovery, modal dialogs, scenes, Play Unfocused |
+| `TinCan.Mppm` | MPPM clone paths, clone scene sync, network prefab hash check |
+| `TinCan.Verify` | the compile, test and scenario tiers, the batch table |
+| `TinCan.Build` | player builds, in the open Editor or a batch-mode one |
+| `TinCan.Container` | container images through Podman (the engine is named once, `$Engine`) |
+
+Rules for module code:
+- **No `exit` in a module.** It would end the caller's script. Return a result or throw; `Stop-Unusable` throws an
+  error the entry script turns into exit code 2 (`Get-UnusableReason` in its `catch`).
+- **No reading the entry script's variables.** Pass them as parameters. Each module sets `Set-StrictMode -Version 1.0`,
+  so an unset variable is an error, not a silent `$null`. (Not `Latest`: it also rejects reading a missing property,
+  which the scripts rely on for CLI replies.)
+- **Export explicitly** with `Export-ModuleMember`; a module imports the modules it uses itself.
+- **Help stays on the entry script** (`Get-Help .\.tools\verify.ps1`).
+
+Adding a module: create `modules/TinCan.<Name>.psm1` starting with `$ErrorActionPreference = "Stop"`,
+`Set-StrictMode -Version 1.0` and an `Import-Module (Join-Path $PSScriptRoot "TinCan.<Dep>.psm1")` per dependency;
+end with `Export-ModuleMember`. Entry scripts import it with `Import-Module (Join-Path $PSScriptRoot
+"modules/TinCan.<Name>.psm1") -Force` (`-Force` picks up edits in a long-lived terminal). Add a row to the table above.
 
 ## Unity MCP
 
@@ -98,7 +144,7 @@ Project documentation starts at [`.docs/README.md`](../.docs/README.md) (humans)
 Additional scripts planned:
 - `validate-packages.ps1/sh` - Verify package compatibility
 - `sync-editor-prefs.ps1/sh` - Share editor preferences across team
-- `build.ps1/sh` - Automated build for CI/CD (the Unity CLI's own `unity build`/`unity test` commands may cover this instead)
+- CI/CD builds (`build.ps1` covers local player and image builds; the Unity CLI's own `unity build`/`unity test` commands may cover CI)
 
 ## Troubleshooting
 
@@ -123,5 +169,5 @@ When creating new scripts:
 1. PowerShell (.ps1) only — this is the only path we test and support
 2. Include proper error handling and logging
 3. Write logs to `logs/` folder
-4. Document in this README
+4. Document in this README; put shared logic in a module (see [Modules](#modules))
 5. Reference relevant `.md` files in `.docs/`

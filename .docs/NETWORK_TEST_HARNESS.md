@@ -26,6 +26,11 @@ Every flag works on a build's command line or as a **Multiplayer Play Mode playe
 | `netsim:<preset>` | `-netsim <preset>` | Delay, jitter and loss on this peer's outgoing packets (see presets). |
 | `bot:<route>` | `-bot <route>` | Play a scripted input route once the local player exists. Implies `telemetry`. |
 | `telemetry` | `-telemetry` | Measure the local player and write a report. |
+| `botloop` | `-botloop` | With `bot`: restart the route when it ends, so the load lasts the whole run (perf runs). No telemetry report per lap. |
+| `perf` | `-perf` | Run the perf sampler: frame, tick, GC, physics, draw-call and network numbers over a window, written to `Logs/perf/`. Options and reports: [`PERFORMANCE.md`](PERFORMANCE.md). |
+
+A batch-mode client (`-batchmode -nographics`, a headless bot) caps itself at 60 fps, as a server caps itself at the
+tick rate (`NGONetworkService`); uncapped, one spun at ~4,600 fps on about three cores.
 
 **Presets** (`DevTools/NetworkConditionPresets.cs`). Each peer delays only what it sends, so give host and client
 the same preset: the round trip is then twice the send delay.

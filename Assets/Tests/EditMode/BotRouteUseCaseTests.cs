@@ -155,6 +155,21 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void Tick_BotLoop_RestartsTheRouteInsteadOfCompleting()
+        {
+            _registry.LocalPlayer = new FakeHumanoidCharacterView(_movement);
+            var useCase = new BotRouteUseCase(new HarnessOptions(null, "DeckWalk", false, botLoop: true), _session, _driver,
+                _registry, _network, _possession, _time, new FakeEventPublisher());
+            bool completed = false;
+            _session.RouteCompleted += () => completed = true;
+
+            Tick(useCase, BotRoutes.DeckWalk.TotalDuration + 2f);
+
+            Assert.That(completed, Is.False);
+            Assert.That(_session.IsRouteRunning, Is.True);
+        }
+
+        [Test]
         public void Pilot_OnHost_TakesAndReleasesHelm()
         {
             var player = new FakeHumanoidCharacterView(_movement);

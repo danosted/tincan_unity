@@ -44,6 +44,22 @@ function Write-Section {
     Write-Host "========================================" -ForegroundColor Cyan
 }
 
+# True when a person can answer a question: a console with input that is not redirected, not -NonInteractive. Agents,
+# CI and scheduled runs are not interactive.
+function Test-Interactive {
+    if (-not [Environment]::UserInteractive -or [Console]::IsInputRedirected) { return $false }
+    return -not ([Environment]::GetCommandLineArgs() | Where-Object { $_ -like "-NonI*" })
+}
+
+# A CLI-style yes/no question, default No. Prints why the step is needed first. Returns $false without asking when
+# nobody can answer (Test-Interactive), so an unattended run never blocks on a question.
+function Confirm-Step([string]$Question, [string[]]$Explanation = @()) {
+    foreach ($line in $Explanation) { Write-Host "  $line" }
+    if (-not (Test-Interactive)) { return $false }
+    $answer = Read-Host "$Question [y/N]"
+    return $answer -match "^(y|yes)$"
+}
+
 # The Editor (or another part of the environment) cannot be used: busy, a modal dialog, a timeout. Modules throw this;
 # the entry script reports it and exits with $ExitUnusable (see Get-UnusableReason).
 function Stop-Unusable([string]$reason) {
@@ -58,5 +74,5 @@ function Get-UnusableReason([System.Management.Automation.ErrorRecord]$record) {
     return $null
 }
 
-Export-ModuleMember -Function Get-ProjectRoot, Start-ToolLog, Write-Tier, Write-Log, Write-Section, Stop-Unusable, Get-UnusableReason `
+Export-ModuleMember -Function Get-ProjectRoot, Start-ToolLog, Write-Tier, Write-Log, Write-Section, Test-Interactive, Confirm-Step, Stop-Unusable, Get-UnusableReason `
     -Variable ExitPass, ExitFail, ExitUnusable

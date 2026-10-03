@@ -15,9 +15,13 @@ namespace TinCan.DevTools.Editor
     /// "Linux Dedicated Server Build Support", in an Editor started after it was installed;</item>
     /// <item>the Windows client into <c>Builds/Win64/</c>, so clients and the server come from the same code (NGO
     /// refuses a client whose network prefabs differ).</item>
+    /// <item>"Perf" variants of both (<c>Builds/LinuxServerPerf/</c>, <c>Builds/Win64Perf/</c>): development builds, so the
+    /// profiler counters and the network simulator the perf runs read are compiled in (.docs/plans/performance-budgets.md).</item>
     /// </list>
-    /// The menus queue the build so a <c>unity cmd menu</c> call returns at once; the outcome is written to the build
-    /// folder's <c>build-result.txt</c> for <c>.tools/build.ps1</c> to poll. The <c>*FromCommandLine</c> methods
+    /// The menus build at once, on the main thread, and write the outcome to the build folder's <c>build-result.txt</c>
+    /// for <c>.tools/build.ps1</c> to poll (a <c>unity cmd menu</c> call times out meanwhile; the script ignores that).
+    /// A build that never starts usually means the Editor's main thread is blocked, for example by a Windows UAC or
+    /// firewall prompt waiting for an answer (2026-10-03). The <c>*FromCommandLine</c> methods
     /// are the <c>-executeMethod</c> entries for a batch-mode Editor. Plan: .docs/plans/dedicated-server-container.md.
     /// </summary>
     public static class PlayerBuild
@@ -30,20 +34,36 @@ namespace TinCan.DevTools.Editor
         private static readonly Target WindowsClient = new("Builds/Win64", "TinCan.exe",
             BuildTarget.StandaloneWindows64, StandaloneBuildSubtarget.Player);
 
+        private static readonly Target LinuxServerPerf = new("Builds/LinuxServerPerf", "TinCanServer.x86_64",
+            BuildTarget.StandaloneLinux64, StandaloneBuildSubtarget.Server, BuildOptions.Development);
+
+        private static readonly Target WindowsClientPerf = new("Builds/Win64Perf", "TinCan.exe",
+            BuildTarget.StandaloneWindows64, StandaloneBuildSubtarget.Player, BuildOptions.Development);
+
         [MenuItem("TinCan/Build/Linux Server")]
-        public static void LinuxServerFromMenu() => Queue(LinuxServer);
+        public static void LinuxServerFromMenu() => Run(LinuxServer);
 
         [MenuItem("TinCan/Build/Windows Client")]
-        public static void WindowsClientFromMenu() => Queue(WindowsClient);
+        public static void WindowsClientFromMenu() => Run(WindowsClient);
+
+        [MenuItem("TinCan/Build/Linux Server (Perf)")]
+        public static void LinuxServerPerfFromMenu() => Run(LinuxServerPerf);
+
+        [MenuItem("TinCan/Build/Windows Client (Perf)")]
+        public static void WindowsClientPerfFromMenu() => Run(WindowsClientPerf);
 
         public static void LinuxServerFromCommandLine() => EditorApplication.Exit(Build(LinuxServer) ? 0 : 1);
 
         public static void WindowsClientFromCommandLine() => EditorApplication.Exit(Build(WindowsClient) ? 0 : 1);
 
-        private static void Queue(Target target)
+        public static void LinuxServerPerfFromCommandLine() => EditorApplication.Exit(Build(LinuxServerPerf) ? 0 : 1);
+
+        public static void WindowsClientPerfFromCommandLine() => EditorApplication.Exit(Build(WindowsClientPerf) ? 0 : 1);
+
+        private static void Run(Target target)
         {
             WriteResult(target, "building");
-            EditorApplication.delayCall += () => Build(target);
+            Build(target);
         }
 
         private static bool Build(Target target)
@@ -64,7 +84,7 @@ namespace TinCan.DevTools.Editor
                     locationPathName = target.ExecutablePath,
                     target = target.BuildTarget,
                     subtarget = (int)target.Subtarget,
-                    options = BuildOptions.None
+                    options = target.Options
                 });
             }
             catch (Exception exception)
@@ -103,18 +123,21 @@ namespace TinCan.DevTools.Editor
 
         private sealed class Target
         {
-            public Target(string outputDirectory, string executableName, BuildTarget buildTarget, StandaloneBuildSubtarget subtarget)
+            public Target(string outputDirectory, string executableName, BuildTarget buildTarget, StandaloneBuildSubtarget subtarget,
+                BuildOptions options = BuildOptions.None)
             {
                 OutputDirectory = outputDirectory;
                 ExecutableName = executableName;
                 BuildTarget = buildTarget;
                 Subtarget = subtarget;
+                Options = options;
             }
 
             public string OutputDirectory { get; }
             public string ExecutableName { get; }
             public BuildTarget BuildTarget { get; }
             public StandaloneBuildSubtarget Subtarget { get; }
+            public BuildOptions Options { get; }
             public string ExecutablePath => Path.Combine(OutputDirectory, ExecutableName);
         }
     }

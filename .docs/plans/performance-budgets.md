@@ -1,4 +1,4 @@
-Status: Draft
+Status: Approved
 
 # Performance budgets and continuous perf checks
 
@@ -229,13 +229,15 @@ game), then SpawnRamp and PhysicsDensity, then WorstView, and Soak last as an ov
 scenario.
 
 ## Risks and open questions
-- **Headless clients run uncapped.** A `-batchmode -nographics` Windows client ran at ~4,600 fps (2026-10-02 check),
-  burning a core. Bot clients need the same cap the server got (`Application.targetFrameRate` to the tick rate, or a
-  fixed render rate) before CrewLoad numbers mean anything. Part of P0.
-- **Unexplained latency on localhost.** The same run, no netsim, client to the Podman server on 127.0.0.1: rtt 230 ms
-  (UTP's estimate, known to go stale) and input-ack latency 85–108 ms (should be roughly one or two ticks). Compare with
-  an Editor host + headless client on this PC before baselining NetPeak: it may be the uncapped client, the server's
-  30 fps cap, or Podman/WSL forwarding.
+- **Headless clients run uncapped.** Fixed 2026-10-03: batch-mode clients cap at 60 fps (`NGONetworkService.StartClient`);
+  a bot now costs ~2 ms of main thread per frame on one pinned core.
+- **Input-ack latency on a dedicated server.** No netsim: a client on this PC to the Podman server took 85–108 ms from
+  input to server confirmation (2026-10-02); bots to the server inside the Podman network (no Windows forwarding,
+  capped bots) took ~132 ms, rtt estimate ~185 ms (2026-10-03). So not Podman/WSL forwarding. About four 33 ms ticks:
+  the likely cause is the server's 30 fps frame cap (`NGONetworkService.StartServer`), which reads the transport once
+  per frame, plus the server input buffer. Experiment for the developer: cap the server at 60 or 120 fps (tick rate
+  stays 30) and compare `ackLatencyMs` in the bot logs and `main_thread_ms` in the server report. Affects how a
+  dedicated server feels, so it is a gameplay decision as much as a perf one.
 - **One PC hosts everything.** The server, 3 bots and the rendering client share a CPU, so CrewLoad's client frame time
   is pessimistic. Pin containers to cores the client doesn't need, and compare runs only with each other. Moving
   the containers (or the desktop timing run) to the LAN PC is the clean answer, but it takes set-up time: a later
@@ -255,3 +257,39 @@ scenario.
   option, and P0 + P1 first. Added: containers by default with desktop runs only for GPU timing, the rendering
   container spike, and the budgets-in-git / results-on-disk split. Results stay JSON files in run
   folders (no database yet); Podman is the container engine (changed from Docker Desktop the same day).
+- 2026-10-03 (overnight, developer away; to review): P0, P1, P2 (CrewLoad) and most of P4 and P5 built.
+  - **Spikes.** Counter names read from `ProfilerRecorderHandle.GetAvailable` in 6000.4.5f1: there is no
+    "Draw Calls Count" any more (draw calls are split by path and summed); `NetworkTickSystem.Tick` times the
+    simulation (the game's scheduler runs inside it); NGO has a marker per message type. Network bytes come from UTP
+    2.7's public `NetworkDriver.GetStatistics()` (no transport wrapper). The Linux server binary works as a headless
+    bot client (`-autojoin -bot`), so no separate Linux client build.
+  - **P0.** Perf (development) variants in `PlayerBuild` (`Builds/LinuxServerPerf`, `Builds/Win64Perf`, image
+    `tincan-server-perf`, `build.ps1 -Perf`). Batch-mode clients cap at 60 fps (`NGONetworkService.StartClient`).
+    `-botloop` repeats a bot route. Containers start from the Container module with `podman run` on a `tincan-perf`
+    network (bots join `perf-server:7777`), pinned cores and memory limits, reports through a `/perf` mount.
+    Deferred: worktree batch builds and the render-counter spike.
+  - **P1.** `DevTools/Perf/` (`PerfOptions`, `PerfSeries`, `PerfReport`, `PerfSampler`), `-perf` registered by the
+    harness installer, EditMode tests (`PerfTests.cs`, `BotRouteUseCaseTests` loop case). `-perfprofile <frames>`
+    records a profiler capture of the window for diagnosis.
+  - **P4.** `.tools/perf.ps1` (`run`, `list`, `compare`, `trend`, `set-budgets`) on `modules/TinCan.Perf.psm1`.
+    Not yet: `perf.ps1 run -Editor`.
+  - **P5.** `.docs/PERFORMANCE.md`; `NETWORK_TEST_HARNESS.md` flags; `.tools/README.md`; `CODE_MAP.md`.
+  - **Build stalls found on the way.** Twice the queued perf build never started (30 minutes each) and pipeline evals
+    failed with "main thread operation timed out". The developer traced it to a Windows UAC / firewall prompt waiting
+    on the desktop, which blocks the Editor's main thread (first blamed on `EditorApplication.delayCall` and on Unity
+    Hub not running; neither was the cause). The menus now build synchronously (simpler, not a fix), and `build.ps1`
+    probes the main thread before building instead of trusting `editor_status`, which can answer from a cached
+    heartbeat, and names a waiting prompt as the likely cause.
+  - **Pilot runs** (5 container, 3 desktop) found two sampler bugs, fixed before the baseline: `GPU Frame Time`
+    returns sentinels, and render counters read 0 on many frames at high frame rates.
+  - **P2 baseline (CrewLoad).** 23 budgets in `.docs/perf/budgets.json` from 5 container-only and 3 `-Desktop` runs;
+    three later runs passed with no drift. Numbers and findings: `.docs/PERFORMANCE.md`, "Baseline 2026-10-03".
+    Pilot runs (before the sampler fixes) are kept in `Logs/perf/pilot-2026-10-03/`, out of the run history.
+  - **Diagnosis.** `perf.ps1 run -ProfileFrames N` (server capture with allocation call stacks; verdict DIAGNOSIS, out
+    of drift and set-budgets) and `perf.ps1 analyze-gc <run>`. First result: `GameplayTagContainer.HasTag` (LINQ
+    `Any` with a closure) is 44 % of the server's per-frame allocation. Not fixed: game code, left for the developer.
+  - **Drift** compares only runs of the same set-up (container-only or `-Desktop`) that did not fail; the first
+    version compared bots against desktop runs and warned on noise.
+  - **Next, for review:** fix `HasTag`/`HasAny`/`HasAll` and re-baseline the GC budgets down; decide the server frame
+    cap (see Risks, input-ack latency); P3 routes (helm through interaction on a client, gunner, repairer) so CrewLoad
+    is a real crew; SpawnRamp; WorstView; Soak; `perf.ps1 run -Editor`; the render-counter container spike.

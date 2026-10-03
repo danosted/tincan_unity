@@ -4,6 +4,7 @@ using TinCan.Core.Domain;
 using TinCan.Core.Domain.Input;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Features;
+using TinCan.DevTools.Perf;
 using TinCan.DevTools.Scenarios;
 using UnityEngine;
 using VContainer;
@@ -29,6 +30,8 @@ namespace TinCan.DevTools
 
         public override void Install(IContainerBuilder builder)
         {
+            InstallPerf(builder);
+
             var options = HarnessOptions.Parse(LaunchArguments.Current);
             if (!options.IsActive) return;
 
@@ -45,6 +48,18 @@ namespace TinCan.DevTools
             builder.Register<MovementTelemetryUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>().As<IPostLateTickable>();
             builder.Register<ToggleNetOverlayInputHandler>(Lifetime.Singleton).As<IInputCommandHandler>();
             InstallScenario(builder, options);
+        }
+
+        /// <summary><c>-perf</c>: the perf sampler (.docs/plans/performance-budgets.md). Independent of the other harness flags.</summary>
+        private static void InstallPerf(IContainerBuilder builder)
+        {
+            var perf = PerfOptions.Parse(LaunchArguments.Current);
+            if (!perf.Enabled) return;
+
+            Debug.Log($"[Perf] Active: label={perf.Label}, warm-up {perf.WarmupSeconds:0.#} s, window {perf.DurationSeconds:0.#} s, " +
+                      $"out={perf.OutputDirectory ?? "Logs/perf"}{(perf.QuitWhenDone ? ", quit when done" : string.Empty)}.");
+            builder.RegisterInstance(perf);
+            builder.Register<PerfSampler>(Lifetime.Singleton).As<IPostLateTickable>();
         }
 
         private static void InstallScenario(IContainerBuilder builder, HarnessOptions options)

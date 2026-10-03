@@ -10,6 +10,8 @@ namespace TinCan.Network.Infrastructure
 {
     public class NGONetworkService : INetworkService, IInitializable, IDisposable
     {
+        private const int HeadlessClientFrameRate = 60;
+
         private readonly NetworkManager _manager;
         private readonly INetworkPlayerSpawner _spawner;
         private GameObject _playerPrefab;
@@ -105,7 +107,13 @@ namespace TinCan.Network.Infrastructure
             Application.targetFrameRate = (int)_manager.NetworkConfig.TickRate;
             _manager.StartServer();
         }
-        public void StartClient() => _manager.StartClient();
+        public void StartClient()
+        {
+            // A batch-mode client (a headless bot) has no vsync either: uncapped it spun at ~4,600 fps on ~3 cores
+            // (2026-10-02). Cap it at a player's frame rate, so bots cost what a player costs and leave cores for the rest.
+            if (Application.isBatchMode) Application.targetFrameRate = HeadlessClientFrameRate;
+            _manager.StartClient();
+        }
         public void Shutdown() => _manager.Shutdown();
     }
 }

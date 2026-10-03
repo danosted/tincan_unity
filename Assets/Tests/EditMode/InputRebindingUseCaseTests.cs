@@ -60,7 +60,7 @@ namespace TinCan.Tests.EditMode
             var onFoot = FakeInputContexts.Plain("Humanoid", InputContextActivation.WhilePossessing, 200, actions: new[] { _move, _jump });
             onFoot.Configure(InputContextActivation.WhilePossessing, 200, PossessedActorKind.Humanoid);
             var helm = FakeInputContexts.Plain("Airship", InputContextActivation.WhilePossessing, 300, actions: new[] { _pitch });
-            helm.Configure(InputContextActivation.WhilePossessing, 300, PossessedActorKind.Ship);
+            helm.Configure(InputContextActivation.WhilePossessing, 300, PossessedActorKind.Other);
             var always = FakeInputContexts.Plain("Global", InputContextActivation.Always, 0, actions: new[] { _cancel });
             _contexts = new InputContextSet(new[] { onFoot, helm, always });
             _store = new MemoryStore();

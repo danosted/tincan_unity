@@ -244,7 +244,7 @@ class usually means its assembly (a new feature's, for example) isn't listed the
 ## 8. Run and playtest with a second player
 
 **Host:** open `Assets/Scenes/drm_cloud_environment.unity`, Play, **Start Host**. Esc opens and closes the menu
-(Cancel is routed by the input contexts: at the helm Esc lets go first; see [`INPUT.md`](INPUT.md)). Main menu >
+(Cancel is routed by the input contexts; see [`INPUT.md`](INPUT.md)). At the helm, E lets go. Main menu >
 **Controls** rebinds keys.
 
 **Second player in the Editor:** Window > Multiplayer > Multiplayer Play Mode, activate one virtual player, then

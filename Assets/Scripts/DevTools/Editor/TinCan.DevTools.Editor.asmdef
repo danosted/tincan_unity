@@ -10,6 +10,7 @@
         "TinCan.Targeting",
         "TinCan.Features.SkyHazards",
         "TinCan.Features.Stations",
+        "TinCan.Features.Helm",
         "TinCan.Features.Weapons.Cannon",
         "TinCan.Features.Airship.Damage",
         "TinCan.Features.Airship.Fuel",

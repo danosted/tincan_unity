@@ -64,7 +64,7 @@ namespace TinCan.Tests.EditMode
         {
             _handlers = new Handlers();
             // Routing to a known target uses only the handler registry.
-            _orchestrator = new InteractionOrchestrator(null!, null!, _handlers, null!);
+            _orchestrator = new InteractionOrchestrator(null!, null!, _handlers);
         }
 
         [TearDown]

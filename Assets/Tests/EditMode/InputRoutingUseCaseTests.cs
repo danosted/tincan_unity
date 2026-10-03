@@ -41,11 +41,11 @@ namespace TinCan.Tests.EditMode
         }
 
         private InputActionId _cancel = null!;
-        private ExitVehicleCommand _exit = null!;
+        private MenuBackCommand _back = null!;
         private OpenMenuCommand _open = null!;
         private FakeInputReader _reader = null!;
         private FixedContexts _contexts = null!;
-        private CountingHandler<ExitVehicleCommand> _exitHandler = null!;
+        private CountingHandler<MenuBackCommand> _backHandler = null!;
         private CountingHandler<OpenMenuCommand> _openHandler = null!;
         private RecordingPublisher _events = null!;
 
@@ -53,17 +53,17 @@ namespace TinCan.Tests.EditMode
         public void SetUp()
         {
             _cancel = InputActionId.Create("Global/Cancel");
-            _exit = ScriptableObject.CreateInstance<ExitVehicleCommand>();
+            _back = ScriptableObject.CreateInstance<MenuBackCommand>();
             _open = ScriptableObject.CreateInstance<OpenMenuCommand>();
             _reader = new FakeInputReader();
             _contexts = new FixedContexts();
-            _exitHandler = new CountingHandler<ExitVehicleCommand>();
+            _backHandler = new CountingHandler<MenuBackCommand>();
             _openHandler = new CountingHandler<OpenMenuCommand>();
             _events = new RecordingPublisher();
 
-            var airship = FakeInputContexts.Plain("Airship", InputContextActivation.WhilePossessing, 300, routes: new[] { new InputRoute(_cancel, _exit) });
+            var menu = FakeInputContexts.Plain("Menu", InputContextActivation.WhileMenuOpen, 900, routes: new[] { new InputRoute(_cancel, _back) });
             var global = FakeInputContexts.Plain("Global", InputContextActivation.Always, 0, routes: new[] { new InputRoute(_cancel, _open) });
-            _contexts.Live.AddRange(new[] { airship, global });
+            _contexts.Live.AddRange(new[] { menu, global });
         }
 
         private InputRoutingUseCase Create(params IInputCommandHandler[] handlers) => new(_contexts, _reader, handlers, _events);
@@ -71,36 +71,36 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void Press_GoesToTheHighestContext_AndIsConsumed()
         {
-            var router = Create(_exitHandler, _openHandler);
+            var router = Create(_backHandler, _openHandler);
             _reader.Triggered.Add(_cancel);
 
             router.Tick();
 
-            Assert.That(_exitHandler.Calls, Is.EqualTo(1));
-            Assert.That(_openHandler.Calls, Is.Zero, "Cancel left the helm; it must not also open the menu");
+            Assert.That(_backHandler.Calls, Is.EqualTo(1));
+            Assert.That(_openHandler.Calls, Is.Zero, "Cancel stepped back in the menu; it must not also open the main menu");
         }
 
         [Test]
         public void DeclinedCommand_FallsThroughToTheNextContext()
         {
-            _exitHandler.Accepts = false;
-            var router = Create(_exitHandler, _openHandler);
+            _backHandler.Accepts = false;
+            var router = Create(_backHandler, _openHandler);
             _reader.Triggered.Add(_cancel);
 
             router.Tick();
 
-            Assert.That(_exitHandler.Calls, Is.EqualTo(1));
+            Assert.That(_backHandler.Calls, Is.EqualTo(1));
             Assert.That(_openHandler.Calls, Is.EqualTo(1));
         }
 
         [Test]
         public void NoPress_RunsNothing()
         {
-            var router = Create(_exitHandler, _openHandler);
+            var router = Create(_backHandler, _openHandler);
 
             router.Tick();
 
-            Assert.That(_exitHandler.Calls + _openHandler.Calls, Is.Zero);
+            Assert.That(_backHandler.Calls + _openHandler.Calls, Is.Zero);
         }
 
         [Test]
@@ -113,7 +113,7 @@ namespace TinCan.Tests.EditMode
             router.Tick();
 
             Assert.That(_openHandler.Calls, Is.EqualTo(2));
-            Assert.That(_events.Messages.FindAll(m => m.Contains(nameof(ExitVehicleCommand))).Count, Is.EqualTo(1));
+            Assert.That(_events.Messages.FindAll(m => m.Contains(nameof(MenuBackCommand))).Count, Is.EqualTo(1));
             Assert.That(router.HandlerFor(typeof(OpenMenuCommand)), Is.SameAs(_openHandler));
         }
     }

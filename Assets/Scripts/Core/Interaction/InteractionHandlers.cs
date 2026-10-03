@@ -1,31 +1,10 @@
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Gas;
-using TinCan.Core.Possession;
 using UnityEngine;
 
 namespace TinCan.Core.Interaction
 {
-    public class PossessionInteractionHandler : IInteractionHandler
-    {
-        private readonly IPossessionAuthority _possessionAuthority;
-
-        public PossessionInteractionHandler(IPossessionAuthority possessionAuthority)
-        {
-            _possessionAuthority = possessionAuthority;
-        }
-
-        public void Handle(InteractionContext context)
-        {
-            if (context.Target is IVehicleBoardable boardable)
-            {
-                _possessionAuthority.TryAcquirePossession(
-                    context.Requester.Id,
-                    boardable.TargetVehicle);
-            }
-        }
-    }
-
     /// <summary>
     /// Activates (or toggles) the definition's Ability, resolving actor/target per ActorRole.
     /// Does not grant the ability — the actor must already have it (starting abilities, equipment, skill tree, etc.).

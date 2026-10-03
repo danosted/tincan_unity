@@ -124,9 +124,8 @@ Nothing in the UI reads a key. Cancel reaches the menus through the input contex
 - `MainMenuBootstrap` opens the main menu while offline and closes it when a session becomes Host/Client.
 - While a menu is open the **Menu** context is live: it silences every gameplay context (no movement, look or ability
   input) and routes Cancel to `MenuBackInputHandler` (`Back()`; the last Back closes the menu).
-- Otherwise Cancel goes to the highest live context that wants it: the helm lets go (`ExitVehicleInputHandler`), the
-  free camera frees the cursor, and only if nobody took it does the **Global** context open the main menu
-  (`OpenMenuInputHandler`: offline, or in your own body). One press, one effect.
+- Otherwise Cancel goes to the highest live context that wants it: the free camera frees the cursor, and only if
+  nobody took it does the **Global** context open the main menu (`OpenMenuInputHandler`: offline, or in your own body). One press, one effect.
 
 To give Cancel a new meaning somewhere, add a route to that situation's context and a handler; do not read the key.
 

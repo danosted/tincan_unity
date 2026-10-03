@@ -19,13 +19,15 @@ namespace TinCan.DevTools
         Primary,
         Secondary,
 
-        // At the helm (Airship context)
+        // At the helm (Helmsman context)
         ShipThrottleUp,
         ShipThrottleDown,
         ShipTurnLeft,
         ShipTurnRight,
         ShipPitchUp,
         ShipPitchDown,
+        /// <summary>Let go of the helm.</summary>
+        HelmLeave,
 
         // At a cannon (Gunner context)
         GunnerFire,

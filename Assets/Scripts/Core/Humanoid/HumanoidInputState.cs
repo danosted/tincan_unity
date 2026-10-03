@@ -17,7 +17,7 @@ namespace TinCan.Core.Humanoid
         public Quaternion LookRotation;
 
         /// <summary>
-        /// Aim pitch in degrees from the orbital camera; positive looks down (Unity's convention). Travels with the rest
+        /// Aim pitch in degrees from the look; positive looks down (Unity's convention). Travels with the rest
         /// of the input so the server can rebuild where the player aims (targeting) instead of trusting a client target.
         /// </summary>
         public float LookPitch;
@@ -34,6 +34,12 @@ namespace TinCan.Core.Humanoid
         /// </summary>
         public Vector2 StationAim;
 
+        /// <summary>
+        /// While occupying a station that steers (the helm): its axes, each -1..1. For the helm x is throttle, y yaw and
+        /// z pitch. Written by the station's <see cref="IHumanoidInputContributor"/>; zero otherwise.
+        /// </summary>
+        public Vector3 StationAxes;
+
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref Sequence);
@@ -44,6 +50,7 @@ namespace TinCan.Core.Humanoid
             serializer.SerializeValue(ref LookPitch);
             serializer.SerializeValue(ref ActiveInputMask);
             serializer.SerializeValue(ref StationAim);
+            serializer.SerializeValue(ref StationAxes);
         }
     }
 }

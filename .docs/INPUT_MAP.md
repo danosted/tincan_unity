@@ -15,7 +15,7 @@ silences it; an action outside every live context reads as released.
 | 950 | Context_DevTools | always | - | (routes only) | NetTestHarnessFeatureInstaller |
 | 900 | Context_Menu | a menu is open | everything below | (routes only) | core (InputConfig) |
 | 400 | Context_Gunner | possessed actor has State.Occupying.Cannon | Context_Humanoid, Context_Camera | GunnerAimUseCase | CannonFeatureInstaller |
-| 300 | Context_Airship | possessing Ship | - | AirshipMovementUseCase | core (InputConfig) |
+| 400 | Context_Helmsman | possessed actor has State.Occupying.Helm | Context_Humanoid | HelmInputUseCase | HelmFeatureInstaller |
 | 300 | Context_FreeCamera | possessing Other | - | FreeCameraMovementUseCase | FreeCameraFeatureInstaller |
 | 200 | Context_Humanoid | possessing Humanoid | - | HumanoidMovementUseCase | core (InputConfig) |
 | 100 | Context_Camera | always | - | FreeCameraMovementUseCase, PlayerLookUseCase | core (InputConfig) |
@@ -44,7 +44,7 @@ A menu is open: everything below is silent; Cancel steps back.
 
 | Action | Default keys | Meaning | Rebindable |
 |---|---|---|---|
-| Global/Cancel | `escape` | Back out: close the menu, leave the helm, or open the main menu. | yes |
+| Global/Cancel | `escape` | Back out: close the menu, or open the main menu. | yes |
 
 | Pressing | Runs | Handled by |
 |---|---|---|
@@ -60,20 +60,16 @@ Manning a cannon (State.Occupying.Cannon). Silences walking and looking: the mou
 | Gunner/Fire | `mouse leftButton` | Fire the cannon you are manning. | yes |
 | Gunner/Leave | `e` | Step away from the cannon. | yes |
 
-### Context_Airship
+### Context_Helmsman
 
-At the helm. Read by AirshipMovementUseCase; Cancel lets go of the helm.
+At the helm (State.Occupying.Helm). Silences walking but not looking: the helmsman looks around while steering. The axes travel in the predicted input (HelmInputUseCase); Leave is the Interact ability bit.
 
 | Action | Default keys | Meaning | Rebindable |
 |---|---|---|---|
 | Airship/Throttle | `s` / `w` | Speed up or slow down the airship. | yes |
 | Airship/Yaw | `a` / `d` | Turn the airship. | yes |
 | Airship/Pitch | `space` / `leftShift` | Nose the airship up or down. | yes |
-| Global/Cancel | `escape` | Back out: close the menu, leave the helm, or open the main menu. | yes |
-
-| Pressing | Runs | Handled by |
-|---|---|---|
-| Global/Cancel | Command_ExitVehicle | ExitVehicleInputHandler |
+| Airship/Leave | `e` | Let go of the helm. | yes |
 
 ### Context_FreeCamera
 
@@ -82,7 +78,7 @@ Flying the spectator camera. Read by FreeCameraMovementUseCase; Cancel frees the
 | Action | Default keys | Meaning | Rebindable |
 |---|---|---|---|
 | FreeCamera/Move | `w` / `s` / `a` / `d` | Fly the free camera (spectator, a dev tool: not in the Controls menu). | no |
-| Global/Cancel | `escape` | Back out: close the menu, leave the helm, or open the main menu. | yes |
+| Global/Cancel | `escape` | Back out: close the menu, or open the main menu. | yes |
 
 | Pressing | Runs | Handled by |
 |---|---|---|
@@ -115,7 +111,7 @@ Always on, lowest: Cancel opens the main menu when nothing above wanted it; Tab 
 
 | Action | Default keys | Meaning | Rebindable |
 |---|---|---|---|
-| Global/Cancel | `escape` | Back out: close the menu, leave the helm, or open the main menu. | yes |
+| Global/Cancel | `escape` | Back out: close the menu, or open the main menu. | yes |
 | Global/SwitchPossession | `tab` | Cycle to the next thing you may control. | yes |
 
 | Pressing | Runs | Handled by |
@@ -132,4 +128,4 @@ any of its actions is pressed in a live context.
 |---|---|---|
 | 0 | Input_Sprint | Humanoid/Sprint |
 | 1 | Input_Primary | Humanoid/Primary, Gunner/Fire |
-| 2 | Input_Interact | Humanoid/Interact, Gunner/Leave |
+| 2 | Input_Interact | Humanoid/Interact, Gunner/Leave, Airship/Leave |

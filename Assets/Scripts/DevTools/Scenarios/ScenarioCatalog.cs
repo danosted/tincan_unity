@@ -505,7 +505,52 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<BoardingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding };
+        /// <summary>
+        /// The helm with real input: the subject walks up to the wheel and presses Interact to take it. It stays in its body
+        /// on the helm seat (State.Occupying.Helm turns the Helmsman context on, which silences walking but not looking).
+        /// Throttle and turn keys travel in its predicted input; the server moves and turns the ship from them. Leave lets go
+        /// and the ship's input drops to idle. Plan: helm-station.md.
+        /// </summary>
+        public static readonly ScenarioEntry HelmSteer = new(
+            new Scenario.Builder("HelmSteer")
+                .InScene(TestScenes.Helm)
+                .Describe("Take the helm -> throttle and turn -> ship moves and turns on the server, body stays on the seat -> Leave -> ship input idle.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("PlaceSubjectAtHelm"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtHelm", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceHelm")
+                    .WaitUntil("InteractTargetIs", 5f, "HelmStation")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Helm")
+                    .WaitUntil("HelmManned", 5f)
+                    .Checkpoint("manned")
+                    .Wait(1f, "the server records the ship's pose")
+                    .Hold(4f, ScriptedAction.ShipThrottleUp, ScriptedAction.ShipTurnRight)
+                    .Expect("SubjectOnHelmSeat")
+                    .Checkpoint("steered")
+                    .Hold(0.3f, ScriptedAction.HelmLeave)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Helm"))
+                .Assert(s => s
+                    .WaitUntil("HelmManned", 60f)
+                    .Do("RecordShipPose")
+                    .WaitUntil("ShipMoved", 20f, "3")
+                    .WaitUntil("ShipTurned", 10f, "3")
+                    .WaitUntil("HelmFree", 30f)
+                    .Wait(0.5f, "the ship takes its next tick")
+                    .Expect("ShipInputIdle"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<HelmScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

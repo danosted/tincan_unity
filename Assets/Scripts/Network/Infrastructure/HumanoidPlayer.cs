@@ -25,7 +25,7 @@ namespace TinCan.Network.Infrastructure
     /// </summary>
     [DefaultExecutionOrder(-100)]
     [RequireComponent(typeof(HumanoidControllerView))]
-    [RequireComponent(typeof(ThirdPersonLookView))]
+    [RequireComponent(typeof(LookView))]
     [RequireComponent(typeof(InteractorControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
@@ -43,7 +43,7 @@ namespace TinCan.Network.Infrastructure
         public void AuthoritativeSetPossessor(ulong? playerId) => Possession.AuthoritativeSetPossessor(playerId);
 
         private HumanoidControllerView _movement = null!;
-        private ThirdPersonLookView _look = null!;
+        private LookView _look = null!;
         private AbilityNetworkMediator _abilitySync = null!;
         private INetworkPlayerSpawner _spawner = null!;
         private uint _nextInputSequence;
@@ -68,7 +68,7 @@ namespace TinCan.Network.Infrastructure
 
         // IHumanoidCharacterView Implementation
         public IHumanoidMovementView Movement => _movement;
-        public IOrbitalLookView Look => _look;
+        public ILookView Look => _look;
         public PlayerAttachmentState AttachmentState => _attachmentState.Value;
         public HumanoidInputBufferStats InputBufferStats => _inputBuffer.Stats;
         private uint LastProcessedSequence => IsOwner ? _localInput.Sequence : _inputBuffer.LastConsumedSequence;
@@ -238,7 +238,7 @@ namespace TinCan.Network.Infrastructure
             base.OnNetworkSpawn();
 
             _movement = GetComponent<HumanoidControllerView>();
-            _look = GetComponent<ThirdPersonLookView>();
+            _look = GetComponent<LookView>();
             _abilitySync = GetComponent<AbilityNetworkMediator>();
 
             // Register default attribute set wrapper for humanoids
@@ -269,7 +269,7 @@ namespace TinCan.Network.Infrastructure
         }
 
         // DefaultExecutionOrder(-100): runs after NGO has moved the interpolated ship (PreLateUpdate) and before the
-        // camera follows the player (ThirdPersonLookView.LateUpdate).
+        // camera follows the player (LookView.LateUpdate).
         private void LateUpdate()
         {
             if (!IsSpawned) return;

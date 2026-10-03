@@ -43,7 +43,6 @@ namespace TinCan.Tests.EditMode
             public List<(IActor Requester, IInteractionTarget Target)> Interactions { get; } = new();
             public void HandleInteraction(InteractionRequest request) { }
             public void HandleInteraction(IActor requester, IInteractionTarget target) => Interactions.Add((requester, target));
-            public void HandleExit() { }
         }
 
         private InteractInput _input = null!;

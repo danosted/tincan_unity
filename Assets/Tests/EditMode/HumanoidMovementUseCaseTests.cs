@@ -91,6 +91,19 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void InputState_SerializesTheStationAxes()
+        {
+            var sent = new HumanoidInputState { LookRotation = Quaternion.identity, StationAxes = new Vector3(1f, -0.5f, 0.25f) };
+            using var writer = new Unity.Netcode.FastBufferWriter(256, Unity.Collections.Allocator.Temp);
+            writer.WriteNetworkSerializable(sent);
+            using var reader = new Unity.Netcode.FastBufferReader(writer, Unity.Collections.Allocator.Temp);
+
+            reader.ReadNetworkSerializable(out HumanoidInputState received);
+
+            Assert.That(received.StationAxes, Is.EqualTo(new Vector3(1f, -0.5f, 0.25f)));
+        }
+
+        [Test]
         public void Jump_OnMovingPlatform_WithoutControllerGrounded_StillJumps()
         {
             _movementView.ControllerGrounded = false;

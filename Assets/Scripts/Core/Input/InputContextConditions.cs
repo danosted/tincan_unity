@@ -44,8 +44,7 @@ namespace TinCan.Core.Input
         private static bool IsKind(IPossessable possessed, PossessedActorKind kind) => kind switch
         {
             PossessedActorKind.Humanoid => possessed is IHumanoidActor,
-            PossessedActorKind.Ship => possessed is IShipActor,
-            _ => possessed is not IHumanoidActor && possessed is not IShipActor,
+            _ => possessed is not IHumanoidActor,
         };
     }
 }

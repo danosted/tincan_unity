@@ -1,0 +1,23 @@
+{
+    "name": "TinCan.Features.Helm",
+    "rootNamespace": "TinCan.Features.Helm",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Gas",
+        "TinCan.Humanoid",
+        "TinCan.Interaction",
+        "TinCan.Ship",
+        "TinCan.Features.Stations",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

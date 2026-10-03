@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a96585f2c3b74842862d874ada10b6d, type: 3}
+  m_Name: Airship.Leave
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.InputActionId
+  _actionId: 3c1f6a52-8d4e-4b7a-9e21-6f0d2b8a4c13
+  _path: Airship/Leave
+  _displayName: Leave Helm
+  _description: Let go of the helm.
+  _rebindable: 1

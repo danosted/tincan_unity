@@ -48,7 +48,6 @@ namespace TinCan.Tests.EditMode
             public Guid Id { get; } = Guid.NewGuid();
             public bool IsSimulating => true;
             public AirshipInputState InputState { get; set; }
-            public ulong? PossessorId { get; private set; }
             public Transform Transform => _gameObject.transform;
             public float MaxForwardSpeed => 10f;
             public float MaxBackwardSpeed => 5f;
@@ -64,16 +63,11 @@ namespace TinCan.Tests.EditMode
             public Vector3 Velocity => Vector3.zero;
             public Vector3 PositionDelta => Vector3.zero;
             public Quaternion RotationDelta => Quaternion.identity;
-            public bool IsControlsEnabled => true;
 
             public void Destroy() => UnityEngine.Object.DestroyImmediate(_gameObject);
-            public void AuthoritativeSetPossessor(ulong? playerId) => PossessorId = playerId;
-            public bool CanPossess(ulong playerId) => true;
             public void ApplyMovement(Vector3 velocity, Vector3 angularVelocity) { }
             public void Simulate(float deltaTime) { }
             public Vector3 GetPointVelocity(Vector3 worldPoint) => Vector3.zero;
-            public void EnableControls() { }
-            public void DisableControls() { }
         }
 
         private CloudBoundaryConfig _config = null!;

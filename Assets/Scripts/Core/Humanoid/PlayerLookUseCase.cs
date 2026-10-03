@@ -9,7 +9,7 @@ using TinCan.Core.Domain.Look;
 namespace TinCan.Core.Humanoid
 {
     /// <summary>
-    /// Application Layer: turns the Camera context's Look into the orbital camera of whatever the local player controls
+    /// Application Layer: turns the Camera context's Look into the look of whatever the local player controls
     /// (their body or the airship). While the Camera context is blocked (a menu, a station that aims with the mouse)
     /// Look reads zero and the camera holds still.
     /// </summary>
@@ -39,8 +39,8 @@ namespace TinCan.Core.Humanoid
 
             ulong localId = _networkService.LocalClientId;
 
-            // Process all actors with an orbital camera
-            foreach (var character in _registry.GetActors<IHasOrbitalCamera>())
+            // Process all actors with a look
+            foreach (var character in _registry.GetActors<IHasLook>())
             {
                 // The camera belongs to whoever controls the actor, whichever peer simulates it: a client pilot does
                 // not simulate the ship (the server does), yet the ship's camera is theirs.
@@ -54,7 +54,7 @@ namespace TinCan.Core.Humanoid
             }
         }
 
-        private void ApplyLook(IOrbitalLookView view, Vector2 mouseDelta)
+        private void ApplyLook(ILookView view, Vector2 mouseDelta)
         {
             float newYaw = view.Yaw + (mouseDelta.x * view.Sensitivity);
             float newPitch = Mathf.Clamp(view.Pitch - (mouseDelta.y * view.Sensitivity), -view.MaxPitch, view.MaxPitch);

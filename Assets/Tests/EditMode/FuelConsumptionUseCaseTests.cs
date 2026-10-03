@@ -103,10 +103,9 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void Tick_NoPossessor_DoesNotDrain()
+        public void Tick_NobodyAtTheHelm_DoesNotDrain()
         {
-            _airship.PossessorId = null;
-            _airship.InputState = new AirshipInputState { Throttle = 1f };
+            _airship.InputState = new AirshipInputState();
 
             _useCase.Tick();
 
@@ -114,7 +113,7 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void Tick_PossessedButIdle_DoesNotDrain()
+        public void Tick_HelmMannedButIdle_DoesNotDrain()
         {
             Drive(0f);
 
@@ -140,8 +139,6 @@ namespace TinCan.Tests.EditMode
             var leak = Create<FuelLeakRateAttribute>();
             _config.LeakRateAttribute = leak;
             _controller.SetAttribute(leak, new AttributeValue(2f));
-            _airship.PossessorId = null;
-
             _useCase.Tick();
 
             Assert.That(_tank.Inner.TotalConsumed, Is.EqualTo(1f).Within(0.0001f), "2 L/s for 0.5 s, with nobody at the helm.");
@@ -254,7 +251,6 @@ namespace TinCan.Tests.EditMode
 
         private void Drive(float throttle)
         {
-            _airship.PossessorId = 1;
             _airship.InputState = new AirshipInputState { Throttle = throttle };
         }
 

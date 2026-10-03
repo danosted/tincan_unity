@@ -8,7 +8,6 @@ using TinCan.Core.Domain.Input;
 using VContainer;
 using TinCan.Core.Domain.Networking;
 using TinCan.DevTools;
-using TinCan.Core.Possession;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 
@@ -56,26 +55,10 @@ namespace TinCan.Tests.EditMode
             public void Shutdown() { }
         }
 
-        private sealed class RecordingPossessionAuthority : IPossessionAuthority
-        {
-            public int Acquired;
-            public int Released;
-            public bool TryAcquirePossession(Guid requesterActorId, IPossessable target)
-            {
-                Acquired++;
-                return true;
-            }
-            public bool TryReleasePossession(Guid requesterActorId)
-            {
-                Released++;
-                return true;
-            }
-        }
-
         private FakeHumanoidMovementView _movement = null!;
         private LocalPlayerRegistry _registry = null!;
         private SessionNetwork _network = null!;
-        private RecordingPossessionAuthority _possession = null!;
+        private FakeStationOccupancy _occupancy = null!;
         private ScriptedInput _input = null!;
         private TinCan.Core.Humanoid.HumanoidInputContext _humanoid = null!;
         private ScriptedActionDriver _driver = null!;
@@ -88,12 +71,12 @@ namespace TinCan.Tests.EditMode
             _movement = new FakeHumanoidMovementView("BotPlayer");
             _registry = new LocalPlayerRegistry();
             _network = new SessionNetwork();
-            _possession = new RecordingPossessionAuthority();
+            _occupancy = new FakeStationOccupancy();
             _input = new ScriptedInput();
             _humanoid = FakeInputContexts.Humanoid();
             var contexts = new VContainer.ContainerBuilder();
             contexts.RegisterInstance(_humanoid);
-            contexts.RegisterInstance(FakeInputContexts.Airship());
+            contexts.RegisterInstance(FakeInputContexts.Helmsman());
             _driver = new ScriptedActionDriver(_input, new ScriptedActionMap(contexts.Build()), new FakeEventPublisher());
             _session = new HarnessSession();
             _time = new FakeTimeService { DeltaTime = 0.1f };
@@ -103,11 +86,10 @@ namespace TinCan.Tests.EditMode
         public void TearDown()
         {
             _movement.Destroy();
-            foreach (var ship in _registry.GetActors<FakeAirshipView>()) UnityEngine.Object.DestroyImmediate(ship.GameObject);
         }
 
         private BotRouteUseCase Create(string route) => new(
-            new HarnessOptions(null, route, false), _session, _driver, _registry, _network, _possession, _time, new FakeEventPublisher());
+            new HarnessOptions(null, route, false), _session, _driver, _registry, _network, _occupancy, _time, new FakeEventPublisher());
 
         private void Tick(BotRouteUseCase useCase, float seconds)
         {
@@ -159,7 +141,7 @@ namespace TinCan.Tests.EditMode
         {
             _registry.LocalPlayer = new FakeHumanoidCharacterView(_movement);
             var useCase = new BotRouteUseCase(new HarnessOptions(null, "DeckWalk", false, botLoop: true), _session, _driver,
-                _registry, _network, _possession, _time, new FakeEventPublisher());
+                _registry, _network, _occupancy, _time, new FakeEventPublisher());
             bool completed = false;
             _session.RouteCompleted += () => completed = true;
 
@@ -174,13 +156,13 @@ namespace TinCan.Tests.EditMode
         {
             var player = new FakeHumanoidCharacterView(_movement);
             _registry.LocalPlayer = player;
-            _registry.Register(new FakeAirshipView());
+            _registry.Register(new FakeHelm());
             var useCase = Create("Pilot");
 
             Tick(useCase, BotRoutes.Pilot.TotalDuration + 1f);
 
-            Assert.That(_possession.Acquired, Is.EqualTo(1));
-            Assert.That(_possession.Released, Is.EqualTo(1));
+            Assert.That(_occupancy.Taken, Is.EqualTo(1));
+            Assert.That(_occupancy.Left, Is.EqualTo(1));
         }
 
         [Test]
@@ -188,13 +170,13 @@ namespace TinCan.Tests.EditMode
         {
             _network.IsServer = false;
             _registry.LocalPlayer = new FakeHumanoidCharacterView(_movement);
-            _registry.Register(new FakeAirshipView());
+            _registry.Register(new FakeHelm());
             var useCase = Create("Pilot");
 
             Tick(useCase, BotRoutes.Pilot.TotalDuration + 1f);
 
-            Assert.That(_possession.Acquired, Is.Zero);
-            Assert.That(_possession.Released, Is.Zero);
+            Assert.That(_occupancy.Taken, Is.Zero);
+            Assert.That(_occupancy.Left, Is.Zero);
         }
     }
 }

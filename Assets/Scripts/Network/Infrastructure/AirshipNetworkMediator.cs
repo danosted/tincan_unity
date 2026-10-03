@@ -2,7 +2,6 @@ using Unity.Netcode;
 using UnityEngine;
 using TinCan.Core.Ship;
 using TinCan.Core.Domain;
-using TinCan.Core.Possession;
 using TinCan.Core.Interaction;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
@@ -10,40 +9,24 @@ using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Core.Gas;
 using TinCan.Network.Infrastructure.Abilities;
 using System;
-using TinCan.Core.Domain.Look;
 
 namespace TinCan.Network.Infrastructure
 {
     /// <summary>
     /// Infrastructure Layer: Bridges the Airship logic with Netcode for GameObjects.
-    /// Handles synchronization of steering input and possession state.
+    /// The ship is simulated on the server only; its steering comes from its pilot (IAirshipPilotInput, the helm).
     /// </summary>
     [RequireComponent(typeof(AirshipControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
-    [RequireComponent(typeof(TinCan.Core.Possession.Infrastructure.PossessableNetworkMediator))]
-    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, TinCan.Core.Domain.Look.IHasOrbitalCamera, IShipState
+    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, IShipState
     {
         public override bool IsSimulating => IsSpawned && IsServer;
-
-        // IPossessable, forwarded to the possession component (the helm is taken through possession).
-        private TinCan.Core.Possession.Infrastructure.PossessableNetworkMediator _possession;
-        private TinCan.Core.Possession.Infrastructure.PossessableNetworkMediator Possession =>
-            _possession ??= GetComponent<TinCan.Core.Possession.Infrastructure.PossessableNetworkMediator>();
-        public ulong? PossessorId => Possession.PossessorId;
-        public bool CanPossess(ulong playerId) => Possession.CanPossess(playerId);
-        public void AuthoritativeSetPossessor(ulong? playerId)
-        {
-            // Released: nobody steers, so drop the last pilot's input (the server owns the ship again by now).
-            if (playerId == null) InputState = new AirshipInputState();
-            Possession.AuthoritativeSetPossessor(playerId);
-        }
 
         private AirshipControllerView _view;
         private AbilityNetworkMediator _abilitySync;
         private AirshipAttributeSet _attributes;
         private HealthAttributeSet _health;
-        private uint _nextInputSequence;
 
         [Header("GAS Attributes")]
         [SerializeField] private GameplayAttribute _flightSpeedAttribute;
@@ -55,12 +38,6 @@ namespace TinCan.Network.Infrastructure
 
         // IShipState Implementation
         public IAbilityControllerBase Controller => _abilitySync;
-
-        private readonly NetworkVariable<AirshipInputState> _netInputState = new NetworkVariable<AirshipInputState>(
-            writePerm: NetworkVariableWritePermission.Owner);
-
-        // IHasOrbitalCamera Implementation
-        public TinCan.Core.Domain.Look.IOrbitalLookView Look => _view.Look;
 
         // IAirshipView Implementation (Forwarding to view or using attributes)
         public Transform Transform => _view.transform;
@@ -77,25 +54,14 @@ namespace TinCan.Network.Infrastructure
         public float MaxBankAngle => _view.MaxBankAngle;
         public float BankSpeed => _view.BankSpeed;
 
-        public AirshipInputState InputState
-        {
-            get => _netInputState.Value;
-            set
-            {
-                if (!IsOwner) return;
-
-                value.Sequence = ++_nextInputSequence;
-                _netInputState.Value = value;
-            }
-        }
+        /// <summary>Server: the pilot's input this tick, set by AirshipMovementUseCase (fuel reads the throttle). Not replicated.</summary>
+        public AirshipInputState InputState { get; set; }
 
         // IMovingGround Implementation
         public Vector3 Velocity => _view.Velocity;
         public Vector3 PositionDelta => _view.PositionDelta;
         public Quaternion RotationDelta => _view.RotationDelta;
         public Vector3 GetPointVelocity(Vector3 worldPoint) => _view.GetPointVelocity(worldPoint);
-
-        public bool IsControlsEnabled => _view.IsControlsEnabled;
 
         public void ApplyMovement(Vector3 velocity, Vector3 angularVelocity) => _view.ApplyMovement(velocity, angularVelocity);
         public void Simulate(float deltaTime) => _view.Simulate(deltaTime);
@@ -120,16 +86,6 @@ namespace TinCan.Network.Infrastructure
             {
                 _abilitySync.GrantAbility(ability);
             }
-        }
-
-        public void EnableControls()
-        {
-            _view.EnableControls();
-        }
-
-        public void DisableControls()
-        {
-            _view.DisableControls();
         }
     }
 }

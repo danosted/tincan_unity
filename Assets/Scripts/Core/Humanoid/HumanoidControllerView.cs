@@ -50,7 +50,7 @@ namespace TinCan.Core.Humanoid
         {
             get
             {
-                var lookView = GetComponent<IOrbitalLookView>();
+                var lookView = GetComponent<ILookView>();
                 return lookView != null ? Quaternion.Euler(0, lookView.Yaw, 0) : transform.rotation;
             }
         }
@@ -61,7 +61,7 @@ namespace TinCan.Core.Humanoid
         {
             get
             {
-                var lookView = GetComponent<IOrbitalLookView>();
+                var lookView = GetComponent<ILookView>();
                 return lookView != null ? lookView.Pitch : 0f;
             }
         }

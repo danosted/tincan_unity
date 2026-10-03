@@ -15,5 +15,5 @@ MonoBehaviour:
   _actionId: 31833249-6c5b-42c3-8ed2-85a5095e2c0a
   _path: Global/Cancel
   _displayName: Back / Menu
-  _description: 'Back out: close the menu, leave the helm, or open the main menu.'
+  _description: 'Back out: close the menu, or open the main menu.'
   _rebindable: 1

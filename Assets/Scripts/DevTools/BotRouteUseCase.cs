@@ -4,17 +4,18 @@ using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
-using TinCan.Core.Ship;
 using TinCan.Core.Humanoid;
-using TinCan.Core.Possession;
+using TinCan.Features.Helm;
+using TinCan.Features.Stations;
+using VContainer;
 using VContainer.Unity;
 
 namespace TinCan.DevTools
 {
     /// <summary>
     /// Plays the <c>-bot</c> route through scripted input (<see cref="ScriptedActionDriver"/>), so gameplay reads it exactly like a keyboard.
-    /// The clock starts once the local player exists. Ship commands take or release the helm through the server's
-    /// possession authority, so they only work on the host.
+    /// The clock starts once the local player exists. Ship commands take or leave the helm station through the server's
+    /// station occupancy, so they only work on the host (and only with the Helm and Stations features loaded).
     /// </summary>
     public sealed class BotRouteUseCase : ITickable
     {
@@ -25,7 +26,8 @@ namespace TinCan.DevTools
         private readonly ScriptedActionDriver _input;
         private readonly IActorRegistry _registry;
         private readonly INetworkService _network;
-        private readonly IPossessionAuthority _possession;
+        private readonly IObjectResolver? _resolver;
+        private IStationOccupancy? _occupancy;
         private readonly ITimeService _time;
         private readonly IEventPublisher _events;
         private readonly List<BotStep> _entered = new();
@@ -44,7 +46,7 @@ namespace TinCan.DevTools
             ScriptedActionDriver input,
             IActorRegistry registry,
             INetworkService network,
-            IPossessionAuthority possession,
+            IStationOccupancy? occupancy,
             ITimeService time,
             IEventPublisher events)
         {
@@ -53,9 +55,31 @@ namespace TinCan.DevTools
             _input = input;
             _registry = registry;
             _network = network;
-            _possession = possession;
+            _occupancy = occupancy;
             _time = time;
             _events = events;
+        }
+
+        // Stations is a feature a profile may leave out, so occupancy is looked up optionally, on first use.
+        [Inject]
+        public BotRouteUseCase(
+            HarnessOptions options,
+            HarnessSession session,
+            ScriptedActionDriver input,
+            IActorRegistry registry,
+            INetworkService network,
+            IObjectResolver resolver,
+            ITimeService time,
+            IEventPublisher events)
+            : this(options, session, input, registry, network, (IStationOccupancy?)null, time, events)
+        {
+            _resolver = resolver;
+        }
+
+        private IStationOccupancy? Occupancy()
+        {
+            if (_occupancy == null && _resolver != null && _resolver.TryResolve<IStationOccupancy>(out var occupancy)) _occupancy = occupancy;
+            return _occupancy;
         }
 
         public void Tick()
@@ -129,8 +153,8 @@ namespace TinCan.DevTools
             switch (command)
             {
                 case BotShipCommand.Take:
-                    var airship = _registry.GetActors<IAirshipView>().FirstOrDefault();
-                    _hasHelm = airship != null && _possession.TryAcquirePossession(_player.Id, airship);
+                    var helm = _registry.GetActors<IHelm>().OfType<IStation>().FirstOrDefault();
+                    _hasHelm = helm != null && Occupancy()?.TryOccupy(_player, helm) == true;
                     _events.LogInfo(LogSource, _hasHelm ? "Bot took the helm." : "Bot could not take the helm.");
                     break;
                 case BotShipCommand.Release:
@@ -143,7 +167,7 @@ namespace TinCan.DevTools
         {
             if (!_hasHelm || _player == null) return;
 
-            _possession.TryReleasePossession(_player.Id);
+            Occupancy()?.Leave(_player.Id);
             _hasHelm = false;
             _events.LogInfo(LogSource, "Bot released the helm.");
         }

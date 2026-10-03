@@ -209,3 +209,11 @@ only trims above 4 (`HumanoidInputBuffer.DefaultMaxQueued`). The standing depth 
 ahead of the server (NGO's client time leads by about the round trip plus a buffer), so inputs arrive early and wait;
 lowering the cap alone would skip inputs every tick and force client corrections. Fixing it is a netcode design task
 (client time lead and input buffering together), open in the plan.
+
+### 2026-10-03: the input-lead controller
+
+The standing input queue came from NGO's inflated RTT estimate (174–330 ms on links of ~1 and ~100 ms), which sets
+how far the client clock leads. Each owner now steers its lead from the queue depth the server reports
+(`InputLeadProcessor`, plan `plans/input-queue-lead.md`). CrewLoad, input acknowledgement: 98 → 39 ms without
+network simulation, 230 → 175 ms with `Lag100`; prediction corrections went down (7.0 → 5.2 %, 6.9 → 6.6 %).
+Client reports now carry `ngo_rtt_ms`, `time_lead_ms` and `local_buffer_ms`.

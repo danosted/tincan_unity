@@ -153,7 +153,8 @@ namespace TinCan.Network.Infrastructure
                 Platform = hasPlatform ? new NetworkObjectReference(platformObject!) : default,
                 LocalPosition = wire.LocalPosition,
                 LocalHorizontalVelocity = wire.LocalHorizontalVelocity,
-                VerticalVelocity = wire.VerticalVelocity
+                VerticalVelocity = wire.VerticalVelocity,
+                QueueDepthTenths = HumanoidMovementSnapshot.ToTenths(_inputBuffer.SmoothedDepth)
             });
         }
 
@@ -174,6 +175,28 @@ namespace TinCan.Network.Infrastructure
                 snapshot.LocalPosition, snapshot.LocalHorizontalVelocity, snapshot.VerticalVelocity);
             _hasPendingServerState = true;
             RecordAckLatency(snapshot.Sequence);
+            SteerInputLead(snapshot.QueueDepthTenths / 10f);
+        }
+
+        // Owner: keep this client's inputs arriving just in time at the server (.docs/plans/input-queue-lead.md).
+        // -noinputlead turns it off, for comparisons.
+        private readonly InputLeadProcessor _inputLead = new();
+        // Read on first use, in Play: not in a static initializer, which runs when the type loads in the Editor, where
+        // reading MPPM player tags throws before MPPM is ready and leaves the type unusable (2026-10-03).
+        private bool? _inputLeadEnabled;
+        private float _lastLeadSteerAt = -1f;
+
+        private void SteerInputLead(float reportedDepth)
+        {
+            _inputLeadEnabled ??= !LaunchArguments.HasFlag(LaunchArguments.Current, "-noinputlead");
+            if (_inputLeadEnabled == false || NetworkManager == null || NetworkManager.NetworkTimeSystem == null) return;
+
+            float now = Time.realtimeSinceStartup;
+            float delta = _lastLeadSteerAt < 0f ? 0f : now - _lastLeadSteerAt;
+            _lastLeadSteerAt = now;
+
+            var time = NetworkManager.NetworkTimeSystem;
+            time.LocalBufferSec = _inputLead.Next(time.LocalBufferSec, reportedDepth, delta);
         }
 
         /// <summary>Time from sending an input to hearing the server applied it: round trip plus the server's input buffer.</summary>

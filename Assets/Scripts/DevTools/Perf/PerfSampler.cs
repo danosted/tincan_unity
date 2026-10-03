@@ -87,6 +87,9 @@ namespace TinCan.DevTools.Perf
         private readonly PerfSeries _gcUsedMb;
         private readonly PerfSeries _totalUsedMb;
         private readonly PerfSeries _networkObjects;
+        private readonly PerfSeries _ngoRttMs;
+        private readonly PerfSeries _timeLeadMs;
+        private readonly PerfSeries _localBufferMs;
 
         private Phase _phase = Phase.WaitingForSession;
         private float _phaseStart;
@@ -148,6 +151,9 @@ namespace TinCan.DevTools.Perf
             _gcUsedMb = Series("gc_used_mb", "MB", seconds);
             _totalUsedMb = Series("total_used_mb", "MB", seconds);
             _networkObjects = Series("network_objects", "objects", seconds);
+            _ngoRttMs = Series("ngo_rtt_ms", "ms", seconds);
+            _timeLeadMs = Series("time_lead_ms", "ms", seconds);
+            _localBufferMs = Series("local_buffer_ms", "ms", seconds);
         }
 
         public void PostLateTick()
@@ -263,6 +269,16 @@ namespace TinCan.DevTools.Perf
             AddIfValid(_totalUsedMb, _totalUsed, _totalUsed.Current / BytesPerMegabyte);
             var spawned = _networkManager.SpawnManager?.SpawnedObjectsList;
             if (spawned != null) _networkObjects.Add(spawned.Count);
+
+            // Clients: the RTT NGO's time system uses, and how far the client clock runs ahead of the server's. The client
+            // leads by about half the RTT plus one tick, so an inflated RTT means inputs wait in the server queue
+            // (.docs/plans/input-queue-lead.md, Phase 0).
+            if (!_network.IsServer && _network.IsClient)
+            {
+                _ngoRttMs.Add(_networkManager.NetworkConfig.NetworkTransport.GetCurrentRtt(NetworkManager.ServerClientId));
+                _timeLeadMs.Add((float)((_networkManager.LocalTime.Time - _networkManager.ServerTime.Time) * 1000d));
+                if (_networkManager.NetworkTimeSystem != null) _localBufferMs.Add((float)(_networkManager.NetworkTimeSystem.LocalBufferSec * 1000d));
+            }
         }
 
         private void Finish(float now, string reason)

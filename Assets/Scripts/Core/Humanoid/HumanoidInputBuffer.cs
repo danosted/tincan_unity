@@ -33,6 +33,16 @@ namespace TinCan.Core.Humanoid
         public uint LastConsumedSequence { get; private set; }
         public HumanoidInputBufferStats Stats => _stats;
 
+        /// <summary>
+        /// The queue depth at consume time, averaged over about a second (an exponential average, weight
+        /// <see cref="DepthSmoothing"/> per tick). The owner steers its time lead by it (<see cref="InputLeadProcessor"/>):
+        /// each input waiting here is a tick of input latency (.docs/plans/input-queue-lead.md).
+        /// </summary>
+        public float SmoothedDepth { get; private set; }
+
+        public const float DepthSmoothing = 1f / 30f;
+        private bool _hasSmoothedDepth;
+
         public void Receive(IReadOnlyList<HumanoidInputState> inputs)
         {
             foreach (var input in inputs)
@@ -51,6 +61,8 @@ namespace TinCan.Core.Humanoid
             _stats.Ticks++;
             _stats.DepthSum += _queue.Count;
             _stats.MaxDepth = Math.Max(_stats.MaxDepth, _queue.Count);
+            SmoothedDepth = _hasSmoothedDepth ? SmoothedDepth + (_queue.Count - SmoothedDepth) * DepthSmoothing : _queue.Count;
+            _hasSmoothedDepth = true;
 
             if (_queue.Count == 0)
             {

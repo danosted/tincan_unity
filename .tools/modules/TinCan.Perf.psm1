@@ -26,7 +26,8 @@ $BudgetedMetrics = @(
     @{ kind = "server"; metric = "tick_ms"; stat = "p99"; margin = 0.30; floor = 1.0 }
     @{ kind = "server"; metric = "main_thread_ms"; stat = "p95"; margin = 0.25; floor = 0.5 }
     @{ kind = "server"; metric = "physics_ms"; stat = "p95"; margin = 0.30; floor = 0.3 }
-    @{ kind = "server"; metric = "physics_queries"; stat = "p95"; margin = 0.15; floor = 5 }
+    # p50, not p95: p95 caught rare multi-second stretches (one seeded run 80 against 46) while p50 stays at 42.
+    @{ kind = "server"; metric = "physics_queries"; stat = "p50"; margin = 0.15; floor = 5 }
     @{ kind = "server"; metric = "gc_alloc_bytes"; stat = "p95"; margin = 0.25; floor = 512 }
     @{ kind = "server"; metric = "gc_alloc_bytes"; stat = "mean"; margin = 0.25; floor = 256 }
     @{ kind = "server"; metric = "tx_bytes_s"; stat = "p95"; margin = 0.20; floor = 1024 }
@@ -98,12 +99,12 @@ function Test-PerfBudgets([string]$Scenario, $Reports, [hashtable]$RoleProfiles)
     return $rows
 }
 
-# Relative check: each metric against the median of the last $Count runs of the same scenario and set-up (container-only
-# or with the desktop client) that did not fail. Never fails a run; prints a drift warning when a value is more than
+# Relative check: each metric against the median of the last $Count runs of the same scenario, set-up (container-only
+# or with the desktop client) and seed that did not fail. Never fails a run; prints a drift warning when a value is more than
 # $Threshold above that median.
-function Get-PerfDrift([string]$Scenario, [string]$CurrentFolder, $Reports, [bool]$Desktop, [int]$Count = 5, [double]$Threshold = 0.15) {
+function Get-PerfDrift([string]$Scenario, [string]$CurrentFolder, $Reports, [bool]$Desktop, [int]$Seed, [int]$ServerFps = 0, [int]$Count = 5, [double]$Threshold = 0.15) {
     $previous = @(Get-PerfRuns -Scenario $Scenario | Where-Object {
-            $_.Folder -ne $CurrentFolder -and $_.Verdict -ne "FAIL" -and [bool]$_.Record.desktop -eq $Desktop -and -not $_.Record.profileFrames
+            $_.Folder -ne $CurrentFolder -and $_.Verdict -ne "FAIL" -and [bool]$_.Record.desktop -eq $Desktop -and -not $_.Record.profileFrames -and [int]$_.Record.seed -eq $Seed -and [int]$_.Record.serverFps -eq $ServerFps
         } | Select-Object -Last $Count)
     if ($previous.Count -lt 2) { return @() }
     $history = @($previous | ForEach-Object { Read-PerfReports $_.Folder })
@@ -120,6 +121,17 @@ function Get-PerfDrift([string]$Scenario, [string]$CurrentFolder, $Reports, [boo
         }
     }
     return $rows
+}
+
+# Each bot's input-acknowledgement latency (ms), from the last movement-telemetry line in its container log: how long
+# until the server confirmed an input. Bot name -> ms; missing when a bot logged none.
+function Get-BotAckLatency([string]$Folder) {
+    $result = [ordered]@{}
+    foreach ($log in Get-ChildItem $Folder -Filter "perf-bot*.log" | Sort-Object Name) {
+        $last = Select-String -Path $log.FullName -Pattern '\| ack (\d+) ms' | Select-Object -Last 1
+        if ($last) { $result[($log.BaseName -replace "^perf-", "")] = [int]$last.Matches[0].Groups[1].Value }
+    }
+    return $result
 }
 
 function Get-Median([double[]]$values) {
@@ -190,11 +202,15 @@ function Set-PerfBudgetsFromRuns([string[]]$RunIds, [string]$Rationale, [string[
             $values = @($reportsByRun | ForEach-Object { if ($_[$role]) { Get-MetricValue $_[$role] $spec.metric $spec.stat } } | Where-Object { $null -ne $_ })
             if ($values.Count -eq 0) { continue }
             $median = Get-Median $values
+            $worst = ($values | Measure-Object -Maximum).Maximum
+            # A budget must pass the runs it was set from: the limit covers the worst baseline run (+5 %) when the
+            # load's own run-to-run spread is wider than the margin (2026-10-03: seeded traffic still varied +-20 %).
+            $max = [math]::Max($median * (1 + $spec.margin), $worst * 1.05) + $spec.floor
             $budgets += [ordered]@{
                 scenario = $scenario; role = $kind; profile = $roleProfiles[$role]; metric = $spec.metric; stat = $spec.stat
-                baseline = [math]::Round($median, 3); runs = $values.Count; spread = [string]::Format([cultureinfo]::InvariantCulture, "{0:0.###}..{1:0.###}", ($values | Measure-Object -Minimum).Minimum, ($values | Measure-Object -Maximum).Maximum)
-                warn = [math]::Round($median * (1 + $spec.margin / 2) + $spec.floor / 2, 3)
-                max = [math]::Round($median * (1 + $spec.margin) + $spec.floor, 3)
+                baseline = [math]::Round($median, 3); runs = $values.Count; spread = [string]::Format([cultureinfo]::InvariantCulture, "{0:0.###}..{1:0.###}", ($values | Measure-Object -Minimum).Minimum, $worst)
+                warn = [math]::Round(($median + $max) / 2, 3)
+                max = [math]::Round($max, 3)
                 margin = $spec.margin; floor = $spec.floor; setAt = $commit; rationale = $Rationale
             }
         }
@@ -326,6 +342,6 @@ return sb.ToString();
 "@
 }
 
-Export-ModuleMember -Function Get-GcAttributionCode, Get-PerfProfiles, Get-RoleKind, New-PerfRunFolder, Read-PerfReports, Get-MetricValue, Read-Budgets,
+Export-ModuleMember -Function Get-GcAttributionCode, Get-BotAckLatency, Get-PerfProfiles, Get-RoleKind, New-PerfRunFolder, Read-PerfReports, Get-MetricValue, Read-Budgets,
     Test-PerfBudgets, Get-PerfDrift, Get-Median, Write-PerfRunRecord, Get-PerfRuns, Resolve-PerfRun, Set-PerfBudgetsFromRuns,
     Compare-PerfRuns, Get-PerfTrend

@@ -64,6 +64,7 @@ Both can be unit-tested directly.
 |---|---|---|---|
 | `TinCan.Core.Domain` | `Assets/Scripts/Core/Domain/TinCan.Core.Domain.asmdef` | Contracts, registries, `SimulationUseCase`, `ISimulationTickable`, the GAS vocabulary, `FeatureInstaller`. | NGO runtime, VContainer |
 | `TinCan.Targeting`, `TinCan.Possession`, `TinCan.Entities` | in `Core/Targeting/`, `Core/Possession/`, `Core/Entities/` | Core systems with no core dependency: the targeting query, possession (authority, camera and cursor responders), `EntityNetworkMediator`. | Core.Domain, NGO, VContainer |
+| `TinCan.RandomStreams` | `Core/RandomStreams/` | `RandomSource` behind `Core.Domain`'s `IRandomSource` (one named stream per system; `-seed <n>` makes them repeatable) and its core installer. | Core.Domain, VContainer |
 | `TinCan.Gas` | `Core/Gas/TinCan.Gas.asmdef` | Abilities, effects, attributes, tags, cues (`Cues/`, with `[MovedFrom]` on the cue actions), `ActorAbilityGrantUseCase`, the tag and cue installers. | Core.Domain, Targeting, VContainer |
 | `TinCan.Humanoid` | `Core/Humanoid/TinCan.Humanoid.asmdef` | Humanoid movement and prediction, `HumanoidInputState`, `HumanoidAttributeSet`, `HumanoidTargeter`, `ThirdPersonLookView`, `ParentLocalSpaceVolume`. | Core.Domain, Gas, NGO, VContainer |
 | `TinCan.Interaction` | `Core/Interaction/TinCan.Interaction.asmdef` | Interaction orchestration, handlers, vehicle boarding, the interaction installer. | Core.Domain, Gas, Humanoid, Possession, Targeting, NGO, VContainer |
@@ -176,6 +177,7 @@ Both can be unit-tested directly.
 | Events / logging | `IEventPublisher.Publish` and `LogInfo(source, message)`; observed by `Core/Infrastructure/Events/DebugLogEventObserver.cs`. |
 | Command-line session start | `Core/UI/CommandLineSessionBootstrap.cs`: `-autohost`, `-server [address][:port]` (dedicated, default `0.0.0.0:7777`), `-autojoin [address[:port]]`, also as MPPM player tags via `Core/Domain/LaunchArguments.cs`. |
 | Simulated latency, input bot, movement telemetry | `DevTools/` ([`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md)); reports in `Logs/net-telemetry/`. |
+| Random numbers (and seeding them) | `IRandomSource.Create("<System>")` (`Core/Domain/IRandomSource.cs`), one stream per system; with `-seed <n>` every stream repeats, which perf runs rely on, so gameplay randomness should come from it (`Core/RandomStreams/`). |
 | Feature scenarios and the scenes they run in | `DevTools/Scenarios/ScenarioCatalog.cs` (`.InScene(TestScenes.X)`), scenes built by `DevTools/Editor/TestRangeSceneBuilder.cs`; driver `.tools/verify.ps1`; agent procedures `.claude/skills/verify-feature`, `add-scenario`. |
 | Perf runs and budgets | Sampler `DevTools/Perf/PerfSampler.cs` (`-perf`, registered by `NetTestHarnessFeatureInstaller`), report `PerfReport.cs`; runner `.tools/perf.ps1` + `modules/TinCan.Perf.psm1`; budgets `.docs/perf/budgets.json`; guide [`PERFORMANCE.md`](PERFORMANCE.md). |
 | Scripted input for automation | `DevTools/ScriptedAction.cs` intents (`MoveForward`, `GunnerFire`, ...) mapped to context actions by `ScriptedActionMap`, pressed through `Core/Domain/Input/ScriptedInput.cs`, which `InputSystemReader` merges under the same context rules as keys. |
@@ -321,6 +323,9 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
   clients (interpolated ship, late joiners) end up with the fixture floating off the ship.
 - **UniTask is not installed** even though `CODE_STANDARDS.md` names it. No async or coroutine code exists yet.
 - **`ProjectSettings/EditorBuildSettings.asset`** still lists two deleted scenes under `Assets/Scenes/Dev/`.
+- **A running dedicated server blocks scenario runs.** A server container publishing UDP 7777 (with WSL mirrored networking
+  it owns the PC's port) stops the scenario host from binding; `verify.ps1` checks the port first and says so. Stop it with
+  `podman stop tincan-server` before `verify.ps1 -Scenario`/`-All` (2026-10-03).
 - **A Windows prompt stalls unattended runs.** A UAC or firewall prompt waiting on the desktop blocks the Editor's main
   thread: builds never start and pipeline evals time out, while `unity cmd editor_status` still answers "ready" from a
   cached heartbeat. `build.ps1` probes the main thread and says so; answer the prompt (2026-10-03). The firewall prompt

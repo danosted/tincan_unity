@@ -23,6 +23,8 @@ Every flag works on a build's command line or as a **Multiplayer Play Mode playe
 | `autohost` | `-autohost` | Start Host on launch (`Core/UI/CommandLineSessionBootstrap.cs`). |
 | `autojoin` | `-autojoin [address[:port]]` | Join on launch; defaults to `127.0.0.1:7777`. |
 | `joindelay:<s>` | `-joindelay <seconds>` | With `autojoin`: join that many seconds after launch instead of at once (late-join checks). |
+| `seed:<n>` | `-seed <n>` | Seed every gameplay random stream (`IRandomSource`): hazards, flying cans and ship breakage repeat from run to run. Perf runs pass one (`perf.ps1 -Seed`). |
+| `serverfps:<n>` | `-serverfps <n>` | With `-server`: the dedicated server's frame cap (default and minimum: the tick rate, 30). The transport is read once per frame, so the cap bounds how fast input is picked up (measured: 60 fps saves ~16 ms of input latency for ~24 % more server CPU; .docs/PERFORMANCE.md). |
 | `netsim:<preset>` | `-netsim <preset>` | Delay, jitter and loss on this peer's outgoing packets (see presets). |
 | `bot:<route>` | `-bot <route>` | Play a scripted input route once the local player exists. Implies `telemetry`. |
 | `telemetry` | `-telemetry` | Measure the local player and write a report. |

@@ -11,6 +11,8 @@ Commands:
   list                  Every run folder with its verdict.
   compare <A> <B>       Budgeted metrics of two runs side by side (a run is any unique part of its folder name).
   trend <Scenario> <role.metric.stat>   One metric across every run of a scenario, e.g. server.tick_ms.p95.
+  run <Scenario> -ServerFps <n>   Override the server's frame cap (default: the tick rate, 30). An experiment knob:
+                        such runs only compare with runs of the same cap.
   run <Scenario> -ProfileFrames <n>   A diagnosis run: the server also records a Unity profiler capture (server.raw)
                         of the window's first n frames. Profiling skews the numbers, so such runs are left out of
                         drift history and set-budgets refuses them.
@@ -49,7 +51,9 @@ param(
     [double]$DurationSeconds = 90,
     [string]$Rationale = "baseline",
     [string[]]$Roles = @(),
-    [int]$ProfileFrames = 0
+    [int]$ProfileFrames = 0,
+    [int]$Seed = 1003,
+    [int]$ServerFps = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -71,7 +75,9 @@ function Invoke-CrewLoad([string]$Folder) {
     $botCount = if ($Desktop) { 3 } else { 4 }
     $botCores = @("4", "5", "6", "7")
     $common = @("-perf", "-perflabel", "CrewLoad", "-perfduration", "$DurationSeconds", "-perfout", "/perf", "-perfquit")
-    $serverExtra = if ($ProfileFrames -gt 0) { @("-perfprofile", "$ProfileFrames") } else { @() }
+    $serverExtra = @()
+    if ($ProfileFrames -gt 0) { $serverExtra += @("-perfprofile", "$ProfileFrames") }
+    if ($ServerFps -gt 0) { $serverExtra += @("-serverfps", "$ServerFps") }
 
     Initialize-ContainerNetwork $Network
     $names = @($ServerName)
@@ -80,7 +86,7 @@ function Invoke-CrewLoad([string]$Folder) {
     Write-Tier "Perf" "note" "server ($($server.cpus) cpus, $($server.memory)), $botCount bot(s)$(if ($Desktop) { ' + desktop client' })"
     Start-GameContainer -Name $ServerName -Image $Image -Network $Network -Cpus $server.cpus -CpusetCpus $server.cpuset `
         -Memory $server.memory -HostFolder $Folder -Publish @("7777:7777/udp") `
-        -Arguments (@("-server", "-perfrole", "server", "-perfwarmup", "$WarmupSeconds") + $serverExtra + $common) | Out-Null
+        -Arguments (@("-server", "-seed", "$Seed", "-perfrole", "server", "-perfwarmup", "$WarmupSeconds") + $serverExtra + $common) | Out-Null
     if (-not (Wait-ContainerLog $ServerName "Starting a dedicated server" 60)) { Stop-Unusable "the perf server did not start (see $(Join-Path $Folder "$ServerName.log"))" }
     $serverUp = Get-Date
 
@@ -140,15 +146,19 @@ function Invoke-Run([string]$Scenario) {
         Write-Host ("  {0,-7} {1}" -f $role, ($line -join " | "))
     }
 
+    $ack = Get-BotAckLatency $folder
+    if ($ack.Count -gt 0) { Write-Host ("  input ack (ms): " + (($ack.Keys | ForEach-Object { "$_ $($ack[$_])" }) -join ", ")) }
+
     $budgetRows = @(Test-PerfBudgets $Scenario $reports $roleProfiles)
     foreach ($role in $missing) { $budgetRows += [pscustomobject]@{ Role = $role; Metric = "report"; Value = $null; Warn = $null; Max = $null; Verdict = "MISSING" } }
-    $driftRows = @(Get-PerfDrift $Scenario $folder $reports ([bool]$Desktop))
+    $driftRows = @(Get-PerfDrift $Scenario $folder $reports ([bool]$Desktop) $Seed $ServerFps)
     $commit = (& git -C $ProjectRoot rev-parse --short HEAD).Trim()
     $dirty = [bool](& git -C $ProjectRoot status --porcelain)
     $verdict = Write-PerfRunRecord $folder ([ordered]@{
         scenario = $Scenario; commit = $commit; dirty = $dirty; startedLocal = (Get-Date).AddSeconds(-$clock.Elapsed.TotalSeconds).ToString("s")
         durationS = [int]$clock.Elapsed.TotalSeconds; warmupS = $WarmupSeconds; windowS = $DurationSeconds; desktop = [bool]$Desktop
-        roleProfiles = $roleProfiles; profiles = (Get-PerfProfiles); image = $Image; profileFrames = $ProfileFrames
+        roleProfiles = $roleProfiles; profiles = (Get-PerfProfiles); image = $Image; profileFrames = $ProfileFrames; seed = $Seed; serverFps = $ServerFps
+        botAckMs = (Get-BotAckLatency $folder)
     }) $budgetRows $driftRows
 
     foreach ($row in $budgetRows | Where-Object { $_.Verdict -ne "PASS" }) {

@@ -42,6 +42,19 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void ServerFrameRate_DefaultsToTheTickRate_AndTakesAHigherOverride()
+        {
+            var serviceType = Type.GetType("TinCan.Network.Infrastructure.NGONetworkService, TinCan.Network", true)!;
+            var method = serviceType.GetMethod("ServerFrameRate")!;
+            int Rate(string[] args) => (int)method.Invoke(null, new object[] { args, 30 })!;
+
+            Assert.That(Rate(new[] { "game.x86_64", "-server" }), Is.EqualTo(30));
+            Assert.That(Rate(new[] { "-server", "-serverfps", "120" }), Is.EqualTo(120));
+            Assert.That(Rate(new[] { "-serverfps", "10" }), Is.EqualTo(30), "never below the tick rate");
+            Assert.That(Rate(new[] { "-serverfps", "fast" }), Is.EqualTo(30));
+        }
+
+        [Test]
         public void SetListenEndpoint_SetsTheBindAddressAndPort_AndKeepsTheConnectAddress()
         {
             var gameObject = new GameObject("NetworkServiceTest");

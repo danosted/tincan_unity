@@ -34,8 +34,8 @@ namespace TinCan.Features.Airship.Fuel.Minigame
 
         [Inject]
         public FlyingCanUseCase(INetworkService networkService, IActorRegistry actorRegistry,
-            IFlyingCanSpawner spawner, FlyingCanWaveProcessor waves, FlyingCanConfig config)
-            : this(networkService, actorRegistry, spawner, waves, config, new System.Random()) { }
+            IFlyingCanSpawner spawner, FlyingCanWaveProcessor waves, FlyingCanConfig config, IRandomSource random)
+            : this(networkService, actorRegistry, spawner, waves, config, random.Create("FlyingCans")) { }
 
         public FlyingCanUseCase(INetworkService networkService, IActorRegistry actorRegistry,
             IFlyingCanSpawner spawner, FlyingCanWaveProcessor waves, FlyingCanConfig config, System.Random random)

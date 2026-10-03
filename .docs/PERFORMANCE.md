@@ -13,6 +13,7 @@ Plan and open work: [`plans/performance-budgets.md`](plans/performance-budgets.m
 .\.tools\perf.ps1 run CrewLoad             # containers only; nothing opens on the desktop (~2.5 min)
 .\.tools\perf.ps1 run CrewLoad -Desktop    # + the Windows client rendering at 1920x1080 (opens a window)
 .\.tools\perf.ps1 run CrewLoad -Repeat 5   # several runs in a row
+.\.tools\perf.ps1 run CrewLoad -ServerFps 60   # experiment: override the server frame cap (default 30)
 .\.tools\perf.ps1 list                     # every run and its verdict
 ```
 
@@ -30,7 +31,7 @@ Never compare a perf number with one from a release build or from the Editor.
 
 | Scenario | Load | Roles |
 |---|---|---|
-| `CrewLoad` | A dedicated server, four players on DeckWalk (looping), an active voyage with sky hazards. | `server` (container), `bot1`..`bot4` (headless clients in containers); with `-Desktop`, `bot1`..`bot3` and `client` (the Windows client, rendering). |
+| `CrewLoad` | A dedicated server, four players on DeckWalk (looping), an active voyage with sky hazards. The server runs with `-seed` (perf.ps1 `-Seed`, default 1003), so hazards and flying cans repeat from run to run. | `server` (container), `bot1`..`bot4` (headless clients in containers); with `-Desktop`, `bot1`..`bot3` and `client` (the Windows client, rendering). |
 
 Not yet: helm, gunner and repair routes (bots on clients cannot take the helm, so the ship holds its course), spawn
 ramps, the worst rendering view, and the soak. See the plan's P3.
@@ -80,11 +81,13 @@ upgrade, check them again (the plan's P1 shows how).
 `.docs/perf/budgets.json`, one entry per scenario, role kind, profile, metric and stat:
 
 - `baseline` is the median of the runs it was set from, `spread` their range, `runs` how many.
-- `max` = baseline × (1 + margin) + floor. Above it the run **fails**. `warn` is halfway.
+- `max` = the larger of baseline × (1 + margin) and the worst baseline run + 5 %, plus the floor: a budget always passes
+  the runs it was set from, even where the load itself varies more than the margin (traffic does, by about ±20 %).
+  Above it the run **fails**. `warn` is halfway between the baseline and `max`.
 - The margin and floor per metric are in `TinCan.Perf.psm1` (`$BudgetedMetrics`): ~20–30 % for times and bytes, ~10 %
   for draw calls, plus an absolute floor so near-zero values do not flap.
 
-After each run perf.ps1 also compares every budgeted metric with the median of the last five passing runs and prints
+After each run perf.ps1 also compares every budgeted metric (against runs with the same seed) with the median of the last five passing runs and prints
 a **drift** warning when it is 15 % higher. History means runs of the same set-up (container-only, or with `-Desktop`) that did not fail. Drift never fails a run; it catches slow creep inside a budget.
 
 ### Setting and moving budgets
@@ -181,3 +184,28 @@ Bots and the desktop client did not change (their allocations are elsewhere). Th
 the new medians (`set-budgets -Roles server`). Two of the eight runs failed a budget that the change does not touch
 (server `tx_bytes_s` p95 116 KB/s, server `physics_queries` p95 68): both follow how many hazards spawn near the ship,
 which is random per run (`SkyHazardUseCase` uses an unseeded `System.Random`). See the plan's risks.
+
+### 2026-10-03: seeded runs and the dedicated server's input latency
+
+**Seeding.** Perf runs pass `-seed 1003` to the server (`IRandomSource`, `Core/RandomStreams/`). Five seeded runs
+spawned and destroyed exactly the same hazards (88 / 92) and took exactly 23 hits. Traffic still varies by about
+±20 % between runs (bots start their looping routes at different moments, so how many move at once differs), so a
+budget now covers the worst run it was set from, and server physics queries are budgeted on p50 (42 in every run;
+one run had a few seconds at 80). All budgets were re-set from seeded runs (5 container-only, 3 `-Desktop`).
+
+**Input latency.** Input acknowledgement (bot logs, now in `run.json` as `botAckMs` and printed per run), 5 runs at
+30 fps and 3 each at 60 and 120:
+
+| Server frame cap | Input ack, median | Server main-thread busy | Tick p95 |
+|---|---|---|---|
+| 30 fps (default) | 98 ms | 51 ms per second | 0.89 ms |
+| 60 fps (`-serverfps 60`) | 82 ms | 63 ms per second (+24 %) | 0.89 ms |
+| 120 fps | 82 ms | 87 ms per second (+70 %) | 0.87 ms |
+
+The frame cap explains about 16 ms; 120 fps buys nothing over 60. Most of the latency is the server's **input
+queue**: each client's queue stands at 2–4 inputs (`inputQueue.client<n>` in the server report), and the
+acknowledgement follows it (depth ~2.2: 82 ms, ~3: 98 ms, ~4: 115–130 ms). The server consumes one input per tick and
+only trims above 4 (`HumanoidInputBuffer.DefaultMaxQueued`). The standing depth is most likely the client running
+ahead of the server (NGO's client time leads by about the round trip plus a buffer), so inputs arrive early and wait;
+lowering the cap alone would skip inputs every tick and force client corrections. Fixing it is a netcode design task
+(client time lead and input buffering together), open in the plan.

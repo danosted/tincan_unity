@@ -4,6 +4,7 @@
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version 1.0
 Import-Module (Join-Path $PSScriptRoot "TinCan.Common.psm1")
+Import-Module (Join-Path $PSScriptRoot "TinCan.Editor.psm1")
 
 $ProjectRoot = Get-ProjectRoot
 
@@ -19,6 +20,15 @@ function Invoke-PlayerBuild([string]$name, [string]$menu, [string]$method, [stri
 
     $status = & unity cmd editor_status --result-only --timeout 15 2>$null | Out-String
     if ($status -match '"status"\s*:\s*"ready"') {
+        # editor_status can answer from a cached heartbeat while the main thread is blocked (2026-10-03: a Windows
+        # UAC / firewall prompt; the build never started). Probe the main thread and stop with the likely cause instead
+        # of polling for the timeout.
+        if (-not (Test-EditorAlive)) {
+            $problem = Get-EnvironmentProblem
+            $reason = if ($problem) { $problem } else { "the Editor's main thread does not answer; look for a UAC or firewall prompt waiting on the desktop, else focus or restart the Editor" }
+            Write-Host "[Build ] FAIL $name not started: $reason" -ForegroundColor Red
+            return $false
+        }
         Write-Host "[Build ] $name in the open Editor ($menu)"
         & unity cmd menu --path $menu --result-only --timeout 60 | Out-Null
     }

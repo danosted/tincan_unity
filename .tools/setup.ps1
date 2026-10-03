@@ -14,16 +14,23 @@ Optional: Direct path to Unity executable. If not provided, searches Unity Hub.
 Opt in to Unity CLI analytics. Setup opts out by default so fresh installs never
 stop at the first-run telemetry prompt.
 
+.PARAMETER Only
+Run one step on its own. "Firewall": the Windows Firewall rules for the game builds, a guided step that explains,
+asks first, then shows one administrator prompt.
+
 .EXAMPLE
 .\setup.ps1
 .\setup.ps1 -UnityPath "C:\Program Files\Unity\Hub\Editor\6000.4.5f1"
+.\setup.ps1 -Only Firewall
 #>
 
 #Requires -Version 7.0
 
 param(
     [string]$UnityPath,
-    [switch]$EnableUnityTelemetry
+    [switch]$EnableUnityTelemetry,
+    [ValidateSet("Firewall")]
+    [string]$Only
 )
 
 # ============================================================================
@@ -31,6 +38,16 @@ param(
 # ============================================================================
 
 Import-Module (Join-Path $PSScriptRoot "modules/TinCan.Common.psm1") -Force
+Import-Module (Join-Path $PSScriptRoot "modules/TinCan.Host.psm1") -Force
+
+if ($Only -eq "Firewall") {
+    Write-Section "Windows Firewall rules for the game builds"
+    if (@(Get-MissingFirewallRules).Count -eq 0) {
+        Write-Log "✓ Every game build already has its rule: $((Get-GameExecutables) -join ', ')"
+        exit 0
+    }
+    exit $(if (Confirm-FirewallRules) { 0 } else { 1 })
+}
 
 $ProjectRoot = Get-ProjectRoot
 $LogFile = Start-ToolLog "setup"
@@ -264,6 +281,11 @@ if ($null -eq $UnityEditorPath) {
 }
 
 # Step 3: Create configuration files
+# Host setup that needs a person: explains and asks first; an unattended setup skips it with a warning.
+Write-Section "Step 2b: Windows Firewall"
+if (@(Get-MissingFirewallRules).Count -eq 0) { Write-Log "✓ Firewall rules for the game builds exist" }
+elseif (-not (Confirm-FirewallRules)) { Write-Log "Firewall rules not created; perf runs with -Desktop will ask again." "WARN" }
+
 Write-Section "Step 3: Creating Configuration Files"
 Create-EnvFile
 

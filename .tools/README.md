@@ -27,6 +27,7 @@ Windows App Installer, which provides `winget`, is the only manual prerequisite.
 - Checks Unity version from `.unity-version`
 - Detects or installs the matching Editor via the Unity CLI, falling back to Unity Hub paths for detection
 - Creates `.env` configuration file
+- Windows Firewall rules for the game builds (`Builds/Win64`, `Builds/Win64Perf`): explains, asks `[y/N]`, then one administrator prompt; skipped with a warning when nobody can answer. Alone: `.\.tools\setup.ps1 -Only Firewall`
 - Sets up Packages/manifest.json if needed
 - Validates installation
 
@@ -72,6 +73,7 @@ failures: [`.docs/NETWORK_TEST_HARNESS.md`](../.docs/NETWORK_TEST_HARNESS.md), "
 .\.tools\build.ps1             # Builds/LinuxServer/TinCanServer.x86_64 (in the open Editor, else batch mode)
 .\.tools\build.ps1 -Image -Client  # then the image tincan-server:<commit> and :local, and Builds/Win64/TinCan.exe
 .\.tools\build.ps1 -ImageOnly  # rebuild only the image
+.\.tools\build.ps1 -Perf -Image -Client  # development "perf" variants: Builds/LinuxServerPerf, image tincan-server-perf, Builds/Win64Perf
 podman run -d --name tincan-server -p 7777:7777/udp --restart unless-stopped tincan-server:local   # run it: UDP 7777
 podman logs -f tincan-server   # the Unity log
 podman rm -f tincan-server     # stop it
@@ -80,6 +82,23 @@ Players join with `TinCan.exe -autojoin <server IP>:7777`. Clients and server mu
 `podman compose -f Container/server/compose.yaml up` also works, but `podman compose` needs a compose provider
 installed (today it borrows Docker Desktop's `docker-compose`). The machine's CPU and memory come from WSL
 (`%UserProfile%\.wslconfig`), not from `podman machine set`.
+
+### `perf.ps1`
+
+**Purpose:** Perf runs: a load scenario in containers (and optionally the desktop client), one folder per run under
+`Logs/perf/runs/`, checked against `.docs/perf/budgets.json`
+**Needs:** the perf builds (`.\.tools\build.ps1 -Perf -Image -Client`) and the Podman machine running
+**Usage:**
+```powershell
+.\.tools\perf.ps1 run CrewLoad                 # server + 4 headless bots in containers (nothing opens on the desktop)
+.\.tools\perf.ps1 run CrewLoad -Desktop        # 3 bots + the Windows perf client rendering (opens a window)
+.\.tools\perf.ps1 list                         # run folders and verdicts
+.\.tools\perf.ps1 compare <runA> <runB>        # budgeted metrics side by side
+.\.tools\perf.ps1 trend CrewLoad server.tick_ms.p95
+.\.tools\perf.ps1 set-budgets <run> <run> <run> -Rationale "why"
+```
+Exit code 0 pass (or no budgets yet), 1 a budget failed, 2 the environment was not usable. Budgets, profiles and how
+to read a report: [`.docs/PERFORMANCE.md`](../.docs/PERFORMANCE.md).
 
 ## Modules
 
@@ -92,8 +111,10 @@ flow. Shared logic lives in the modules (plan: `.docs/plans/tools-modules.md`):
 | `TinCan.Editor` | `Invoke-Unity`, Editor readiness and recovery, modal dialogs, scenes, Play Unfocused |
 | `TinCan.Mppm` | MPPM clone paths, clone scene sync, network prefab hash check |
 | `TinCan.Verify` | the compile, test and scenario tiers, the batch table |
-| `TinCan.Build` | player builds, in the open Editor or a batch-mode one |
-| `TinCan.Container` | container images through Podman (the engine is named once, `$Engine`) |
+| `TinCan.Build` | player builds, in the open Editor (after checking it is not stalled) or a batch-mode one |
+| `TinCan.Container` | container images and game containers through Podman (the engine is named once, `$Engine`): start with limits, wait, collect logs |
+| `TinCan.Perf` | perf profiles and budgeted metrics, run folders, budget and drift checks, compare / trend / set-budgets |
+| `TinCan.Host` | guided one-time Windows setup: firewall rules for the game builds (`Confirm-FirewallRules`) |
 
 Rules for module code:
 - **No `exit` in a module.** It would end the caller's script. Return a result or throw; `Stop-Unusable` throws an
@@ -103,6 +124,10 @@ Rules for module code:
   which the scripts rely on for CLI replies.)
 - **Export explicitly** with `Export-ModuleMember`; a module imports the modules it uses itself.
 - **Help stays on the entry script** (`Get-Help .\.tools\verify.ps1`).
+- **One-time setup is a guided step.** A step that changes the machine (firewall rules, anything needing admin) checks
+  what is missing, explains why, asks with `Confirm-Step` (`[y/N]`), and only then acts, with at most one admin
+  prompt. Unattended (`Test-Interactive` is false: agents, redirected input, scheduled runs) it changes nothing and
+  the caller stops with the command to run, so nothing ever hangs on a question or a Windows prompt.
 
 Adding a module: create `modules/TinCan.<Name>.psm1` starting with `$ErrorActionPreference = "Stop"`,
 `Set-StrictMode -Version 1.0` and an `Import-Module (Join-Path $PSScriptRoot "TinCan.<Dep>.psm1")` per dependency;

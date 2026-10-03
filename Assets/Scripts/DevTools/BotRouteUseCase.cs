@@ -36,6 +36,7 @@ namespace TinCan.DevTools
         private IHumanoidCharacterView? _player;
         private float _elapsed;
         private bool _hasHelm;
+        private int _laps;
 
         public BotRouteUseCase(
             HarnessOptions options,
@@ -152,6 +153,15 @@ namespace TinCan.DevTools
             foreach (var action in _held) _input.Release(action);
             _held.Clear();
             ReleaseHelm();
+
+            if (_options.BotLoop)
+            {
+                // -botloop: start over on the next tick, so load lasts as long as the run; the route never completes.
+                _laps++;
+                _cursor = null;
+                _events.LogInfo(LogSource, $"Bot route '{_route?.Name}' lap {_laps} done; looping.");
+                return;
+            }
 
             _events.LogInfo(LogSource, $"Bot route '{_route?.Name}' complete.");
             _session.CompleteRoute();

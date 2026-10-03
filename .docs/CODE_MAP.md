@@ -124,8 +124,9 @@ Both can be unit-tested directly.
 
 | Folder | Holds |
 |---|---|
-| `.tools/` | Entry scripts: `setup.cmd`/`setup.ps1`, `upgrade-unity.ps1`, `verify.ps1` (compile, tests, scenarios), `build.ps1` (player builds, server image). See [`.tools/README.md`](../.tools/README.md). |
-| `.tools/modules/` | The scripts' shared PowerShell modules (`TinCan.Common`, `Editor`, `Mppm`, `Verify`, `Build`, `Container`). Rules for module code: `.tools/README.md`, "Modules". |
+| `.tools/` | Entry scripts: `setup.cmd`/`setup.ps1`, `upgrade-unity.ps1`, `verify.ps1` (compile, tests, scenarios), `build.ps1` (player builds, server image), `perf.ps1` (perf runs and budgets). See [`.tools/README.md`](../.tools/README.md). |
+| `.tools/modules/` | The scripts' shared PowerShell modules (`TinCan.Common`, `Editor`, `Mppm`, `Verify`, `Build`, `Container`, `Perf`). Rules for module code: `.tools/README.md`, "Modules". |
+| `.docs/perf/` | `budgets.json`: perf budgets per scenario, role, environment profile and metric, written by `.tools/perf.ps1 set-budgets`. See [`PERFORMANCE.md`](PERFORMANCE.md). |
 | `Container/server/` | `Containerfile`, `Containerfile.containerignore` and `compose.yaml` for the dedicated server image (Podman). |
 | `Builds/` (git-ignored) | Player builds: `LinuxServer/`, `Win64/`. |
 
@@ -176,6 +177,7 @@ Both can be unit-tested directly.
 | Command-line session start | `Core/UI/CommandLineSessionBootstrap.cs`: `-autohost`, `-server [address][:port]` (dedicated, default `0.0.0.0:7777`), `-autojoin [address[:port]]`, also as MPPM player tags via `Core/Domain/LaunchArguments.cs`. |
 | Simulated latency, input bot, movement telemetry | `DevTools/` ([`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md)); reports in `Logs/net-telemetry/`. |
 | Feature scenarios and the scenes they run in | `DevTools/Scenarios/ScenarioCatalog.cs` (`.InScene(TestScenes.X)`), scenes built by `DevTools/Editor/TestRangeSceneBuilder.cs`; driver `.tools/verify.ps1`; agent procedures `.claude/skills/verify-feature`, `add-scenario`. |
+| Perf runs and budgets | Sampler `DevTools/Perf/PerfSampler.cs` (`-perf`, registered by `NetTestHarnessFeatureInstaller`), report `PerfReport.cs`; runner `.tools/perf.ps1` + `modules/TinCan.Perf.psm1`; budgets `.docs/perf/budgets.json`; guide [`PERFORMANCE.md`](PERFORMANCE.md). |
 | Scripted input for automation | `DevTools/ScriptedAction.cs` intents (`MoveForward`, `GunnerFire`, ...) mapped to context actions by `ScriptedActionMap`, pressed through `Core/Domain/Input/ScriptedInput.cs`, which `InputSystemReader` merges under the same context rules as keys. |
 | The DI wiring | `App/ProjectLifetimeScope.cs` for core services and legacy features; `Assets/Resources/Installers/*.asset` for everything newer. |
 
@@ -319,6 +321,10 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
   clients (interpolated ship, late joiners) end up with the fixture floating off the ship.
 - **UniTask is not installed** even though `CODE_STANDARDS.md` names it. No async or coroutine code exists yet.
 - **`ProjectSettings/EditorBuildSettings.asset`** still lists two deleted scenes under `Assets/Scenes/Dev/`.
+- **A Windows prompt stalls unattended runs.** A UAC or firewall prompt waiting on the desktop blocks the Editor's main
+  thread: builds never start and pipeline evals time out, while `unity cmd editor_status` still answers "ready" from a
+  cached heartbeat. `build.ps1` probes the main thread and says so; answer the prompt (2026-10-03). The firewall prompt
+  for the game builds is prevented by `.\.tools\setup.ps1 -Only Firewall` (a guided one-time step).
 - **Player builds work**: **TinCan > Build > Windows Client** (`Builds/Win64/`) and **TinCan > Build > Linux Server**
   (`Builds/LinuxServer/`), both in `DevTools/Editor/PlayerBuild.cs`, or `.tools/build.ps1 -Image -Client`.
   The Linux server needs the Editor module `linux-server`, installed before the Editor started: an Editor that was

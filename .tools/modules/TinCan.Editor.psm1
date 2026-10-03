@@ -15,6 +15,11 @@ function Invoke-Unity {
     try { return $output | ConvertFrom-Json -Depth 20 } catch { return [pscustomobject]@{ raw = $output } }
 }
 
+# editor_status can answer from a cached heartbeat while the main thread is stalled; an eval has to run on it.
+function Test-EditorAlive([int]$Timeout = 20) {
+    return (Invoke-Unity @("eval", "--code", 'return "alive";') $Timeout).result -eq "alive"
+}
+
 function Test-EditorReady {
     $status = Invoke-Unity @("editor_status") 15
     return $status.status -eq "ready" -and -not $status.compiling
@@ -171,6 +176,6 @@ function Set-PlayUnfocused([string]$ProjectPath = "") {
     elseif ($result -and $result -ne "0") { Write-Tier "Editor" "note" "$where Game view set to Play Unfocused ($result changed)" }
 }
 
-Export-ModuleMember -Function Invoke-Unity, Test-EditorReady, Wait-EditorReady, Get-MainEditorProcessId, Invoke-FocusEditor,
+Export-ModuleMember -Function Invoke-Unity, Test-EditorAlive, Test-EditorReady, Wait-EditorReady, Get-MainEditorProcessId, Invoke-FocusEditor,
     Get-EnvironmentProblem, Restore-Editor, Get-UnityModal, Confirm-ScenesClean, Open-ScenarioScene, Restore-StartScene,
     Set-PlayUnfocused

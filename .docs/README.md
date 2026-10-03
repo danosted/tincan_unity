@@ -49,6 +49,7 @@ Pick the path that matches what you want to do right now.
 | [`UI_FRAMEWORK.md`](UI_FRAMEWORK.md) | Reference for menus (`MenuDefinition`), `IMenuSystem`, `IMenuCommand`, `IHudValues`, the Controls menu. |
 | [`INPUT.md`](INPUT.md) | Keys, input contexts (what listens when), routed commands, rebinding, and how to add an action. [`INPUT_MAP.md`](INPUT_MAP.md) is the generated table of what listens to what. |
 | [`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md) | You need to feel or measure what a remote client feels: simulated latency, an input bot, and movement telemetry. |
+| [`PERFORMANCE.md`](PERFORMANCE.md) | You want to know whether a change costs frames, ticks, memory or bandwidth: perf runs in containers, the budgets, and how to read a report. |
 | [`Network_Initialization_Flow.md`](Network_Initialization_Flow.md) | Deep dive: how VContainer and NGO initialise across host, server and client. |
 | [`CODE_STANDARDS.md`](CODE_STANDARDS.md) | C# rules everyone follows (naming, guard clauses, nullable, no regions). |
 | [`AI_CONFIGURATION.md`](AI_CONFIGURATION.md) | How AI assistants are expected to behave here. Read it so you know what to expect from them. |

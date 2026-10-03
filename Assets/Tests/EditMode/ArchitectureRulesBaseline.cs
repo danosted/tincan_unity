@@ -12,7 +12,6 @@ namespace TinCan.Tests.EditMode
         /// <summary><c>NetworkBehaviour</c>s not named <c>*NetworkMediator</c> (review C11, plus <c>HumanoidPlayer</c> and <c>NetworkTransformMediator</c>, found by this suite).</summary>
         public static readonly string[] MisnamedNetworkBehaviours =
         {
-            "AirshipControlPanel",
             "AirshipDoor",
             "HumanoidPlayer",
             "NetworkTransformMediator",
@@ -25,22 +24,19 @@ namespace TinCan.Tests.EditMode
         };
 
         /// <summary>Registration calls in <c>ProjectLifetimeScope.cs</c> (review B5).</summary>
-        public const int ProjectLifetimeScopeRegistrationLimit = 33;
+        public const int ProjectLifetimeScopeRegistrationLimit = 31;
 
         /// <summary>Processors, use cases and interaction handlers no test file mentions (review C13).</summary>
         public static readonly string[] UntestedTypes =
         {
             "ActivateAbilityInteractionHandler",
-            "AirshipMovementUseCase",
             "DoorInteractionHandler",
             "FreeCameraMovementProcessor",
             "FreeCameraMovementUseCase",
             "FreeCameraRotationProcessor",
             "NetworkConditionsUseCase",
-            "PossessionInteractionHandler",
             "PossessionUseCase",
             "ScenarioUseCase",
-            "VehicleBoardingUseCase",
         };
 
         /// <summary>Shared prefab components that need a feature's service, or starting abilities a feature also grants, as "prefab | component | dependency".</summary>
@@ -65,6 +61,6 @@ namespace TinCan.Tests.EditMode
         };
 
         /// <summary>Scripts under <c>Assets/Scripts</c> without <c>#nullable enable</c> (review C12).</summary>
-        public const int FilesWithoutNullableLimit = 96;
+        public const int FilesWithoutNullableLimit = 91;
     }
 }

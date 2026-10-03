@@ -15,13 +15,13 @@ namespace TinCan.Tests.EditMode
     /// </summary>
     public class PlayerLookUseCaseTests
     {
-        private sealed class FakeLook : IOrbitalLookView
+        private sealed class FakeLook : ILookView
         {
             public float Pitch { get; set; }
             public float Yaw { get; set; }
             public float Sensitivity => 1f;
             public float MaxPitch => 80f;
-            public float OrbitHeight => 1.5f;
+            public float AimHeight => 1.5f;
             public Camera Camera => null!;
 
             public void ApplyLook(float pitch, float yaw)
@@ -31,21 +31,21 @@ namespace TinCan.Tests.EditMode
             }
         }
 
-        private sealed class FakePossessedActor : IHasOrbitalCamera, IPossessable
+        private sealed class FakePossessedActor : IHasLook, IPossessable
         {
             public Guid Id { get; } = Guid.NewGuid();
             public bool IsSimulating { get; set; }
-            public IOrbitalLookView Look { get; } = new FakeLook();
+            public ILookView Look { get; } = new FakeLook();
             public ulong? PossessorId { get; set; }
             public void AuthoritativeSetPossessor(ulong? playerId) => PossessorId = playerId;
             public bool CanPossess(ulong playerId) => true;
         }
 
-        private sealed class FakeUnpossessableActor : IHasOrbitalCamera
+        private sealed class FakeUnpossessableActor : IHasLook
         {
             public Guid Id { get; } = Guid.NewGuid();
             public bool IsSimulating { get; set; }
-            public IOrbitalLookView Look { get; } = new FakeLook();
+            public ILookView Look { get; } = new FakeLook();
         }
 
         private FakeInputReader _input = null!;

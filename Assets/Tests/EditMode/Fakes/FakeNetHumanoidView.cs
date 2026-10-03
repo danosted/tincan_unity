@@ -26,7 +26,7 @@ namespace TinCan.Tests.EditMode.Fakes
         public HumanoidInputState InputState { get; set; }
         public ulong? PossessorId { get; private set; }
         public IHumanoidMovementView Movement { get; }
-        public IOrbitalLookView Look { get; } = new FakeOrbitalLookView();
+        public ILookView Look { get; } = new FakeOrbitalLookView();
         public GameplayTagContainer ActiveTags => new(_tags);
 
         public void AuthoritativeSetPossessor(ulong? playerId) => PossessorId = playerId;

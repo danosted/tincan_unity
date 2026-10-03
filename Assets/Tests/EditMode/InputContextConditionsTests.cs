@@ -17,7 +17,7 @@ namespace TinCan.Tests.EditMode
         private InputContextConditions _conditions = null!;
         private FakeHumanoidMovementView _movement = null!;
         private FakeHumanoidCharacterView _body = null!;
-        private FakeAirshipView _ship = null!;
+        private FakePossessable _freeCamera = null!;
         private GameplayTag _occupying = null!;
         private MenuDefinition _menu = null!;
 
@@ -30,7 +30,7 @@ namespace TinCan.Tests.EditMode
             _conditions = new InputContextConditions(_possession, _menus, _rebinding);
             _movement = new FakeHumanoidMovementView("Body");
             _body = new FakeHumanoidCharacterView(_movement);
-            _ship = new FakeAirshipView("Ship");
+            _freeCamera = new FakePossessable();
             _occupying = ScriptableObject.CreateInstance<GameplayTag>();
             _menu = MenuDefinition.Create("m", "M");
         }
@@ -39,7 +39,6 @@ namespace TinCan.Tests.EditMode
         public void TearDown()
         {
             _movement.Destroy();
-            _ship.Destroy();
             Object.DestroyImmediate(_occupying);
             Object.DestroyImmediate(_menu);
         }
@@ -55,15 +54,15 @@ namespace TinCan.Tests.EditMode
         public void WhilePossessing_FollowsTheKindOfWhatThePlayerControls()
         {
             var humanoid = Possessing(PossessedActorKind.Humanoid);
-            var ship = Possessing(PossessedActorKind.Ship);
+            var other = Possessing(PossessedActorKind.Other);
 
             _possession.CurrentPossession = _body;
             Assert.That(_conditions.Holds(humanoid), Is.True);
-            Assert.That(_conditions.Holds(ship), Is.False);
+            Assert.That(_conditions.Holds(other), Is.False);
 
-            _possession.CurrentPossession = _ship;
+            _possession.CurrentPossession = _freeCamera;
             Assert.That(_conditions.Holds(humanoid), Is.False);
-            Assert.That(_conditions.Holds(ship), Is.True);
+            Assert.That(_conditions.Holds(other), Is.True);
 
             _possession.CurrentPossession = null;
             Assert.That(_conditions.Holds(humanoid), Is.False, "offline nothing is possessed");

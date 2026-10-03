@@ -87,9 +87,12 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
   - **Runtime:** `GameplayCuesFeatureInstaller`, in `Core/Gas/Cues/`. Plan: `.docs/plans/gameplay-cues.md`.
 
 ### 4. Possession & Interaction Flow
-The game relies heavily on dynamic possession (e.g., leaving a humanoid body to fly a free-camera, or boarding an airship).
+Possession decides what a player controls: their own body, or (a dev tool) the free camera. Crew jobs on the ship
+(the helm, a cannon) are **stations**, not possession: the player stays in their body and view (`Features/Stations/`).
+The helm steers the ship through its pilot seam, `Core/Ship/IAirshipPilotInput.cs` (`Features/Helm/`; plan
+`.docs/plans/helm-station.md`).
 - **IPossessable is opt-in:** an object is possessable when it has a `PossessableNetworkMediator` (the replicated
-  possessor; a player object is possessed by its owner on spawn). Its actor (`HumanoidPlayer`, `AirshipNetworkMediator`)
+  possessor; a player object is possessed by its owner on spawn). Its actor (`HumanoidPlayer`)
   implements `IPossessable` by forwarding to it. The local free camera is the only other possessable.
 - **Possession authority:** `ServerPossessionManager` (`IPossessionAuthority`) assigns ownership on the server; `PossessionUseCase` (`IPossessionState`) is the client-side view; `PossessionNetworkMediator` carries the RPCs.
 - **Interaction is targeting plus an input bit:**
@@ -145,8 +148,9 @@ build placement and weapons are *uses* of targeting, not separate aiming systems
   first accepted target or solid non-target collider ends it. Triggers, filtered-out targets and colliders the
   caller ignores (its own ship, players) are passed. Plan: `.docs/plans/cannon-and-hazards.md`.
 - **Aim pitch travels in the input:** `HumanoidInputState.LookPitch`, in degrees, positive looks down. It is captured
-  from the orbital camera and predicted, sent and replayed with the rest of the input. `EyeAim` (from the eye) and
-  `CameraAim` (from the camera's orbit centre, so rigging behind the player is never picked) follow the pitched aim.
+  from the player's look and predicted, sent and replayed with the rest of the input. `EyeAim` (from the eye) and
+  `CameraAim` (from the camera rig's aim height, `ILookView.AimHeight`: the orbit centre in third person, so rigging
+  behind the player is never picked; the eye in first person) follow the pitched aim.
   A cone's vertical angle is centred on it; `BodyForward` stays level. The roadmap is in
   `.docs/plans/targeting-subsystem.md`.
 

@@ -383,7 +383,7 @@ namespace TinCan.Core.Humanoid
             movement.SetRotation(Quaternion.Euler(0f, yawDelta, 0f) * movement.Transform.rotation);
 
             // Keep the camera orientation synchronized with the platform's rotation
-            if (isCaptured && character is IHasOrbitalCamera hasCamera && hasCamera.Look != null && Mathf.Abs(yawDelta) > 0.001f)
+            if (isCaptured && character is IHasLook hasCamera && hasCamera.Look != null && Mathf.Abs(yawDelta) > 0.001f)
             {
                 hasCamera.Look.Yaw += yawDelta;
             }

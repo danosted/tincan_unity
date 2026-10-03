@@ -32,7 +32,7 @@ namespace TinCan.Tests.EditMode
         {
             var jump = InputActionId.Create("Jump");
             var pitch = InputActionId.Create("Pitch");
-            var contexts = new[] { Possessing("Humanoid", PossessedActorKind.Humanoid, 200, jump), Possessing("Airship", PossessedActorKind.Ship, 300, pitch) };
+            var contexts = new[] { Possessing("Humanoid", PossessedActorKind.Humanoid, 200, jump), Possessing("FreeCamera", PossessedActorKind.Other, 300, pitch) };
 
             Assert.That(_conflicts.CanShareAKey(jump, pitch, contexts), Is.True);
         }

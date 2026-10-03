@@ -71,7 +71,6 @@ namespace TinCan.Core.Infrastructure
             builder.Register<Abilities.AbilityRegistry>(Lifetime.Singleton).As<IAbilityRegistry>();
             builder.Register<ActorOrchestrator>(Lifetime.Singleton).As<IActorOrchestrator>();
             builder.Register<NgoInteractionTargetResolver>(Lifetime.Singleton).As<IInteractionTargetResolver>();
-            builder.Register<PossessionInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
             builder.Register<ActivateAbilityInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
             builder.Register<InteractionHandlerRegistry>(Lifetime.Singleton).As<IInteractionHandlerRegistry>();
 
@@ -101,7 +100,6 @@ namespace TinCan.Core.Infrastructure
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
                 entryPoints.Add<PlayerLookUseCase>();
-                builder.Register<VehicleBoardingUseCase>(Lifetime.Singleton).As<IVehicleBoardingUseCase>();
                 builder.Register<SwitchPossessionInputHandler>(Lifetime.Singleton).As<IInputCommandHandler>();
             });
 

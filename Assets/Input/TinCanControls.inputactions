@@ -53,7 +53,8 @@
             "actions": [
                 { "name": "Throttle", "type": "Value", "id": "7b653d7a-f105-4ead-933b-4dd379ca42ec", "expectedControlType": "Axis", "processors": "", "interactions": "", "initialStateCheck": true },
                 { "name": "Yaw", "type": "Value", "id": "dcfdce4d-c934-4740-bf41-5d827756c614", "expectedControlType": "Axis", "processors": "", "interactions": "", "initialStateCheck": true },
-                { "name": "Pitch", "type": "Value", "id": "5f232337-1e1a-43a4-9318-afdea087cec0", "expectedControlType": "Axis", "processors": "", "interactions": "", "initialStateCheck": true }
+                { "name": "Pitch", "type": "Value", "id": "5f232337-1e1a-43a4-9318-afdea087cec0", "expectedControlType": "Axis", "processors": "", "interactions": "", "initialStateCheck": true },
+                { "name": "Leave", "type": "Button", "id": "3c1f6a52-8d4e-4b7a-9e21-6f0d2b8a4c13", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false }
             ],
             "bindings": [
                 { "name": "WS", "id": "8a09948d-f3c9-4ffe-bd2e-6bdbda6eb9d3", "path": "1DAxis", "interactions": "", "processors": "", "groups": "", "action": "Throttle", "isComposite": true, "isPartOfComposite": false },
@@ -64,7 +65,8 @@
                 { "name": "positive", "id": "34f69018-205b-4688-9735-a807130d3dae", "path": "<Keyboard>/d", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Yaw", "isComposite": false, "isPartOfComposite": true },
                 { "name": "SpaceShift", "id": "63711a4c-d549-4fee-ab9e-e025c0826e78", "path": "1DAxis", "interactions": "", "processors": "", "groups": "", "action": "Pitch", "isComposite": true, "isPartOfComposite": false },
                 { "name": "negative", "id": "d622d87c-7016-44f5-ad5b-7eeb718a9f0e", "path": "<Keyboard>/space", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Pitch", "isComposite": false, "isPartOfComposite": true },
-                { "name": "positive", "id": "55a212c7-11a7-4772-8f46-e8abadc79ad7", "path": "<Keyboard>/leftShift", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Pitch", "isComposite": false, "isPartOfComposite": true }
+                { "name": "positive", "id": "55a212c7-11a7-4772-8f46-e8abadc79ad7", "path": "<Keyboard>/leftShift", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Pitch", "isComposite": false, "isPartOfComposite": true },
+                { "name": "", "id": "b7e2d4f1-5a3c-4e8b-a1d9-2c6f8e0b3a57", "path": "<Keyboard>/e", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Leave", "isComposite": false, "isPartOfComposite": false }
             ]
         },
         {

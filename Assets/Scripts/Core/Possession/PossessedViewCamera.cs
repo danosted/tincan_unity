@@ -7,7 +7,7 @@ using TinCan.Core.Domain.Look;
 namespace TinCan.Core.Possession
 {
     /// <summary>
-    /// The local view camera is the camera of whatever the local player possesses: the orbital camera of the body or the
+    /// The local view camera is the camera of whatever the local player possesses: the look camera of the body or the
     /// ship, or the camera on the free camera. A view override (the camera of an occupied station) wins while it has one.
     /// </summary>
     public sealed class PossessedViewCamera : ILocalViewCamera
@@ -36,8 +36,8 @@ namespace TinCan.Core.Possession
                 if (overridden != null && overridden.isActiveAndEnabled) return overridden;
 
                 var current = _possession.CurrentPossession;
-                Camera? camera = current is IHasOrbitalCamera orbital
-                    ? orbital.Look.Camera
+                Camera? camera = current is IHasLook looking
+                    ? looking.Look.Camera
                     : (current as Component)?.GetComponentInChildren<Camera>();
                 return camera != null && camera.isActiveAndEnabled ? camera : null;
             }

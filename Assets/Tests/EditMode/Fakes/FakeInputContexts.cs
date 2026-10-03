@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using TinCan.Core.Domain.Input;
 using TinCan.Core.Humanoid;
-using TinCan.Core.Ship;
+using TinCan.Features.Helm;
 using UnityEngine;
 
 namespace TinCan.Tests.EditMode.Fakes
@@ -22,12 +22,13 @@ namespace TinCan.Tests.EditMode.Fakes
             return context;
         }
 
-        public static AirshipInputContext Airship()
+        public static HelmsmanInputContext Helmsman()
         {
-            var context = ScriptableObject.CreateInstance<AirshipInputContext>();
+            var context = ScriptableObject.CreateInstance<HelmsmanInputContext>();
             context.Throttle = InputActionId.Create("Airship/Throttle");
             context.Yaw = InputActionId.Create("Airship/Yaw");
             context.Pitch = InputActionId.Create("Airship/Pitch");
+            context.Leave = InputActionId.Create("Airship/Leave");
             return context;
         }
 

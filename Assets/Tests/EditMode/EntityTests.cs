@@ -125,7 +125,7 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void Possession_IsOptIn_OnlyPlayerShipAndFreeCameraArePossessable()
+        public void Possession_IsOptIn_OnlyPlayerAndFreeCameraArePossessable()
         {
             var possessable = AppDomain.CurrentDomain.GetAssemblies()
                 .Where(a => a.GetName().Name == "Assembly-CSharp"
@@ -135,7 +135,7 @@ namespace TinCan.Tests.EditMode
                 .Select(t => t.Name)
                 .OrderBy(n => n);
 
-            Assert.That(possessable, Is.EqualTo(new[] { "AirshipNetworkMediator", "FreeCameraTransformView", "HumanoidPlayer" }),
+            Assert.That(possessable, Is.EqualTo(new[] { "FreeCameraTransformView", "HumanoidPlayer" }),
                 "Only objects with a PossessableNetworkMediator (or the local free camera) may be possession candidates.");
         }
 

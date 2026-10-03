@@ -1,7 +1,7 @@
 #nullable enable
 using TinCan.Core.Domain.Input;
 using TinCan.Core.Humanoid;
-using TinCan.Core.Ship;
+using TinCan.Features.Helm;
 using TinCan.Features.Weapons.Cannon;
 using UnityEngine;
 using VContainer;
@@ -37,12 +37,13 @@ namespace TinCan.DevTools
                 ScriptedAction.Interact => (Get<HumanoidInputContext>()?.Interact, Vector2.right),
                 ScriptedAction.Primary => (Get<HumanoidInputContext>()?.Primary, Vector2.right),
                 ScriptedAction.Secondary => (Get<HumanoidInputContext>()?.Secondary, Vector2.right),
-                ScriptedAction.ShipThrottleUp => (Get<AirshipInputContext>()?.Throttle, Vector2.right),
-                ScriptedAction.ShipThrottleDown => (Get<AirshipInputContext>()?.Throttle, Vector2.left),
-                ScriptedAction.ShipTurnLeft => (Get<AirshipInputContext>()?.Yaw, Vector2.left),
-                ScriptedAction.ShipTurnRight => (Get<AirshipInputContext>()?.Yaw, Vector2.right),
-                ScriptedAction.ShipPitchUp => (Get<AirshipInputContext>()?.Pitch, Vector2.left),
-                ScriptedAction.ShipPitchDown => (Get<AirshipInputContext>()?.Pitch, Vector2.right),
+                ScriptedAction.ShipThrottleUp => (Get<HelmsmanInputContext>()?.Throttle, Vector2.right),
+                ScriptedAction.ShipThrottleDown => (Get<HelmsmanInputContext>()?.Throttle, Vector2.left),
+                ScriptedAction.ShipTurnLeft => (Get<HelmsmanInputContext>()?.Yaw, Vector2.left),
+                ScriptedAction.ShipTurnRight => (Get<HelmsmanInputContext>()?.Yaw, Vector2.right),
+                ScriptedAction.ShipPitchUp => (Get<HelmsmanInputContext>()?.Pitch, Vector2.left),
+                ScriptedAction.ShipPitchDown => (Get<HelmsmanInputContext>()?.Pitch, Vector2.right),
+                ScriptedAction.HelmLeave => (Get<HelmsmanInputContext>()?.Leave, Vector2.right),
                 ScriptedAction.GunnerFire => (Get<GunnerInputContext>()?.Fire, Vector2.right),
                 ScriptedAction.GunnerLeave => (Get<GunnerInputContext>()?.Leave, Vector2.right),
                 ScriptedAction.GunnerAimRight => (Get<GunnerInputContext>()?.Aim, new Vector2(AimSweep, 0f)),

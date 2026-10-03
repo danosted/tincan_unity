@@ -23,8 +23,8 @@ Systems then use the actions in one of two ways:
 | Actions asset | Maps, actions and default keys (`Keyboard&Mouse` scheme). Edited in Unity's Input Actions editor. | `Assets/Input/TinCanControls.inputactions` |
 | `InputActionId` | One asset per action, pointing at it by id. Carries the display name, meaning and whether the Controls menu lists it. | `Assets/Input/Actions/`, `Core/Domain/Input/InputActionId.cs` |
 | `InputContext` | When it is live (`Activation`), its `Priority`, what it silences (`Blocks`, `BlocksAllLower`), its actions and its `Routes`. A subclass adds typed slots for the system that reads it. | `Assets/Input/Contexts/`, `Core/Domain/Input/InputContext.cs` |
-| Context subclasses | `GlobalInputContext` and `CameraInputContext` (`Core/Domain/Input/`), `HumanoidInputContext` (`Core/Humanoid/`), `AirshipInputContext` (`Core/Ship/`), `GunnerInputContext` (`Features/Weapons/Cannon/`), `FreeCameraInputContext` (`Features/FreeCamera/`). | next to the system that reads them |
-| `InputCommand` + handler | One command type per meaning (`ExitVehicleCommand`). Exactly one `InputCommandHandler<T>` carries it out; returning false passes the press to the next context down. | commands in `Assets/Input/Commands/`, both classes next to the system they drive |
+| Context subclasses | `GlobalInputContext` and `CameraInputContext` (`Core/Domain/Input/`), `HumanoidInputContext` (`Core/Humanoid/`), `HelmsmanInputContext` (`Features/Helm/`), `GunnerInputContext` (`Features/Weapons/Cannon/`), `FreeCameraInputContext` (`Features/FreeCamera/`). | next to the system that reads them |
+| `InputCommand` + handler | One command type per meaning (`MenuBackCommand`). Exactly one `InputCommandHandler<T>` carries it out; returning false passes the press to the next context down. | commands in `Assets/Input/Commands/`, both classes next to the system they drive |
 | `GameplayInput` | An ability input: one bit of the predicted `HumanoidInputState`. It lists the actions that press it, so Fire at a cannon and Primary on foot are the same bit. Bit order is `InputConfig.GameplayInputs`. | `Assets/Abilities/Inputs/`, `Core/Domain/Abilities/Inputs/GameplayInput.cs` |
 | `InputConfig` | The root: the actions asset, every action id, the core contexts, the ability inputs in bit order. | `Assets/Input/InputConfig.asset`, `Core/Input/InputConfig.cs` |
 
@@ -37,14 +37,14 @@ assembly that references Unity's Input System:
 - **`InputSystemReader`** implements `IInputReader`. It reads a private copy of the actions asset, merges `ScriptedInput`,
   and builds the ability-input bits.
 - **`InputRoutingUseCase`** runs every frame. For each pressed action it walks the live contexts from the top. The first
-  route whose handler accepts the command consumes the press, so Esc at the helm lets go of the helm and does not also
-  open the menu.
+  route whose handler accepts the command consumes the press, so Esc in a submenu steps back and does not also open
+  the main menu.
 - **`InputRebindingUseCase`** implements `IInputBindings`, the Controls menu's model. It loads the saved overrides
   (`PlayerPrefsInputBindingStore`), runs interactive rebinding under the Rebinding context, refuses a key that a
   simultaneously live action already uses (`InputBindingConflictProcessor`), and saves.
 
 Features contribute their own contexts through `FeatureInstaller.IExtension<InputContext>`, so an unloaded feature's
-context never runs. Examples: `CannonFeatureInstaller`, `FreeCameraFeatureInstaller`, `NetTestHarnessFeatureInstaller`.
+context never runs. Examples: `CannonFeatureInstaller`, `HelmFeatureInstaller`, `FreeCameraFeatureInstaller`, `NetTestHarnessFeatureInstaller`.
 
 ## Contexts today
 
@@ -55,11 +55,13 @@ See [INPUT_MAP.md](INPUT_MAP.md) for the full table. In short, from the top:
 3. **DevTools** (only while the harness runs): F3 toggles the readout.
 4. **Gunner** (the `State.Occupying.Cannon` tag) silences Humanoid and Camera. The mouse swings the barrel, the body holds
    still, and the aim reaches the server as `HumanoidInputState.StationAim` (`GunnerAimUseCase`).
-5. **Airship** (possessing the ship): throttle, turn and pitch; Cancel lets go of the helm.
-6. **FreeCamera** (possessing anything else).
-7. **Humanoid** (possessing your body): move, jump, sprint and the ability inputs.
-8. **Camera**: mouse look for whatever you control.
-9. **Global**: Cancel opens the main menu when nothing above wanted it; Tab switches control.
+   **Helmsman** (the `State.Occupying.Helm` tag, same priority; the two never hold together) silences Humanoid but not
+   Camera, so the helmsman looks around while steering. Throttle, turn and pitch reach the server as
+   `HumanoidInputState.StationAxes` (`HelmInputUseCase`); Leave (E) is the Interact bit.
+5. **FreeCamera** (possessing anything but your body).
+6. **Humanoid** (possessing your body): move, jump, sprint and the ability inputs.
+7. **Camera**: mouse look for whatever you control.
+8. **Global**: Cancel opens the main menu when nothing above wanted it; Tab switches control.
 
 ## How to
 

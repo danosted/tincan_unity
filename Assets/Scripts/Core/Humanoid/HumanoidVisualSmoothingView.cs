@@ -1,4 +1,5 @@
 #nullable enable
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TinCan.Core.Humanoid
@@ -7,13 +8,16 @@ namespace TinCan.Core.Humanoid
     public interface IHumanoidVisualAnchor
     {
         Vector3 VisualPosition { get; }
+
+        /// <summary>The body's own renderers (on the visual root itself, not what it holds), for rigs that hide the body.</summary>
+        IReadOnlyList<Renderer> BodyRenderers { get; }
     }
 
     /// <summary>
     /// View: draws the humanoid's visuals (the <see cref="_visualRoot"/> child: mesh, carried items) at the
     /// interpolated pose from <see cref="HumanoidVisualInterpolation"/> while the root, with its CharacterController,
     /// stays at the simulated pose. Runs after the platform carry (HumanoidPlayer, order -100) and before the camera
-    /// (ThirdPersonLookView, order 0). Humanoids not simulated here (proxies) are drawn at the root.
+    /// (LookView, order 0). Humanoids not simulated here (proxies) are drawn at the root.
     /// </summary>
     [DefaultExecutionOrder(-50)]
     public class HumanoidVisualSmoothingView : MonoBehaviour, IHumanoidVisualAnchor
@@ -23,6 +27,8 @@ namespace TinCan.Core.Humanoid
         private readonly HumanoidVisualInterpolation _interpolation = new();
 
         public Vector3 VisualPosition => _visualRoot != null ? _visualRoot.position : transform.position;
+
+        public IReadOnlyList<Renderer> BodyRenderers => _visualRoot != null ? _visualRoot.GetComponents<Renderer>() : System.Array.Empty<Renderer>();
 
         public void Commit(Transform? platform) => _interpolation.Commit(platform, transform.position, transform.rotation, Time.time);
 

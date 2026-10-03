@@ -1,0 +1,17 @@
+{
+    "name": "TinCan.Features.ThirdPersonCamera",
+    "rootNamespace": "TinCan.Features.ThirdPersonCamera",
+    "references": [
+        "TinCan.Core.Domain",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

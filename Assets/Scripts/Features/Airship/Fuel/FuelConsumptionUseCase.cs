@@ -85,7 +85,7 @@ namespace TinCan.Features.Airship.Fuel
         private void Burn(IAirshipView airship, IFuelTank tank, FuelConfig config, IAbilityControllerBase? controller)
         {
             float throttle = airship.InputState.Throttle;
-            if (!_processor.IsDriven(airship.PossessorId.HasValue, throttle)) return;
+            if (!_processor.IsDriven(throttle)) return;
 
             bool boosting = controller != null && config.BoostActiveTag != null && controller.HasTag(config.BoostActiveTag);
             float drain = _processor.ComputeDrain(throttle, boosting, config.DrainPerSecondAtFullThrottle, config.BoostMultiplier, _timeService.DeltaTime);

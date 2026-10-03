@@ -3,8 +3,6 @@ using TinCan.Core.Domain;
 using TinCan.Core.Ship;
 using System;
 using System.Collections.Generic;
-using TinCan.Core.Humanoid;
-using TinCan.Core.Domain.Look;
 
 namespace TinCan.Core.Ship
 {
@@ -13,8 +11,7 @@ namespace TinCan.Core.Ship
     /// Handles Rigidbody physics and acts as a moving platform for other actors.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
-    [RequireComponent(typeof(ThirdPersonLookView))]
-    public class AirshipControllerView : MonoBehaviour, IControllable, IPossessionReceiver, IPointVelocityMovingGround, IHasOrbitalCamera
+    public class AirshipControllerView : MonoBehaviour, IPointVelocityMovingGround
     {
         [Header("Movement Settings")]
         [SerializeField] private float _maxForwardSpeed = 15f;
@@ -32,7 +29,6 @@ namespace TinCan.Core.Ship
         [Header("Visual Hierarchy")]
         [SerializeField] private Transform _visualRoot;
 
-        private ThirdPersonLookView _look;
         private Rigidbody _rb;
         private Vector3 _lastPosition;
         private Quaternion _lastRotation;
@@ -41,25 +37,6 @@ namespace TinCan.Core.Ship
         private Quaternion _rotationDelta;
         private Vector3 _targetLinearVelocity;
         private Vector3 _targetAngularVelocity;
-
-        public bool IsControlsEnabled { get; private set; } = false;
-
-        // IActor (required by IHasOrbitalCamera): the ship entity's id, shared with the ship's mediators.
-        private TinCan.Core.Domain.Entities.ActorIdentity _identity;
-        public Guid Id => (_identity ??= new TinCan.Core.Domain.Entities.ActorIdentity(this)).Id;
-        public bool IsSimulating => true;
-
-        public IOrbitalLookView Look => _look;
-
-        public void DisableControls()
-        {
-            IsControlsEnabled = false;
-        }
-
-        public void EnableControls()
-        {
-            IsControlsEnabled = true;
-        }
 
         // Configuration
         public float MaxForwardSpeed => _maxForwardSpeed;
@@ -101,8 +78,6 @@ namespace TinCan.Core.Ship
 
             _lastPosition = transform.position;
             _lastRotation = transform.rotation;
-
-            _look = GetComponent<ThirdPersonLookView>();
         }
 
         private void Update()
@@ -142,16 +117,6 @@ namespace TinCan.Core.Ship
         {
             _targetLinearVelocity = linearVelocity;
             _targetAngularVelocity = angularVelocity;
-        }
-
-        public void OnPossessed(ulong playerId)
-        {
-            EnableControls();
-        }
-
-        public void OnUnpossessed()
-        {
-            DisableControls();
         }
     }
 }

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09bf0cd2fa7f6cb4d93ddaee0d342057, type: 3}
+  m_Name: GE_Occupying_Helm
+  m_EditorClassIdentifier: TinCan.Gas::TinCan.Core.Gas.GameplayEffectDefinition
+  DurationType: 2
+  DurationSeconds: 0
+  Modifiers:
+  - Attribute: {fileID: 11400000, guid: a3969ba58e30bf14991f1248364d7cf8, type: 2}
+    Operation: 2
+    Value: 0
+    ClampMaxAttribute: {fileID: 0}
+  - Attribute: {fileID: 11400000, guid: dffb50361639b754e9c2c8497cf425f9, type: 2}
+    Operation: 2
+    Value: 0
+    ClampMaxAttribute: {fileID: 0}
+  GrantedTags:
+  - {fileID: 11400000, guid: 5cbbc73df10c40b458a1b6ed1f751da4, type: 2}
+  Cues: []

@@ -50,11 +50,11 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void IsDriven_RequiresPossessorAndThrottle()
+        public void IsDriven_RequiresThrottle()
         {
-            Assert.That(_processor.IsDriven(true, 0.5f), Is.True);
-            Assert.That(_processor.IsDriven(false, 0.5f), Is.False);
-            Assert.That(_processor.IsDriven(true, 0f), Is.False);
+            Assert.That(_processor.IsDriven(0.5f), Is.True);
+            Assert.That(_processor.IsDriven(-0.5f), Is.True);
+            Assert.That(_processor.IsDriven(0f), Is.False);
         }
     }
 }

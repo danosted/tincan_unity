@@ -9,7 +9,7 @@ namespace TinCan.Features.Stations
 {
     /// <summary>
     /// Presentation, local player only, every frame. While the local player occupies a station that has a
-    /// <see cref="IStation.ViewCamera"/>, they look through it: its camera and ears switch on, and the body's orbital
+    /// <see cref="IStation.ViewCamera"/>, they look through it: its camera and ears switch on, and the body's own
     /// camera and ears switch off. Leaving swaps back. Only the view changes: the body keeps reading input, so aiming
     /// stays the player's own predicted look. Occupancy is read from the station's replicated occupant, so this works
     /// on clients, where occupancy itself is not known.

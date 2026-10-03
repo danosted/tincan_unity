@@ -14,19 +14,16 @@ namespace TinCan.Core.Interaction
         private readonly IActorRegistry _actorRegistry;
         private readonly IInteractionTargetResolver _targetResolver;
         private readonly IInteractionHandlerRegistry _handlerRegistry;
-        private readonly IVehicleBoardingUseCase _vehicleBoardingUseCase;
         private readonly HashSet<Type> _warnedHandlerTypes = new();
 
         public InteractionOrchestrator(
             IActorRegistry actorRegistry,
             IInteractionTargetResolver targetResolver,
-            IInteractionHandlerRegistry handlerRegistry,
-            IVehicleBoardingUseCase vehicleBoardingUseCase)
+            IInteractionHandlerRegistry handlerRegistry)
         {
             _actorRegistry = actorRegistry;
             _targetResolver = targetResolver;
             _handlerRegistry = handlerRegistry;
-            _vehicleBoardingUseCase = vehicleBoardingUseCase;
         }
 
         public void HandleInteraction(InteractionRequest request)
@@ -61,12 +58,6 @@ namespace TinCan.Core.Interaction
 
             Debug.LogWarning($"[InteractionOrchestrator] No {handlerType.Name} is registered for {definition.name}. " +
                              "Its feature installer is probably not in this scene's FeatureProfile.");
-        }
-
-        public void HandleExit()
-        {
-            Debug.Log($"[InteractionOrchestrator] Routing exit request");
-            _vehicleBoardingUseCase.ExitVehicle();
         }
     }
 }

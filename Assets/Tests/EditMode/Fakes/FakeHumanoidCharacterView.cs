@@ -14,13 +14,13 @@ namespace TinCan.Tests.EditMode.Fakes
     /// <summary>
     /// Fake look view; unused by tests that keep the character uncaptured (isCaptured == false).
     /// </summary>
-    public class FakeOrbitalLookView : IOrbitalLookView
+    public class FakeOrbitalLookView : ILookView
     {
         public float Pitch { get; set; }
         public float Yaw { get; set; }
         public float Sensitivity => 1f;
         public float MaxPitch => 90f;
-        public float OrbitHeight { get; set; }
+        public float AimHeight { get; set; }
         public Camera Camera => null;
         public void ApplyLook(float pitch, float yaw) { }
     }
@@ -102,7 +102,7 @@ namespace TinCan.Tests.EditMode.Fakes
         public HumanoidInputState InputState { get; set; }
         public ulong? PossessorId { get; private set; }
         public IHumanoidMovementView Movement { get; }
-        public IOrbitalLookView Look { get; } = new FakeOrbitalLookView();
+        public ILookView Look { get; } = new FakeOrbitalLookView();
         public GameplayTagContainer ActiveTags => new GameplayTagContainer(null);
 
         public FakeHumanoidCharacterView(FakeHumanoidMovementView movement)

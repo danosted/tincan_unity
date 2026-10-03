@@ -4,10 +4,10 @@ using UnityEngine;
 namespace TinCan.Core.Ship
 {
     /// <summary>
-    /// Domain Layer: Interface for an airship that can be simulated and possessed.
+    /// Domain Layer: Interface for an airship that can be simulated and steered (by its pilot, <see cref="IAirshipPilotInput"/>).
     /// Also acts as a moving ground for actors standing on it.
     /// </summary>
-    public interface IAirshipView : ISimulatedActor<AirshipInputState>, IPossessable, IPointVelocityMovingGround, IControllable, IShipActor
+    public interface IAirshipView : ISimulatedActor<AirshipInputState>, IPointVelocityMovingGround, IShipActor
     {
         Transform Transform { get; }
 

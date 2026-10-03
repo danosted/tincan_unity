@@ -11,6 +11,5 @@ namespace TinCan.Core.Interaction
 
         /// <summary>Server: the requester interacts with a target the server acquired itself (no network id round-trip).</summary>
         void HandleInteraction(IActor requester, IInteractionTarget target);
-        void HandleExit();
     }
 }

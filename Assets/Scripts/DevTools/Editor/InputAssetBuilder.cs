@@ -10,10 +10,10 @@ using TinCan.Core.Humanoid;
 using TinCan.Core.Input;
 using TinCan.Core.Interaction;
 using TinCan.Core.Possession;
-using TinCan.Core.Ship;
 using TinCan.Core.UI;
 using TinCan.Core.UI.Commands;
 using TinCan.Features.FreeCamera;
+using TinCan.Features.Helm;
 using TinCan.Features.Weapons.Cannon;
 using UnityEditor;
 using UnityEngine;
@@ -44,7 +44,7 @@ namespace TinCan.DevTools.Editor
         /// <summary>Display name and meaning of each action, by Map/Action. An action missing here is built with its own name.</summary>
         private static readonly Dictionary<string, (string Display, string Meaning, bool Rebindable)> Meanings = new()
         {
-            ["Global/Cancel"] = ("Back / Menu", "Back out: close the menu, leave the helm, or open the main menu.", true),
+            ["Global/Cancel"] = ("Back / Menu", "Back out: close the menu, or open the main menu.", true),
             ["Global/SwitchPossession"] = ("Switch Control", "Cycle to the next thing you may control.", true),
             ["Camera/Look"] = ("Look", "Turn the camera of whatever you control.", false),
             ["Humanoid/Move"] = ("Move", "Walk.", true),
@@ -56,6 +56,7 @@ namespace TinCan.DevTools.Editor
             ["Airship/Throttle"] = ("Throttle", "Speed up or slow down the airship.", true),
             ["Airship/Yaw"] = ("Turn", "Turn the airship.", true),
             ["Airship/Pitch"] = ("Pitch", "Nose the airship up or down.", true),
+            ["Airship/Leave"] = ("Leave Helm", "Let go of the helm.", true),
             ["Gunner/Aim"] = ("Aim Cannon", "Swing the cannon's barrel.", false),
             ["Gunner/Fire"] = ("Fire Cannon", "Fire the cannon you are manning.", true),
             ["Gunner/Leave"] = ("Leave Cannon", "Step away from the cannon.", true),
@@ -76,7 +77,6 @@ namespace TinCan.DevTools.Editor
             var openMenu = Command<OpenMenuCommand>("Command_OpenMenu", "Open the main menu (offline, or in your own body).");
             var menuBack = Command<MenuBackCommand>("Command_MenuBack", "Step back one menu; the last Back closes it.");
             var switchPossession = Command<SwitchPossessionCommand>("Command_SwitchPossession", "Control the next thing you may control.");
-            var exitVehicle = Command<ExitVehicleCommand>("Command_ExitVehicle", "Let go of the helm and return to your body.");
             var toggleCursor = Command<ToggleCursorCommand>("Command_ToggleCursor", "Free or recapture the cursor while flying the free camera.");
             var toggleOverlay = Command<ToggleNetOverlayCommand>("Command_ToggleNetOverlay", "Show or hide the net harness readout.");
 
@@ -109,15 +109,6 @@ namespace TinCan.DevTools.Editor
                 c.Configure(InputContextActivation.WhilePossessing, 200, PossessedActorKind.Humanoid);
                 c.SetContents(None(), NoActions(), NoRoutes(), "On foot, in your own body. Read by HumanoidMovementUseCase; Sprint, Interact and Primary are also ability bits.");
             });
-            var airship = Context<AirshipInputContext>("Context_Airship", c =>
-            {
-                c.Throttle = Id("Airship/Throttle");
-                c.Yaw = Id("Airship/Yaw");
-                c.Pitch = Id("Airship/Pitch");
-                c.Configure(InputContextActivation.WhilePossessing, 300, PossessedActorKind.Ship);
-                c.SetContents(None(), NoActions(), new[] { new InputRoute(Id("Global/Cancel"), exitVehicle) },
-                    "At the helm. Read by AirshipMovementUseCase; Cancel lets go of the helm.");
-            });
             var freeCamera = Context<FreeCameraInputContext>("Context_FreeCamera", c =>
             {
                 c.Move = Id("FreeCamera/Move");
@@ -134,6 +125,16 @@ namespace TinCan.DevTools.Editor
             });
             SetContents(gunner, new InputContext[] { humanoid, camera }, NoActions(), NoRoutes(),
                 "Manning a cannon (State.Occupying.Cannon). Silences walking and looking: the mouse swings the barrel (GunnerAimUseCase). Fire and Leave are the Primary and Interact ability bits.");
+            var helmsman = Context<HelmsmanInputContext>("Context_Helmsman", c =>
+            {
+                c.Throttle = Id("Airship/Throttle");
+                c.Yaw = Id("Airship/Yaw");
+                c.Pitch = Id("Airship/Pitch");
+                c.Leave = Id("Airship/Leave");
+                c.Configure(InputContextActivation.WhilePossessedHasTag, 400, tag: Load<GameplayTag>("Assets/Abilities/Tags/State.Occupying.Helm.asset"));
+            });
+            SetContents(helmsman, new InputContext[] { humanoid }, NoActions(), NoRoutes(),
+                "At the helm (State.Occupying.Helm). Silences walking but not looking: the helmsman looks around while steering. The axes travel in the predicted input (HelmInputUseCase); Leave is the Interact ability bit.");
             var menu = Context<InputContext>("Context_Menu", c =>
             {
                 c.Configure(InputContextActivation.WhileMenuOpen, 900, blocksAllLower: true);
@@ -155,13 +156,13 @@ namespace TinCan.DevTools.Editor
             // Ability inputs: bit order is the config's list order (unchanged: Sprint 0, Primary 1, Interact 2).
             var sprint = AbilityInput("Input_Sprint", Id("Humanoid/Sprint"));
             var primary = AbilityInput("Input_Primary", Id("Humanoid/Primary"), Id("Gunner/Fire"));
-            var interact = AbilityInput("Input_Interact", Id("Humanoid/Interact"), Id("Gunner/Leave"));
+            var interact = AbilityInput("Input_Interact", Id("Humanoid/Interact"), Id("Gunner/Leave"), Id("Airship/Leave"));
 
             var config = Asset<InputConfig>(Root + "InputConfig.asset", c =>
             {
                 c.Actions = asset;
                 c.ActionIds = ids.Values.ToList();
-                c.Contexts = new List<InputContext> { global, camera, humanoid, airship, menu, rebinding };
+                c.Contexts = new List<InputContext> { global, camera, humanoid, menu, rebinding };
                 c.GameplayInputs = new List<GameplayInput> { sprint, primary, interact };
             });
 
@@ -170,12 +171,13 @@ namespace TinCan.DevTools.Editor
             SetField(installer, "_config", config);
             SetField(Load<Object>(Installers + "FreeCameraFeatureInstaller.asset"), "_controls", freeCamera);
             SetField(Load<Object>(Installers + "CannonFeatureInstaller.asset"), "_controls", gunner);
+            SetField(Load<Object>(Installers + "HelmFeatureInstaller.asset"), "_controls", helmsman);
             SetField(Load<Object>(Installers + "NetTestHarnessFeatureInstaller.asset"), "_controls", devTools);
 
             BuildControlsMenu();
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[InputAssetBuilder] {ids.Count} actions, 9 contexts, 6 commands, 3 ability inputs and the Controls menu built.");
+            Debug.Log($"[InputAssetBuilder] {ids.Count} actions, 9 contexts, 5 commands, 3 ability inputs and the Controls menu built.");
         }
 
         /// <summary>Menu_Controls (one row per key, Reset, Back), reachable from Menu_Main's Controls row.</summary>

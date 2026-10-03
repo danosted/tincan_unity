@@ -8,7 +8,7 @@ namespace TinCan.Core.Humanoid
     /// Domain Layer: A composite interface representing a complete humanoid character.
     /// Combines movement, look, and ability capabilities.
     /// </summary>
-    public interface IHumanoidCharacterView : ISimulatedActor<HumanoidInputState>, IPossessable, IAbilityController<HumanoidAttributeSet>, IHasOrbitalCamera, IHumanoidActor
+    public interface IHumanoidCharacterView : ISimulatedActor<HumanoidInputState>, IPossessable, IAbilityController<HumanoidAttributeSet>, IHasLook, IHumanoidActor
     {
         IHumanoidMovementView Movement { get; }
     }

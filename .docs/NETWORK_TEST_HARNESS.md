@@ -53,8 +53,8 @@ extra package is needed.
 | Route | Run it on | What it does |
 |---|---|---|
 | `DeckWalk` | client | Starts, stops, strafes, jumps and sprints, three times over (~50 s). |
-| `Pilot` | host | Takes the helm through the server's possession authority, then cruises, turns both ways and brakes (~58 s). The deck moves under the client. |
-| `PilotTilt` | host | Takes the helm, pitches the deck up and down (the Airship context's Pitch; Space/Shift by default), then banks through turns both ways (~40 s). |
+| `Pilot` | host | Takes the helm station through the server's station occupancy, then cruises, turns both ways and brakes (~58 s). The deck moves under the client. |
+| `PilotTilt` | host | Takes the helm, pitches the deck up and down (the Helmsman context's Pitch; Space/Shift by default), then banks through turns both ways (~40 s). |
 | `Idle` | either | Stands still for 45 s: measures deck creep (`idleDriftCmPerS`) and snaps. |
 
 **TinCan > Dev > Net Harness > Run Tilt Test (Lag100)** runs `PilotTilt` on the host and `Idle` on the client.
@@ -246,6 +246,7 @@ move the subject.
 | `Test_NetCatch` | Fuel, FlyingCan | NetCatch, EquipCycle (its items belong to those features) |
 | `Test_Cannon` | Stations, Cannon, SkyHazards | CannonShot, HazardStrike |
 | `Test_Voyage` | Fuel, ShipDamage, Stations, Cannon, SkyHazards, Voyage | VoyageLoop |
+| `Test_Helm` | Stations, Helm (the test ship has a quarterdeck at the airship's height for the helm) | HelmSteer |
 
 **The scenes are generated.** `DevTools/Editor/TestRangeSceneBuilder.cs` (**TinCan > Dev > Test Range > Rebuild
 Scenes**) builds every scene from its `Areas` table and adds them to the build list. Clients load the host's scene

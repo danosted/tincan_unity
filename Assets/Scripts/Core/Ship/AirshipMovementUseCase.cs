@@ -8,7 +8,9 @@ using System;
 namespace TinCan.Core.Ship
 {
     /// <summary>
-    /// Application Layer: Coordinates input and domain logic to simulate airship movement.
+    /// Application Layer, server: simulates airship movement. Each tick the ship's input comes from its pilot
+    /// (<see cref="IAirshipPilotInput"/>, the first source with an answer; the helm station today) and is kept on the
+    /// ship as its current input, which other server systems read (fuel burns with the throttle).
     /// </summary>
     public class AirshipMovementUseCase : SimulationUseCase<IAirshipView, AirshipInputState>
     {
@@ -19,38 +21,30 @@ namespace TinCan.Core.Ship
             public Vector3 CurrentAngularVelocity;
         }
 
-        private readonly AirshipInputContext _controls;
         private readonly AirshipMovementProcessor _processor;
+        private readonly IReadOnlyList<IAirshipPilotInput> _pilots;
         private readonly Dictionary<Guid, MovementState> _states = new();
 
         public AirshipMovementUseCase(
             IInputReader input,
-            AirshipInputContext controls,
             INetworkService networkService,
             IActorRegistry registry,
             ITimeService timeService,
-            AirshipMovementProcessor processor)
+            AirshipMovementProcessor processor,
+            IReadOnlyList<IAirshipPilotInput> pilots)
             : base(input, networkService, registry, timeService)
         {
-            _controls = controls;
             _processor = processor;
+            _pilots = pilots;
         }
 
-        protected override AirshipInputState GatherLocalInput(IAirshipView airship) => new()
-        {
-            Throttle = Input.ReadAxis(_controls.Throttle),
-            Yaw = Input.ReadAxis(_controls.Yaw),
-            Pitch = Input.ReadAxis(_controls.Pitch)
-        };
+        // Nobody steers a ship from their own peer: its pilot's input reaches the server through the pilot source.
+        protected override AirshipInputState GatherLocalInput(IAirshipView airship) => default;
 
-        protected override void ProcessSimulation(IAirshipView airship, AirshipInputState input, bool isCaptured)
+        protected override void ProcessSimulation(IAirshipView airship, AirshipInputState _, bool isCaptured)
         {
-            // Presentation control state is local-only. The server accepts steering
-            // solely while an authoritative possessor is assigned.
-            if (!airship.PossessorId.HasValue)
-            {
-                input = new AirshipInputState();
-            }
+            var input = PilotInput(airship);
+            airship.InputState = input;
 
             if (!_states.ContainsKey(airship.Id))
                 _states[airship.Id] = new MovementState();
@@ -94,6 +88,15 @@ namespace TinCan.Core.Ship
             // 4. Apply to view
             airship.ApplyMovement(state.CurrentVelocity, state.CurrentAngularVelocity);
             airship.Simulate(deltaTime);
+        }
+
+        private AirshipInputState PilotInput(IAirshipView airship)
+        {
+            foreach (var pilot in _pilots)
+            {
+                if (pilot.TryGetInput(airship, out var input)) return input;
+            }
+            return default;
         }
     }
 }

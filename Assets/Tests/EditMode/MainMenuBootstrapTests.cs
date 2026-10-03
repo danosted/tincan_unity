@@ -40,8 +40,8 @@ namespace TinCan.Tests.EditMode
         private IInputCommandHandler _back = null!;
         private OpenMenuCommand _openCommand = null!;
         private MenuBackCommand _backCommand = null!;
-        private FakeAirshipView _body = null!;
-        private FakeAirshipView _vehicle = null!;
+        private FakePossessable _body = null!;
+        private FakePossessable _vehicle = null!;
 
         [SetUp]
         public void SetUp()
@@ -55,8 +55,8 @@ namespace TinCan.Tests.EditMode
             _back = new MenuBackInputHandler(_menus);
             _openCommand = ScriptableObject.CreateInstance<OpenMenuCommand>();
             _backCommand = ScriptableObject.CreateInstance<MenuBackCommand>();
-            _body = new FakeAirshipView("Body");
-            _vehicle = new FakeAirshipView("Vehicle");
+            _body = new FakePossessable();
+            _vehicle = new FakePossessable();
             _possession.PlayerActor = _body;
             _possession.CurrentPossession = _body;
         }
@@ -64,8 +64,6 @@ namespace TinCan.Tests.EditMode
         [TearDown]
         public void TearDown()
         {
-            _body.Destroy();
-            _vehicle.Destroy();
             Object.DestroyImmediate(_main);
             Object.DestroyImmediate(_openCommand);
             Object.DestroyImmediate(_backCommand);
@@ -116,7 +114,7 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void OpenMenu_WhileInVehicle_Declines()
+        public void OpenMenu_WhilePossessingSomethingElse_Declines()
         {
             _network.StartHost();
             _possession.CurrentPossession = _vehicle;

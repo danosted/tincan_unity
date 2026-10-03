@@ -27,9 +27,6 @@ namespace TinCan.Core.Interaction
 
         public override void Install(IContainerBuilder builder)
         {
-            // Cancel at the helm (routed by the Airship input context).
-            builder.Register<ExitVehicleInputHandler>(Lifetime.Singleton).As<IInputCommandHandler>();
-
             if (_interactInput == null || _targeting == null)
             {
                 Debug.LogWarning($"[{name}] Interact input or targeting definition missing; interaction stays on the legacy RPC path.", this);

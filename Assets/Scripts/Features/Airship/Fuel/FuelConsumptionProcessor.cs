@@ -24,6 +24,7 @@ namespace TinCan.Features.Airship.Fuel
         /// <summary>Fuel lost to leaks this tick; leaks drain whether or not the ship is driven. Never negative.</summary>
         public float ComputeLeak(float leakRatePerSecond, float deltaTime) => Mathf.Max(0f, leakRatePerSecond) * Mathf.Max(0f, deltaTime);
 
-        public bool IsDriven(bool hasPossessor, float throttle) => hasPossessor && Mathf.Abs(throttle) > ThrottleDeadZone;
+        /// <summary>The ship burns fuel while its pilot holds the throttle past the dead zone; with nobody at the helm its input is zero.</summary>
+        public bool IsDriven(float throttle) => Mathf.Abs(throttle) > ThrottleDeadZone;
     }
 }

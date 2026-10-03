@@ -44,8 +44,8 @@ namespace TinCan.Features.SkyHazards
         [Inject]
         public SkyHazardUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
             ISkyHazardSpawner spawner, SkyHazardFieldProcessor field, HazardDriftProcessor drift, IShipContactQuery contact,
-            AbilitySystemUseCase abilities, SkyHazardConfig config)
-            : this(network, actors, time, events, spawner, field, drift, contact, abilities, config, new System.Random()) { }
+            AbilitySystemUseCase abilities, SkyHazardConfig config, IRandomSource random)
+            : this(network, actors, time, events, spawner, field, drift, contact, abilities, config, random.Create("SkyHazards")) { }
 
         public SkyHazardUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
             ISkyHazardSpawner spawner, SkyHazardFieldProcessor field, HazardDriftProcessor drift, IShipContactQuery contact,

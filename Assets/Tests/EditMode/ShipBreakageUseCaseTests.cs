@@ -85,7 +85,8 @@ namespace TinCan.Tests.EditMode
         }
 
         private ShipBreakageUseCase UseCase() =>
-            new(new FakeNetworkService(), _actors, _time, _events, _abilities, new ShipBreakageProcessor(), _config);
+            new(new FakeNetworkService(), _actors, _time, _events, _abilities, new ShipBreakageProcessor(), _config,
+                new TinCan.Core.RandomStreams.RandomSource(null));
 
         private float LeakRate => _shipController.TryGetAttribute(_leak, out var value) ? value.CurrentValue : -1f;
 

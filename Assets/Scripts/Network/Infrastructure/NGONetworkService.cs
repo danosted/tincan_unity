@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
+using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
 using UnityEngine;
 using VContainer;
@@ -103,10 +104,20 @@ namespace TinCan.Network.Infrastructure
         public void StartServer()
         {
             // A dedicated server draws nothing and has no vsync to pace it: uncapped, its main loop spins on every core
-            // it can get (measured 3.5 cores idle in a container). Nothing needs frames faster than the network tick.
-            Application.targetFrameRate = (int)_manager.NetworkConfig.TickRate;
+            // it can get (measured 3.5 cores idle in a container). The cap defaults to the network tick rate;
+            // -serverfps <n> overrides it (the transport is read once per frame, so the cap bounds input latency:
+            // .docs/plans/performance-budgets.md, Risks).
+            Application.targetFrameRate = ServerFrameRate(LaunchArguments.Current, (int)_manager.NetworkConfig.TickRate);
             _manager.StartServer();
         }
+
+        public const string ServerFpsFlag = "-serverfps";
+
+        /// <summary>The dedicated server's frame cap: <c>-serverfps &lt;n&gt;</c> when given and at least the tick rate, else the tick rate.</summary>
+        public static int ServerFrameRate(System.Collections.Generic.IReadOnlyList<string> args, int tickRate) =>
+            LaunchArguments.TryGetValue(args, ServerFpsFlag, out var value) && int.TryParse(value, out var fps) && fps >= tickRate
+                ? fps
+                : tickRate;
         public void StartClient()
         {
             // A batch-mode client (a headless bot) has no vsync either: uncapped it spun at ~4,600 fps on ~3 cores

@@ -1,0 +1,17 @@
+{
+    "name": "TinCan.RandomStreams",
+    "rootNamespace": "TinCan.Core.RandomStreams",
+    "references": [
+        "TinCan.Core.Domain",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

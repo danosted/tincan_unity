@@ -2,8 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
+using TinCan.Core.Humanoid;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using Unity.Profiling;
@@ -43,6 +45,8 @@ namespace TinCan.DevTools.Perf
         private readonly INetworkService _network;
         private readonly NetworkManager _networkManager;
         private readonly IEventPublisher _events;
+        private readonly IRandomSource _random;
+        private readonly IActorRegistry _actors;
 
         private readonly List<Probe> _probes = new();
         private readonly Probe _mainThread;
@@ -98,12 +102,15 @@ namespace TinCan.DevTools.Perf
         private int _profiledFrames;
         private bool _profiling;
 
-        public PerfSampler(PerfOptions options, INetworkService network, NetworkManager networkManager, IEventPublisher events)
+        public PerfSampler(PerfOptions options, INetworkService network, NetworkManager networkManager, IEventPublisher events,
+            IRandomSource random, IActorRegistry actors)
         {
             _options = options;
             _network = network;
             _networkManager = networkManager;
             _events = events;
+            _random = random;
+            _actors = actors;
 
             _mainThread = Track("CPU Main Thread Frame Time");
             _gpu = Track("GPU Frame Time");
@@ -274,6 +281,7 @@ namespace TinCan.DevTools.Perf
         {
             var report = new PerfReport(RoleName()) { WindowSeconds = windowSeconds, Frames = _frames };
             report.AddInfo("label", _options.Label);
+            report.AddInfo("seed", _random.Seed?.ToString() ?? "none");
             report.AddInfo("startedUtc", DateTime.UtcNow.AddSeconds(-windowSeconds).ToString("o"));
             report.AddInfo("unity", Application.unityVersion);
             report.AddInfo("platform", Application.platform.ToString());
@@ -290,6 +298,7 @@ namespace TinCan.DevTools.Perf
             report.AddInfo("resolution", Application.isBatchMode ? "none" : $"{Screen.width}x{Screen.height}");
             if (_network.IsServer) report.AddInfo("connectedClients", _networkManager.ConnectedClientsIds.Count.ToString());
             report.AddInfo("gcCollections", _gcCollections.ToString());
+            AddInputQueues(report);
             if (_options.ProfileFrames > 0) report.AddInfo("profiledFrames", _profiledFrames.ToString());
 
             float frameBudget = Application.targetFrameRate > 0 ? 1000f / Application.targetFrameRate : 1000f / 60f;
@@ -340,6 +349,23 @@ namespace TinCan.DevTools.Perf
             {
                 _events.LogWarning(LogSource, $"Could not write the report: {exception.Message}");
                 return "(not written)";
+            }
+        }
+
+        /// <summary>
+        /// Server only: each client's input queue on the server since it spawned. The server consumes one input per
+        /// tick, so a standing queue depth of n delays that client's input by n ticks (perf plan, input-ack latency).
+        /// </summary>
+        private void AddInputQueues(PerfReport report)
+        {
+            if (!_network.IsServer) return;
+            foreach (var actor in _actors.GetActors<IHumanoidCharacterView>())
+            {
+                if (actor is not IBufferedInputSource buffered || buffered.InputBufferStats.Ticks == 0) continue;
+                var stats = buffered.InputBufferStats;
+                ulong? owner = actor is IPossessable possessable ? possessable.OwnerId : null;
+                report.AddInfo($"inputQueue.{(owner.HasValue ? "client" + owner.Value : actor.Id.ToString())}",
+                    $"mean depth {stats.MeanDepth:0.00}, max {stats.MaxDepth}, starved {stats.Starved}, skipped {stats.Skipped}, ticks {stats.Ticks}");
             }
         }
 

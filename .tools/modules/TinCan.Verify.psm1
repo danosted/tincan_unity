@@ -87,6 +87,19 @@ function Get-CatalogScenarioNames {
     return @($names -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 }
 
+# True when nothing on this PC holds the UDP port (binding it briefly is the reliable test: a port owned by a WSL or
+# container process does not show up in Get-NetUDPEndpoint).
+function Test-UdpPortFree([int]$Port) {
+    try {
+        $probe = [System.Net.Sockets.UdpClient]::new($Port)
+        $probe.Close()
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
 # Triggers the scenario menu, waits for Logs/feature-telemetry/<Scenario>/latest-summary.json (written by the host once
 # every peer reported; Play mode then ends by itself), prints the verdict and the checkpoint screenshots.
 function Invoke-Scenario([string]$Scenario, [string]$mode, [int]$TimeoutSeconds = 240, [switch]$SaveDirtyScenes) {
@@ -98,6 +111,12 @@ function Invoke-Scenario([string]$Scenario, [string]$mode, [int]$TimeoutSeconds 
     if ($status.playMode -and $status.playMode -ne "stopped") {
         Invoke-Unity @("editor_stop") 30 | Out-Null
         Start-Sleep -Seconds 3
+    }
+
+    # The scenario's host listens on UDP 7777. Anything else holding it (a dedicated server container: with WSL
+    # mirrored networking it owns the PC's port) makes the host fail to bind and the run time out with no summary.
+    if (-not (Test-UdpPortFree 7777)) {
+        Stop-Unusable "UDP port 7777 is in use, so the scenario host cannot start. A dedicated server container? (podman ps; podman stop tincan-server)"
     }
 
     $directory = Join-Path $ProjectRoot "Logs/feature-telemetry/$Scenario"

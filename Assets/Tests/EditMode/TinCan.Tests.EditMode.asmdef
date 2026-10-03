@@ -15,6 +15,7 @@
         "TinCan.Possession",
         "TinCan.Ship",
         "TinCan.Targeting",
+        "TinCan.RandomStreams",
         "TinCan.UI",
         "TinCan.Features.GasChallenge",
         "TinCan.Features.SkyHazards",

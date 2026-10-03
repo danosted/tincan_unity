@@ -231,7 +231,10 @@ scenario.
 ## Risks and open questions
 - **Headless clients run uncapped.** Fixed 2026-10-03: batch-mode clients cap at 60 fps (`NGONetworkService.StartClient`);
   a bot now costs ~2 ms of main thread per frame on one pinned core.
-- **Input-ack latency on a dedicated server.** No netsim: a client on this PC to the Podman server took 85–108 ms from
+- **Input-ack latency on a dedicated server.** **Measured 2026-10-03 (PERFORMANCE.md):** the 30 fps cap costs ~16 ms
+  (60 fps: 98 -> 82 ms median for +24 % server CPU; 120 fps no better); the rest is a standing input queue of 2–4 per
+  client on the server (`HumanoidInputBuffer`), most likely the client's time lead. Open: a netcode task on client time
+  lead and input buffering, and whether to raise the default server cap to 60. Earlier notes: No netsim: a client on this PC to the Podman server took 85–108 ms from
   input to server confirmation (2026-10-02); bots to the server inside the Podman network (no Windows forwarding,
   capped bots) took ~132 ms, rtt estimate ~185 ms (2026-10-03). So not Podman/WSL forwarding. About four 33 ms ticks:
   the likely cause is the server's 30 fps frame cap (`NGONetworkService.StartServer`), which reads the transport once
@@ -251,7 +254,9 @@ scenario.
 - **Dev build vs release.** Dev builds are a bit slower; if a release-only regression ever matters, add a release
   frame-time spot check, not a second gate.
 - **Flaky budgets.** If a budget fails without a code change, widen the run (more samples) before widening the budget.
-- **Random hazards make some budgets flaky.** `SkyHazardUseCase` draws from an unseeded `System.Random`, so each run gets a
+- **Random hazards make some budgets flaky.** **Done 2026-10-03:** option (a), `IRandomSource` + `-seed` (perf runs pass
+  1003); hazards now repeat exactly, and the remaining traffic spread (bot route phases) is covered by budgets that
+  pass their own baseline runs. Earlier notes: `SkyHazardUseCase` draws from an unseeded `System.Random`, so each run gets a
   different sky: server `tx_bytes_s` and `physics_queries` follow the hazard count (2 of 8 runs failed one of them on
   2026-10-03 without a related change). Options: (a) a seed for perf runs (a small seam in SkyHazards, e.g. a seed
   launch argument; spawn timing still follows frame timing, so not fully deterministic); (b) budget those two on
@@ -303,3 +308,15 @@ scenario.
   p95 −10 %; server budgets tightened (`PERFORMANCE.md`). `set-budgets` now writes a stable order with LF endings so a
   re-baseline diffs as numbers only. Open: random hazards make traffic and physics-query budgets flaky (2 of 8 runs);
   options in Risks.
+- 2026-10-03 (afternoon, developer away): **seeding** done as an injectable core service (developer's choice):
+  `IRandomSource` (Core.Domain) + `RandomSource` and a core installer in a new `TinCan.RandomStreams` assembly (an
+  installer may not live in the shared Core.Infrastructure, and the root scope may not grow: both architecture tests
+  caught it); SkyHazards, FlyingCans and ShipBreakage take it (ShipBreakage's config seed still wins). Tests:
+  `RandomSourceTests`. `perf.ps1 -Seed` (default 1003); drift compares only same-seed, same-cap runs. Budgets now
+  cover the worst baseline run; physics queries on p50; all re-set from seeded runs.
+  **Latency experiment:** `-serverfps <n>` (`NGONetworkService.ServerFrameRate`, test in `NGONetworkServiceTests`),
+  `perf.ps1 -ServerFps`, `botAckMs` in `run.json`, `inputQueue.client<n>` in the server report. Result in
+  `PERFORMANCE.md`: the cap is ~16 ms of ~100; the standing input queue is the rest. Default cap unchanged (30).
+  **Tooling:** `verify.ps1` stops at once when UDP 7777 is taken (a server container blocked every scenario host;
+  it showed only as 240 s timeouts). Checked: 686/686 EditMode, `verify.ps1 -All` 13/13 solo + host/client, 21
+  seeded CrewLoad runs.

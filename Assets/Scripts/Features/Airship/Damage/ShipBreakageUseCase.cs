@@ -46,7 +46,8 @@ namespace TinCan.Features.Airship.Damage
             IEventPublisher events,
             AbilitySystemUseCase abilities,
             ShipBreakageProcessor processor,
-            ShipDamageConfig config)
+            ShipDamageConfig config,
+            IRandomSource random)
         {
             _network = network;
             _actors = actors;
@@ -55,7 +56,8 @@ namespace TinCan.Features.Airship.Damage
             _abilities = abilities;
             _processor = processor;
             _config = config;
-            _random = config.Seed != 0 ? new Random(config.Seed) : new Random();
+            // The config seed (designers reproducing a breakage pattern) wins over the run seed.
+            _random = config.Seed != 0 ? new Random(config.Seed) : random.Create("ShipBreakage");
             AutoBreak = config.AutoBreak;
         }
 

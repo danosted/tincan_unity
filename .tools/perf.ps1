@@ -13,6 +13,8 @@ Commands:
   trend <Scenario> <role.metric.stat>   One metric across every run of a scenario, e.g. server.tick_ms.p95.
   run <Scenario> -ServerFps <n>   Override the server's frame cap (default: the tick rate, 30). An experiment knob:
                         such runs only compare with runs of the same cap.
+  run <Scenario> -NetSim <preset>   Simulated latency on the server and every bot (Lag50, Lag100, Lag200, Lossy);
+                        such runs only compare with runs of the same preset.
   run <Scenario> -ProfileFrames <n>   A diagnosis run: the server also records a Unity profiler capture (server.raw)
                         of the window's first n frames. Profiling skews the numbers, so such runs are left out of
                         drift history and set-budgets refuses them.
@@ -53,7 +55,8 @@ param(
     [string[]]$Roles = @(),
     [int]$ProfileFrames = 0,
     [int]$Seed = 1003,
-    [int]$ServerFps = 0
+    [int]$ServerFps = 0,
+    [string]$NetSim = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -78,14 +81,20 @@ function Invoke-CrewLoad([string]$Folder) {
     $serverExtra = @()
     if ($ProfileFrames -gt 0) { $serverExtra += @("-perfprofile", "$ProfileFrames") }
     if ($ServerFps -gt 0) { $serverExtra += @("-serverfps", "$ServerFps") }
+    # Simulated network conditions (harness presets; each peer delays what it sends): the server and every bot get the same.
+    $netsim = if ($NetSim) { @("-netsim", $NetSim) } else { @() }
+    $serverExtra += $netsim
 
     Initialize-ContainerNetwork $Network
+    # Only the desktop client connects from outside the container network; bots use it directly. Publishing 7777 otherwise
+    # would collide with a server container already running on this PC.
+    $publish = if ($Desktop) { @("7777:7777/udp") } else { @() }
     $names = @($ServerName)
     $roleProfiles = @{ server = "ctr-server-2c" }
 
     Write-Tier "Perf" "note" "server ($($server.cpus) cpus, $($server.memory)), $botCount bot(s)$(if ($Desktop) { ' + desktop client' })"
     Start-GameContainer -Name $ServerName -Image $Image -Network $Network -Cpus $server.cpus -CpusetCpus $server.cpuset `
-        -Memory $server.memory -HostFolder $Folder -Publish @("7777:7777/udp") `
+        -Memory $server.memory -HostFolder $Folder -Publish $publish `
         -Arguments (@("-server", "-seed", "$Seed", "-perfrole", "server", "-perfwarmup", "$WarmupSeconds") + $serverExtra + $common) | Out-Null
     if (-not (Wait-ContainerLog $ServerName "Starting a dedicated server" 60)) { Stop-Unusable "the perf server did not start (see $(Join-Path $Folder "$ServerName.log"))" }
     $serverUp = Get-Date
@@ -96,7 +105,7 @@ function Invoke-CrewLoad([string]$Folder) {
         $warmup = [math]::Max(5, $WarmupSeconds - ((Get-Date) - $serverUp).TotalSeconds - 2)
         Start-GameContainer -Name $name -Image $Image -Network $Network -Cpus $bot.cpus -CpusetCpus $botCores[$i - 1] `
             -Memory $bot.memory -HostFolder $Folder `
-            -Arguments (@("-autojoin", "${ServerName}:7777", "-bot", "DeckWalk", "-botloop", "-perfrole", "bot$i", "-perfwarmup", "$([int]$warmup)") + $common) | Out-Null
+            -Arguments (@("-autojoin", "${ServerName}:7777", "-bot", "DeckWalk", "-botloop", "-perfrole", "bot$i", "-perfwarmup", "$([int]$warmup)") + $netsim + $common) | Out-Null
         $names += $name
         $roleProfiles["bot$i"] = "ctr-bot-1c"
     }
@@ -151,13 +160,13 @@ function Invoke-Run([string]$Scenario) {
 
     $budgetRows = @(Test-PerfBudgets $Scenario $reports $roleProfiles)
     foreach ($role in $missing) { $budgetRows += [pscustomobject]@{ Role = $role; Metric = "report"; Value = $null; Warn = $null; Max = $null; Verdict = "MISSING" } }
-    $driftRows = @(Get-PerfDrift $Scenario $folder $reports ([bool]$Desktop) $Seed $ServerFps)
+    $driftRows = @(Get-PerfDrift $Scenario $folder $reports ([bool]$Desktop) $Seed $ServerFps $NetSim)
     $commit = (& git -C $ProjectRoot rev-parse --short HEAD).Trim()
     $dirty = [bool](& git -C $ProjectRoot status --porcelain)
     $verdict = Write-PerfRunRecord $folder ([ordered]@{
         scenario = $Scenario; commit = $commit; dirty = $dirty; startedLocal = (Get-Date).AddSeconds(-$clock.Elapsed.TotalSeconds).ToString("s")
         durationS = [int]$clock.Elapsed.TotalSeconds; warmupS = $WarmupSeconds; windowS = $DurationSeconds; desktop = [bool]$Desktop
-        roleProfiles = $roleProfiles; profiles = (Get-PerfProfiles); image = $Image; profileFrames = $ProfileFrames; seed = $Seed; serverFps = $ServerFps
+        roleProfiles = $roleProfiles; profiles = (Get-PerfProfiles); image = $Image; profileFrames = $ProfileFrames; seed = $Seed; serverFps = $ServerFps; netsim = $NetSim
         botAckMs = (Get-BotAckLatency $folder)
     }) $budgetRows $driftRows
 
@@ -165,7 +174,7 @@ function Invoke-Run([string]$Scenario) {
         Write-Tier "Budget" $(if ($row.Verdict -eq "WARN") { "note" } else { "FAIL" }) ("{0,-7} {1,-24} {2} (warn {3}, max {4})" -f $row.Role, $row.Metric, $row.Value, $row.Warn, $row.Max)
     }
     foreach ($row in $driftRows) { Write-Tier "Drift" "note" ("{0,-7} {1,-24} {2} vs median {3} of {4} runs" -f $row.Role, $row.Metric, $row.Value, $row.Median, $row.Runs) }
-    $state = switch ($verdict) { "PASS" { "PASS" } "NO-BUDGETS" { "note" } "DIAGNOSIS" { "note" } default { "FAIL" } }
+    $state = switch ($verdict) { "PASS" { "PASS" } "NO-BUDGETS" { "note" } "DIAGNOSIS" { "note" } "EXPERIMENT" { "note" } default { "FAIL" } }
     Write-Tier "Perf" $state "$Scenario $verdict ($([int]$clock.Elapsed.TotalSeconds) s, $(@($budgetRows).Count) budget checks) -> $folder"
     return $verdict
 }

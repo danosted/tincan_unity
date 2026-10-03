@@ -102,9 +102,9 @@ function Test-PerfBudgets([string]$Scenario, $Reports, [hashtable]$RoleProfiles)
 # Relative check: each metric against the median of the last $Count runs of the same scenario, set-up (container-only
 # or with the desktop client) and seed that did not fail. Never fails a run; prints a drift warning when a value is more than
 # $Threshold above that median.
-function Get-PerfDrift([string]$Scenario, [string]$CurrentFolder, $Reports, [bool]$Desktop, [int]$Seed, [int]$ServerFps = 0, [int]$Count = 5, [double]$Threshold = 0.15) {
+function Get-PerfDrift([string]$Scenario, [string]$CurrentFolder, $Reports, [bool]$Desktop, [int]$Seed, [int]$ServerFps = 0, [string]$NetSim = "", [int]$Count = 5, [double]$Threshold = 0.15) {
     $previous = @(Get-PerfRuns -Scenario $Scenario | Where-Object {
-            $_.Folder -ne $CurrentFolder -and $_.Verdict -ne "FAIL" -and [bool]$_.Record.desktop -eq $Desktop -and -not $_.Record.profileFrames -and [int]$_.Record.seed -eq $Seed -and [int]$_.Record.serverFps -eq $ServerFps
+            $_.Folder -ne $CurrentFolder -and $_.Verdict -ne "FAIL" -and [bool]$_.Record.desktop -eq $Desktop -and -not $_.Record.profileFrames -and [int]$_.Record.seed -eq $Seed -and [int]$_.Record.serverFps -eq $ServerFps -and [string]$_.Record.netsim -eq $NetSim
         } | Select-Object -Last $Count)
     if ($previous.Count -lt 2) { return @() }
     $history = @($previous | ForEach-Object { Read-PerfReports $_.Folder })
@@ -145,8 +145,9 @@ function Get-Median([double[]]$values) {
 # run.json: what ran, where, and the verdict. The reports next to it are the data.
 function Write-PerfRunRecord([string]$Folder, [System.Collections.IDictionary]$Info, $BudgetRows, $DriftRows) {
     $failed = @($BudgetRows | Where-Object { $_.Verdict -in @("FAIL", "MISSING") })
-    # A profiled run is a diagnosis: the profiler's own cost skews it, so it neither passes nor fails.
-    $verdict = if ($Info["profileFrames"]) { "DIAGNOSIS" } elseif ($failed.Count -gt 0) { "FAIL" } elseif (@($BudgetRows).Count -eq 0) { "NO-BUDGETS" } else { "PASS" }
+    # A profiled run is a diagnosis (the profiler's own cost skews it) and a run with simulated network conditions is an
+    # experiment (budgets are set without them): neither passes nor fails.
+    $verdict = if ($Info["profileFrames"]) { "DIAGNOSIS" } elseif ($Info["netsim"]) { "EXPERIMENT" } elseif ($failed.Count -gt 0) { "FAIL" } elseif (@($BudgetRows).Count -eq 0) { "NO-BUDGETS" } else { "PASS" }
     $record = [ordered]@{}
     foreach ($key in $Info.Keys) { $record[$key] = $Info[$key] }
     $record["verdict"] = $verdict

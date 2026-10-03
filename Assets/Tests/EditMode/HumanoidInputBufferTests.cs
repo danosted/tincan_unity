@@ -85,6 +85,57 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void SmoothedDepth_StartsAtTheFirstDepth_AndSettlesOnASteadyQueue()
+        {
+            var buffer = new HumanoidInputBuffer();
+            uint next = 1;
+            // Three inputs arrive before the first tick, then one per tick: the queue stands at 3.
+            buffer.Receive(new[] { Input(next++), Input(next++), Input(next++) });
+            buffer.Consume();
+            Assert.That(buffer.SmoothedDepth, Is.EqualTo(3f));
+
+            for (int tick = 0; tick < 300; tick++)
+            {
+                buffer.Receive(new[] { Input(next++) });
+                buffer.Consume();
+            }
+
+            Assert.That(buffer.SmoothedDepth, Is.EqualTo(3f).Within(0.01f));
+        }
+
+        [Test]
+        public void SmoothedDepth_FollowsAShallowerQueueOverAboutASecond()
+        {
+            var buffer = new HumanoidInputBuffer();
+            uint next = 1;
+            buffer.Receive(new[] { Input(next++), Input(next++), Input(next++) });
+            buffer.Consume();
+            for (int tick = 0; tick < 60; tick++)
+            {
+                buffer.Receive(new[] { Input(next++) });
+                buffer.Consume();
+            }
+
+            // One tick with no arrival drops the standing queue from 3 to 2.
+            buffer.Consume();
+            for (int tick = 0; tick < 30; tick++)
+            {
+                buffer.Receive(new[] { Input(next++) });
+                buffer.Consume();
+            }
+
+            Assert.That(buffer.SmoothedDepth, Is.InRange(2.2f, 2.5f), "about two thirds of the way after 30 ticks");
+        }
+
+        [Test]
+        public void Snapshot_DepthInTenths_RoundsAndClamps()
+        {
+            Assert.That(HumanoidMovementSnapshot.ToTenths(1.54f), Is.EqualTo(15));
+            Assert.That(HumanoidMovementSnapshot.ToTenths(-1f), Is.EqualTo(0));
+            Assert.That(HumanoidMovementSnapshot.ToTenths(40f), Is.EqualTo(255));
+        }
+
+        [Test]
         public void Starved_RepeatsLastInputWithoutJump()
         {
             var buffer = new HumanoidInputBuffer();

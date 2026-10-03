@@ -25,6 +25,7 @@ Every flag works on a build's command line or as a **Multiplayer Play Mode playe
 | `joindelay:<s>` | `-joindelay <seconds>` | With `autojoin`: join that many seconds after launch instead of at once (late-join checks). |
 | `seed:<n>` | `-seed <n>` | Seed every gameplay random stream (`IRandomSource`): hazards, flying cans and ship breakage repeat from run to run. Perf runs pass one (`perf.ps1 -Seed`). |
 | `serverfps:<n>` | `-serverfps <n>` | With `-server`: the dedicated server's frame cap (default and minimum: the tick rate, 30). The transport is read once per frame, so the cap bounds how fast input is picked up (measured: 60 fps saves ~16 ms of input latency for ~24 % more server CPU; .docs/PERFORMANCE.md). |
+| `noinputlead` | `-noinputlead` | On a client: turn off the input-lead controller (`InputLeadProcessor`), which steers the client's time lead from the server's input queue depth. For before/after comparisons; see [`plans/input-queue-lead.md`](plans/input-queue-lead.md). |
 | `netsim:<preset>` | `-netsim <preset>` | Delay, jitter and loss on this peer's outgoing packets (see presets). |
 | `bot:<route>` | `-bot <route>` | Play a scripted input route once the local player exists. Implies `telemetry`. |
 | `telemetry` | `-telemetry` | Measure the local player and write a report. |

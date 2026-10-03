@@ -178,6 +178,7 @@ Both can be unit-tested directly.
 | Command-line session start | `Core/UI/CommandLineSessionBootstrap.cs`: `-autohost`, `-server [address][:port]` (dedicated, default `0.0.0.0:7777`), `-autojoin [address[:port]]`, also as MPPM player tags via `Core/Domain/LaunchArguments.cs`. |
 | Simulated latency, input bot, movement telemetry | `DevTools/` ([`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md)); reports in `Logs/net-telemetry/`. |
 | Random numbers (and seeding them) | `IRandomSource.Create("<System>")` (`Core/Domain/IRandomSource.cs`), one stream per system; with `-seed <n>` every stream repeats, which perf runs rely on, so gameplay randomness should come from it (`Core/RandomStreams/`). |
+| Client time lead (input latency) | The server reports each owner's input queue depth on the movement snapshot (`HumanoidInputBuffer.SmoothedDepth`); the owner steers NGO's `LocalBufferSec` with `Core/Humanoid/InputLeadProcessor.cs` (`HumanoidPlayer.SteerInputLead`). Why: [`plans/input-queue-lead.md`](plans/input-queue-lead.md). |
 | Feature scenarios and the scenes they run in | `DevTools/Scenarios/ScenarioCatalog.cs` (`.InScene(TestScenes.X)`), scenes built by `DevTools/Editor/TestRangeSceneBuilder.cs`; driver `.tools/verify.ps1`; agent procedures `.claude/skills/verify-feature`, `add-scenario`. |
 | Perf runs and budgets | Sampler `DevTools/Perf/PerfSampler.cs` (`-perf`, registered by `NetTestHarnessFeatureInstaller`), report `PerfReport.cs`; runner `.tools/perf.ps1` + `modules/TinCan.Perf.psm1`; budgets `.docs/perf/budgets.json`; guide [`PERFORMANCE.md`](PERFORMANCE.md). |
 | Scripted input for automation | `DevTools/ScriptedAction.cs` intents (`MoveForward`, `GunnerFire`, ...) mapped to context actions by `ScriptedActionMap`, pressed through `Core/Domain/Input/ScriptedInput.cs`, which `InputSystemReader` merges under the same context rules as keys. |
@@ -323,6 +324,10 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
   clients (interpolated ship, late joiners) end up with the fixture floating off the ship.
 - **UniTask is not installed** even though `CODE_STANDARDS.md` names it. No async or coroutine code exists yet.
 - **`ProjectSettings/EditorBuildSettings.asset`** still lists two deleted scenes under `Assets/Scenes/Dev/`.
+- **Never read `LaunchArguments.Current` in a static initializer.** In the Editor it reads the MPPM player tags, which
+  throws while MPPM is not ready (as when a type loads outside Play); the type initializer then fails and the type is
+  unusable for the domain: every scenario timed out with MPPM `SystemDataStore.GetMain` errors. Read it on first use in
+  Play, as installers and `HumanoidPlayer.SteerInputLead` do (2026-10-03).
 - **A running dedicated server blocks scenario runs.** A server container publishing UDP 7777 (with WSL mirrored networking
   it owns the PC's port) stops the scenario host from binding; `verify.ps1` checks the port first and says so. Stop it with
   `podman stop tincan-server` before `verify.ps1 -Scenario`/`-All` (2026-10-03).

@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -19,6 +20,10 @@ namespace TinCan.Core.Humanoid
         public Vector3 LocalPosition;
         public Vector3 LocalHorizontalVelocity;
         public float VerticalVelocity;
+        /// <summary>The server's smoothed input queue depth for this player, in tenths (see <see cref="InputLeadProcessor"/>).</summary>
+        public byte QueueDepthTenths;
+
+        public static byte ToTenths(float depth) => (byte)Math.Clamp((int)Math.Round(depth * 10f), 0, 255);
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -29,6 +34,7 @@ namespace TinCan.Core.Humanoid
             serializer.SerializeValue(ref LocalPosition);
             serializer.SerializeValue(ref LocalHorizontalVelocity);
             serializer.SerializeValue(ref VerticalVelocity);
+            serializer.SerializeValue(ref QueueDepthTenths);
         }
     }
 }

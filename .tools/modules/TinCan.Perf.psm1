@@ -209,14 +209,25 @@ function Set-PerfBudgetsFromRuns([string[]]$RunIds, [string]$Rationale, [string[
 
     $replaced = @($merged.Values | ForEach-Object { "$($_.role)|$($_.profile)" } | Select-Object -Unique)
     $existing = @(Read-Budgets | Where-Object { $_.scenario -ne $scenario -or "$($_.role)|$($_.profile)" -notin $replaced })
+    # A stable order (scenario, role kind, profile, then the order of $BudgetedMetrics) and LF line endings, so a
+    # re-baseline diffs as changed numbers only: the diff of budgets.json is the review.
+    $kindOrder = @{ server = 0; bot = 1; client = 2 }
+    $specOrder = @{}
+    for ($i = 0; $i -lt $BudgetedMetrics.Count; $i++) { $specOrder["$($BudgetedMetrics[$i].kind)|$($BudgetedMetrics[$i].metric)|$($BudgetedMetrics[$i].stat)"] = $i }
+    $all = @(@($existing) + @($merged.Values) | Sort-Object `
+        @{ Expression = { $_.scenario } },
+        @{ Expression = { $o = $kindOrder[[string]$_.role]; if ($null -eq $o) { 9 } else { $o } } },
+        @{ Expression = { $_.profile } },
+        @{ Expression = { $o = $specOrder["$($_.role)|$($_.metric)|$($_.stat)"]; if ($null -eq $o) { 999 } else { $o } } })
     $document = [ordered]@{
         format = 1
         note = "Perf budgets: limits per scenario, role kind, environment profile, metric and stat. Written by .tools/perf.ps1 set-budgets from baseline runs (median * (1 + margin) + floor; warn halfway); edit by hand only with a rationale. See .docs/PERFORMANCE.md."
         profiles = $Profiles
-        budgets = @($existing) + @($merged.Values)
+        budgets = $all
     }
     New-Item -ItemType Directory -Path (Split-Path $BudgetsPath) -Force | Out-Null
-    $document | ConvertTo-Json -Depth 10 | Out-File $BudgetsPath -Encoding utf8
+    $json = ($document | ConvertTo-Json -Depth 10) -replace "`r`n", "`n"
+    [IO.File]::WriteAllText($BudgetsPath, $json + "`n", [Text.UTF8Encoding]::new($false))
     return @($merged.Values)
 }
 

@@ -163,3 +163,21 @@ What the baseline says:
   `CreateObjectMessage` / `DestroyObjectMessage`), and `NetworkTransformMessage` is ~65 % of all server messages.
 - **The load is still light.** Bots walk the deck; nobody steers, fires or repairs (the ship holds course), so
   these budgets cover "four players aboard with hazards", not combat. New routes (P3) will need their own baselines.
+
+### 2026-10-03: `GameplayTagContainer` stops allocating
+
+`HasTag` / `HasAny` / `HasAll` loop by index instead of LINQ (`Core/Domain/Abilities/Tags/GameplayTagContainer.cs`,
+test `GameplayTagContainerTests.Queries_DoNotAllocate`). Medians of 5 container-only runs before and after (server):
+
+| Server | Before | After | Change |
+|---|---|---|---|
+| GC per frame, mean / p95 | 39.2 / 71.2 KB | 23.7 / 54.8 KB | −40 % / −23 % |
+| Allocations per frame, mean | 582 | 339 | −42 % |
+| Garbage collections per 90 s window | 94–97 | 60–62 | −36 % |
+| `main_thread_ms` p95 | 2.53 ms | 2.27 ms | −10 % |
+| `tick_ms` p99 | 1.72 ms | 1.64 ms | −5 % |
+
+Bots and the desktop client did not change (their allocations are elsewhere). The server budgets were tightened to
+the new medians (`set-budgets -Roles server`). Two of the eight runs failed a budget that the change does not touch
+(server `tx_bytes_s` p95 116 KB/s, server `physics_queries` p95 68): both follow how many hazards spawn near the ship,
+which is random per run (`SkyHazardUseCase` uses an unseeded `System.Random`). See the plan's risks.

@@ -25,22 +25,37 @@ namespace TinCan.Core.Domain.Abilities.Tags
             _tags = tags?.ToList() ?? new List<GameplayTag>();
         }
 
+        // Queried hundreds of times per server frame (abilities, cues, input gates), so these loop by index instead of
+        // using LINQ: a lambda or method group allocates a delegate (and Any() an enumerator) per call, which was 44 %
+        // of the server's per-frame garbage (perf diagnosis 2026-10-03, .docs/PERFORMANCE.md).
         public bool HasTag(GameplayTag tag)
         {
             if (_tags == null || tag == null) return false;
-            return _tags.Any(t => t.IsChildOf(tag));
+            for (int i = 0; i < _tags.Count; i++)
+            {
+                if (_tags[i].IsChildOf(tag)) return true;
+            }
+            return false;
         }
 
         public bool HasAny(GameplayTagContainer other)
         {
             if (_tags == null || other._tags == null) return false;
-            return other._tags.Any(HasTag);
+            for (int i = 0; i < other._tags.Count; i++)
+            {
+                if (HasTag(other._tags[i])) return true;
+            }
+            return false;
         }
 
         public bool HasAll(GameplayTagContainer other)
         {
             if (_tags == null || other._tags == null) return false;
-            return other._tags.All(HasTag);
+            for (int i = 0; i < other._tags.Count; i++)
+            {
+                if (!HasTag(other._tags[i])) return false;
+            }
+            return true;
         }
 
         public void AddTag(GameplayTag tag)

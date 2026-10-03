@@ -251,6 +251,11 @@ scenario.
 - **Dev build vs release.** Dev builds are a bit slower; if a release-only regression ever matters, add a release
   frame-time spot check, not a second gate.
 - **Flaky budgets.** If a budget fails without a code change, widen the run (more samples) before widening the budget.
+- **Random hazards make some budgets flaky.** `SkyHazardUseCase` draws from an unseeded `System.Random`, so each run gets a
+  different sky: server `tx_bytes_s` and `physics_queries` follow the hazard count (2 of 8 runs failed one of them on
+  2026-10-03 without a related change). Options: (a) a seed for perf runs (a small seam in SkyHazards, e.g. a seed
+  launch argument; spawn timing still follows frame timing, so not fully deterministic); (b) budget those two on
+  `mean` instead of `p95`; (c) a wider margin for them. Recommended: (a), then re-baseline. A developer decision.
 
 ## Progress
 - 2026-10-02: drafted. The developer confirmed the reference setup (this PC, 1080p, 60 fps), the LAN PC as a later
@@ -293,3 +298,8 @@ scenario.
   - **Next, for review:** fix `HasTag`/`HasAny`/`HasAll` and re-baseline the GC budgets down; decide the server frame
     cap (see Risks, input-ack latency); P3 routes (helm through interaction on a client, gunner, repairer) so CrewLoad
     is a real crew; SpawnRamp; WorstView; Soak; `perf.ps1 run -Editor`; the render-counter container spike.
+- 2026-10-03 (morning, with the developer): committed the overnight work (`9aa7945`). Fixed
+  `GameplayTagContainer` (index loops; no-allocation test): server GC per frame −40 %, collections −36 %, main thread
+  p95 −10 %; server budgets tightened (`PERFORMANCE.md`). `set-budgets` now writes a stable order with LF endings so a
+  re-baseline diffs as numbers only. Open: random hazards make traffic and physics-query budgets flaky (2 of 8 runs);
+  options in Risks.

@@ -278,3 +278,76 @@ designs select it in their scope. `Airship_Prefab` and its scenes stay as they a
 `CODE_MAP.md` (feature index rows for ShipDesigns and Shipyard; "Where does X live": ship designs and save files),
 `ARCHITECTURE.md` §7 (ships are built from designs; the design replicates and peers assemble it),
 `NETWORK_TEST_HARNESS.md` (the new test scene).
+
+## Follow-up (developer feedback, 2026-10-04)
+"Parts should snap to existing pieces, not float; switch height levels with PgUp/PgDn. Bigger balloons, like a top
+balloon floating above the deck."
+- **Levels:** the shipyard has a working level (PgUp/PgDn, shown in the HUD). New parts aim at that level's floor,
+  drawn as a see-through plane (`M_ShipyardLevel`). Remove still takes whatever part the cursor is on.
+- **No floating parts:** a part must touch the ship (share a face with a part already there); only the first part of an
+  empty design goes anywhere. Aim near the ship but not touching, and the ghost snaps to the nearest touching spot on
+  the same level within 2 cells (`ShipyardSnapProcessor`). Farther away it stays red and a click explains why.
+  `IShipyard.PlaceAt` enforces the same rule.
+- **Top balloon:** `lift.envelope` (5 × 3 × 7 cells, mass 40, lift 1200), held up by `hull.mast` posts (1 cell, mass 5).
+  The starter now carries it on four two-cell masts on the gunwales: 95 parts, mass 675, lift 1200, about 14.2 m/s.
+  The side balloons stay available (and "New ship" uses them). Balloons now have box colliders: a scaled sphere
+  collider is a ball the size of the largest axis.
+- **Built-in names are reserved.** Found when the scenarios loaded a saved design called "Starter": a save under a
+  built-in's name used to replace the built-in for every session. Saving under one is now refused, and a built-in
+  always loads by its name. The developer's saved ship was renamed to `My Starter.ship.json` in the designs folder.
+
+## Follow-up 2 (developer feedback, 2026-10-04)
+- **Delete is a mode.** X toggles delete mode. The part under the cursor is highlighted in the blocked colour, drawn a
+  little bigger than the part, and a left click deletes it. X again returns to building. The right mouse button no
+  longer deletes; it orbits, like the middle button.
+- **The mouse wheel zooms.** It did not before: Input System 1.19 normalizes the wheel to about 1 per notch and the
+  reader clamps axes to ±1, while the zoom assumed 120 per notch. Now `ShipyardConfig.ZoomStep` is metres per notch
+  (2).
+
+## Open question: how do fixtures get onto a designed ship?
+**The question.** Fuel system, cannon stations, repair rack, damage points and the voyage state reach a ship as
+installer fixtures at fixed ship-local poses, made for the hand-built airship. A designed hull does not match those
+poses. Today only the helm works on a designed ship: it is a part whose networked prefab is the fixture. How should
+features attach to a ship built from a design, so they interface with the hull, without the builder knowing them?
+
+**Constraint (developer):** this belongs to the integration with other systems, not to the builder. The builder places
+parts and keeps the file format; features decide what goes where.
+
+**Option A: sockets on parts (recommended).**
+- *Core contract* (`Core/Ship/`): a `ShipSocketType` asset (Socket.FuelIntake, Socket.Weapon, Socket.Storage,
+  Socket.DamagePoint, ...) and a `ShipSocket` marker on part prefabs: a pose and a type. Parts declare sockets in
+  their prefab; the builder never reads them.
+- *A built ship exposes its sockets:* `ShipHullAssembler` collects the markers of the parts it builds into an
+  `IShipSockets` per ship: type, ship-local pose, part instance id. Every peer builds the same parts, so the sockets
+  need no replication.
+- *Integration:* a feature contributes `ShipSocketFixture` assets (socket type → fixture prefab, plus a rule: every
+  socket, the first one, or up to N) through `FeatureInstaller.IExtension`. A server use case spawns them, as
+  `ShipFixtureSpawningUseCase` does for fixed poses. Spawned fixtures get stable ids from (part instance id, socket
+  index), so saves can keep their state. Removing a part despawns its socket fixtures.
+- *Fixed-pose fixtures stay* for ships that are not designed. `IShipFixtureFilter` already keeps them off designed
+  ships.
+- *Examples:* an engine part with a FuelIntake socket gets the fuel system; a "gun port" part with a Weapon socket gets
+  a cannon station; damage points can sit on any hull block.
+
+**Option B: features contribute their own parts.** The fuel tank is a part whose networked prefab is the fuel
+fixture, exactly like the helm. It is the simplest and already works. But the player must place every system by
+hand, and a feature cannot add to existing parts (a damage point on every block).
+
+**Option C: a second layer in the design.** The shipyard places fixtures freely (snapped to faces), and the file gets
+a `fixtures` list keyed by fixture id. This gives the most player control, but the builder and the file format now
+know fixtures exist, which is closer to what the constraint rules out.
+
+**What A would take** (about two slices):
+1. Core: `ShipSocketType`, `ShipSocket`, `IShipSockets`. The assembler collects sockets (tests: rotated parts give
+   rotated socket poses).
+2. Integration: `ShipSocketFixture` contributions and a server `ShipSocketFixtureUseCase` (spawn, despawn on part
+   removal, stable ids), with tests. Optionally a validator hook, so a feature can say "needs at least one FuelIntake".
+3. Per feature, asset work: socket markers on part prefabs (engine: FuelIntake; a new gun-port part: Weapon; blocks:
+   DamagePoint) and each feature's socket-fixture asset.
+4. A scenario: a designed ship gets its fuel system at the engine's socket on host and client, and loses it when the
+   engine is removed.
+5. No file format change: sockets come from part prefabs. Per-socket settings (which cannon) would later use a
+   placement's extension fields, which the format already keeps.
+
+**Decisions needed:** A, B or C; and with A, whether every matching socket gets its fixture automatically or the player
+chooses per socket in the shipyard.

@@ -17,10 +17,11 @@ MonoBehaviour:
   StartDistance: 18
   DistanceRange: {x: 4, y: 60}
   OrbitSpeed: 0.25
-  ZoomSpeed: 0.01
+  ZoomStep: 2
   MaxPitch: 80
   GhostMaterial: {fileID: 2100000, guid: 53709b4a6d4d94741831fc06730d5ef9, type: 2}
   GhostValid: {r: 0.3, g: 1, b: 0.4, a: 0.45}
   GhostBlocked: {r: 1, g: 0.25, b: 0.2, a: 0.45}
-  FloorMaterial: {fileID: 2100000, guid: ece983b34101695468ba4713df5e19c6, type: 2}
+  HighlightScale: 1.06
+  FloorMaterial: {fileID: 2100000, guid: 16e806ae24e898c4e9ddaaad5f6f9222, type: 2}
   Menu: {fileID: 11400000, guid: b1097b2ae56587e4fb59baab5f804e47, type: 2}

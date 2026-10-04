@@ -68,12 +68,14 @@ namespace TinCan.DevTools.Editor
             ["Shipyard/OrbitHold"] = ("Orbit Camera", "Hold to orbit the shipyard camera around the ship.", true),
             ["Shipyard/Zoom"] = ("Shipyard Zoom", "Zoom the shipyard camera.", false),
             ["Shipyard/Place"] = ("Place Part", "Place the selected part where the cursor points.", true),
-            ["Shipyard/Remove"] = ("Remove Part", "Remove the part under the cursor.", true),
+            ["Shipyard/DeleteMode"] = ("Delete Mode", "Toggle delete mode in the shipyard: click a highlighted part to delete it.", true),
             ["Shipyard/Rotate"] = ("Turn Part", "Turn the selected part a quarter turn.", true),
             ["Shipyard/NextPart"] = ("Next Part", "Select the next part.", true),
             ["Shipyard/PreviousPart"] = ("Previous Part", "Select the previous part.", true),
             ["Shipyard/Undo"] = ("Undo", "Undo the last change to the design.", true),
             ["Shipyard/Redo"] = ("Redo", "Redo the change just undone.", true),
+            ["Shipyard/LevelUp"] = ("Level Up", "Build one level higher in the shipyard.", true),
+            ["Shipyard/LevelDown"] = ("Level Down", "Build one level lower in the shipyard.", true),
         };
 
         [MenuItem("TinCan/Dev/Input/Build Assets")]
@@ -167,12 +169,14 @@ namespace TinCan.DevTools.Editor
                 c.OrbitHold = Id("Shipyard/OrbitHold");
                 c.Zoom = Id("Shipyard/Zoom");
                 c.Place = Id("Shipyard/Place");
-                c.Remove = Id("Shipyard/Remove");
+                c.DeleteMode = Id("Shipyard/DeleteMode");
                 c.Rotate = Id("Shipyard/Rotate");
                 c.NextPart = Id("Shipyard/NextPart");
                 c.PreviousPart = Id("Shipyard/PreviousPart");
                 c.Undo = Id("Shipyard/Undo");
                 c.Redo = Id("Shipyard/Redo");
+                c.LevelUp = Id("Shipyard/LevelUp");
+                c.LevelDown = Id("Shipyard/LevelDown");
                 c.Configure(InputContextActivation.WhileOpened, 500, blocksAllLower: true);
                 c.SetContents(None(), NoActions(), new[] { new InputRoute(Id("Global/Cancel"), shipyardMenu) },
                     "The shipyard is open (contributed by its installer): build with the mouse, everything below is silent; Cancel opens the shipyard menu. Read by ShipyardUseCase.");

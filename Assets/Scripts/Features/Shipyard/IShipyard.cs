@@ -19,6 +19,16 @@ namespace TinCan.Features.Shipyard
         ShipPartDefinition? SelectedPart { get; }
         byte Orientation { get; }
 
+        /// <summary>The height level new parts go on.</summary>
+        int Level { get; }
+
+        void ChangeLevel(int delta);
+
+        /// <summary>In delete mode the part under the cursor is highlighted and a click deletes it.</summary>
+        bool DeleteMode { get; }
+
+        void ToggleDeleteMode();
+
         /// <summary>The last thing the shipyard has to say: what was saved, why an edit was refused.</summary>
         string Message { get; }
 

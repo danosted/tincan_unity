@@ -33,9 +33,29 @@ namespace TinCan.Tests.EditMode.Fakes
 
         public ShipyardRay CursorRay(Vector2 screenPoint) => Ray;
 
-        public void ShowGhost(ShipPartDefinition part, ShipGridCell cell, byte orientation, bool valid) => Ghost = (part, cell, orientation, valid);
+        public int Level { get; private set; }
 
-        public void HideGhost() => Ghost = null;
+        public void ShowLevel(int level) => Level = level;
+
+        public void ShowGhost(ShipPartDefinition part, ShipGridCell cell, byte orientation, bool valid)
+        {
+            Highlighted = null;
+            Ghost = (part, cell, orientation, valid);
+        }
+
+        public ShipPartPlacement? Highlighted { get; private set; }
+
+        public void ShowHighlight(ShipPartDefinition part, ShipPartPlacement placement)
+        {
+            Ghost = null;
+            Highlighted = placement;
+        }
+
+        public void HideGhost()
+        {
+            Ghost = null;
+            Highlighted = null;
+        }
 
         public void Orbit(Vector2 degrees) => Orbited += degrees;
 

@@ -65,12 +65,14 @@ namespace TinCan.Tests.EditMode
             _controls.OrbitHold = Action("OrbitHold");
             _controls.Zoom = Action("Zoom");
             _controls.Place = Action("Place");
-            _controls.Remove = Action("Remove");
+            _controls.DeleteMode = Action("DeleteMode");
             _controls.Rotate = Action("Rotate");
             _controls.NextPart = Action("NextPart");
             _controls.PreviousPart = Action("PreviousPart");
             _controls.Undo = Action("Undo");
             _controls.Redo = Action("Redo");
+            _controls.LevelUp = Action("LevelUp");
+            _controls.LevelDown = Action("LevelDown");
             _input = new FakeInputReader();
             _switch = new InputContextSwitch();
             _stage = new FakeShipyardStage();
@@ -145,10 +147,10 @@ namespace TinCan.Tests.EditMode
         {
             _shipyard.Open();
             _shipyard.Select(Block);
-            PointAtFloor(3, 2);
+            PointAtFloor(1, 0);
 
             _shipyard.Tick();
-            Assert.That(_stage.Ghost!.Value.Cell, Is.EqualTo(new ShipGridCell(3, 0, 2)));
+            Assert.That(_stage.Ghost!.Value.Cell, Is.EqualTo(new ShipGridCell(1, 0, 0)), "on the beam, beside the helm");
             Assert.That(_stage.Ghost!.Value.Valid, Is.True);
 
             Press(_controls.Place);
@@ -159,31 +161,68 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void TheGhost_TurnsRed_WhereThePartDoesNotFit()
+        public void ANearMiss_SnapsTheGhostOntoTheShip()
         {
             _shipyard.Open();
             _shipyard.Select(Block);
-            _stage.Ray = new ShipyardRay(Vector3.zero, Vector3.down, true, new Vector3(0f, 0.4f, 0.5f), Vector3.forward);
+            PointAtFloor(2, 1);
 
             _shipyard.Tick();
-
-            // On the helm's side face at z 0.5: the cell in front, (0,0,1), is free...
+            Assert.That(_stage.Ghost!.Value.Cell, Is.EqualTo(new ShipGridCell(1, 0, 0)));
             Assert.That(_stage.Ghost!.Value.Valid, Is.True);
-            // ...but the beam turned to run along -Z from (0,0,1) would pass through the helm.
-            _shipyard.Select(Beam);
-            _shipyard.Rotate();
-            _shipyard.Tick();
-            Assert.That(_stage.Ghost!.Value.Valid, Is.False);
+
+            Press(_controls.Place);
+            Assert.That(_shipyard.Design!.Parts[^1].Cell, Is.EqualTo(new ShipGridCell(1, 0, 0)));
         }
 
         [Test]
-        public void Remove_TakesThePartUnderTheCursor_AndUndoBringsItBack()
+        public void FarFromTheShip_TheGhostIsRed_AndNothingIsPlaced()
         {
             _shipyard.Open();
-            // The cursor on top of the beam's middle cell, (0,-1,0).
+            _shipyard.Select(Block);
+            PointAtFloor(6, 6);
+
+            Press(_controls.Place);
+
+            Assert.That(_stage.Ghost!.Value.Valid, Is.False);
+            Assert.That(_shipyard.Design!.Parts.Count, Is.EqualTo(2));
+            Assert.That(_shipyard.Message, Does.Contain("built onto the ship"));
+            Assert.That(_shipyard.PlaceAt(new ShipGridCell(6, 0, 6)), Is.False, "never floating, through the API either");
+        }
+
+        [Test]
+        public void PageUpAndDown_ChangeTheLevelNewPartsGoOn()
+        {
+            _shipyard.Open();
+            _shipyard.Select(Block);
+
+            Press(_controls.LevelDown);
+            Assert.That((_shipyard.Level, _stage.Level), Is.EqualTo((-1, -1)));
+            Assert.That(_hud.All[ShipyardUseCase.HudPart], Does.Contain("level -1"));
+
+            PointAtFloor(2, 0);
+            Press(_controls.Place);
+            Assert.That(_shipyard.Design!.Parts[^1].Cell, Is.EqualTo(new ShipGridCell(2, -1, 0)), "the beam's end, on its level");
+
+            Press(_controls.LevelUp);
+            Press(_controls.LevelUp);
+            Assert.That(_shipyard.Level, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void DeleteMode_HighlightsThePartUnderTheCursor_AndAClickDeletesIt_UndoBringsItBack()
+        {
+            _shipyard.Open();
+            // The cursor on top of the beam (its cell (1,-1,0)).
             _stage.Ray = new ShipyardRay(new Vector3(1f, 5f, 0f), Vector3.down, true, new Vector3(1f, -0.5f, 0f), Vector3.up);
 
-            Press(_controls.Remove);
+            Press(_controls.DeleteMode);
+            Assert.That(_shipyard.DeleteMode, Is.True);
+            Assert.That(_stage.Highlighted!.PartId, Is.EqualTo(Beam));
+            Assert.That(_stage.Ghost, Is.Null, "no placing ghost in delete mode");
+            Assert.That(_hud.All[ShipyardUseCase.HudPart], Does.Contain("DELETE MODE"));
+
+            Press(_controls.Place);
             Assert.That(_shipyard.Design!.Parts.Count, Is.EqualTo(1));
 
             Press(_controls.Undo);
@@ -191,6 +230,9 @@ namespace TinCan.Tests.EditMode
 
             Press(_controls.Redo);
             Assert.That(_shipyard.Design!.Parts.Count, Is.EqualTo(1));
+
+            Press(_controls.DeleteMode);
+            Assert.That((_shipyard.DeleteMode, _stage.Highlighted), Is.EqualTo((false, (ShipPartPlacement?)null)), "X again: back to building");
         }
 
         [Test]
@@ -215,11 +257,11 @@ namespace TinCan.Tests.EditMode
         {
             _shipyard.Open();
             _input.Vectors[_controls.Orbit!] = new Vector2(10f, 4f);
-            _input.Axes[_controls.Zoom!] = 120f;
+            _input.Axes[_controls.Zoom!] = 1f;
 
             _shipyard.Tick();
             Assert.That(_stage.Orbited, Is.EqualTo(Vector2.zero));
-            Assert.That(_stage.Zoomed, Is.EqualTo(120f * _config.ZoomSpeed).Within(1e-4f));
+            Assert.That(_stage.Zoomed, Is.EqualTo(_config.ZoomStep).Within(1e-4f), "one notch: the reader reports 1");
 
             _input.Pressed.Add(_controls.OrbitHold!);
             _shipyard.Tick();

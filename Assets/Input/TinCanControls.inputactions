@@ -116,20 +116,23 @@
                 { "name": "OrbitHold", "type": "Button", "id": "1390af53-72b3-44d2-96f3-f0cfc5426392", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
                 { "name": "Zoom", "type": "Value", "id": "f5ba5f4b-6cb8-4309-8317-f5f7660c9fb3", "expectedControlType": "Axis", "processors": "", "interactions": "", "initialStateCheck": false },
                 { "name": "Place", "type": "Button", "id": "d8432f5b-be79-4005-8269-7e33b3c0bc71", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
-                { "name": "Remove", "type": "Button", "id": "97e8b067-1a36-4da0-b7fd-af5afa931afd", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "DeleteMode", "type": "Button", "id": "97e8b067-1a36-4da0-b7fd-af5afa931afd", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
                 { "name": "Rotate", "type": "Button", "id": "41155201-6f8b-4320-b832-6eebdce611ea", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
                 { "name": "NextPart", "type": "Button", "id": "df00fd92-cfa8-4285-8726-459324a8c7a0", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
                 { "name": "PreviousPart", "type": "Button", "id": "5ec7c885-f086-4869-bba2-5ee89d452aab", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
                 { "name": "Undo", "type": "Button", "id": "d062df5e-dabf-4c37-96c8-b1780cc5a6e6", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
-                { "name": "Redo", "type": "Button", "id": "b47e9896-4610-427f-bf18-daac94c154e6", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false }
+                { "name": "Redo", "type": "Button", "id": "b47e9896-4610-427f-bf18-daac94c154e6", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "LevelUp", "type": "Button", "id": "90d38c4d-5d25-4607-9104-80498d7f818d", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "LevelDown", "type": "Button", "id": "c51bbb7e-c59d-4f52-b339-0f9e87a84bb1", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false }
             ],
             "bindings": [
                 { "name": "", "id": "f68c79ef-dc75-4555-a5d4-68dc28db3c1f", "path": "<Mouse>/position", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Point", "isComposite": false, "isPartOfComposite": false },
                 { "name": "", "id": "c0875ef7-3480-4a5c-aca4-207f2bfbdde4", "path": "<Mouse>/delta", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Orbit", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "1346cc68-2574-485c-b59a-2f4b36431c8c", "path": "<Mouse>/rightButton", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "OrbitHold", "isComposite": false, "isPartOfComposite": false },
                 { "name": "", "id": "06003058-8e13-468f-9b5a-4f5426420319", "path": "<Mouse>/middleButton", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "OrbitHold", "isComposite": false, "isPartOfComposite": false },
                 { "name": "", "id": "792f6cc6-d96b-443d-86be-6229103849e6", "path": "<Mouse>/scroll/y", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Zoom", "isComposite": false, "isPartOfComposite": false },
                 { "name": "", "id": "bfbed437-d3a8-4a71-9f1c-e845d48b30b5", "path": "<Mouse>/leftButton", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Place", "isComposite": false, "isPartOfComposite": false },
-                { "name": "", "id": "992761a5-9ff5-469b-95e4-ef1328dc9b0d", "path": "<Mouse>/rightButton", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Remove", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "992761a5-9ff5-469b-95e4-ef1328dc9b0d", "path": "<Keyboard>/x", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "DeleteMode", "isComposite": false, "isPartOfComposite": false },
                 { "name": "", "id": "3160c94f-f1ac-45ef-a305-453fd1d65874", "path": "<Keyboard>/r", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Rotate", "isComposite": false, "isPartOfComposite": false },
                 { "name": "", "id": "cf872ca5-40a5-4ca3-bfb1-7eea5afd7f8e", "path": "<Keyboard>/e", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "NextPart", "isComposite": false, "isPartOfComposite": false },
                 { "name": "", "id": "0a5e2bd1-88a4-4dd7-a449-0de19f8396a5", "path": "<Keyboard>/q", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "PreviousPart", "isComposite": false, "isPartOfComposite": false },
@@ -138,7 +141,9 @@
                 { "name": "binding", "id": "dcad4a8a-81be-4678-a9db-0ab2a87a4783", "path": "<Keyboard>/z", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Undo", "isComposite": false, "isPartOfComposite": true },
                 { "name": "CtrlY", "id": "bd4a2dc5-41f8-4889-b9cf-56fda45cbe7b", "path": "OneModifier", "interactions": "", "processors": "", "groups": "", "action": "Redo", "isComposite": true, "isPartOfComposite": false },
                 { "name": "modifier", "id": "b19e4a11-cb97-445b-85d6-616d6989e400", "path": "<Keyboard>/ctrl", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Redo", "isComposite": false, "isPartOfComposite": true },
-                { "name": "binding", "id": "069f44dd-a41a-4f8e-a944-739c69e85b0b", "path": "<Keyboard>/y", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Redo", "isComposite": false, "isPartOfComposite": true }
+                { "name": "binding", "id": "069f44dd-a41a-4f8e-a944-739c69e85b0b", "path": "<Keyboard>/y", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Redo", "isComposite": false, "isPartOfComposite": true },
+                { "name": "", "id": "6eee9910-f664-4471-a6b0-9d644822ea31", "path": "<Keyboard>/pageUp", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "LevelUp", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "6beebe99-188e-435d-bf6f-d2d9a248d383", "path": "<Keyboard>/pageDown", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "LevelDown", "isComposite": false, "isPartOfComposite": false }
             ]
         }
     ],

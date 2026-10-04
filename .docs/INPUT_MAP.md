@@ -59,15 +59,17 @@ The shipyard is open (contributed by its installer): build with the mouse, every
 |---|---|---|---|
 | Shipyard/Point | `mouse position` | Where the cursor points in the shipyard. | no |
 | Shipyard/Orbit | `mouse delta` | Turn the shipyard camera while Orbit is held. | no |
-| Shipyard/OrbitHold | `mouse middleButton` | Hold to orbit the shipyard camera around the ship. | yes |
+| Shipyard/OrbitHold | `mouse rightButton` / `mouse middleButton` | Hold to orbit the shipyard camera around the ship. | yes |
 | Shipyard/Zoom | `mouse scroll/y` | Zoom the shipyard camera. | no |
 | Shipyard/Place | `mouse leftButton` | Place the selected part where the cursor points. | yes |
-| Shipyard/Remove | `mouse rightButton` | Remove the part under the cursor. | yes |
+| Shipyard/DeleteMode | `x` | Toggle delete mode in the shipyard: click a highlighted part to delete it. | yes |
 | Shipyard/Rotate | `r` | Turn the selected part a quarter turn. | yes |
 | Shipyard/NextPart | `e` | Select the next part. | yes |
 | Shipyard/PreviousPart | `q` | Select the previous part. | yes |
 | Shipyard/Undo | `ctrl` / `z` | Undo the last change to the design. | yes |
 | Shipyard/Redo | `ctrl` / `y` | Redo the change just undone. | yes |
+| Shipyard/LevelUp | `pageUp` | Build one level higher in the shipyard. | yes |
+| Shipyard/LevelDown | `pageDown` | Build one level lower in the shipyard. | yes |
 | Global/Cancel | `escape` | Back out: close the menu, or open the main menu. | yes |
 
 | Pressing | Runs | Handled by |

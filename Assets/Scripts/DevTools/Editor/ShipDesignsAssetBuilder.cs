@@ -46,6 +46,8 @@ namespace TinCan.DevTools.Editor
         public const string HullArmour = "hull.armour";
         public const string Engine = "prop.engine";
         public const string Balloon = "lift.balloon";
+        public const string Mast = "hull.mast";
+        public const string Envelope = "lift.envelope";
 
         /// <summary>A deck tile's thickness; its top is flush with the top of its cell, the cell's walkable surface.</summary>
         private const float DeckThickness = 0.2f;
@@ -77,6 +79,13 @@ namespace TinCan.DevTools.Editor
                 new Vector3Int(0, 0, 0), new Vector3Int(0, 0, -1));
             var balloon = Part("PART_Balloon", Balloon, "Balloon", "Lift", false, balloonPrefab, null, Vector3.zero, new ShipPartStats(15f, lift: 400f, hull: 10f),
                 Box(3, 2, 3));
+            // A post one cell tall: stack them to hold an envelope above the deck.
+            var mastPrefab = BoxPrefab("ShipPart_Mast", Vector3.zero, new Vector3(0.25f, 1f, 0.25f), wood);
+            var mast = Part("PART_Mast", Mast, "Mast", "Hull", false, mastPrefab, null, Vector3.zero, new ShipPartStats(5f, hull: 10f));
+            // The big top balloon: 5 x 3 x 7 cells, lifting a whole ship from above the deck.
+            var envelopePrefab = BoxPrefab("ShipPart_Envelope", new Vector3(0f, 1f, 0f), new Vector3(4.8f, 2.8f, 6.8f), canvas, PrimitiveType.Sphere);
+            var envelope = Part("PART_Envelope", Envelope, "Envelope", "Lift", false, envelopePrefab, null, Vector3.zero,
+                new ShipPartStats(40f, lift: 1200f, hull: 30f), Box(5, 3, 7));
             // The helm stand is about 4.5 x 2.2 x 3.9 m with its pivot at its base: 3 x 2 x 3 cells, standing on the floor
             // of its origin cell.
             var helm = Part("PART_CoreHelm", CoreHelm, "Helm", "Core", true, null, Load<GameObject>(HelmStationPath),
@@ -98,7 +107,7 @@ namespace TinCan.DevTools.Editor
             var installer = Asset<ShipDesignsFeatureInstaller>(InstallerPath, i =>
             {
                 SetField(i, "_config", config);
-                SetList(i, "_parts", new Object[] { block, deck, armour, engine, balloon });
+                SetList(i, "_parts", new Object[] { block, deck, armour, engine, balloon, mast, envelope });
                 SetField(i, "_stateFixture", stateFixture);
             });
             var helmInstaller = Load<HelmFeatureInstaller>(HelmInstallerPath);
@@ -118,7 +127,7 @@ namespace TinCan.DevTools.Editor
 
         /// <summary>
         /// The starter ship: a 5 x 9 deck with a keel under it, gunwales along both sides, the helm midships, an
-        /// engine off the stern and a balloon either side (mass 625, lift 800, thrust 400: about 15 m/s).
+        /// engine off the stern and an envelope on four masts above the deck (mass 675, lift 1200, thrust 400: about 14 m/s).
         /// Cell y 0 is the deck's walking level.
         /// </summary>
         public static ShipDesign StarterDesign()
@@ -138,10 +147,17 @@ namespace TinCan.DevTools.Editor
 
             // Midships: the helmsman stands 2 m behind the wheel, which must still be deck.
             parts.Add((CoreHelm, new ShipGridCell(0, 0, 0)));
-            // An engine off the stern, and a balloon on either side, against the deck and the gunwale.
+            // An engine off the stern.
             parts.Add((Engine, new ShipGridCell(0, -1, -5)));
-            parts.Add((Balloon, new ShipGridCell(-4, -1, 2)));
-            parts.Add((Balloon, new ShipGridCell(4, -1, 2)));
+            // Four masts, two cells tall, on the gunwales, holding the envelope 3 m above the deck.
+            foreach (int x in new[] { -2, 2 })
+            foreach (int z in new[] { -2, 2 })
+            {
+                parts.Add((Mast, new ShipGridCell(x, 1, z)));
+                parts.Add((Mast, new ShipGridCell(x, 2, z)));
+            }
+
+            parts.Add((Envelope, new ShipGridCell(0, 3, 0)));
 
             var placements = parts.Select((p, i) => new ShipPartPlacement(i + 1, p.Part, p.Cell, 0));
             return new ShipDesign("Starter", "TinCan", parts.Count + 1, placements);
@@ -257,6 +273,13 @@ namespace TinCan.DevTools.Editor
                 mesh.localPosition = centre;
                 mesh.localScale = size;
                 box.GetComponent<MeshRenderer>().sharedMaterial = material;
+                if (shape != PrimitiveType.Cube)
+                {
+                    // A box to aim at and stand on: a scaled sphere collider would be a ball of the largest radius.
+                    Object.DestroyImmediate(box.GetComponent<Collider>());
+                    box.AddComponent<BoxCollider>();
+                }
+
                 EnsureFolder(path);
                 var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
                 Object.DestroyImmediate(root);

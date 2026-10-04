@@ -21,20 +21,23 @@ namespace TinCan.Features.Shipyard
         public InputActionId? OrbitHold;
         [Tooltip("Zoom in and out (scroll).")]
         public InputActionId? Zoom;
-        [Tooltip("Place the selected part where the cursor points.")]
+        [Tooltip("Place the selected part where the cursor points (in delete mode: delete the highlighted part).")]
         public InputActionId? Place;
-        [Tooltip("Remove the part under the cursor.")]
-        public InputActionId? Remove;
+        [Tooltip("Toggle delete mode: the part under the cursor is highlighted, and Place deletes it.")]
+        public InputActionId? DeleteMode;
         [Tooltip("Turn the selected part a quarter turn.")]
         public InputActionId? Rotate;
         public InputActionId? NextPart;
         public InputActionId? PreviousPart;
         public InputActionId? Undo;
         public InputActionId? Redo;
+        [Tooltip("Move the working level up (new parts go on it).")]
+        public InputActionId? LevelUp;
+        public InputActionId? LevelDown;
 
         protected override IEnumerable<InputActionId?> Slots => new[]
         {
-            Point, Orbit, OrbitHold, Zoom, Place, Remove, Rotate, NextPart, PreviousPart, Undo, Redo,
+            Point, Orbit, OrbitHold, Zoom, Place, DeleteMode, Rotate, NextPart, PreviousPart, Undo, Redo, LevelUp, LevelDown,
         };
     }
 }

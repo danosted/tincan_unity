@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
-    /// Saved designs (the player's, as files) and the built-in ones that ship with the game. A saved design with a
-    /// built-in's key is the one loaded; built-ins themselves are never written.
+    /// Saved designs (the player's, as files) and the built-in ones that ship with the game. Built-in names are
+    /// reserved: a built-in always loads by its name, and no design is saved under one.
     /// </summary>
     public interface IShipDesignStore
     {

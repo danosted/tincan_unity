@@ -10,10 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2a96585f2c3b74842862d874ada10b6d, type: 3}
-  m_Name: Shipyard.Remove
+  m_Name: Shipyard.DeleteMode
   m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.InputActionId
   _actionId: 97e8b067-1a36-4da0-b7fd-af5afa931afd
-  _path: Shipyard/Remove
-  _displayName: Remove Part
-  _description: Remove the part under the cursor.
+  _path: Shipyard/DeleteMode
+  _displayName: Delete Mode
+  _description: 'Toggle delete mode in the shipyard: click a highlighted part to
+    delete it.'
   _rebindable: 1

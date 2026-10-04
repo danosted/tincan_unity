@@ -53,15 +53,20 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void BuiltIns_Load_AndASavedCopy_TakesTheirPlace()
+        public void BuiltInNames_AreReserved_SoTheBuiltInAlwaysLoads()
         {
             var store = Store();
             Assert.That(store.Load("Starter").Design!.Parts.Count, Is.EqualTo(1));
 
-            store.TrySave("Starter", Design((Helm, 0, 0, 0, 0), (Block, 1, 0, 0, 0)), out _);
+            Assert.That(store.TrySave("Starter", Design((Helm, 0, 0, 0, 0), (Block, 1, 0, 0, 0)), out var error), Is.False);
+            Assert.That(error, Does.Contain("built-in"));
 
-            Assert.That(store.Load("Starter").Design!.Parts.Count, Is.EqualTo(2));
-            Assert.That(store.List().Select(l => l.ToString()), Is.EqualTo(new[] { "Starter" }));
+            // A file saved before names were reserved does not hide the built-in either.
+            Directory.CreateDirectory(_directory);
+            File.WriteAllText(Path.Combine(_directory, "Starter.ship.json"), _codec.Encode(Design((Helm, 0, 0, 0, 0), (Block, 1, 0, 0, 0))));
+            Assert.That(store.Load("Starter").Design!.Parts.Count, Is.EqualTo(1));
+            Assert.That(store.List().Select(l => l.ToString()), Is.EqualTo(new[] { "Starter (built in)" }));
+            Assert.That(store.TryDelete("Starter"), Is.False);
         }
 
         [Test]

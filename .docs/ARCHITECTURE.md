@@ -205,6 +205,16 @@ server rolls when a voyage begins, its start and its destination, replicated by 
 generates the world per voyage (sky islands) builds from it on every peer, so the world itself is never replicated.
 Without a voyage the seed is 0 and such features fall back to their own. Plan: [plans/sky-islands.md](plans/sky-islands.md).
 
+**Ships can be built from a design** (`Features/ShipDesigns/`). A `ShipDesign` is plain data: parts on a 1 m grid,
+each with a stable instance id, a part id and an orientation. It is saved as versioned JSON and sent as a compact binary
+form. Parts are `ShipPartDefinition` assets that features contribute, as they contribute fixtures. The server gives each
+ship a validated design. The ShipDesignState fixture replicates it, and every peer builds the structure locally, as sky
+islands do. Functional parts (the helm) are spawned by the server as networked fixtures at their design pose. A design
+that places a part keeps the same prefab's installer fixture off the ship (`Core/Ship/Fixtures/IShipFixtureFilter.cs`).
+A design's parts carry mass, lift, thrust and hull; the server turns them into the ship's speed, turn rate and health
+through `Core/Ship/IAirshipTuning.cs`. The shipyard (`Features/Shipyard/`) builds designs offline.
+Plan: [plans/modular-airship-builder.md](plans/modular-airship-builder.md).
+
 ## A Play session, end to end
 
 What happens between pressing Play and the first simulation tick.

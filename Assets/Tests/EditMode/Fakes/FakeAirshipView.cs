@@ -11,7 +11,7 @@ namespace TinCan.Tests.EditMode.Fakes
     /// Airship stand-in backed by a real GameObject so child fixtures (fuel tank, gauge) can be found the way
     /// production code finds them. Call Destroy() in TearDown.
     /// </summary>
-    public sealed class FakeAirshipView : IAirshipView, IShipState
+    public sealed class FakeAirshipView : IAirshipView, IShipState, IAirshipTuning
     {
         private readonly GameObject _gameObject;
 
@@ -41,6 +41,12 @@ namespace TinCan.Tests.EditMode.Fakes
         public Vector3 Velocity => Vector3.zero;
         public Vector3 PositionDelta => Vector3.zero;
         public Quaternion RotationDelta => Quaternion.identity;
+
+        /// <summary>The last base stats a ship design set (IAirshipTuning), or null.</summary>
+        public (float MaxForwardSpeed, float TurnSpeed, float MaxHealth)? BaseStats { get; private set; }
+
+        public void ServerSetBaseStats(float maxForwardSpeed, float turnSpeed, float maxHealth) =>
+            BaseStats = (maxForwardSpeed, turnSpeed, maxHealth);
 
         public void Destroy()
         {

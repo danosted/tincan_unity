@@ -44,6 +44,7 @@ namespace TinCan.Core.Input
             builder.Register<ScriptedInput>(Lifetime.Singleton).AsSelf().As<IScriptedInput>().As<ILateTickable>();
             builder.Register<InputSystemReader>(Lifetime.Singleton).AsSelf().As<IInputReader>().As<IInputActionSwitch>().As<IInitializable>();
             builder.Register<InputRebindState>(Lifetime.Singleton);
+            builder.Register<InputContextSwitch>(Lifetime.Singleton).As<IInputContextSwitch>();
             builder.Register<InputContextConditions>(Lifetime.Singleton).As<IInputContextConditions>();
             builder.Register<InputContextProcessor>(Lifetime.Transient);
             builder.Register<InputContextUseCase>(Lifetime.Singleton).As<IInputContexts>().As<IInitializable>().As<ITickable>();

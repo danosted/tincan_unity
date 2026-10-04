@@ -101,5 +101,32 @@ namespace TinCan.Tests.EditMode
             Assert.That(_conditions.Holds(menu), Is.True);
             Assert.That(_conditions.Holds(rebinding), Is.True);
         }
+
+        [Test]
+        public void WhileOpened_HoldsBetweenItsOwnerOpeningAndClosingIt()
+        {
+            var contextSwitch = new InputContextSwitch();
+            var conditions = new InputContextConditions(_possession, _menus, _rebinding, contextSwitch);
+            var mode = ScriptableObject.CreateInstance<InputContext>();
+            var other = ScriptableObject.CreateInstance<InputContext>();
+            mode.Configure(InputContextActivation.WhileOpened, 0);
+            other.Configure(InputContextActivation.WhileOpened, 0);
+            try
+            {
+                Assert.That(conditions.Holds(mode), Is.False);
+
+                contextSwitch.SetOpen(mode, true);
+                Assert.That(conditions.Holds(mode), Is.True);
+                Assert.That(conditions.Holds(other), Is.False);
+
+                contextSwitch.SetOpen(mode, false);
+                Assert.That(conditions.Holds(mode), Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(mode);
+                Object.DestroyImmediate(other);
+            }
+        }
     }
 }

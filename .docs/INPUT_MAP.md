@@ -14,6 +14,7 @@ silences it; an action outside every live context reads as released.
 | 1000 | Context_Rebinding | waiting for a key | everything below | (routes only) | core (InputConfig) |
 | 950 | Context_DevTools | always | - | (routes only) | NetTestHarnessFeatureInstaller |
 | 900 | Context_Menu | a menu is open | everything below | (routes only) | core (InputConfig) |
+| 500 | Context_Shipyard | WhileOpened | everything below | ShipyardUseCase | ShipyardFeatureInstaller |
 | 400 | Context_Gunner | possessed actor has State.Occupying.Cannon | Context_Humanoid, Context_Camera | GunnerAimUseCase | CannonFeatureInstaller |
 | 400 | Context_Helmsman | possessed actor has State.Occupying.Helm | Context_Humanoid | HelmInputUseCase | HelmFeatureInstaller |
 | 300 | Context_FreeCamera | possessing Other | - | FreeCameraMovementUseCase | FreeCameraFeatureInstaller |
@@ -49,6 +50,29 @@ A menu is open: everything below is silent; Cancel steps back.
 | Pressing | Runs | Handled by |
 |---|---|---|
 | Global/Cancel | Command_MenuBack | MenuBackInputHandler |
+
+### Context_Shipyard
+
+The shipyard is open (contributed by its installer): build with the mouse, everything below is silent; Cancel opens the shipyard menu. Read by ShipyardUseCase.
+
+| Action | Default keys | Meaning | Rebindable |
+|---|---|---|---|
+| Shipyard/Point | `mouse position` | Where the cursor points in the shipyard. | no |
+| Shipyard/Orbit | `mouse delta` | Turn the shipyard camera while Orbit is held. | no |
+| Shipyard/OrbitHold | `mouse middleButton` | Hold to orbit the shipyard camera around the ship. | yes |
+| Shipyard/Zoom | `mouse scroll/y` | Zoom the shipyard camera. | no |
+| Shipyard/Place | `mouse leftButton` | Place the selected part where the cursor points. | yes |
+| Shipyard/Remove | `mouse rightButton` | Remove the part under the cursor. | yes |
+| Shipyard/Rotate | `r` | Turn the selected part a quarter turn. | yes |
+| Shipyard/NextPart | `e` | Select the next part. | yes |
+| Shipyard/PreviousPart | `q` | Select the previous part. | yes |
+| Shipyard/Undo | `ctrl` / `z` | Undo the last change to the design. | yes |
+| Shipyard/Redo | `ctrl` / `y` | Redo the change just undone. | yes |
+| Global/Cancel | `escape` | Back out: close the menu, or open the main menu. | yes |
+
+| Pressing | Runs | Handled by |
+|---|---|---|
+| Global/Cancel | Command_OpenShipyardMenu | ShipyardMenuInputHandler |
 
 ### Context_Gunner
 

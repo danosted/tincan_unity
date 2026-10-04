@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f054790d1b959a448b9f151402a98236, type: 3}
+  m_Name: Context_Shipyard
+  m_EditorClassIdentifier: TinCan.Features.Shipyard::TinCan.Features.Shipyard.ShipyardInputContext
+  _description: 'The shipyard is open (contributed by its installer): build with
+    the mouse, everything below is silent; Cancel opens the shipyard menu. Read by
+    ShipyardUseCase.'
+  _activation: 5
+  _possessedKind: 0
+  _tag: {fileID: 0}
+  _priority: 500
+  _blocksAllLower: 1
+  _blocks: []
+  _actions: []
+  _routes:
+  - Action: {fileID: 11400000, guid: d4c2589aa24d2d849be5e35a6b405ca8, type: 2}
+    Command: {fileID: 11400000, guid: 783a1d96ea4c25f4aa8ad9e2d19923b4, type: 2}
+  Point: {fileID: 11400000, guid: 280f952d92da3754fba1781991eb1768, type: 2}
+  Orbit: {fileID: 11400000, guid: 96a57e2538720a442a14b18c4f8b2c9f, type: 2}
+  OrbitHold: {fileID: 11400000, guid: dc2687cc89db6b34d9bd2b70b49ad6cf, type: 2}
+  Zoom: {fileID: 11400000, guid: b56a4dcffa5dddf4e98a032168dc59b3, type: 2}
+  Place: {fileID: 11400000, guid: af0329952f30a9848b885c4ce7dec420, type: 2}
+  Remove: {fileID: 11400000, guid: 849dfc528ba4c604ea1f798cb666c31b, type: 2}
+  Rotate: {fileID: 11400000, guid: 9702f40f66646304682db8c1120aa981, type: 2}
+  NextPart: {fileID: 11400000, guid: 69ab7f5f2cb32014b87b76840115aa5a, type: 2}
+  PreviousPart: {fileID: 11400000, guid: f6514e4c98282f34aa80405b10f81a29, type: 2}
+  Undo: {fileID: 11400000, guid: 41044afcae123044781b5978a4aa248c, type: 2}
+  Redo: {fileID: 11400000, guid: 0b74351fbe248454898932d69f8b6a43, type: 2}

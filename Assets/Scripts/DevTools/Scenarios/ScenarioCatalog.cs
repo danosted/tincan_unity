@@ -644,7 +644,88 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<TargetOutlineScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam };
+        public static readonly ScenarioEntry DesignedShipFlies = new(
+            new Scenario.Builder("DesignedShipFlies")
+                .InScene(TestScenes.Shipyard)
+                .Describe("The host builds the ship from the starter design, every peer builds the same -> stand on its deck -> take its helm (placed by the design) -> ship moves and turns -> Leave -> still on the ship.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("ShipDesignBuilt", 20f, "88")
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("PlaceSubjectAtHelm"))
+                .Act(s => s
+                    .WaitUntil("ShipDesignBuilt", 20f, "87")
+                    .WaitUntil("ShipTopSpeed", 10f, "15.36")
+                    .WaitUntil("SubjectOnShip", 45f)
+                    .WaitUntil("SubjectAtHelm", 5f)
+                    .Wait(0.5f, "teleport settles")
+                    .Checkpoint("on-deck")
+                    .Do("FaceHelm")
+                    .WaitUntil("InteractTargetIs", 5f, "HelmStation")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Helm")
+                    .WaitUntil("HelmManned", 5f)
+                    .Wait(1f, "the server records the ship's pose")
+                    .Hold(4f, ScriptedAction.ShipThrottleUp, ScriptedAction.ShipTurnRight)
+                    .Expect("SubjectOnHelmSeat")
+                    .Checkpoint("steered")
+                    .Hold(0.3f, ScriptedAction.HelmLeave)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Helm")
+                    .Wait(1f, "the body settles on the deck")
+                    .Expect("SubjectOnShip"))
+                .Assert(s => s
+                    .WaitUntil("HelmManned", 60f)
+                    .Do("RecordShipPose")
+                    .WaitUntil("ShipMoved", 20f, "3")
+                    .WaitUntil("ShipTurned", 10f, "3")
+                    .WaitUntil("HelmFree", 30f)
+                    .Expect("ShipTopSpeed", "15.36")
+                    .Expect("ShipDesignBuilt", "88"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<HelmScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        public static readonly ScenarioEntry ShipyardRoundTrip = new(
+            new Scenario.Builder("ShipyardRoundTrip")
+                .InScene(TestScenes.Shipyard)
+                .Describe("The host opens the shipyard on the starter, adds two blocks, saves, starts a new ship, loads the saved one back, launches it -> every peer rebuilds the ship in play from it.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("ShipDesignBuilt", 20f, "88")
+                    .Do("ShipyardOpen")
+                    .Expect("ShipyardParts", "88")
+                    .Do("ShipyardPlace", "hull.block 3 0 0")
+                    .Do("ShipyardPlace", "hull.block -3 0 0")
+                    .Expect("ShipyardParts", "90")
+                    .Wait(0.5f, "the preview renders")
+                    .Checkpoint("shipyard")
+                    .Wait(0.5f, "the screenshot is taken at the end of a frame")
+                    .Do("ShipyardSave", "Scenario Ship")
+                    .Do("ShipyardNew")
+                    .Expect("ShipyardParts", "29")
+                    .Do("ShipyardLoad", "Scenario Ship")
+                    .Expect("ShipyardParts", "90")
+                    .Do("ShipyardLaunch")
+                    .Do("ShipyardForget", "Scenario Ship"))
+                .Act(s => s
+                    .WaitUntil("ShipDesignBuilt", 30f, "89")
+                    .Checkpoint("rebuilt"))
+                .Assert(s => s
+                    .WaitUntil("ShipDesignBuilt", 30f, "90"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipyardScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

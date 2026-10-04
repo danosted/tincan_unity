@@ -14,6 +14,7 @@ using TinCan.Core.UI;
 using TinCan.Core.UI.Commands;
 using TinCan.Features.FreeCamera;
 using TinCan.Features.Helm;
+using TinCan.Features.Shipyard;
 using TinCan.Features.Weapons.Cannon;
 using UnityEditor;
 using UnityEngine;
@@ -62,6 +63,17 @@ namespace TinCan.DevTools.Editor
             ["Gunner/Leave"] = ("Leave Cannon", "Step away from the cannon.", true),
             ["FreeCamera/Move"] = ("Fly", "Fly the free camera (spectator, a dev tool: not in the Controls menu).", false),
             ["DevTools/ToggleNetOverlay"] = ("Net Overlay", "Show or hide the net harness readout.", false),
+            ["Shipyard/Point"] = ("Shipyard Cursor", "Where the cursor points in the shipyard.", false),
+            ["Shipyard/Orbit"] = ("Shipyard Orbit", "Turn the shipyard camera while Orbit is held.", false),
+            ["Shipyard/OrbitHold"] = ("Orbit Camera", "Hold to orbit the shipyard camera around the ship.", true),
+            ["Shipyard/Zoom"] = ("Shipyard Zoom", "Zoom the shipyard camera.", false),
+            ["Shipyard/Place"] = ("Place Part", "Place the selected part where the cursor points.", true),
+            ["Shipyard/Remove"] = ("Remove Part", "Remove the part under the cursor.", true),
+            ["Shipyard/Rotate"] = ("Turn Part", "Turn the selected part a quarter turn.", true),
+            ["Shipyard/NextPart"] = ("Next Part", "Select the next part.", true),
+            ["Shipyard/PreviousPart"] = ("Previous Part", "Select the previous part.", true),
+            ["Shipyard/Undo"] = ("Undo", "Undo the last change to the design.", true),
+            ["Shipyard/Redo"] = ("Redo", "Redo the change just undone.", true),
         };
 
         [MenuItem("TinCan/Dev/Input/Build Assets")]
@@ -79,6 +91,7 @@ namespace TinCan.DevTools.Editor
             var switchPossession = Command<SwitchPossessionCommand>("Command_SwitchPossession", "Control the next thing you may control.");
             var toggleCursor = Command<ToggleCursorCommand>("Command_ToggleCursor", "Free or recapture the cursor while flying the free camera.");
             var toggleOverlay = Command<ToggleNetOverlayCommand>("Command_ToggleNetOverlay", "Show or hide the net harness readout.");
+            var shipyardMenu = Command<OpenShipyardMenuCommand>("Command_OpenShipyardMenu", "Open the shipyard menu: save, load, new, launch, exit.");
 
             // Contexts (priority: higher sees an action first)
             var global = Context<GlobalInputContext>("Context_Global", c =>
@@ -147,6 +160,23 @@ namespace TinCan.DevTools.Editor
                 c.SetContents(None(), NoActions(), new[] { new InputRoute(Id("DevTools/ToggleNetOverlay"), toggleOverlay) },
                     "Only while the net harness runs (contributed by its installer): F3 toggles the readout.");
             });
+            var shipyard = Context<ShipyardInputContext>("Context_Shipyard", c =>
+            {
+                c.Point = Id("Shipyard/Point");
+                c.Orbit = Id("Shipyard/Orbit");
+                c.OrbitHold = Id("Shipyard/OrbitHold");
+                c.Zoom = Id("Shipyard/Zoom");
+                c.Place = Id("Shipyard/Place");
+                c.Remove = Id("Shipyard/Remove");
+                c.Rotate = Id("Shipyard/Rotate");
+                c.NextPart = Id("Shipyard/NextPart");
+                c.PreviousPart = Id("Shipyard/PreviousPart");
+                c.Undo = Id("Shipyard/Undo");
+                c.Redo = Id("Shipyard/Redo");
+                c.Configure(InputContextActivation.WhileOpened, 500, blocksAllLower: true);
+                c.SetContents(None(), NoActions(), new[] { new InputRoute(Id("Global/Cancel"), shipyardMenu) },
+                    "The shipyard is open (contributed by its installer): build with the mouse, everything below is silent; Cancel opens the shipyard menu. Read by ShipyardUseCase.");
+            });
             var rebinding = Context<InputContext>("Context_Rebinding", c =>
             {
                 c.Configure(InputContextActivation.WhileRebinding, 1000, blocksAllLower: true);
@@ -173,11 +203,13 @@ namespace TinCan.DevTools.Editor
             SetField(Load<Object>(Installers + "CannonFeatureInstaller.asset"), "_controls", gunner);
             SetField(Load<Object>(Installers + "HelmFeatureInstaller.asset"), "_controls", helmsman);
             SetField(Load<Object>(Installers + "NetTestHarnessFeatureInstaller.asset"), "_controls", devTools);
+            var shipyardInstaller = AssetDatabase.LoadAssetAtPath<Object>(Installers + "ShipyardFeatureInstaller.asset");
+            if (shipyardInstaller != null) SetField(shipyardInstaller, "_controls", shipyard);
 
             BuildControlsMenu();
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[InputAssetBuilder] {ids.Count} actions, 9 contexts, 5 commands, 3 ability inputs and the Controls menu built.");
+            Debug.Log($"[InputAssetBuilder] {ids.Count} actions, 10 contexts, 6 commands, 3 ability inputs and the Controls menu built.");
         }
 
         /// <summary>Menu_Controls (one row per key, Reset, Back), reachable from Menu_Main's Controls row.</summary>

@@ -82,6 +82,18 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "HelmSteer (Host + Client, Lag100)")]
         public static void HelmSteerDuo() => RunDuo("HelmSteer", "Lag100");
 
+        [MenuItem(Root + "DesignedShipFlies (Host)")]
+        public static void DesignedShipFliesSolo() => RunSolo("DesignedShipFlies");
+
+        [MenuItem(Root + "DesignedShipFlies (Host + Client, Lag100)")]
+        public static void DesignedShipFliesDuo() => RunDuo("DesignedShipFlies", "Lag100");
+
+        [MenuItem(Root + "ShipyardRoundTrip (Host)")]
+        public static void ShipyardRoundTripSolo() => RunSolo("ShipyardRoundTrip");
+
+        [MenuItem(Root + "ShipyardRoundTrip (Host + Client, Lag100)")]
+        public static void ShipyardRoundTripDuo() => RunDuo("ShipyardRoundTrip", "Lag100");
+
         [MenuItem(Root + "IslandsPerVoyage (Host)")]
         public static void IslandsPerVoyageSolo() => RunSolo("IslandsPerVoyage");
 

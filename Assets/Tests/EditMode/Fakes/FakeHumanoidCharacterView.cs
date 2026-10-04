@@ -37,6 +37,8 @@ namespace TinCan.Tests.EditMode.Fakes
 
         public float WalkSpeed { get; set; } = 5f;
         public float SprintMultiplier { get; set; } = 1.5f;
+        public float Acceleration { get; set; } = 30f;
+        public float Deceleration { get; set; } = 20f;
         public float JumpForce { get; set; } = 8f;
         public float Gravity { get; set; } = 0f;
         public Quaternion LookRotation { get; set; } = Quaternion.identity;

@@ -351,8 +351,8 @@ namespace TinCan.Core.Humanoid
                 LocalHorizontalVelocity(character.Id),
                 localDirection,
                 targetSpeed,
-                30f, // Acceleration
-                20f, // Deceleration
+                movement.Acceleration,
+                movement.Deceleration,
                 deltaTime);
 
             // 2. Calculate Vertical Velocity (Jump & Gravity)

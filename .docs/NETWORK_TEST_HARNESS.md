@@ -102,8 +102,8 @@ the player stands on. Ship motion itself never counts as player motion. Results 
 
 | Field | Meaning | Physics floor |
 |---|---|---|
-| `start` | Move input on until the player visibly moves 2 cm. **The "sluggish" number.** | ~40 ms (acceleration), plus up to one tick |
-| `stop` | Move input off until speed visibly halves. | ~175 ms (deceleration) |
+| `start` | Move input on until the player visibly moves 2 cm. **The "sluggish" number.** | one tick: the first tick already moves ~8 cm (acceleration 75 m/s²), plus the wait for that tick (up to 33 ms) |
+| `stop` | Move input off until speed visibly halves. | ~50 ms from a walk (deceleration 75 m/s²), plus up to one tick |
 | `jump` | Jump pressed until the player visibly rises 5 cm. | about one tick |
 | `snaps` / `maxSnapM` | Frames where the **drawn** body (the interpolated `Visual`) moved faster than any legal motion: teleports, the spawn fall, and any correction or tick step the smoothing failed to hide. | 0 outside spawn and teleports |
 | `reversals` | Direction flips while input is steady: prediction fighting a correction. | 0 |
@@ -113,6 +113,11 @@ the player stands on. Ship motion itself never counts as player motion. Results 
 | `serverInputs` (host) | Per remote player: inputs received and consumed, `starved` ticks (no input: the last one repeated), `skipped` (queue overflow), queue depth. | starved ≈ 0 after connect, skipped 0, depth ~1–2 |
 
 Latency lines read `p50 / p95 / max (n=samples, timeouts)`. A timeout means no response within 2 s.
+
+The floors come from the player's tunables (`HumanoidControllerView` on `NetworkPlayer.prefab`: walk speed, acceleration,
+deceleration). `HumanoidMovementFeelTests` (EditMode) pins them in ticks: walking speed within 3, a stop within 3 from a
+walk and 6 from a sprint, a reversal within 6. Retune there first; in first person the whole view glides with the body,
+so gentle values feel sluggish (2026-10-04: 30/20 m/s² measured stop p95 ~550 ms; 75/75 measured ~117 ms).
 
 The host's own player is local, so its numbers are the floor. The client's numbers are what a remote player feels.
 

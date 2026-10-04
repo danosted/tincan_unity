@@ -14,6 +14,13 @@ namespace TinCan.Core.Humanoid
 
         float WalkSpeed { get; }
         float SprintMultiplier { get; }
+
+        /// <summary>Horizontal acceleration toward the input direction, m/s². Part of the predicted simulation: owner and server use the prefab's value.</summary>
+        float Acceleration { get; }
+
+        /// <summary>Horizontal deceleration with no move input, m/s²: how fast the body (and a first-person view) comes to rest.</summary>
+        float Deceleration { get; }
+
         float JumpForce { get; }
         float Gravity { get; }
 

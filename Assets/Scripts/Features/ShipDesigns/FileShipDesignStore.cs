@@ -50,15 +50,16 @@ namespace TinCan.Features.ShipDesigns
                 }
             }
 
-            return _builtIns.Keys.Where(k => !saved.Contains(k)).OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+            return _builtIns.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
                 .Select(k => new ShipDesignListing(k, true))
-                .Concat(saved.Select(k => new ShipDesignListing(k, false)))
+                .Concat(saved.Where(k => !_builtIns.ContainsKey(k)).Select(k => new ShipDesignListing(k, false)))
                 .ToList();
         }
 
         public ShipDesignDecodeResult Load(string key)
         {
             if (!ShipDesignKeys.IsValid(key)) return ShipDesignDecodeResult.Failed($"\"{key}\" is not a design name.");
+            if (_builtIns.TryGetValue(key, out var builtIn)) return _codec.Decode(builtIn);
 
             var path = PathOf(key);
             if (File.Exists(path))
@@ -75,9 +76,7 @@ namespace TinCan.Features.ShipDesigns
                 }
             }
 
-            return _builtIns.TryGetValue(key, out var text)
-                ? _codec.Decode(text)
-                : ShipDesignDecodeResult.Failed($"There is no design called {key}.");
+            return ShipDesignDecodeResult.Failed($"There is no design called {key}.");
         }
 
         public bool TrySave(string key, ShipDesign design, out string? error)
@@ -85,6 +84,12 @@ namespace TinCan.Features.ShipDesigns
             if (!ShipDesignKeys.IsValid(key))
             {
                 error = $"\"{key}\" is not a design name.";
+                return false;
+            }
+
+            if (_builtIns.ContainsKey(key))
+            {
+                error = $"{key} is a built-in design: save yours under another name.";
                 return false;
             }
 
@@ -109,7 +114,7 @@ namespace TinCan.Features.ShipDesigns
 
         public bool TryDelete(string key)
         {
-            if (!ShipDesignKeys.IsValid(key)) return false;
+            if (!ShipDesignKeys.IsValid(key) || _builtIns.ContainsKey(key)) return false;
 
             var path = PathOf(key);
             if (!File.Exists(path)) return false;

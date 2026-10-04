@@ -651,12 +651,12 @@ namespace TinCan.DevTools.Scenarios
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
-                    .WaitUntil("ShipDesignBuilt", 20f, "88")
+                    .WaitUntil("ShipDesignBuilt", 20f, "95")
                     .Wait(1.5f, "settle after spawn")
                     .Do("PlaceSubjectAtHelm"))
                 .Act(s => s
-                    .WaitUntil("ShipDesignBuilt", 20f, "87")
-                    .WaitUntil("ShipTopSpeed", 10f, "15.36")
+                    .WaitUntil("ShipDesignBuilt", 20f, "94")
+                    .WaitUntil("ShipTopSpeed", 10f, "14.22")
                     .WaitUntil("SubjectOnShip", 45f)
                     .WaitUntil("SubjectAtHelm", 5f)
                     .Wait(0.5f, "teleport settles")
@@ -680,8 +680,8 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("ShipMoved", 20f, "3")
                     .WaitUntil("ShipTurned", 10f, "3")
                     .WaitUntil("HelmFree", 30f)
-                    .Expect("ShipTopSpeed", "15.36")
-                    .Expect("ShipDesignBuilt", "88"))
+                    .Expect("ShipTopSpeed", "14.22")
+                    .Expect("ShipDesignBuilt", "95"))
                 .Build(),
             builder =>
             {
@@ -697,12 +697,12 @@ namespace TinCan.DevTools.Scenarios
                 .Timeout(90f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
-                    .WaitUntil("ShipDesignBuilt", 20f, "88")
+                    .WaitUntil("ShipDesignBuilt", 20f, "95")
                     .Do("ShipyardOpen")
-                    .Expect("ShipyardParts", "88")
+                    .Expect("ShipyardParts", "95")
                     .Do("ShipyardPlace", "hull.block 3 0 0")
                     .Do("ShipyardPlace", "hull.block -3 0 0")
-                    .Expect("ShipyardParts", "90")
+                    .Expect("ShipyardParts", "97")
                     .Wait(0.5f, "the preview renders")
                     .Checkpoint("shipyard")
                     .Wait(0.5f, "the screenshot is taken at the end of a frame")
@@ -710,14 +710,14 @@ namespace TinCan.DevTools.Scenarios
                     .Do("ShipyardNew")
                     .Expect("ShipyardParts", "29")
                     .Do("ShipyardLoad", "Scenario Ship")
-                    .Expect("ShipyardParts", "90")
+                    .Expect("ShipyardParts", "97")
                     .Do("ShipyardLaunch")
                     .Do("ShipyardForget", "Scenario Ship"))
                 .Act(s => s
-                    .WaitUntil("ShipDesignBuilt", 30f, "89")
+                    .WaitUntil("ShipDesignBuilt", 30f, "96")
                     .Checkpoint("rebuilt"))
                 .Assert(s => s
-                    .WaitUntil("ShipDesignBuilt", 30f, "90"))
+                    .WaitUntil("ShipDesignBuilt", 30f, "97"))
                 .Build(),
             builder =>
             {

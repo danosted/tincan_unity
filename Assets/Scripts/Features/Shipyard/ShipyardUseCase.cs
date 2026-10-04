@@ -46,6 +46,7 @@ namespace TinCan.Features.Shipyard
         private readonly INetworkService _network;
         private readonly IActorRegistry _actors;
         private readonly ShipyardAimProcessor _aim = new();
+        private readonly ShipyardSnapProcessor _snap = new();
         private ShipyardDocument? _document;
         private ShipDesign? _shown;
         private int _partIndex;
@@ -76,6 +77,9 @@ namespace TinCan.Features.Shipyard
         public ShipDesign? Design => _document?.Design;
         public ShipPartDefinition? SelectedPart => _catalog.Parts.Count > 0 ? _catalog.Parts[_partIndex % _catalog.Parts.Count] : null;
         public byte Orientation { get; private set; }
+
+        /// <summary>The height level new parts go on (PgUp/PgDn). 0 is the helm's level; the starter's deck is -1.</summary>
+        public int Level { get; private set; }
         public string Message { get; private set; } = string.Empty;
         public IReadOnlyList<ShipDesignListing> SavedDesigns => _store.List();
 
@@ -87,6 +91,7 @@ namespace TinCan.Features.Shipyard
             IsOpen = true;
             _contexts.SetOpen(_controls, true);
             _stage.Show();
+            _stage.ShowLevel(Level);
             _shown = null;
             Say($"Building \"{_document.Design.Name}\". Esc for the menu.");
             Refresh();
@@ -98,18 +103,36 @@ namespace TinCan.Features.Shipyard
 
             if (_input.IsPressed(_controls.OrbitHold)) _stage.Orbit(_input.ReadVector2(_controls.Orbit) * _config.OrbitSpeed);
             float zoom = _input.ReadAxis(_controls.Zoom);
-            if (zoom != 0f) _stage.Zoom(zoom * _config.ZoomSpeed);
+            if (zoom != 0f) _stage.Zoom(zoom * _config.ZoomStep);
 
             if (_input.WasPressedThisFrame(_controls.NextPart)) Cycle(1);
             if (_input.WasPressedThisFrame(_controls.PreviousPart)) Cycle(-1);
             if (_input.WasPressedThisFrame(_controls.Rotate)) Rotate();
             if (_input.WasPressedThisFrame(_controls.Undo)) Undo();
             if (_input.WasPressedThisFrame(_controls.Redo)) Redo();
+            if (_input.WasPressedThisFrame(_controls.LevelUp)) ChangeLevel(1);
+            if (_input.WasPressedThisFrame(_controls.LevelDown)) ChangeLevel(-1);
+            if (_input.WasPressedThisFrame(_controls.DeleteMode)) ToggleDeleteMode();
 
-            _aimed = _aim.Aim(_stage.CursorRay(_input.ReadVector2(_controls.Point)));
-            if (_input.WasPressedThisFrame(_controls.Place) && _aimed.IsValid) PlaceAt(_aimed.PlaceCell);
-            if (_input.WasPressedThisFrame(_controls.Remove) && _aimed.PartCell is { } partCell) RemoveAt(partCell);
+            _aimed = _aim.Aim(_stage.CursorRay(_input.ReadVector2(_controls.Point)), Level);
+            if (_input.WasPressedThisFrame(_controls.Place)) Act();
 
+            Refresh();
+        }
+
+        public bool DeleteMode { get; private set; }
+
+        public void ToggleDeleteMode()
+        {
+            DeleteMode = !DeleteMode;
+            Say(DeleteMode ? "Delete mode: click a highlighted part to delete it. X to build again." : "Build mode.");
+            Refresh();
+        }
+
+        public void ChangeLevel(int delta)
+        {
+            Level = Mathf.Clamp(Level + delta, -_designs.Limits.MaxExtent, _designs.Limits.MaxExtent);
+            _stage.ShowLevel(Level);
             Refresh();
         }
 
@@ -131,6 +154,14 @@ namespace TinCan.Features.Shipyard
         {
             var part = SelectedPart;
             if (_document == null || part == null) return false;
+
+            var taken = ShipPartFootprints.Occupancy(_document.Design, _catalog);
+            if (taken.Count > 0 && !ShipyardSnapProcessor.Attaches(taken, ShipPartFootprints.CellsOf(cell, Orientation, part).ToList()))
+            {
+                Say($"{cell} does not touch the ship: parts are built onto it, never floating.");
+                Refresh();
+                return false;
+            }
 
             var result = _document.Apply(ShipDesignEdit.Place(part.PartId, cell, Orientation));
             if (!result.Applied) Say(result.Refusal!);
@@ -268,10 +299,16 @@ namespace TinCan.Features.Shipyard
             }
 
             var part = SelectedPart;
-            if (part != null && _aimed.IsValid)
+            if (DeleteMode)
             {
-                bool fits = _document.Try(ShipDesignEdit.Place(part.PartId, _aimed.PlaceCell, Orientation)).Applied;
-                _stage.ShowGhost(part, _aimed.PlaceCell, Orientation, fits);
+                if (Hovered(out var hovered, out var hoveredPart)) _stage.ShowHighlight(hoveredPart, hovered);
+                else _stage.HideGhost();
+            }
+            else if (part != null && _aimed.IsValid)
+            {
+                bool attached = Target(out var cell);
+                bool fits = attached && _document.Try(ShipDesignEdit.Place(part.PartId, cell, Orientation)).Applied;
+                _stage.ShowGhost(part, cell, Orientation, fits);
             }
             else
             {
@@ -281,10 +318,43 @@ namespace TinCan.Features.Shipyard
             _hud.Set(HudTitle, $"{design.Name}{(_document.IsDirty ? " *" : string.Empty)}: {design.Parts.Count} parts, {Problems(design)}");
             _hud.Set(HudPart, part == null
                 ? "no parts loaded"
-                : $"{part.DisplayName} ({_partIndex % _catalog.Parts.Count + 1}/{_catalog.Parts.Count}), turned {Orientation % 4 * 90} deg");
+                : $"{part.DisplayName} ({_partIndex % _catalog.Parts.Count + 1}/{_catalog.Parts.Count}), turned {Orientation % 4 * 90} deg, level {Level}{(DeleteMode ? ", DELETE MODE" : string.Empty)}");
             _hud.Set(HudFlight, _stats.Compute(design, _catalog, _designs.Flight).ToString());
-            _hud.Set(HudControls, "LMB place, RMB remove, Q/E part, R turn, MMB drag orbit, wheel zoom, Ctrl+Z/Y undo/redo, Esc menu");
+            _hud.Set(HudControls, "LMB place (or delete), X delete mode, Q/E part, R turn, PgUp/PgDn level, RMB/MMB drag orbit, wheel zoom, Ctrl+Z/Y undo/redo, Esc menu");
             _hud.Set(HudMessage, Message);
+        }
+
+        /// <summary>A click: delete the part under the cursor in delete mode, else place the selected part.</summary>
+        private void Act()
+        {
+            if (DeleteMode)
+            {
+                if (_aimed.PartCell is { } partCell) RemoveAt(partCell);
+                return;
+            }
+
+            if (!_aimed.IsValid) return;
+            if (Target(out var cell)) PlaceAt(cell);
+            else Say("Parts are built onto the ship: aim next to it, or change level with PgUp/PgDn.");
+        }
+
+        /// <summary>The part under the cursor, if any.</summary>
+        private bool Hovered(out ShipPartPlacement placement, out ShipPartDefinition part)
+        {
+            placement = null!;
+            part = null!;
+            if (_document == null || _aimed.PartCell is not { } cell) return false;
+            if (!ShipPartFootprints.Occupancy(_document.Design, _catalog).TryGetValue(cell, out var instanceId)) return false;
+            return _document.Design.TryGetPart(instanceId, out placement) && _catalog.TryGet(placement.PartId, out part);
+        }
+
+        /// <summary>Where the selected part would go: the aimed cell, or the nearest spot that touches the ship.</summary>
+        private bool Target(out ShipGridCell cell)
+        {
+            var part = SelectedPart;
+            cell = _aimed.PlaceCell;
+            return _document != null && part != null && _aimed.IsValid
+                   && _snap.TrySnap(_document.Design, _catalog, part, Orientation, _aimed.PlaceCell, out cell);
         }
 
         private string Problems(ShipDesign design)

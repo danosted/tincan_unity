@@ -23,7 +23,13 @@ namespace TinCan.Features.Shipyard
         /// <summary>The cursor's ray in preview space, and the built part it hits.</summary>
         ShipyardRay CursorRay(Vector2 screenPoint);
 
+        /// <summary>Draws the working level's floor (a see-through grid) at that height.</summary>
+        void ShowLevel(int level);
+
         void ShowGhost(ShipPartDefinition part, ShipGridCell cell, byte orientation, bool valid);
+
+        /// <summary>Marks a placed part for deletion: drawn over it in the blocked colour. Hidden by <see cref="HideGhost"/>.</summary>
+        void ShowHighlight(ShipPartDefinition part, ShipPartPlacement placement);
 
         void HideGhost();
 

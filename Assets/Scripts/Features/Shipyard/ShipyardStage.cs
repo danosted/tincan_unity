@@ -9,7 +9,7 @@ namespace TinCan.Features.Shipyard
 {
     /// <summary>
     /// The shipyard's scene objects, made on Show and destroyed on Hide: a root at <see cref="ShipyardConfig.StageOrigin"/>,
-    /// the preview ship (built by the same <see cref="ShipHullAssembler"/> as ships in play), a build floor, the ghost of
+    /// the preview ship (built by the same <see cref="ShipHullAssembler"/> as ships in play), a see-through floor at the working level, the ghost of
     /// the part about to be placed, and an orbit camera around the ship.
     /// </summary>
     public sealed class ShipyardStage : IShipyardStage, IDisposable
@@ -21,6 +21,7 @@ namespace TinCan.Features.Shipyard
         private readonly IShipPartCatalog _catalog;
         private GameObject? _root;
         private Transform? _preview;
+        private Transform? _floor;
         private Camera? _camera;
         private ShipHullAssembler? _assembler;
         private GameObject? _ghost;
@@ -55,7 +56,8 @@ namespace TinCan.Features.Shipyard
             floor.name = "BuildFloor";
             Object.Destroy(floor.GetComponent<Collider>());
             floor.transform.SetParent(_root.transform, false);
-            floor.transform.localPosition = new Vector3(0f, ShipyardAimProcessor.FloorY - 0.01f, 0f);
+            floor.transform.localPosition = new Vector3(0f, ShipyardAimProcessor.FloorY(0) - 0.01f, 0f);
+            _floor = floor.transform;
             floor.transform.localScale = Vector3.one * (_config.FloorSize / 10f);
             if (_config.FloorMaterial != null) floor.GetComponent<MeshRenderer>().sharedMaterial = _config.FloorMaterial;
 
@@ -73,6 +75,7 @@ namespace TinCan.Features.Shipyard
             if (_root != null) Object.Destroy(_root);
             _root = null;
             _preview = null;
+            _floor = null;
             _camera = null;
             _ghost = null;
             _ghostPart = null;
@@ -110,7 +113,21 @@ namespace TinCan.Features.Shipyard
                 : new ShipyardRay(origin, direction);
         }
 
-        public void ShowGhost(ShipPartDefinition part, ShipGridCell cell, byte orientation, bool valid)
+        public void ShowLevel(int level)
+        {
+            if (_floor == null) return;
+            // Just under the level's floor, so parts standing on it are drawn over the grid.
+            _floor.localPosition = new Vector3(0f, ShipyardAimProcessor.FloorY(level) - 0.01f, 0f);
+        }
+
+        public void ShowGhost(ShipPartDefinition part, ShipGridCell cell, byte orientation, bool valid) =>
+            ShowCopy(part, cell, orientation, valid ? _config.GhostValid : _config.GhostBlocked, 1f);
+
+        public void ShowHighlight(ShipPartDefinition part, ShipPartPlacement placement) =>
+            ShowCopy(part, placement.Cell, placement.Orientation, _config.GhostBlocked, _config.HighlightScale);
+
+        /// <summary>The ghost: a see-through copy of the part at a cell, in a colour, a little bigger to show over a part.</summary>
+        private void ShowCopy(ShipPartDefinition part, ShipGridCell cell, byte orientation, Color colour, float scale)
         {
             if (_preview == null || _config.GhostMaterial == null) return;
 
@@ -133,9 +150,9 @@ namespace TinCan.Features.Shipyard
 
             var placement = new ShipPartPlacement(0, part.PartId, cell, orientation);
             _ghost.transform.SetLocalPositionAndRotation(ShipPartPose.LocalPosition(placement, part), ShipPartPose.LocalRotation(placement));
+            _ghost.transform.localScale = Vector3.one * scale;
             _ghost.SetActive(true);
 
-            var colour = valid ? _config.GhostValid : _config.GhostBlocked;
             _tint!.SetColor(BaseColor, colour);
             _tint.SetColor(Color, colour);
             foreach (var renderer in _ghost.GetComponentsInChildren<Renderer>(true)) renderer.SetPropertyBlock(_tint);

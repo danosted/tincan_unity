@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "name": "Starter",
   "author": "TinCan",
-  "nextPartInstanceId": 89,
+  "nextPartInstanceId": 96,
   "parts": [
     {"id":1,"part":"hull.deck","cell":[-2,-1,-4],"rot":0},
     {"id":2,"part":"hull.deck","cell":[-2,-1,-3],"rot":0},
@@ -90,7 +90,14 @@
     {"id":84,"part":"hull.block","cell":[2,0,4],"rot":0},
     {"id":85,"part":"core.helm","cell":[0,0,0],"rot":0},
     {"id":86,"part":"prop.engine","cell":[0,-1,-5],"rot":0},
-    {"id":87,"part":"lift.balloon","cell":[-4,-1,2],"rot":0},
-    {"id":88,"part":"lift.balloon","cell":[4,-1,2],"rot":0}
+    {"id":87,"part":"hull.mast","cell":[-2,1,-2],"rot":0},
+    {"id":88,"part":"hull.mast","cell":[-2,2,-2],"rot":0},
+    {"id":89,"part":"hull.mast","cell":[-2,1,2],"rot":0},
+    {"id":90,"part":"hull.mast","cell":[-2,2,2],"rot":0},
+    {"id":91,"part":"hull.mast","cell":[2,1,-2],"rot":0},
+    {"id":92,"part":"hull.mast","cell":[2,2,-2],"rot":0},
+    {"id":93,"part":"hull.mast","cell":[2,1,2],"rot":0},
+    {"id":94,"part":"hull.mast","cell":[2,2,2],"rot":0},
+    {"id":95,"part":"lift.envelope","cell":[0,3,0],"rot":0}
   ]
 }

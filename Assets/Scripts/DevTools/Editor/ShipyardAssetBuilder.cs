@@ -21,7 +21,8 @@ namespace TinCan.DevTools.Editor
     {
         private const string ConfigPath = "Assets/Settings/Shipyard/ShipyardConfig.asset";
         private const string GhostPath = "Assets/Materials/Shipyard/M_ShipyardGhost.mat";
-        private const string FloorPath = "Assets/Materials/Shipyard/M_ShipyardFloor.mat";
+        private const string FloorPath = "Assets/Materials/Shipyard/M_ShipyardLevel.mat";
+        private const string OldFloorPath = "Assets/Materials/Shipyard/M_ShipyardFloor.mat";
         private const string MenuPath = "Assets/UI/Menus/Menu_Shipyard.asset";
         private const string InstallerPath = "Assets/Resources/Installers/ShipyardFeatureInstaller.asset";
 
@@ -29,7 +30,9 @@ namespace TinCan.DevTools.Editor
         public static void Build()
         {
             var ghost = Material(GhostPath, new Color(1f, 1f, 1f, 0.45f), transparent: true);
-            var floor = Material(FloorPath, new Color(0.16f, 0.22f, 0.3f, 1f), transparent: false);
+            // The working level's floor: see-through, so the parts below it still show.
+            var floor = Material(FloorPath, new Color(0.35f, 0.65f, 1f, 0.18f), transparent: true);
+            if (AssetDatabase.LoadAssetAtPath<Material>(OldFloorPath) != null) AssetDatabase.DeleteAsset(OldFloorPath);
             var menu = Menu();
 
             var config = Asset<ShipyardConfig>(ConfigPath, c =>

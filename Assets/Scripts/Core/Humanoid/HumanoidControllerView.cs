@@ -14,6 +14,10 @@ namespace TinCan.Core.Humanoid
         [Header("Movement Settings")]
         [SerializeField] private float _walkSpeed = 7f;
         [SerializeField] private float _sprintMultiplier = 1.8f;
+        [Tooltip("Horizontal acceleration toward the move input, m/s². High enough to feel immediate in first person: walking speed in about 3 ticks (HumanoidMovementFeelTests).")]
+        [SerializeField] private float _acceleration = 75f;
+        [Tooltip("Horizontal deceleration with no move input, m/s². A first-person view should stop when the keys are released, not glide.")]
+        [SerializeField] private float _deceleration = 75f;
         [SerializeField] private float _jumpForce = 8f;
         [SerializeField] private float _gravity = 20f;
         [Tooltip("Eye height above the body root (the capsule centre, not the feet). Targeting aims from here.")]
@@ -43,6 +47,8 @@ namespace TinCan.Core.Humanoid
         public bool IsGrounded => _controller.isGrounded;
         public float WalkSpeed => _walkSpeed;
         public float SprintMultiplier => _sprintMultiplier;
+        public float Acceleration => _acceleration;
+        public float Deceleration => _deceleration;
         public float JumpForce => _jumpForce;
         public float Gravity => _gravity;
 

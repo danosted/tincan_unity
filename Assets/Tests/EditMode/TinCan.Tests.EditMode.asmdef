@@ -33,6 +33,8 @@
         "TinCan.Features.Voyage",
         "TinCan.Features.SkyIslands",
         "TinCan.Features.Boarding",
+        "TinCan.Features.ShipDesigns",
+        "TinCan.Features.Shipyard",
         "TinCan.DevTools",
         "TinCan.DevTools.Editor",
         "TinCan.Tests.Shared",
@@ -48,7 +50,8 @@
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "nunit.framework.dll"
+        "nunit.framework.dll",
+        "Newtonsoft.Json.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [

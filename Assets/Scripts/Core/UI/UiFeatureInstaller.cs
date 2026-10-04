@@ -37,7 +37,8 @@ namespace TinCan.Core.UI
                 return;
             }
 
-            builder.RegisterInstance(_mainMenu);
+            var authored = _mainMenu;
+            builder.Register(resolver => MainMenuComposition.Compose(authored, resolver.ResolveOrDefault<FeatureInstallerCatalog>()?.Installers), Lifetime.Singleton);
             builder.Register<MainMenuBootstrap>(Lifetime.Singleton).As<IInitializable>().As<ITickable>();
 
             // Cancel, routed by the Menu and Global input contexts.

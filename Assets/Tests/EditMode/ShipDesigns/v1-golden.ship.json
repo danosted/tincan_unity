@@ -1,0 +1,12 @@
+{
+  "formatVersion": 1,
+  "name": "Golden",
+  "author": "Tests",
+  "nextPartInstanceId": 6,
+  "parts": [
+    {"id":1,"part":"core.helm","cell":[0,1,0],"rot":0},
+    {"id":2,"part":"hull.beam","cell":[-1,0,0],"rot":0},
+    {"id":4,"part":"hull.block","cell":[0,0,-1],"rot":3},
+    {"id":5,"part":"hull.block","cell":[0,0,1],"rot":1}
+  ]
+}

@@ -23,6 +23,8 @@
         "TinCan.Features.DesignedEvents",
         "TinCan.Features.Voyage",
         "TinCan.Features.SkyIslands",
+        "TinCan.Features.ShipDesigns",
+        "TinCan.Features.Shipyard",
         "TinCan.Features.Boarding",
         "TinCan.UI",
         "Unity.Netcode.Runtime",

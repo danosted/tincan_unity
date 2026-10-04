@@ -23,6 +23,12 @@ namespace TinCan.DevTools.Editor
         private const string TestShipPrefab = "Assets/Prefabs/Test/TestShip_Prefab.prefab";
         private const string GroundMaterial = "Assets/Prefabs/Test/TestRange_Rail.mat";
 
+        /// <summary>Areas whose ship is not the test ship: designed ships are built on a bare ship root.</summary>
+        private static readonly System.Collections.Generic.Dictionary<string, string> ShipPrefabs = new()
+        {
+            [TestScenes.Shipyard] = ShipDesignsAssetBuilder.ModularShipPath,
+        };
+
         /// <summary>Each test-range scene and the feature profile its scope loads.</summary>
         public static readonly (string Scene, string Profile)[] Areas =
         {
@@ -31,7 +37,8 @@ namespace TinCan.DevTools.Editor
             (TestScenes.NetCatch, "Profile_Test_NetCatch"),
             (TestScenes.Cannon, "Profile_Test_Cannon"),
             (TestScenes.Voyage, "Profile_Test_Voyage"),
-            (TestScenes.Helm, "Profile_Test_Helm")
+            (TestScenes.Helm, "Profile_Test_Helm"),
+            (TestScenes.Shipyard, "Profile_Test_Shipyard")
         };
 
         [MenuItem("TinCan/Dev/Test Range/Rebuild Scenes")]
@@ -57,6 +64,16 @@ namespace TinCan.DevTools.Editor
             Debug.Log($"[TestRange] Rebuilt {Areas.Length} scene(s): {string.Join(", ", Areas.Select(area => area.Scene))}.");
         }
 
+        /// <summary>Builds one area scene only (the others stay untouched), for a new area.</summary>
+        public static void BuildArea(string scenePath)
+        {
+            var area = Areas.Single(a => a.Scene == scenePath);
+            string returnTo = SceneManager.GetActiveScene().path;
+            Build(area.Scene, area.Profile);
+            AddToBuildList();
+            if (!string.IsNullOrEmpty(returnTo)) EditorSceneManager.OpenScene(returnTo, OpenSceneMode.Single);
+        }
+
         private static void Build(string scenePath, string profileName)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -66,7 +83,8 @@ namespace TinCan.DevTools.Editor
             var scope = (GameObject)PrefabUtility.InstantiatePrefab(Load<GameObject>(ScopePrefab), scene);
             var scopeComponent = scope.GetComponent("ProjectLifetimeScope");
             var fields = new SerializedObject(scopeComponent);
-            fields.FindProperty("_airshipPrefab").objectReferenceValue = Load<GameObject>(TestShipPrefab);
+            fields.FindProperty("_airshipPrefab").objectReferenceValue =
+                Load<GameObject>(ShipPrefabs.TryGetValue(scenePath, out var ship) ? ship : TestShipPrefab);
             fields.FindProperty("_featureProfile").objectReferenceValue = profile;
             fields.ApplyModifiedPropertiesWithoutUndo();
 

@@ -19,7 +19,7 @@ namespace TinCan.Network.Infrastructure
     [RequireComponent(typeof(AirshipControllerView))]
     [RequireComponent(typeof(NetworkTransformMediator))]
     [RequireComponent(typeof(AbilityNetworkMediator))]
-    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, IShipState
+    public class AirshipNetworkMediator : NetworkMediator, IAirshipView, IShipState, IAirshipTuning
     {
         public override bool IsSimulating => IsSpawned && IsServer;
 
@@ -65,6 +65,15 @@ namespace TinCan.Network.Infrastructure
 
         public void ApplyMovement(Vector3 velocity, Vector3 angularVelocity) => _view.ApplyMovement(velocity, angularVelocity);
         public void Simulate(float deltaTime) => _view.Simulate(deltaTime);
+
+        /// <summary>Server: new base speed, turn rate and health (full), for a ship built from a design. Replicates as attributes.</summary>
+        public void ServerSetBaseStats(float maxForwardSpeed, float turnSpeed, float maxHealth)
+        {
+            if (!IsServer || _attributes == null || _health == null) return;
+
+            _attributes.InitializeBaseValues(maxForwardSpeed, turnSpeed);
+            _health.InitializeBaseValues(maxHealth);
+        }
 
         public override void OnNetworkSpawn()
         {

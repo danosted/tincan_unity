@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 072e02de54e2384468259316be63b614, type: 3}
+  m_Name: ShipDesignsFeatureInstaller
+  m_EditorClassIdentifier: TinCan.Features.ShipDesigns::TinCan.Features.ShipDesigns.ShipDesignsFeatureInstaller
+  _config: {fileID: 11400000, guid: 18041291d90d9bb4a99d998e00e7cb46, type: 2}
+  _parts:
+  - {fileID: 11400000, guid: 6bce5ef2fe888ac46b8458684c205783, type: 2}
+  - {fileID: 11400000, guid: 77e91c0ba9f8ff84ba08dc87d6e885b4, type: 2}
+  - {fileID: 11400000, guid: 40946c9f32866644d96e468a0b19e82c, type: 2}
+  - {fileID: 11400000, guid: 2e66971032f86ff48a616f7c8610f1ad, type: 2}
+  - {fileID: 11400000, guid: a7af6b36fa1cd224295f6a736b5b35ab, type: 2}
+  _stateFixture: {fileID: 11400000, guid: b49d87f299061b140bef706eb9114a4a, type: 2}

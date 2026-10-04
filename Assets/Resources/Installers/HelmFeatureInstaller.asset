@@ -14,4 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Features.Helm::TinCan.Features.Helm.HelmFeatureInstaller
   _helmFixtures:
   - {fileID: 11400000, guid: 0681496108a7a284590cad19a4e57b2b, type: 2}
+  _parts:
+  - {fileID: 11400000, guid: 41e077601e004c84ea4c972725aaf1af, type: 2}
   _controls: {fileID: 11400000, guid: 39cc795b4ed507a4faa09fd073a2c6e3, type: 2}

@@ -53,6 +53,9 @@ See [INPUT_MAP.md](INPUT_MAP.md) for the full table. In short, from the top:
 1. **Rebinding** silences everything while the Controls menu waits for a key.
 2. **Menu** silences everything below it; Cancel steps back.
 3. **DevTools** (only while the harness runs): F3 toggles the readout.
+   **Shipyard** (only while the shipyard is open: activation `WhileOpened`, which its owner switches through
+   `IInputContextSwitch`) silences everything below it. Building is read by `ShipyardUseCase`; Cancel opens the
+   shipyard menu.
 4. **Gunner** (the `State.Occupying.Cannon` tag) silences Humanoid and Camera. The mouse swings the barrel, the body holds
    still, and the aim reaches the server as `HumanoidInputState.StationAim` (`GunnerAimUseCase`).
    **Helmsman** (the `State.Occupying.Helm` tag, same priority; the two never hold together) silences Humanoid but not

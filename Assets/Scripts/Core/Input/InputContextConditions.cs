@@ -10,19 +10,23 @@ namespace TinCan.Core.Input
 {
     /// <summary>
     /// The facts contexts activate on, read from the systems that own them: what the local player possesses (and its
-    /// tags, replicated from the server), whether a menu is open, and whether the Controls menu waits for a key.
+    /// tags, replicated from the server), whether a menu is open, whether the Controls menu waits for a key, and which
+    /// contexts their owners opened.
     /// </summary>
     public sealed class InputContextConditions : IInputContextConditions
     {
         private readonly IPossessionState _possession;
         private readonly IMenuSystem _menus;
         private readonly InputRebindState _rebinding;
+        private readonly IInputContextSwitch _switch;
 
-        public InputContextConditions(IPossessionState possession, IMenuSystem menus, InputRebindState rebinding)
+        public InputContextConditions(IPossessionState possession, IMenuSystem menus, InputRebindState rebinding,
+            IInputContextSwitch? contextSwitch = null)
         {
             _possession = possession;
             _menus = menus;
             _rebinding = rebinding;
+            _switch = contextSwitch ?? new InputContextSwitch();
         }
 
         public bool Holds(InputContext context) => context.Activation switch
@@ -32,6 +36,7 @@ namespace TinCan.Core.Input
             InputContextActivation.WhilePossessedHasTag => context.Tag != null && Possessed() is IAbilityControllerBase controller && controller.HasTag(context.Tag),
             InputContextActivation.WhileMenuOpen => _menus.IsOpen,
             InputContextActivation.WhileRebinding => _rebinding.IsRebinding,
+            InputContextActivation.WhileOpened => _switch.IsOpen(context),
             _ => false,
         };
 

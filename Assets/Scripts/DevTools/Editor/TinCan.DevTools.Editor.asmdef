@@ -19,6 +19,8 @@
         "TinCan.Features.DesignedEvents",
         "TinCan.Features.Voyage",
         "TinCan.Features.SkyIslands",
+        "TinCan.Features.ShipDesigns",
+        "TinCan.Features.Shipyard",
         "TinCan.DevTools",
         "TinCan.Humanoid",
         "TinCan.Input",

@@ -1,0 +1,22 @@
+{
+    "name": "TinCan.Features.ShipDesigns",
+    "rootNamespace": "TinCan.Features.ShipDesigns",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Humanoid",
+        "TinCan.Ship",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

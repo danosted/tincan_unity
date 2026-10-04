@@ -113,6 +113,44 @@ namespace TinCan.Tests.EditMode
             Assert.That(_spawner.Calls.Count, Is.EqualTo(2));
         }
 
+        [Test]
+        public void Tick_SkipsAFixture_AFilterRefuses_AndSpawnsTheRest()
+        {
+            var other = new GameObject("OtherPrefab");
+            try
+            {
+                _catalog.Items.Add(Fixture(other, Vector3.zero, Vector3.zero));
+                var filter = new RefuseFilter(_catalog.Items[0]);
+                var filtered = new ShipFixtureSpawningUseCase(new FakeNetworkService(), _registry, _spawner, _catalog,
+                    new FakeEventPublisher(), new IShipFixtureFilter[] { filter });
+
+                filtered.Tick();
+
+                Assert.That(_spawner.Calls.Count, Is.EqualTo(1));
+                Assert.That(_spawner.Calls[0].Prefab, Is.SameAs(other));
+                Assert.That(filter.AskedAbout, Is.SameAs(_airship));
+            }
+            finally
+            {
+                Object.DestroyImmediate(other);
+            }
+        }
+
+        private sealed class RefuseFilter : IShipFixtureFilter
+        {
+            private readonly ShipFixtureDefinition _refused;
+
+            public RefuseFilter(ShipFixtureDefinition refused) => _refused = refused;
+
+            public object? AskedAbout { get; private set; }
+
+            public bool ShouldSpawn(TinCan.Core.Ship.IAirshipView airship, ShipFixtureDefinition fixture)
+            {
+                AskedAbout = airship;
+                return fixture != _refused;
+            }
+        }
+
         private ShipFixtureDefinition Fixture(GameObject? prefab, Vector3 position, Vector3 euler)
         {
             var definition = ScriptableObject.CreateInstance<ShipFixtureDefinition>();

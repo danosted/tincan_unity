@@ -14,5 +14,7 @@ namespace TinCan.Core.Domain.Input
         WhileMenuOpen = 3,
         /// <summary>The Controls menu is waiting for a key.</summary>
         WhileRebinding = 4,
+        /// <summary>The system that owns the context has opened it (<see cref="IInputContextSwitch"/>): a mode such as the shipyard.</summary>
+        WhileOpened = 5,
     }
 }

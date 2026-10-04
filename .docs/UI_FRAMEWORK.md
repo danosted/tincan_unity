@@ -83,6 +83,9 @@ builder.Register<OpenSettingsMenuCommand>(Lifetime.Singleton).As<IMenuCommand>()
 
 Existing commands: `StartHost`, `JoinGame`, `Quit` (`Assets/Scripts/Core/UI/Commands/`).
 
+**A feature can add main-menu rows.** Its installer implements `IMainMenuRows` (`Core/UI/IMainMenuRows.cs`); the rows go
+before Quit, only in scenes that load the feature (`MainMenuComposition`). The shipyard adds "Shipyard" this way.
+
 ## Adding a menu
 
 1. Create the `MenuDefinition` asset and fill in rows.

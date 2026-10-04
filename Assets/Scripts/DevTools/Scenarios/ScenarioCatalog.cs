@@ -310,6 +310,7 @@ namespace TinCan.DevTools.Scenarios
                     .Wait(0.5f, "teleport settles")
                     .Do("FaceObject", "RepairToolRack")
                     .WaitUntil("InteractTargetIs", 5f, "RepairToolRack")
+                    .WaitUntil("TargetOutlined", 2f, "RepairToolRack")
                     .Checkpoint("facing-rack")
                     .Hold(0.3f, ScriptedAction.Interact)
                     .WaitUntil("SubjectHolds", 5f, "ITEM_RepairTool")
@@ -325,6 +326,7 @@ namespace TinCan.DevTools.Scenarios
             {
                 builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
                 builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetOutlineScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
         /// <summary>
@@ -390,6 +392,8 @@ namespace TinCan.DevTools.Scenarios
                     .Wait(0.5f, "teleport settles")
                     .Do("FaceCannon")
                     .WaitUntil("InteractTargetIs", 5f, "CannonStation")
+                    .WaitUntil("TargetOutlined", 2f, "CannonStation")
+                    .Checkpoint("facing-cannon")
                     .Hold(0.3f, ScriptedAction.Interact)
                     .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Cannon")
                     .WaitUntil("CannonManned", 5f)
@@ -417,6 +421,7 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder =>
             {
+                builder.Register<TargetOutlineScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
                 builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
                 builder.Register<CannonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
@@ -525,6 +530,8 @@ namespace TinCan.DevTools.Scenarios
                     .Wait(0.5f, "teleport settles")
                     .Do("FaceHelm")
                     .WaitUntil("InteractTargetIs", 5f, "HelmStation")
+                    .WaitUntil("TargetOutlined", 2f, "HelmStation")
+                    .Checkpoint("facing-helm")
                     .Hold(0.3f, ScriptedAction.Interact)
                     .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Helm")
                     .WaitUntil("HelmManned", 5f)
@@ -548,6 +555,7 @@ namespace TinCan.DevTools.Scenarios
             {
                 builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
                 builder.Register<HelmScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetOutlineScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
         private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer };

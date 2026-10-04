@@ -81,10 +81,8 @@ namespace TinCan.DevTools.Scenarios
             if (subject?.Look == null || body == null || helm == null) return ScenarioCheck.Fail("no subject look view, or no helm");
             if (((IPossessable)subject).OwnerId != _network.LocalClientId) return ScenarioCheck.Fail("subject-peer command: only the owner can turn its camera");
 
-            Vector3 to = helm.position - body.position;
-            float yaw = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
-            subject.Look.ApplyLook(0f, yaw);
-            return ScenarioCheck.Pass($"camera yaw {yaw:0} deg toward {helm.name}");
+            var (pitch, yaw) = ScenarioAim.LookAt(subject.Look, body, helm);
+            return ScenarioCheck.Pass($"camera yaw {yaw:0} deg, pitch {pitch:0} deg toward {helm.name}");
         }
 
         /// <summary>Server: remembers where the ship is now, for ShipMoved and ShipTurned.</summary>

@@ -22,6 +22,9 @@ namespace TinCan.Core.Interaction
 
         public GameplayInput Input { get; }
         public TargetingDefinition Targeting { get; }
+
+        /// <summary>Interact considers only interaction targets: the server's press and the owner's prompt use the same filter.</summary>
+        public static readonly System.Func<TinCan.Core.Domain.Targeting.ITargetable, bool> OnlyInteractable = target => target is IInteractionTarget;
     }
 
     /// <summary>
@@ -119,7 +122,7 @@ namespace TinCan.Core.Interaction
         {
             if (_override != null && _override.TryHandleInteract(player)) return;
 
-            if (!_targeting.TryAcquire(new HumanoidTargeter(player), _settings.Targeting, out var result) ||
+            if (!_targeting.TryAcquire(new HumanoidTargeter(player), _settings.Targeting, InteractionTargetingSettings.OnlyInteractable, out var result) ||
                 result.Target is not IInteractionTarget target)
             {
                 _events.LogInfo(LogSource, "Interact pressed with nothing in reach.");

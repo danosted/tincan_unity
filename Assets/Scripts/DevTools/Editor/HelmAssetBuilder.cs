@@ -34,11 +34,18 @@ namespace TinCan.DevTools.Editor
         private const string HelmPrefab = "Assets/Prefabs/Airship/Parts/HelmStation.prefab";
         private const string Installers = "Assets/Resources/Installers/";
 
-        // At the ship's wheel (StylShip_Wheel, x 1.06, z -8.12), on the wheel stand's base (deck y 1.087 in ship space,
-        // raycast 2026-10-03). The test ship has a quarterdeck at the same height for it. The seat is behind the wheel,
-        // facing the bow, still on the stand base (it reaches z -9.3).
+        // Where the ship model had its wheel (StylShip_Wheel at x 1.06, z -8.12 in ship space), on the stand's base (deck y
+        // 1.087, raycast 2026-10-03). The test ship has a quarterdeck at the same height. The seat is behind the wheel, facing
+        // the bow, on the stand base (it reaches z -9.3). The wheel and stand keep the exact ship-space poses the model gave
+        // them (measured 2026-10-03), so the airship looks as before; the airship's own copies are switched off.
         private static readonly Vector3 HelmLocalPosition = new(1.05f, 1.087f, -8.1f);
         private static readonly Vector3 SeatLocalPosition = new(0f, 1.05f, -1.2f);
+        private static readonly Vector3 WheelLocalPosition = new(0.0125f, 1.7522f, -0.0206f);
+        private static readonly Vector3 StandLocalPosition = new(-0.0164f, 0.9944f, 0.7674f);
+        private const string ShipModel = "Assets/Stylized_Pirate_Ship/StylShip_3dModel/StylShip_Unity.fbx";
+        private const string ShipMaterial = "Assets/Stylized_Pirate_Ship/StylShip_MatTextures/StylShip_Elements_Mat.mat";
+        private const string AirshipPrefab = "Assets/Prefabs/Airship/Airship_Prefab.prefab";
+        private static readonly string[] ShipWheelParts = { "Mesh/StylShip_Wheel", "Mesh/StylShip_WheelStand" };
 
         [MenuItem("TinCan/Dev/Helm/Build Assets")]
         public static void Build()
@@ -75,6 +82,7 @@ namespace TinCan.DevTools.Editor
 
             // Prefab and fixture
             var helm = BuildHelmPrefab(takeHelm, occupyAbility);
+            HideShipWheel();
             var fixture = Asset<ShipFixtureDefinition>("Assets/Settings/Fixtures/HelmStationFixture.asset", definition =>
             {
                 definition.Prefab = helm;
@@ -109,10 +117,15 @@ namespace TinCan.DevTools.Editor
             SetField(mediator, "_interactionDefinition", interaction);
             SetField(mediator, "_occupyAbility", occupy);
 
-            // No visuals: the ship model has the wheel. This box around it is what Interact aims at.
-            var box = root.AddComponent<BoxCollider>();
-            box.center = new Vector3(0f, 1.75f, 0f);
-            box.size = new Vector3(2f, 2f, 0.8f);
+            // The helm's own meshes: the wheel (its box collider is what Interact sees and what is outlined) and the stand
+            // the helmsman stands on (solid, like the deck).
+            var material = Load<Material>(ShipMaterial);
+            var wheel = Part(root.transform, "Wheel", "StylShip_Wheel", WheelLocalPosition, material);
+            var box = wheel.AddComponent<BoxCollider>();
+            box.center = new Vector3(-0.029f, 0f, 0.187f);
+            box.size = new Vector3(2.055f, 2.084f, 0.452f);
+            var stand = Part(root.transform, "Stand", "StylShip_WheelStand", StandLocalPosition, material);
+            stand.AddComponent<MeshCollider>().sharedMesh = stand.GetComponent<MeshFilter>().sharedMesh;
 
             var seat = new GameObject("Seat").transform;
             seat.SetParent(root.transform, false);
@@ -128,6 +141,40 @@ namespace TinCan.DevTools.Editor
                 ?.Invoke(networkObject, null);
             EditorUtility.SetDirty(networkObject);
             return prefab;
+        }
+
+        private static GameObject Part(Transform parent, string name, string meshName, Vector3 localPosition, Material material)
+        {
+            var mesh = Array.Find(AssetDatabase.LoadAllAssetsAtPath(ShipModel), asset => asset is Mesh && asset.name == meshName) as Mesh
+                       ?? throw new InvalidOperationException($"{ShipModel} has no mesh {meshName}.");
+            var part = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer));
+            part.transform.SetParent(parent, false);
+            part.transform.localPosition = localPosition;
+            part.GetComponent<MeshFilter>().sharedMesh = mesh;
+            part.GetComponent<MeshRenderer>().sharedMaterial = material;
+            return part;
+        }
+
+        /// <summary>The airship model's own wheel and stand are switched off: the helm fixture brings them (an override on the model instance).</summary>
+        private static void HideShipWheel()
+        {
+            var root = PrefabUtility.LoadPrefabContents(AirshipPrefab);
+            try
+            {
+                bool changed = false;
+                foreach (var path in ShipWheelParts)
+                {
+                    var part = root.transform.Find(path);
+                    if (part == null || !part.gameObject.activeSelf) continue;
+                    part.gameObject.SetActive(false);
+                    changed = true;
+                }
+                if (changed) PrefabUtility.SaveAsPrefabAsset(root, AirshipPrefab);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
         }
 
         private static GameplayTag Tag(string name, GameplayTag? parent = null) =>

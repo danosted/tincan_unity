@@ -103,10 +103,8 @@ namespace TinCan.DevTools.Scenarios
             if (subject?.Look == null || body == null || cannon == null) return ScenarioCheck.Fail("no subject look view, or no cannon");
             if (((IPossessable)subject).OwnerId != _network.LocalClientId) return ScenarioCheck.Fail("subject-peer command: only the owner can turn its camera");
 
-            Vector3 to = cannon.position - body.position;
-            float yaw = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
-            subject.Look.ApplyLook(0f, yaw);
-            return ScenarioCheck.Pass($"camera yaw {yaw:0} deg toward {cannon.name}");
+            var (pitch, yaw) = ScenarioAim.LookAt(subject.Look, body, cannon);
+            return ScenarioCheck.Pass($"camera yaw {yaw:0} deg, pitch {pitch:0} deg toward {cannon.name}");
         }
 
         /// <summary>The subject stands behind the cannon on this peer, within reach (a lagged client sees its ship a little behind).</summary>

@@ -17,7 +17,7 @@ silences it; an action outside every live context reads as released.
 | 400 | Context_Gunner | possessed actor has State.Occupying.Cannon | Context_Humanoid, Context_Camera | GunnerAimUseCase | CannonFeatureInstaller |
 | 400 | Context_Helmsman | possessed actor has State.Occupying.Helm | Context_Humanoid | HelmInputUseCase | HelmFeatureInstaller |
 | 300 | Context_FreeCamera | possessing Other | - | FreeCameraMovementUseCase | FreeCameraFeatureInstaller |
-| 200 | Context_Humanoid | possessing Humanoid | - | HumanoidMovementUseCase | core (InputConfig) |
+| 200 | Context_Humanoid | possessing Humanoid | - | HumanoidMovementUseCase, TargetOutlinePresenter | core (InputConfig) |
 | 100 | Context_Camera | always | - | FreeCameraMovementUseCase, PlayerLookUseCase | core (InputConfig) |
 | 0 | Context_Global | always | - | - | core (InputConfig) |
 

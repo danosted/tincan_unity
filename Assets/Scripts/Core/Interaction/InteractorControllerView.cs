@@ -49,7 +49,7 @@ namespace TinCan.Core.Interaction
             }
 
             var targeter = new HumanoidTargeter(character);
-            bool acquired = _targeting.TryAcquire(targeter, _settings.Targeting, out var result);
+            bool acquired = _targeting.TryAcquire(targeter, _settings.Targeting, InteractionTargetingSettings.OnlyInteractable, out var result);
             CurrentTarget = acquired ? result.Target as IInteractable : null;
 
             // Visualise exactly what TD_Interact saw: its ray from its source, and the acquired target.

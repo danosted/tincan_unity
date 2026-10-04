@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c09b5765edc578479b81815a2f36133, type: 3}
   m_Name: HelmStationFixture
   m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Features.ShipFixtureDefinition
-  Prefab: {fileID: 2322524826826416043, guid: 571491ff7f4ce524fb8fa44b9268b367, type: 3}
+  Prefab: {fileID: 622306366217008599, guid: 571491ff7f4ce524fb8fa44b9268b367, type: 3}
   LocalPosition: {x: 1.05, y: 1.087, z: -8.1}
   LocalEulerAngles: {x: 0, y: 0, z: 0}

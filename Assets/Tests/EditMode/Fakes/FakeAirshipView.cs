@@ -47,7 +47,10 @@ namespace TinCan.Tests.EditMode.Fakes
             if (_gameObject != null) UnityEngine.Object.DestroyImmediate(_gameObject);
         }
 
-        public void ApplyMovement(Vector3 velocity, Vector3 angularVelocity) { }
+        /// <summary>The last velocity the movement use case applied.</summary>
+        public Vector3 AppliedVelocity { get; private set; }
+
+        public void ApplyMovement(Vector3 velocity, Vector3 angularVelocity) => AppliedVelocity = velocity;
         public void Simulate(float deltaTime) { }
         public Vector3 GetPointVelocity(Vector3 worldPoint) => Vector3.zero;
     }

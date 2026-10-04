@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9fac5010deeb1434b823d372912fee37, type: 3}
+  m_Name: SkyIslandConfig
+  m_EditorClassIdentifier: TinCan.Features.SkyIslands::TinCan.Features.SkyIslands.SkyIslandConfig
+  WorldSeed: 1
+  CellSize: 450
+  MainChance: 0.55
+  MainRadius: {x: 35, y: 95}
+  DepthPerRadius: {x: 0.9, y: 1.6}
+  TopAltitude: {x: 0, y: 80}
+  SatellitesPerMain: {x: 1, y: 4}
+  LoneSatelliteChance: 0.35
+  LoneSatellites: {x: 1, y: 3}
+  SatelliteRadius: {x: 5, y: 14}
+  SatelliteSpread: {x: 1.25, y: 1.7}
+  SatelliteAltitudeJitter: 30
+  KeepOutRadius: 160
+  ImpactEffect: {fileID: 11400000, guid: 478f198b9ab1aab4da7e54d5222d78d5, type: 2}
+  ImpactCooldown: 1.5
+  StreamRadius: 1000
+  MaxBuildsPerFrame: 2
+  MainVisual:
+    Segments: 48
+    TopRings: 6
+    UnderRings: 14
+  MainCollision:
+    Segments: 16
+    TopRings: 2
+    UnderRings: 5
+  SatelliteVisual:
+    Segments: 20
+    TopRings: 2
+    UnderRings: 6
+  SatelliteCollision:
+    Segments: 10
+    TopRings: 1
+    UnderRings: 3
+  CollisionWedgeSegments: 4
+  Material: {fileID: 2100000, guid: fc1ab8256433b7b49a7756614afea5d3, type: 2}

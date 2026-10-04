@@ -44,12 +44,15 @@ namespace TinCan.Tests.EditMode
             public VoyagePhase Phase { get; set; }
             public int Voyage => 1;
             public Vector3 Destination => Vector3.zero;
+            public int LayoutSeed => 0;
+            public Vector3 Origin => Vector3.zero;
             public int BriefingSecondsLeft => 0;
             public void RequestRestart() { }
             public bool ConsumeRestartRequest() => false;
             public void ServerSetPhase(VoyagePhase phase) => Phase = phase;
             public void ServerSetVoyage(int voyage) { }
             public void ServerSetDestination(Vector3 destination) { }
+            public void ServerSetLayout(int layoutSeed, Vector3 origin) { }
             public void ServerSetBriefingSecondsLeft(int seconds) { }
         }
 

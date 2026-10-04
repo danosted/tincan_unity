@@ -18,6 +18,7 @@
         "TinCan.Features.Airship.PhysicalParts",
         "TinCan.Features.DesignedEvents",
         "TinCan.Features.Voyage",
+        "TinCan.Features.SkyIslands",
         "TinCan.DevTools",
         "TinCan.Humanoid",
         "TinCan.Input",

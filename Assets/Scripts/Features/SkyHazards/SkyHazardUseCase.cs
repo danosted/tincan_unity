@@ -15,14 +15,18 @@ namespace TinCan.Features.SkyHazards
     /// Application Layer, server only, after airship movement. Removes hazards that were shot down (after a short
     /// delay, so their last health update reaches the clients first). Drifting hazards home on the first ship; any
     /// hazard that touches it applies the impact effect to the ship (its health) and is removed. While the field is on,
-    /// it keeps a field of drifting hazards in a box ahead of the ship, sized for the crew aboard (each extra player
-    /// raises the limit and speeds up spawning), removing those left far behind.
+    /// it keeps a field of drifting hazards in a box ahead of the ship (never inside an obstacle such as island rock,
+    /// <see cref="IWorldObstacleQuery"/>), sized for the crew aboard (each extra player raises the limit and speeds up
+    /// spawning), removing those left far behind.
     /// </summary>
     public class SkyHazardUseCase : ISimulationTickable, ISkyHazards, ISessionParticipant
     {
         public SimulationPhase Phase => SimulationPhase.AfterAirship;
 
         private const string LogSource = "SkyHazards";
+
+        /// <summary>Seconds before trying again when a spawn point was inside an obstacle.</summary>
+        private const float BlockedRetry = 0.25f;
 
         private readonly INetworkService _network;
         private readonly IActorRegistry _actors;
@@ -35,6 +39,7 @@ namespace TinCan.Features.SkyHazards
         private readonly AbilitySystemUseCase _abilities;
         private readonly SkyHazardConfig _config;
         private readonly System.Random _random;
+        private readonly IReadOnlyList<IWorldObstacleQuery> _obstacles;
         private readonly List<ISkyHazard> _alive = new();
         private readonly HashSet<ISkyHazard> _drifting = new();
         private readonly Dictionary<ISkyHazard, float> _destroyedAt = new();
@@ -44,12 +49,15 @@ namespace TinCan.Features.SkyHazards
         [Inject]
         public SkyHazardUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
             ISkyHazardSpawner spawner, SkyHazardFieldProcessor field, HazardDriftProcessor drift, IShipContactQuery contact,
-            AbilitySystemUseCase abilities, SkyHazardConfig config, IRandomSource random)
-            : this(network, actors, time, events, spawner, field, drift, contact, abilities, config, random.Create("SkyHazards")) { }
+            AbilitySystemUseCase abilities, SkyHazardConfig config, IRandomSource random,
+            IReadOnlyList<IWorldObstacleQuery> obstacles)
+            : this(network, actors, time, events, spawner, field, drift, contact, abilities, config,
+                random.Create("SkyHazards"), obstacles) { }
 
         public SkyHazardUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
             ISkyHazardSpawner spawner, SkyHazardFieldProcessor field, HazardDriftProcessor drift, IShipContactQuery contact,
-            AbilitySystemUseCase abilities, SkyHazardConfig config, System.Random random)
+            AbilitySystemUseCase abilities, SkyHazardConfig config, System.Random random,
+            IReadOnlyList<IWorldObstacleQuery>? obstacles = null)
         {
             _network = network;
             _actors = actors;
@@ -62,6 +70,7 @@ namespace TinCan.Features.SkyHazards
             _abilities = abilities;
             _config = config;
             _random = random;
+            _obstacles = obstacles ?? System.Array.Empty<IWorldObstacleQuery>();
             FieldEnabled = config.FieldEnabled;
         }
 
@@ -116,6 +125,11 @@ namespace TinCan.Features.SkyHazards
             {
                 var position = _field.SpawnPoint(ship.Transform.position, ship.Transform.rotation, _config.FieldShape,
                     (float)_random.NextDouble(), (float)_random.NextDouble(), (float)_random.NextDouble());
+                if (IsBlocked(position))
+                {
+                    _nextSpawnAt = _elapsed + BlockedRetry;
+                    return;
+                }
                 SpawnAt(position, drifts: true);
                 _nextSpawnAt = _elapsed + spawnInterval;
             }
@@ -190,6 +204,16 @@ namespace TinCan.Features.SkyHazards
                 _drifting.Remove(hazard);
                 _spawner.Despawn(hazard);
             }
+        }
+
+        /// <summary>Inside an obstacle (island rock), where a hazard could neither be seen nor shot.</summary>
+        private bool IsBlocked(Vector3 position)
+        {
+            foreach (var obstacle in _obstacles)
+            {
+                if (obstacle.IsBlocked(position, _config.ContactRadius * 2f)) return true;
+            }
+            return false;
         }
 
         private static bool IsShotDown(ISkyHazard hazard) => hazard.Controller.IsDepleted();

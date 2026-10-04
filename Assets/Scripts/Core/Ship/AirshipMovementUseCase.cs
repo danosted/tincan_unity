@@ -11,8 +11,9 @@ namespace TinCan.Core.Ship
     /// Application Layer, server: simulates airship movement. Each tick the ship's input comes from its pilot
     /// (<see cref="IAirshipPilotInput"/>, the first source with an answer; the helm station today) and is kept on the
     /// ship as its current input, which other server systems read (fuel burns with the throttle).
+    /// Something solid can push the ship out of itself (<see cref="IAirshipCollisionResponse"/>).
     /// </summary>
-    public class AirshipMovementUseCase : SimulationUseCase<IAirshipView, AirshipInputState>
+    public class AirshipMovementUseCase : SimulationUseCase<IAirshipView, AirshipInputState>, IAirshipCollisionResponse
     {
         private class MovementState
         {
@@ -20,6 +21,9 @@ namespace TinCan.Core.Ship
             public Vector3 CurrentVelocity;
             public Vector3 CurrentAngularVelocity;
         }
+
+        /// <summary>How much of the velocity into a surface comes back out of it when the ship is pushed.</summary>
+        public const float Bounce = 0.3f;
 
         private readonly AirshipMovementProcessor _processor;
         private readonly IReadOnlyList<IAirshipPilotInput> _pilots;
@@ -88,6 +92,22 @@ namespace TinCan.Core.Ship
             // 4. Apply to view
             airship.ApplyMovement(state.CurrentVelocity, state.CurrentAngularVelocity);
             airship.Simulate(deltaTime);
+        }
+
+        public void Push(IAirshipView airship, Vector3 push)
+        {
+            if (!NetworkService.IsServer || push.sqrMagnitude < 1e-8f || airship.Transform == null) return;
+
+            Vector3 normal = push.normalized;
+            airship.Transform.position += push;
+            if (!_states.TryGetValue(airship.Id, out var state)) return;
+
+            float into = Vector3.Dot(state.CurrentVelocity, normal);
+            if (into < 0f) state.CurrentVelocity -= normal * (into * (1f + Bounce));
+
+            // Head on, the engine stops pushing into the rock; along it, it keeps most of its way.
+            float facing = Vector3.Dot(airship.Transform.forward, normal);
+            if (facing < 0f) state.CurrentSpeed *= 1f + facing;
         }
 
         private AirshipInputState PilotInput(IAirshipView airship)

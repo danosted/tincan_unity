@@ -22,6 +22,7 @@
         "TinCan.Features.Airship.PhysicalParts",
         "TinCan.Features.DesignedEvents",
         "TinCan.Features.Voyage",
+        "TinCan.Features.SkyIslands",
         "TinCan.Features.Boarding",
         "TinCan.UI",
         "Unity.Netcode.Runtime",

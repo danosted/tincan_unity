@@ -91,6 +91,9 @@ Possession decides what a player controls: their own body, or (a dev tool) the f
 (the helm, a cannon) are **stations**, not possession: the player stays in their body and view (`Features/Stations/`).
 The helm steers the ship through its pilot seam, `Core/Ship/IAirshipPilotInput.cs` (`Features/Helm/`; plan
 `.docs/plans/helm-station.md`).
+The ship is kinematic, so nothing solid stops it by itself; a feature that finds it inside something pushes it out
+through `Core/Ship/IAirshipCollisionResponse.cs` (the movement use case moves it and removes its velocity into the
+surface). Sky islands do this on the server.
 - **IPossessable is opt-in:** an object is possessable when it has a `PossessableNetworkMediator` (the replicated
   possessor; a player object is possessed by its owner on spawn). Its actor (`HumanoidPlayer`)
   implements `IPossessable` by forwarding to it. The local free camera is the only other possessable.
@@ -196,6 +199,11 @@ registers `.As<ISessionParticipant>()` (`Core/Domain/ISessionParticipant.cs`):
 
 Today these are sky hazards, ship damage, fuel and the designed-events director. In a scene without Voyage, nothing
 calls them and features keep their defaults. Plan: [plans/voyage-session.md](plans/voyage-session.md).
+
+The session also carries a **layout** every peer can read, `ISessionLayout` (`Core/Domain/ISessionLayout.cs`): a seed the
+server rolls when a voyage begins, its start and its destination, replicated by the voyage state. A feature that
+generates the world per voyage (sky islands) builds from it on every peer, so the world itself is never replicated.
+Without a voyage the seed is 0 and such features fall back to their own. Plan: [plans/sky-islands.md](plans/sky-islands.md).
 
 ## A Play session, end to end
 

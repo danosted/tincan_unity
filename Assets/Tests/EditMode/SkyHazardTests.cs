@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
+using TinCan.Core.Domain;
 using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Core.Domain.Abilities.Tags;
@@ -20,6 +21,18 @@ namespace TinCan.Tests.EditMode
     /// </summary>
     public class SkyHazardTests
     {
+        private sealed class BlockingObstacle : IWorldObstacleQuery
+        {
+            public bool Blocked;
+            public int Asked;
+
+            public bool IsBlocked(Vector3 point, float radius)
+            {
+                Asked++;
+                return Blocked;
+            }
+        }
+
         /// <summary>A hazard with real health on its own controller, so "shot down" is read from GAS as in the game.</summary>
         private sealed class FakeHazard : ISkyHazard
         {
@@ -160,6 +173,22 @@ namespace TinCan.Tests.EditMode
             for (int i = 0; i < 20; i++) hazards.Tick();
             Assert.That(_spawner.Spawned, Has.Count.EqualTo(3));
             Assert.That(hazards.Alive, Has.Count.EqualTo(3));
+        }
+
+        [Test]
+        public void FieldOn_NeverSpawnsInsideAnObstacle_AndTriesAgainSoon()
+        {
+            _config.DriftSpeed = 0f;
+            var rock = new BlockingObstacle { Blocked = true };
+            var hazards = UseCase(fieldEnabled: true, rock);
+
+            for (int i = 0; i < 10; i++) hazards.Tick();
+            Assert.That(_spawner.Spawned, Is.Empty, "every spot is inside rock");
+            Assert.That(rock.Asked, Is.GreaterThan(1), "it keeps trying");
+
+            rock.Blocked = false;
+            hazards.Tick();
+            Assert.That(_spawner.Spawned, Has.Count.EqualTo(1), "the next free spot");
         }
 
         [Test]
@@ -371,12 +400,12 @@ namespace TinCan.Tests.EditMode
             Assert.That(ShipHealth, Is.EqualTo(1000f));
         }
 
-        private SkyHazardUseCase UseCase(bool fieldEnabled)
+        private SkyHazardUseCase UseCase(bool fieldEnabled, params IWorldObstacleQuery[] obstacles)
         {
             _config.FieldEnabled = fieldEnabled;
             var abilities = new AbilitySystemUseCase(new FakeAbilityRegistry(), _actors, _time, _events);
             return new SkyHazardUseCase(new FakeNetworkService(), _actors, _time, _events, _spawner, _field, _drift, _contact,
-                abilities, _config, new System.Random(1));
+                abilities, _config, new System.Random(1), obstacles);
         }
 
         private T Create<T>(string name) where T : ScriptableObject

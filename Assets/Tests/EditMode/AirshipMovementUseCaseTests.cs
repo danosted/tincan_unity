@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using TinCan.Core.Ship;
 using TinCan.Tests.EditMode.Fakes;
+using UnityEngine;
 
 namespace TinCan.Tests.EditMode
 {
@@ -61,6 +62,54 @@ namespace TinCan.Tests.EditMode
 
             Assert.That(_ship.InputState.Throttle, Is.EqualTo(1f));
             Assert.That(_ship.InputState.Yaw, Is.EqualTo(-1f));
+        }
+
+        [Test]
+        public void APushHeadOn_MovesTheShipOut_AndStopsItDrivingIn()
+        {
+            var movement = FlyAhead(out var helm);
+            Vector3 before = _ship.Transform.position;
+
+            movement.Push(_ship, new Vector3(0f, 0f, -0.5f));
+
+            Assert.That(_ship.Transform.position, Is.EqualTo(before + new Vector3(0f, 0f, -0.5f)));
+            helm.Answer = default(AirshipInputState);
+            movement.Tick();
+            Assert.That(_ship.AppliedVelocity.z, Is.LessThanOrEqualTo(0f), "no velocity left into the rock (a little bounce back)");
+        }
+
+        [Test]
+        public void APushFromTheSide_TakesOnlyTheVelocityIntoTheSurface()
+        {
+            var movement = FlyAhead(out var helm);
+            float ahead = _ship.AppliedVelocity.z;
+
+            movement.Push(_ship, new Vector3(0.2f, 0f, 0f));
+            helm.Answer = default(AirshipInputState);
+            movement.Tick();
+
+            Assert.That(_ship.AppliedVelocity.z, Is.GreaterThan(ahead * 0.5f), "still flying along the rock");
+        }
+
+        [Test]
+        public void ANoPush_ChangesNothing()
+        {
+            var movement = FlyAhead(out _);
+            Vector3 before = _ship.Transform.position;
+
+            movement.Push(_ship, Vector3.zero);
+
+            Assert.That(_ship.Transform.position, Is.EqualTo(before));
+        }
+
+        /// <summary>Full throttle for a while: the ship flies along +z.</summary>
+        private AirshipMovementUseCase FlyAhead(out FixedPilot helm)
+        {
+            helm = new FixedPilot { Answer = new AirshipInputState { Throttle = 1f } };
+            var movement = Create(helm);
+            for (int i = 0; i < 120; i++) movement.Tick();
+            Assume.That(_ship.AppliedVelocity.z, Is.GreaterThan(1f));
+            return movement;
         }
     }
 }

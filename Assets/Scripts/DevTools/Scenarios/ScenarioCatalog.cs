@@ -511,6 +511,92 @@ namespace TinCan.DevTools.Scenarios
             builder => builder.Register<BoardingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
         /// <summary>
+        /// Sky islands, a new layout every voyage: the server begins a voyage, and each peer builds the islands around the
+        /// ship from the voyage's replicated seed (nothing else is sent): exactly the ones the layout wants, clear of the
+        /// ship, solid to a ray. The server then begins another voyage, and both peers replace them with the new seed's.
+        /// Plan: sky-islands.md.
+        /// </summary>
+        public static readonly ScenarioEntry IslandsPerVoyage = new(
+            new Scenario.Builder("IslandsPerVoyage")
+                .InScene(TestScenes.Voyage)
+                .Describe("Voyage begins -> islands from its seed on both peers, clear of the ship and solid -> next voyage -> " +
+                          "both rebuild from the new seed.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("VoyageBegin")
+                    .WaitUntil("VoyagePhase", 5f, "Briefing"))
+                .Act(s => s
+                    .WaitUntil("IslandsFromVoyage", 20f)
+                    .Expect("IslandsMatchLayout")
+                    .Expect("IslandsClearOfShip")
+                    .Expect("IslandSolid")
+                    .Do("LookAtNearestIsland")
+                    .Wait(0.5f, "the view turns")
+                    .Checkpoint("first-layout")
+                    .Do("RecordIslandSeed")
+                    .WaitUntil("IslandSeedChanged", 40f)
+                    .WaitUntil("IslandsFromVoyage", 20f)
+                    .Expect("IslandsMatchLayout")
+                    .Expect("IslandsClearOfShip")
+                    .Expect("IslandSolid")
+                    .Do("LookAtNearestIsland")
+                    .Wait(0.5f, "the view turns")
+                    .Checkpoint("second-layout"))
+                .Assert(s => s
+                    .WaitUntil("IslandsFromVoyage", 20f)
+                    .Expect("IslandsMatchLayout")
+                    .Expect("IslandsClearOfShip")
+                    .Expect("IslandSolid")
+                    .Do("RecordIslandSeed")
+                    .Wait(5f, "subject sees the first layout")
+                    .Do("VoyageBegin")
+                    .WaitUntil("IslandSeedChanged", 10f)
+                    .WaitUntil("IslandsFromVoyage", 20f)
+                    .Expect("IslandsMatchLayout")
+                    .Expect("IslandsClearOfShip")
+                    .Expect("IslandSolid"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<SkyIslandsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>
+        /// Island rock is solid to the ship: the server puts an island a few metres into the ship's bow, as if it had flown
+        /// in. The server pushes the ship out and hurts it once; the subject sees the ship's health drop. Plan:
+        /// sky-islands.md (S2).
+        /// </summary>
+        public static readonly ScenarioEntry IslandRam = new(
+            new Scenario.Builder("IslandRam")
+                .InScene(TestScenes.Voyage)
+                .Describe("An island a few metres into the bow -> the server pushes the ship out and hurts it once -> " +
+                          "the subject sees the hull damaged.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Expect("ShipHealthFull")
+                    .Do("PlaceIslandIntoBow"))
+                .Act(s => s
+                    .WaitUntil("ShipHurt", 10f)
+                    .Checkpoint("rammed"))
+                .Assert(s => s
+                    .WaitUntil("ShipHitIsland", 5f)
+                    .WaitUntil("ShipOutOfRock", 5f)
+                    .Expect("ShipHurt")
+                    .Wait(3f, "the ship rests against the rock")
+                    .Expect("ShipOutOfRock"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<SkyIslandImpactScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>
         /// The helm with real input: the subject walks up to the wheel and presses Interact to take it. It stays in its body
         /// on the helm seat (State.Occupying.Helm turns the Helmsman context on, which silences walking but not looking).
         /// Throttle and turn keys travel in its predicted input; the server moves and turns the ship from them. Leave lets go
@@ -558,7 +644,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<TargetOutlineScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

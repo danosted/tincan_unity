@@ -7,13 +7,16 @@ using TinCan.Core.Domain.Networking;
 using TinCan.Core.Gas;
 using TinCan.Core.Ship;
 using UnityEngine;
+using VContainer;
 
 namespace TinCan.Features.Voyage
 {
     /// <summary>
     /// Application Layer, server only, after airship movement: runs the voyage. Begin resets every
     /// <see cref="ISessionParticipant"/> (a full tank, a whole hull, a clear sky), holds the pressure off and sets a
-    /// destination ahead of the ship; after the briefing it casts off and switches the pressure on. Underway, the ship
+    /// destination ahead of the ship, with a new layout seed and the ship's position as the origin (the
+    /// <see cref="ISessionLayout"/> world features build from); after the briefing it casts off and switches the
+    /// pressure on. Underway, the ship
     /// arriving wins and its health running out loses; either way the pressure stops and the end screen shows until a
     /// player asks for a restart. A voyage starts by itself only once <see cref="VoyageConfig.MinCrew"/> players are
     /// aboard, and stands down to Idle whenever nobody is (<see cref="CrewQueries"/>). The replicated state lives on the
@@ -33,15 +36,22 @@ namespace TinCan.Features.Voyage
         private readonly VoyageRouteProcessor _route;
         private readonly VoyageConfig _config;
         private readonly IReadOnlyList<ISessionParticipant> _participants;
+        private readonly System.Random _random;
 
         private float _briefingLeft;
         private float _underwayFor;
         private int _voyage;
         private bool _pressureHeld;
 
+        [Inject]
         public VoyageUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
-            VoyageRouteProcessor route, VoyageConfig config, IEnumerable<ISessionParticipant> participants)
+            VoyageRouteProcessor route, VoyageConfig config, IEnumerable<ISessionParticipant> participants, IRandomSource random)
+            : this(network, actors, time, events, route, config, participants, random.Create("Voyage")) { }
+
+        public VoyageUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
+            VoyageRouteProcessor route, VoyageConfig config, IEnumerable<ISessionParticipant> participants, System.Random random)
         {
+            _random = random;
             _network = network;
             _actors = actors;
             _time = time;
@@ -127,6 +137,7 @@ namespace TinCan.Features.Voyage
 
             var destination = _route.Destination(ship.Transform.position, ship.Transform.rotation, _config.RouteLength);
             state.ServerSetDestination(destination);
+            state.ServerSetLayout(_random.Next(1, int.MaxValue), ship.Transform.position);
             state.ServerSetVoyage(_voyage);
             _briefingLeft = _config.BriefingSeconds;
             _underwayFor = 0f;

@@ -245,7 +245,7 @@ move the subject.
 | `Test_ShipDamage` | Fuel, ShipDamage | ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack |
 | `Test_NetCatch` | Fuel, FlyingCan | NetCatch, EquipCycle (its items belong to those features) |
 | `Test_Cannon` | Stations, Cannon, SkyHazards | CannonShot, HazardStrike |
-| `Test_Voyage` | Fuel, ShipDamage, Stations, Cannon, SkyHazards, Voyage | VoyageLoop |
+| `Test_Voyage` | Fuel, ShipDamage, Stations, Cannon, SkyHazards, Voyage, SkyIslands | VoyageLoop, LateJoinBoarding, IslandsPerVoyage, IslandRam |
 | `Test_Helm` | Stations, Helm (the test ship has a quarterdeck at the airship's height for the helm) | HelmSteer |
 
 **The scenes are generated.** `DevTools/Editor/TestRangeSceneBuilder.cs` (**TinCan > Dev > Test Range > Rebuild

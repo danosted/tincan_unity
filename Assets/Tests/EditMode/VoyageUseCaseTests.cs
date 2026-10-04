@@ -27,6 +27,8 @@ namespace TinCan.Tests.EditMode
             public VoyagePhase Phase { get; private set; }
             public int Voyage { get; private set; }
             public Vector3 Destination { get; private set; }
+            public int LayoutSeed { get; private set; }
+            public Vector3 Origin { get; private set; }
             public int BriefingSecondsLeft { get; private set; }
             public bool RestartRequested;
 
@@ -42,6 +44,12 @@ namespace TinCan.Tests.EditMode
             public void ServerSetPhase(VoyagePhase phase) => Phase = phase;
             public void ServerSetVoyage(int voyage) => Voyage = voyage;
             public void ServerSetDestination(Vector3 destination) => Destination = destination;
+
+            public void ServerSetLayout(int layoutSeed, Vector3 origin)
+            {
+                LayoutSeed = layoutSeed;
+                Origin = origin;
+            }
             public void ServerSetBriefingSecondsLeft(int seconds) => BriefingSecondsLeft = seconds;
         }
 
@@ -134,6 +142,25 @@ namespace TinCan.Tests.EditMode
             Assert.That(Vector3.Distance(_state.Destination, new Vector3(0f, 0f, 1000f)), Is.LessThan(1e-2f), "straight ahead of the ship");
             Assert.That(_state.BriefingSecondsLeft, Is.EqualTo(3));
             Assert.That(_events.Events.OfType<VoyageStartedEvent>().Count(), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void EveryVoyage_RollsANewLayoutSeed_FromWhereTheShipIs()
+        {
+            _ship.Transform.position = new Vector3(120f, 40f, -60f);
+            var voyage = UseCase();
+
+            voyage.Tick();
+            int first = _state.LayoutSeed;
+            Assert.That(first, Is.Not.EqualTo(0), "0 means no session layout");
+            Assert.That(_state.Origin, Is.EqualTo(new Vector3(120f, 40f, -60f)));
+
+            _ship.Transform.position = new Vector3(500f, 40f, 0f);
+            _state.RequestRestart();
+            voyage.Tick();
+
+            Assert.That(_state.LayoutSeed, Is.Not.EqualTo(0).And.Not.EqualTo(first));
+            Assert.That(_state.Origin, Is.EqualTo(new Vector3(500f, 40f, 0f)));
         }
 
         [Test]
@@ -311,6 +338,6 @@ namespace TinCan.Tests.EditMode
         }
 
         private VoyageUseCase UseCase() =>
-            new(new FakeNetworkService(), _actors, _time, _events, new VoyageRouteProcessor(), _config, new ISessionParticipant[] { _participant });
+            new(new FakeNetworkService(), _actors, _time, _events, new VoyageRouteProcessor(), _config, new ISessionParticipant[] { _participant }, new System.Random(7));
     }
 }

@@ -90,7 +90,7 @@ namespace TinCan.Core.Infrastructure
                 .As<ITickable>().As<IPossessionState>();
             builder.Register<AbilitySystemUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>().As<ISimulationTickable>();
             builder.Register<ShipStateProvider>(Lifetime.Singleton).As<IShipState>();
-            builder.Register<AirshipMovementUseCase>(Lifetime.Singleton);
+            builder.Register<AirshipMovementUseCase>(Lifetime.Singleton).AsSelf().As<IAirshipCollisionResponse>();
             builder.Register<HumanoidMovementUseCase>(Lifetime.Singleton).AsSelf().As<IHumanoidRespawnService>();
             builder.Register<NetworkSimulationScheduler>(Lifetime.Singleton).As<IInitializable>();
 

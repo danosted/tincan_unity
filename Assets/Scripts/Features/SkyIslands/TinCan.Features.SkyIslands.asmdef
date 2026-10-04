@@ -1,0 +1,19 @@
+{
+    "name": "TinCan.Features.SkyIslands",
+    "rootNamespace": "TinCan.Features.SkyIslands",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Gas",
+        "TinCan.Ship",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

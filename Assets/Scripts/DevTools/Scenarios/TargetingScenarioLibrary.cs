@@ -128,7 +128,7 @@ namespace TinCan.DevTools.Scenarios
             return ScenarioCheck.Pass($"subject placed {StandOff} m from {target.name}");
         }
 
-        /// <summary>Subject peer: turns the camera (world yaw, level pitch) toward a named object, as the mouse would.</summary>
+        /// <summary>Subject peer: turns the camera toward the middle of a named object, as a player looks at it.</summary>
         private ScenarioCheck Face(string objectName)
         {
             var subject = _subject.Resolve();
@@ -137,10 +137,8 @@ namespace TinCan.DevTools.Scenarios
             if (subject?.Look == null || body == null || target == null) return ScenarioCheck.Fail($"no subject look view, or nothing named '{objectName}'");
             if (((IPossessable)subject).OwnerId != _network.LocalClientId) return ScenarioCheck.Fail("subject-peer command: only the owner can turn its camera");
 
-            Vector3 to = target.position - body.position;
-            float yaw = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
-            subject.Look.ApplyLook(0f, yaw);
-            return ScenarioCheck.Pass($"camera yaw {yaw:0} deg toward {target.name}");
+            var (pitch, yaw) = ScenarioAim.LookAt(subject.Look, body, target);
+            return ScenarioCheck.Pass($"camera yaw {yaw:0} deg, pitch {pitch:0} deg toward {target.name}");
         }
 
         /// <summary>What TD_Interact (the server's interaction query, and the prompt) acquires for the subject on this peer.</summary>
@@ -150,7 +148,7 @@ namespace TinCan.DevTools.Scenarios
             if (subject == null) return ScenarioCheck.Fail("no subject player");
             if (_interaction == null) return ScenarioCheck.Fail("InteractionFeatureInstaller is not active");
 
-            string found = _targeting.TryAcquire(new HumanoidTargeter(subject), _interaction.Targeting, out var result) && result.Target is Component component
+            string found = _targeting.TryAcquire(new HumanoidTargeter(subject), _interaction.Targeting, InteractionTargetingSettings.OnlyInteractable, out var result) && result.Target is Component component
                 ? component.name
                 : "nothing";
             string detail = $"{_interaction.Targeting.name} acquires {found}";

@@ -31,13 +31,20 @@ namespace TinCan.Core.Targeting
         /// <summary>Everything within Range inside the horizontal and vertical angles around the aim. Forgiving; no colliders needed.</summary>
         Cone,
         /// <summary>Everything within Radius of the aim source point.</summary>
-        Sphere
+        Sphere,
+        /// <summary>
+        /// What the player looks at. First a ray (a thin sphere cast with Radius > 0) along the aim: the first target it hits
+        /// within Range wins, whatever its pivot. If it hits none, the target best aligned with the aim inside the cone
+        /// (HorizontalAngle, VerticalAngle) within Range, measured to the closest point of its colliders rather than its
+        /// pivot; then nearest. Line of sight, when required, ignores the target's own colliders.
+        /// </summary>
+        Look
     }
 
     public enum TargetSelection
     {
         Nearest,
-        /// <summary>Smallest horizontal angle to the aim, then nearest.</summary>
+        /// <summary>Smallest horizontal angle to the aim, then nearest. Look ranks by the full angle off the aim.</summary>
         BestAligned,
         /// <summary>First along the ray; for other shapes the same as Nearest.</summary>
         FirstHit
@@ -61,11 +68,11 @@ namespace TinCan.Core.Targeting
         [Header("Shape")]
         public TargetShape Shape = TargetShape.Cone;
         [Min(0f)] public float Range = 2.5f;
-        [Tooltip("Ray: sphere-cast radius (0 = thin ray). Sphere: the sphere's radius.")]
+        [Tooltip("Ray and Look: sphere-cast radius (0 = thin ray). Sphere: the sphere's radius.")]
         [Min(0f)] public float Radius;
-        [Tooltip("Cone: full horizontal width in degrees.")]
+        [Tooltip("Cone, and Look's fallback cone: full horizontal width in degrees.")]
         [Range(1f, 360f)] public float HorizontalAngle = 100f;
-        [Tooltip("Cone: full vertical height in degrees, around the horizontal plane.")]
+        [Tooltip("Cone, and Look's fallback cone: full vertical height in degrees, around the aim's elevation for pitched sources.")]
         [Range(1f, 180f)] public float VerticalAngle = 120f;
 
         [Header("Filter (gameplay tags on the target's ability controller)")]

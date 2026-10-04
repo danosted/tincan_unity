@@ -137,12 +137,17 @@ build placement and weapons are *uses* of targeting, not separate aiming systems
 - **Registration:** `ActorOrchestrator` registers every `ITargetable` in a spawned hierarchy, like interactors. It
   resolves the registry optionally, because the Targeting installer can be switched off.
 - **Queries are data:** a `TargetingDefinition` (`Assets/Targeting/TD_*`) chooses an aim source (`BodyForward`,
-  `BodyOffset`, `EyeAim`, `CameraAim`), a shape (`Cone` for forgiving close scans, `Sphere`, a physics `Ray`), gameplay-tag filters on the
+  `BodyOffset`, `EyeAim`, `CameraAim`), a shape (`Cone` for forgiving close scans, `Sphere`, a physics `Ray`, `Look`), gameplay-tag filters on the
   target, a selection rule and optional line of sight. Several aim models coexist; each context picks its own.
-  `AbilityDefinition.Targeting` links an ability to one.
-- **Authority:** `ITargetingService.TryAcquire` runs on any peer from simulated state (the body pose follows the
-  replicated input). The owner uses it to predict; the server's answer is authoritative. The server never trusts a
-  client-chosen target.
+  `AbilityDefinition.Targeting` links an ability to one. A caller can also pass an accept filter (Interact takes only
+  `IInteractionTarget`s: `InteractionTargetingSettings.OnlyInteractable`).
+- **Look is what the player looks at** (`TD_Interact`): a ray along the aim wins outright on the first accepted target
+  it hits, whatever that target's pivot. Only if it hits none does a narrow cone take the best-aligned target, measured
+  to the closest point of its colliders, not its pivot. Line of sight ignores the target's own colliders and the
+  targeter's body. Plan: `.docs/plans/interaction-targeting.md`.
+- **Authority:** `ITargetingService.TryAcquire` runs on any peer from simulated state: a humanoid aims from its body's
+  position along its replicated look (yaw and pitch from the input, not the body, which eases toward the look). The
+  owner uses it to predict; the server's answer is authoritative. The server never trusts a client-chosen target.
 - **Projectile sweeps are targeting too:** `ITargetingService.TryAcquireSegment(from, to, definition, ignore)` sweeps
   one straight piece of a path (a cannonball's step this tick) with the definition's `Radius` and tag filters. The
   first accepted target or solid non-target collider ends it. Triggers, filtered-out targets and colliders the

@@ -23,6 +23,7 @@
         "TinCan.Features.ThirdPersonCamera",
         "TinCan.Features.FirstPersonCamera",
         "TinCan.Features.Helm",
+        "TinCan.Features.TargetOutline",
         "TinCan.Features.Weapons.Cannon",
         "TinCan.Features.Airship.Damage",
         "TinCan.Features.Airship.Fuel",

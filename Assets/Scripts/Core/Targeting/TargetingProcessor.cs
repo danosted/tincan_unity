@@ -76,10 +76,10 @@ namespace TinCan.Core.Targeting
                 case TargetShape.Sphere:
                     return offset.sqrMagnitude <= definition.Radius * definition.Radius;
                 case TargetShape.Cone:
-                    if (offset.sqrMagnitude > definition.Range * definition.Range) return false;
-                    var (horizontal, vertical) = Angles(origin, offset);
-                    return horizontal <= definition.HorizontalAngle * 0.5f &&
-                           Mathf.Abs(vertical - ReferenceElevation(origin, definition)) <= definition.VerticalAngle * 0.5f;
+                    return InCone(origin, definition, offset);
+                case TargetShape.Look:
+                    // A look-ray hit is in reach by where the ray hit it; a fallback candidate must be in the cone.
+                    return hitDistance is { } hit ? hit <= definition.Range : InCone(origin, definition, offset);
                 default:
                     // Ray candidates come from physics hits along the ray; the range applies to where the ray hit them, not
                     // to their pivot (a tall trigger volume is hit well before its pivot on the deck).
@@ -104,7 +104,7 @@ namespace TinCan.Core.Targeting
                 float horizontal = Angles(origin, offset).Horizontal;
                 var (primary, secondary) = definition.Selection switch
                 {
-                    TargetSelection.BestAligned => (horizontal, distance),
+                    TargetSelection.BestAligned => (definition.Shape == TargetShape.Look ? AimAngle(origin, definition, offset) : horizontal, distance),
                     TargetSelection.FirstHit => (candidate.HitDistance ?? distance, distance),
                     _ => (distance, horizontal)
                 };
@@ -119,6 +119,18 @@ namespace TinCan.Core.Targeting
 
             return found;
         }
+
+        private bool InCone(in TargetingOrigin origin, TargetingDefinition definition, Vector3 offset)
+        {
+            if (offset.sqrMagnitude > definition.Range * definition.Range) return false;
+            var (horizontal, vertical) = Angles(origin, offset);
+            return horizontal <= definition.HorizontalAngle * 0.5f &&
+                   Mathf.Abs(vertical - ReferenceElevation(origin, definition)) <= definition.VerticalAngle * 0.5f;
+        }
+
+        /// <summary>The full angle in degrees between the aim direction and the offset: how far off the look a point is.</summary>
+        public float AimAngle(in TargetingOrigin origin, TargetingDefinition definition, Vector3 offset) =>
+            offset.sqrMagnitude < 0.0001f ? 0f : Vector3.Angle(Direction(origin, definition), offset);
 
         /// <summary>
         /// Horizontal angle between the facing and the offset, and the offset's elevation above the body's horizontal

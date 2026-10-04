@@ -1,0 +1,21 @@
+{
+    "name": "TinCan.Features.TargetOutline",
+    "rootNamespace": "TinCan.Features.TargetOutline",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Humanoid",
+        "TinCan.Interaction",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

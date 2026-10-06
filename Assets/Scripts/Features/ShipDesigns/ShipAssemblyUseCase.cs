@@ -6,6 +6,8 @@ using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
 using TinCan.Core.Ship;
+using TinCan.Core.Ship.Sockets;
+using UnityEngine;
 using VContainer.Unity;
 
 namespace TinCan.Features.ShipDesigns
@@ -15,7 +17,7 @@ namespace TinCan.Features.ShipDesigns
     /// plain children, diffed by instance id when the design changes, the on-board volume fitted). On the server,
     /// functional parts (the helm) are spawned once as networked fixtures at their design pose. Unknown parts are skipped.
     /// </summary>
-    public sealed class ShipAssemblyUseCase : ITickable, IDisposable, IShipAssembly
+    public sealed class ShipAssemblyUseCase : ITickable, IDisposable, IShipAssembly, IShipSockets
     {
         private const string LogSource = "ShipAssembly";
 
@@ -42,6 +44,8 @@ namespace TinCan.Features.ShipDesigns
         private readonly IEventPublisher _events;
         private readonly Dictionary<Guid, BuiltShip> _built = new();
         private readonly List<IShipDesignState> _states = new();
+        private readonly Dictionary<Guid, List<ShipSocketInfo>> _sockets = new();
+        private static readonly IReadOnlyList<ShipSocketInfo> NoSockets = Array.Empty<ShipSocketInfo>();
 
         public ShipAssemblyUseCase(IActorRegistry actors, INetworkService network, IShipPartCatalog catalog, ShipDesignsConfig config,
             IShipHullBuilder builder, IModuleSpawningService spawning, IEventPublisher events)
@@ -54,6 +58,10 @@ namespace TinCan.Features.ShipDesigns
             _spawning = spawning;
             _events = events;
         }
+
+        public int Version { get; private set; }
+
+        public IReadOnlyList<ShipSocketInfo> SocketsOf(Guid shipId) => _sockets.TryGetValue(shipId, out var sockets) ? sockets : NoSockets;
 
         public bool TryGetBuilt(Guid shipId, out ulong hash, out int builtParts)
         {
@@ -116,10 +124,27 @@ namespace TinCan.Features.ShipDesigns
                 _spawning.SpawnModule(part.NetworkedPrefab, position, rotation, built.Ship);
             }
 
+            CollectSockets(built);
+
             int unknown = built.Hull.UnknownCount;
             string skipped = unknown > 0 ? $", {unknown} unknown part(s) skipped" : string.Empty;
             _events.LogInfo(LogSource, $"Ship {built.Ship.Id} built from \"{design.Name}\" ({design.Parts.Count} parts, " +
                                        $"hash {ShipDesignHash.ToText(built.Hash)}{skipped}).");
+        }
+
+        /// <summary>The sockets of the parts built for a ship: index i is the i-th ShipSocket under the part.</summary>
+        private void CollectSockets(BuiltShip built)
+        {
+            var sockets = new List<ShipSocketInfo>();
+            foreach (var (placement, handle) in built.Hull.Built.OrderBy(b => b.Placement.InstanceId))
+            {
+                if (handle is not GameObject part || part == null) continue;
+                var markers = part.GetComponentsInChildren<ShipSocket>(true);
+                for (int i = 0; i < markers.Length; i++) sockets.Add(new ShipSocketInfo(new ShipSocketId(placement.InstanceId, i), markers[i].transform));
+            }
+
+            _sockets[built.Ship.Id] = sockets;
+            Version++;
         }
 
         private void ForgetGoneShips()
@@ -131,6 +156,7 @@ namespace TinCan.Features.ShipDesigns
 
                 _built[id].Hull.Clear();
                 _built.Remove(id);
+                if (_sockets.Remove(id)) Version++;
             }
         }
     }

@@ -19,8 +19,13 @@ namespace TinCan.Tests.EditMode
         private sealed class RecordingModuleSpawner : IModuleSpawningService
         {
             public List<(GameObject Prefab, Vector3 Position, Quaternion Rotation, IActor Ship)> Calls { get; } = new();
-            public void SpawnModule(GameObject prefab, Vector3 worldPosition, Quaternion worldRotation, IActor parentShip) =>
+            public GameObject SpawnModule(GameObject prefab, Vector3 worldPosition, Quaternion worldRotation, IActor parentShip)
+            {
                 Calls.Add((prefab, worldPosition, worldRotation, parentShip));
+                return prefab;
+            }
+
+            public void DespawnModule(GameObject module) { }
         }
 
         private sealed class ListCatalog : IShipFixtureCatalog

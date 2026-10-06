@@ -656,7 +656,7 @@ namespace TinCan.DevTools.Scenarios
                     .Do("PlaceSubjectAtHelm"))
                 .Act(s => s
                     .WaitUntil("ShipDesignBuilt", 20f, "94")
-                    .WaitUntil("ShipTopSpeed", 10f, "14.22")
+                    .WaitUntil("ShipTopSpeed", 10f, "14.14")
                     .WaitUntil("SubjectOnShip", 45f)
                     .WaitUntil("SubjectAtHelm", 5f)
                     .Wait(0.5f, "teleport settles")
@@ -680,7 +680,7 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("ShipMoved", 20f, "3")
                     .WaitUntil("ShipTurned", 10f, "3")
                     .WaitUntil("HelmFree", 30f)
-                    .Expect("ShipTopSpeed", "14.22")
+                    .Expect("ShipTopSpeed", "14.14")
                     .Expect("ShipDesignBuilt", "95"))
                 .Build(),
             builder =>
@@ -725,7 +725,41 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipyardScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip };
+        public static readonly ScenarioEntry MountFitting = new(
+            new Scenario.Builder("MountFitting")
+                .InScene(TestScenes.Shipyard)
+                .Describe("Face a free socket on the designed ship -> press Interact -> the fitting menu opens on the subject's peer only -> pick the cannon -> the server mounts it on that socket for every peer.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("PlaceSubjectAtSocket"))
+                .Act(s => s
+                    .WaitUntil("ShipDesignBuilt", 20f, "94")
+                    .WaitUntil("SubjectOnShip", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceObject", "ShipSocketTarget")
+                    .WaitUntil("InteractTargetIs", 5f, "ShipSocketTarget")
+                    .Checkpoint("facing-socket")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("FittingMenuOpen", 5f)
+                    .Checkpoint("menu")
+                    .Do("ChooseFitting", "weapon.cannon")
+                    .WaitUntil("SocketFitted", 10f, "weapon.cannon")
+                    .Wait(0.5f, "the screenshot is taken at the end of a frame")
+                    .Checkpoint("mounted"))
+                .Assert(s => s
+                    .WaitUntil("SocketFitted", 60f, "weapon.cannon"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

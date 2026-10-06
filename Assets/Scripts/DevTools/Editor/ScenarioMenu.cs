@@ -94,6 +94,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "ShipyardRoundTrip (Host + Client, Lag100)")]
         public static void ShipyardRoundTripDuo() => RunDuo("ShipyardRoundTrip", "Lag100");
 
+        [MenuItem(Root + "MountFitting (Host)")]
+        public static void MountFittingSolo() => RunSolo("MountFitting");
+
+        [MenuItem(Root + "MountFitting (Host + Client, Lag100)")]
+        public static void MountFittingDuo() => RunDuo("MountFitting", "Lag100");
+
         [MenuItem(Root + "IslandsPerVoyage (Host)")]
         public static void IslandsPerVoyageSolo() => RunSolo("IslandsPerVoyage");
 

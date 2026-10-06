@@ -213,6 +213,8 @@ islands do. Functional parts (the helm) are spawned by the server as networked f
 that places a part keeps the same prefab's installer fixture off the ship (`Core/Ship/Fixtures/IShipFixtureFilter.cs`).
 A design's parts carry mass, lift, thrust and hull; the server turns them into the ship's speed, turn rate and health
 through `Core/Ship/IAirshipTuning.cs`. The shipyard (`Features/Shipyard/`) builds designs offline.
+Parts can carry sockets (`Core/Ship/Sockets/`). A separate integration feature (ShipSockets) lets players mount a
+feature's fittings in them (E on a free socket, then a choice the server validates); the builder never knows about it.
 Plan: [plans/modular-airship-builder.md](plans/modular-airship-builder.md).
 
 ## A Play session, end to end

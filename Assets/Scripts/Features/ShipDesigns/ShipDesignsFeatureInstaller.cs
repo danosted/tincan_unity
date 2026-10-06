@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TinCan.Core.Domain.Features;
 using TinCan.Core.Ship.Fixtures;
 using TinCan.Core.Ship.Parts;
+using TinCan.Core.Ship.Sockets;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -44,7 +45,7 @@ namespace TinCan.Features.ShipDesigns
 
             builder.Register<ShipDesignUseCase>(Lifetime.Singleton).As<IShipDesigns>().As<ITickable>();
             builder.Register<ShipHullBuilder>(Lifetime.Singleton).As<IShipHullBuilder>();
-            builder.Register<ShipAssemblyUseCase>(Lifetime.Singleton).As<IShipAssembly>().As<ITickable>();
+            builder.Register<ShipAssemblyUseCase>(Lifetime.Singleton).As<IShipAssembly>().As<IShipSockets>().As<ITickable>();
             builder.Register<ShipDesignFixtureFilter>(Lifetime.Singleton).As<IShipFixtureFilter>();
         }
 

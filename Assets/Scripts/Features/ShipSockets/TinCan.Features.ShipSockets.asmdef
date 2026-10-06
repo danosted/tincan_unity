@@ -1,0 +1,22 @@
+{
+    "name": "TinCan.Features.ShipSockets",
+    "rootNamespace": "TinCan.Features.ShipSockets",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Interaction",
+        "TinCan.Ship",
+        "TinCan.UI",
+        "Unity.Collections",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

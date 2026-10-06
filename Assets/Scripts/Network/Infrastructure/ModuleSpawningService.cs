@@ -18,9 +18,9 @@ namespace TinCan.Network.Infrastructure
             _container = container;
         }
 
-        public void SpawnModule(GameObject prefab, Vector3 worldPosition, Quaternion worldRotation, IActor parentShip)
+        public GameObject SpawnModule(GameObject prefab, Vector3 worldPosition, Quaternion worldRotation, IActor parentShip)
         {
-            if (!_networkManager.IsServer) return;
+            if (!_networkManager.IsServer) return null;
 
             // Modules live in ship-local space, so bake the requested world pose into ship-local values up front and
             // parent with worldPositionStays = false. NGO then replicates the LOCAL pose (spawn payload, parent sync
@@ -51,6 +51,16 @@ namespace TinCan.Network.Infrastructure
             // Notify module it's attached
             var module = instance.GetComponent<IShipModule>();
             module?.OnAttachedToShip(parentShip);
+            return instance;
+        }
+
+        public void DespawnModule(GameObject module)
+        {
+            if (!_networkManager.IsServer || module == null) return;
+
+            var netObj = module.GetComponent<NetworkObject>();
+            if (netObj != null && netObj.IsSpawned) netObj.Despawn(true);
+            else Object.Destroy(module);
         }
     }
 }

@@ -15,6 +15,8 @@ MonoBehaviour:
   _config: {fileID: 11400000, guid: bf6057e839a28f946ab13f88c63ad107, type: 2}
   _socketsFixture: {fileID: 11400000, guid: 10e29ac9821bc6444a44a79ea96cf1be, type: 2}
   _toolRackFixture: {fileID: 11400000, guid: 3ac0ad539300a704a95b080ce4f1359e, type: 2}
+  _fittings:
+  - {fileID: 11400000, guid: f017a485697ca284294675366c26deb7, type: 2}
   _cueNotifies:
   - {fileID: 11400000, guid: 7680ce0f88225ba42a5299b184c89638, type: 2}
   - {fileID: 11400000, guid: b55372f133c9ed249a571a274869a978, type: 2}

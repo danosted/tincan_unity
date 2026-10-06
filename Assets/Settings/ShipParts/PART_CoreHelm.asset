@@ -16,24 +16,36 @@ MonoBehaviour:
   _displayName: Helm
   _category: Core
   _footprint:
+  - {x: -1, y: 0, z: -2}
   - {x: -1, y: 0, z: -1}
   - {x: -1, y: 0, z: 0}
   - {x: -1, y: 0, z: 1}
+  - {x: -1, y: 0, z: 2}
+  - {x: -1, y: 1, z: -2}
   - {x: -1, y: 1, z: -1}
   - {x: -1, y: 1, z: 0}
   - {x: -1, y: 1, z: 1}
+  - {x: -1, y: 1, z: 2}
+  - {x: 0, y: 0, z: -2}
   - {x: 0, y: 0, z: -1}
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: 1}
+  - {x: 0, y: 0, z: 2}
+  - {x: 0, y: 1, z: -2}
   - {x: 0, y: 1, z: -1}
   - {x: 0, y: 1, z: 0}
   - {x: 0, y: 1, z: 1}
+  - {x: 0, y: 1, z: 2}
+  - {x: 1, y: 0, z: -2}
   - {x: 1, y: 0, z: -1}
   - {x: 1, y: 0, z: 0}
   - {x: 1, y: 0, z: 1}
+  - {x: 1, y: 0, z: 2}
+  - {x: 1, y: 1, z: -2}
   - {x: 1, y: 1, z: -1}
   - {x: 1, y: 1, z: 0}
   - {x: 1, y: 1, z: 1}
+  - {x: 1, y: 1, z: 2}
   _isCore: 1
   _visual: {fileID: 0}
   _networkedPrefab: {fileID: 622306366217008599, guid: 571491ff7f4ce524fb8fa44b9268b367, type: 3}

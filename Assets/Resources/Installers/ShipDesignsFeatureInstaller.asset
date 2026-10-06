@@ -21,4 +21,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a7af6b36fa1cd224295f6a736b5b35ab, type: 2}
   - {fileID: 11400000, guid: f9c02254c08449c49934e40065409a4b, type: 2}
   - {fileID: 11400000, guid: 82594b2d77328d24bbdea466f1b946b7, type: 2}
+  - {fileID: 11400000, guid: 6afe8b76cb734d34b8a87986b5600f4e, type: 2}
   _stateFixture: {fileID: 11400000, guid: b49d87f299061b140bef706eb9114a4a, type: 2}

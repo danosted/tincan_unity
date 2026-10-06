@@ -16,4 +16,6 @@ MonoBehaviour:
   _cannonFixtures:
   - {fileID: 11400000, guid: a3426bcaf5141cb4ab1c3d9c6368c83c, type: 2}
   - {fileID: 11400000, guid: 4a7b61a21f7c7514bbc814cd241cf68a, type: 2}
+  _fittings:
+  - {fileID: 11400000, guid: 625c46324cd66864eacaa9215b565d54, type: 2}
   _controls: {fileID: 11400000, guid: 1d672656a0560834bb10146cc52eb567, type: 2}

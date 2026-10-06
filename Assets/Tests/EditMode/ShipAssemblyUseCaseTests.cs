@@ -21,8 +21,13 @@ namespace TinCan.Tests.EditMode
         {
             public List<(GameObject Prefab, Vector3 Position, Quaternion Rotation, IActor Ship)> Calls { get; } = new();
 
-            public void SpawnModule(GameObject prefab, Vector3 worldPosition, Quaternion worldRotation, IActor parentShip) =>
+            public GameObject SpawnModule(GameObject prefab, Vector3 worldPosition, Quaternion worldRotation, IActor parentShip)
+            {
                 Calls.Add((prefab, worldPosition, worldRotation, parentShip));
+                return prefab;
+            }
+
+            public void DespawnModule(GameObject module) { }
         }
 
         private sealed class ClientNetwork : INetworkService
@@ -195,6 +200,39 @@ namespace TinCan.Tests.EditMode
 
             Assert.That(_builder.Standing, Is.Empty);
             Assert.That(assembly.TryGetBuilt(_ship.Id, out _, out _), Is.False);
+        }
+
+        [Test]
+        public void TheSocketsOfBuiltParts_AreTheShipsSockets()
+        {
+            var mountVisual = new GameObject("MountVisual");
+            var marker = new GameObject("ShipSocket");
+            marker.transform.SetParent(mountVisual.transform, false);
+            marker.transform.localPosition = new Vector3(0f, 0.5f, 0f);
+            marker.AddComponent<TinCan.Core.Ship.Sockets.ShipSocket>();
+            var mount = TinCan.Core.Ship.Parts.ShipPartDefinition.Create("hull.mount", false, mountVisual, null, Vector3.zero);
+            try
+            {
+                var catalog = new ShipPartCatalog(_parts.Catalog.Parts.Append(mount));
+                var assembly = new ShipAssemblyUseCase(_actors, new FakeNetworkService(), catalog, _config, new ShipHullBuilder(), _spawner,
+                    new FakeEventPublisher());
+                int version = assembly.Version;
+                _state.Set(Ship(("hull.mount", 2, -1, 0, 0)));
+
+                assembly.Tick();
+
+                var socket = assembly.SocketsOf(_ship.Id).Single();
+                Assert.That(socket.Id, Is.EqualTo(new TinCan.Core.Ship.Sockets.ShipSocketId(3, 0)), "part #3, its first socket");
+                Assert.That(socket.Mount.IsChildOf(_ship.Transform), Is.True);
+                Assert.That(Vector3.Distance(socket.Mount.localPosition, new Vector3(0f, 0.5f, 0f)), Is.LessThan(0.001f));
+                Assert.That(assembly.Version, Is.GreaterThan(version));
+                Assert.That(assembly.SocketsOf(System.Guid.NewGuid()), Is.Empty);
+            }
+            finally
+            {
+                Object.DestroyImmediate(mount);
+                Object.DestroyImmediate(mountVisual);
+            }
         }
     }
 }

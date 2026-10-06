@@ -351,3 +351,58 @@ know fixtures exist, which is closer to what the constraint rules out.
 
 **Decisions needed:** A, B or C; and with A, whether every matching socket gets its fixture automatically or the player
 chooses per socket in the shipyard.
+
+### Decision (developer, 2026-10-06): sockets
+- **Option A, sockets on parts**, as the developer pictures it: sockets are free mount points a ship's parts provide.
+  Another system (crafting, later) adds fixtures to them; any fixture fits any socket for now. Typed sockets can narrow
+  that later.
+- **What is mounted is live ship state**, replicated by the server. It is not part of the design file, so it is lost
+  with the session until persistence exists.
+- **Until crafting exists, players attach in the world:** look at an empty socket, press E, pick a fixture from a menu.
+
+### S5: Sockets and fittings
+- *Core* (`Core/Ship/Sockets/`):
+  - `ShipSocket`: a marker on part prefabs, the mount pose.
+  - `ShipSocketId`: the part's instance id plus the socket's index in that part.
+  - `IShipSockets`: a ship's sockets, implemented by ShipDesigns from the parts it built.
+  - `ShipFittingDefinition`: a fitting id, a name and a networked prefab; features contribute these through
+    `FeatureInstaller.IExtension`.
+  - `IModuleSpawningService` returns what it spawned and can despawn it, so mounted fixtures can be removed.
+- *Integration feature* `TinCan.Features.ShipSockets` (the builder does not know it):
+  - a ShipSocketsState fixture that replicates what is mounted where;
+  - a server `ShipFittingUseCase` that mounts, refuses taken or vanished sockets and reaches more than 4 m away, and
+    despawns a fitting when its part is removed;
+  - every peer turns free sockets into interaction targets;
+  - E on one asks the server, which opens the fitting menu on that player's peer only; the choice goes back to the
+    server as a request it validates;
+  - a fixture filter keeps the fittings' fixed-pose fixtures off ships that have sockets.
+- *Parts and fittings:* a new `hull.mount` part (a deck plate with one socket on top). The starter's two bow deck tiles
+  become mount plates. The cannon station is the first fitting (from the Cannon feature) and the repair rack the second
+  (from Damage). Test_Shipyard loads the Cannon.
+- *Scenario* `MountFitting`: the subject faces a free socket, presses E, picks the cannon. Host and client see the cannon
+  mounted on that socket.
+
+*S5 outcome (2026-10-06):*
+- Built as planned. Core: `Core/Ship/Sockets/` (`ShipSocket`, `ShipSocketId`, `ShipSocketInfo`, `IShipSockets`,
+  `ShipFittingDefinition`). `IModuleSpawningService.SpawnModule` now returns the spawned object, and `DespawnModule`
+  removes it.
+- ShipDesigns provides the sockets: `ShipAssemblyUseCase` is `IShipSockets`. Socket index i is the i-th `ShipSocket`
+  under a built part.
+- Feature `TinCan.Features.ShipSockets`:
+  - E on a free socket reaches the server (`MountFittingInteractionHandler`), which asks that player's peer to choose
+    (an RPC to one client).
+  - The fitting menu is built from the loaded fittings. The choice goes back as a request the server checks: known
+    fitting, a socket the ship has, not taken, within 4 m.
+  - Mounts replicate as a `NetworkList` on the ShipSocketsState fixture. A fitting whose part is removed is
+    despawned.
+  - To avoid another dependency cycle, the menu row's command depends only on a small `ShipFittingChoice` holder,
+    never on the menu system.
+- Fittings: the cannon station (Cannon feature) and the tool rack (Damage). Test_Shipyard loads the Cannon; its
+  fixed-pose cannon fixtures are kept off by `ShipSocketsFixtureFilter`, so cannons come only through sockets.
+- Part `hull.mount`: a deck plate with a socket on top. The starter has two, on the bow row.
+- **Helm footprint corrected** to 3 × 2 × 5 cells: the stand mesh reaches 2.35 m forward, past the 3-cell footprint.
+  The first host + client run caught it: a player aft of a bow socket was looking across the stand.
+- Scenario `MountFitting` passes solo and host + client. The client faces a socket, presses E, the menu opens on the
+  client only, it picks the cannon, and both peers see the cannon on that socket. EditMode suite 922/922.
+- Not built yet: removing a fitting in the world (`IShipFittings.Unmount` exists; no player action calls it), socket
+  types, crafting as the source of fittings, and keeping mounts across sessions.

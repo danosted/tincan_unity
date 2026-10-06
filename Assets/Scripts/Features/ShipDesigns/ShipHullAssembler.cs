@@ -32,6 +32,10 @@ namespace TinCan.Features.ShipDesigns
 
         public int UnknownCount { get; private set; }
 
+        /// <summary>The parts with something built for them, and the builder's handle for each (a GameObject for real builders).</summary>
+        public IEnumerable<(ShipPartPlacement Placement, object Handle)> Built =>
+            _parts.Values.Where(p => p.Handle != null).Select(p => (p.Placement, p.Handle!));
+
         /// <summary>Brings the root in step with the design; returns the known parts added by this apply.</summary>
         public IReadOnlyList<(ShipPartPlacement Placement, ShipPartDefinition Part)> Apply(ShipDesign design, Transform root)
         {

@@ -6,6 +6,7 @@ using System.Linq;
 using TinCan.Core.Domain.Features;
 using TinCan.Core.Entities;
 using TinCan.Core.Ship.Parts;
+using TinCan.Core.Ship.Sockets;
 using TinCan.Features.Helm;
 using TinCan.Features.ShipDesigns;
 using Unity.Netcode;
@@ -48,6 +49,7 @@ namespace TinCan.DevTools.Editor
         public const string Balloon = "lift.balloon";
         public const string Mast = "hull.mast";
         public const string Envelope = "lift.envelope";
+        public const string HullMount = "hull.mount";
 
         /// <summary>A deck tile's thickness; its top is flush with the top of its cell, the cell's walkable surface.</summary>
         private const float DeckThickness = 0.2f;
@@ -86,10 +88,12 @@ namespace TinCan.DevTools.Editor
             var envelopePrefab = BoxPrefab("ShipPart_Envelope", new Vector3(0f, 1f, 0f), new Vector3(4.8f, 2.8f, 6.8f), canvas, PrimitiveType.Sphere);
             var envelope = Part("PART_Envelope", Envelope, "Envelope", "Lift", false, envelopePrefab, null, Vector3.zero,
                 new ShipPartStats(40f, lift: 1200f, hull: 30f), Box(5, 3, 7));
-            // The helm stand is about 4.5 x 2.2 x 3.9 m with its pivot at its base: 3 x 2 x 3 cells, standing on the floor
-            // of its origin cell.
+            // A deck tile with a socket on top: where fittings (a cannon, a tool rack) are mounted.
+            var mount = Part("PART_HullMount", HullMount, "Mount plate", "Hull", false, MountPrefab(brass), null, Vector3.zero, new ShipPartStats(5f, hull: 10f));
+            // The helm stand is about 4.5 x 2.2 x 3.9 m with its pivot at its base, reaching 2.35 m forward: 3 x 2 x 5 cells,
+            // standing on the floor of its origin cell.
             var helm = Part("PART_CoreHelm", CoreHelm, "Helm", "Core", true, null, Load<GameObject>(HelmStationPath),
-                new Vector3(0f, -0.5f * ShipGrid.CellSize, 0f), new ShipPartStats(30f, hull: 100f), Box(3, 2, 3));
+                new Vector3(0f, -0.5f * ShipGrid.CellSize, 0f), new ShipPartStats(30f, hull: 100f), Box(3, 2, 5));
 
             var starter = WriteStarter();
             var config = Asset<ShipDesignsConfig>(ConfigPath, designs =>
@@ -107,7 +111,7 @@ namespace TinCan.DevTools.Editor
             var installer = Asset<ShipDesignsFeatureInstaller>(InstallerPath, i =>
             {
                 SetField(i, "_config", config);
-                SetList(i, "_parts", new Object[] { block, deck, armour, engine, balloon, mast, envelope });
+                SetList(i, "_parts", new Object[] { block, deck, armour, engine, balloon, mast, envelope, mount });
                 SetField(i, "_stateFixture", stateFixture);
             });
             var helmInstaller = Load<HelmFeatureInstaller>(HelmInstallerPath);
@@ -133,9 +137,10 @@ namespace TinCan.DevTools.Editor
         public static ShipDesign StarterDesign()
         {
             var parts = new List<(string Part, ShipGridCell Cell)>();
+            // Two mount plates in the bow deck: sockets for fittings.
             for (int x = -2; x <= 2; x++)
             for (int z = -4; z <= 4; z++)
-                parts.Add((HullDeck, new ShipGridCell(x, -1, z)));
+                parts.Add((z == 4 && x is -1 or 1 ? HullMount : HullDeck, new ShipGridCell(x, -1, z)));
             for (int x = -1; x <= 1; x++)
             for (int z = -3; z <= 3; z++)
                 parts.Add((HullBlock, new ShipGridCell(x, -2, z)));
@@ -258,6 +263,32 @@ namespace TinCan.DevTools.Editor
                 for (int i = 0; i < footprint.Length; i++) cells.GetArrayElementAtIndex(i).vector3IntValue = footprint[i];
                 serialized.ApplyModifiedPropertiesWithoutUndo();
             });
+
+        /// <summary>A deck tile in a mount colour, with a ShipSocket on its top face.</summary>
+        private static GameObject MountPrefab(Material material)
+        {
+            var path = PrefabsFolder + "ShipPart_HullMount.prefab";
+            var root = new GameObject("ShipPart_HullMount");
+            try
+            {
+                var plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                plate.name = "Mesh";
+                plate.transform.SetParent(root.transform, false);
+                plate.transform.localPosition = new Vector3(0f, (ShipGrid.CellSize - DeckThickness) * 0.5f, 0f);
+                plate.transform.localScale = new Vector3(ShipGrid.CellSize, DeckThickness, ShipGrid.CellSize);
+                plate.GetComponent<MeshRenderer>().sharedMaterial = material;
+                var socket = new GameObject("ShipSocket");
+                socket.transform.SetParent(root.transform, false);
+                socket.transform.localPosition = new Vector3(0f, 0.5f * ShipGrid.CellSize, 0f);
+                socket.AddComponent<ShipSocket>();
+                EnsureFolder(path);
+                return PrefabUtility.SaveAsPrefabAsset(root, path);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
 
         private static GameObject BoxPrefab(string name, Vector3 centre, Vector3 size, Material material, PrimitiveType shape = PrimitiveType.Cube)
         {

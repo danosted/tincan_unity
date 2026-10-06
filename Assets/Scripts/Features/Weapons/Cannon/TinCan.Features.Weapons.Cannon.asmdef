@@ -6,6 +6,7 @@
         "TinCan.Gas",
         "TinCan.Humanoid",
         "TinCan.Interaction",
+        "TinCan.Ship",
         "TinCan.Targeting",
         "TinCan.Features.Stations",
         "Unity.Netcode.Runtime",

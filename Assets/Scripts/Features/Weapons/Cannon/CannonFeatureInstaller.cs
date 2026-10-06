@@ -1,4 +1,5 @@
 #nullable enable
+using TinCan.Core.Ship.Sockets;
 using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
@@ -18,11 +19,14 @@ namespace TinCan.Features.Weapons.Cannon
     /// Add a fixture to add a cannon: placement is data. Plan: .docs/plans/cannon-and-hazards.md.
     /// </summary>
     [CreateAssetMenu(fileName = "CannonFeatureInstaller", menuName = "TinCan/Features/Cannon Feature Installer")]
-    public class CannonFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<ShipFixtureDefinition>, FeatureInstaller.IExtension<InputContext>
+    public class CannonFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<ShipFixtureDefinition>, FeatureInstaller.IExtension<InputContext>,
+        FeatureInstaller.IExtension<ShipFittingDefinition>
     {
         [SerializeField] private CannonConfig? _config;
         [Tooltip("Cannon stations and where they sit on the ship (one fixture per cannon).")]
         [SerializeField] private List<ShipFixtureDefinition> _cannonFixtures = new();
+        [Tooltip("The cannon station as a fitting players mount in a ship's socket (ships built from designs).")]
+        [SerializeField] private List<ShipFittingDefinition> _fittings = new();
         [Tooltip("Assets/Input/Contexts/Context_Gunner: the mouse aims the barrel while manning a cannon.")]
         [SerializeField] private GunnerInputContext? _controls;
 
@@ -55,6 +59,8 @@ namespace TinCan.Features.Weapons.Cannon
         }
 
         IEnumerable<ShipFixtureDefinition> FeatureInstaller.IExtension<ShipFixtureDefinition>.Contributions => _cannonFixtures;
+
+        IEnumerable<ShipFittingDefinition> FeatureInstaller.IExtension<ShipFittingDefinition>.Contributions => _fittings;
 
         IEnumerable<InputContext> FeatureInstaller.IExtension<InputContext>.Contributions
         {

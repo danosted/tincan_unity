@@ -1,4 +1,5 @@
 #nullable enable
+using TinCan.Core.Ship.Sockets;
 using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
@@ -21,13 +22,15 @@ namespace TinCan.Features.Airship.Damage
     /// </summary>
     [CreateAssetMenu(fileName = "ShipDamageFeatureInstaller", menuName = "TinCan/Features/Ship Damage Feature Installer")]
     public class ShipDamageFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<ShipFixtureDefinition>, FeatureInstaller.IExtension<GameplayCueNotify>,
-        FeatureInstaller.IExtension<EventDefinition>, FeatureInstaller.IExtension<ItemDefinition>
+        FeatureInstaller.IExtension<EventDefinition>, FeatureInstaller.IExtension<ItemDefinition>, FeatureInstaller.IExtension<ShipFittingDefinition>
     {
         [SerializeField] private ShipDamageConfig? _config;
         [Tooltip("Networked ShipDamageSockets prefab and where it sits on the ship.")]
         [SerializeField] private ShipFixtureDefinition? _socketsFixture;
         [Tooltip("Networked rack that hands out the repair tool, and where it sits on the ship.")]
         [SerializeField] private ShipFixtureDefinition? _toolRackFixture;
+        [Tooltip("The tool rack as a fitting players mount in a ship's socket (ships built from designs).")]
+        [SerializeField] private List<ShipFittingDefinition> _fittings = new();
         [Tooltip("What break, repair, the leak and the repair tool look and sound like (GCN_* assets).")]
         [SerializeField] private List<GameplayCueNotify> _cueNotifies = new();
         [Tooltip("The items this feature owns (the repair tool).")]
@@ -64,6 +67,8 @@ namespace TinCan.Features.Airship.Damage
                 if (_toolRackFixture != null && _toolRackFixture.Prefab != null) yield return _toolRackFixture.Prefab;
             }
         }
+
+        IEnumerable<ShipFittingDefinition> FeatureInstaller.IExtension<ShipFittingDefinition>.Contributions => _fittings;
 
         IEnumerable<ShipFixtureDefinition> FeatureInstaller.IExtension<ShipFixtureDefinition>.Contributions
         {

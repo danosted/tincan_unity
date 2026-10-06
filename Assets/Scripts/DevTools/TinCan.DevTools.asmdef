@@ -25,6 +25,7 @@
         "TinCan.Features.SkyIslands",
         "TinCan.Features.ShipDesigns",
         "TinCan.Features.Shipyard",
+        "TinCan.Features.ShipSockets",
         "TinCan.Features.Boarding",
         "TinCan.UI",
         "Unity.Netcode.Runtime",

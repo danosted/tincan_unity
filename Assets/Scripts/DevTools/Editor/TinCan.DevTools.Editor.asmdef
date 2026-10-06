@@ -21,6 +21,7 @@
         "TinCan.Features.SkyIslands",
         "TinCan.Features.ShipDesigns",
         "TinCan.Features.Shipyard",
+        "TinCan.Features.ShipSockets",
         "TinCan.DevTools",
         "TinCan.Humanoid",
         "TinCan.Input",

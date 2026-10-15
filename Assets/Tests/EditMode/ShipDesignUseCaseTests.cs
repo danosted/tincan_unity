@@ -13,7 +13,8 @@ namespace TinCan.Tests.EditMode
 {
     /// <summary>
     /// <see cref="ShipDesignUseCase"/>: the server gives ships the selected design (launch argument, else the config's
-    /// default), refuses invalid ones, and <see cref="ShipDesignFixtureFilter"/> keeps the helm fixture off designed ships.
+    /// default, a ship's own preset in between), refuses invalid ones, and <see cref="ShipDesignFixtureFilter"/> keeps the
+    /// helm fixture off designed ships (<see cref="ShipDesignPresetFixtureFilter"/>: what a preset lists).
     /// </summary>
     public class ShipDesignUseCaseTests
     {
@@ -133,6 +134,66 @@ namespace TinCan.Tests.EditMode
             _state.Ship = _ship;
             designs.Tick();
             Assert.That(_state.Writes, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void AShipsPreset_ChoosesItsDesign_OtherShipsKeepTheDefault()
+        {
+            _ship.GameObject.AddComponent<ShipDesignPreset>().Configure("Other", new ShipFixtureDefinition[0]);
+            var plain = new FakeAirshipView("Plain");
+            var plainState = new FakeShipDesignState(plain);
+            _actors.Register(plain);
+            _actors.Register(plainState);
+            try
+            {
+                UseCase().Tick();
+
+                Assert.That(_state.DesignHash, Is.EqualTo(ShipDesignHash.Compute(_codec.Decode(_builtIns["Other"]).Design!)));
+                Assert.That(plainState.DesignHash, Is.EqualTo(ShipDesignHash.Compute(_codec.Decode(_builtIns["Starter"]).Design!)));
+            }
+            finally
+            {
+                plain.Destroy();
+            }
+        }
+
+        [Test]
+        public void TheLaunchArgument_AndTheShipyardsChoice_WinOverAPreset()
+        {
+            _ship.GameObject.AddComponent<ShipDesignPreset>().Configure("Other", new ShipFixtureDefinition[0]);
+
+            UseCase("-shipDesign", "Starter").Tick();
+            Assert.That(_state.DesignHash, Is.EqualTo(ShipDesignHash.Compute(_codec.Decode(_builtIns["Starter"]).Design!)));
+
+            _state.ServerSetDesign(0, new byte[0]);
+            var designs = UseCase();
+            var chosen = Design((Helm, 0, 0, 0, 0), (Block, 1, 0, 0, 0), (Block, 2, 0, 0, 0));
+            designs.Select(chosen);
+            designs.Tick();
+            Assert.That(_state.DesignHash, Is.EqualTo(ShipDesignHash.Compute(chosen)));
+        }
+
+        [Test]
+        public void ThePresetFixtureFilter_KeepsOffWhatThePresetLists_OnThatShipOnly()
+        {
+            var filter = new ShipDesignPresetFixtureFilter();
+            var oldHull = ScriptableObject.CreateInstance<ShipFixtureDefinition>();
+            var state = ScriptableObject.CreateInstance<ShipFixtureDefinition>();
+            var plain = new FakeAirshipView("Plain");
+            try
+            {
+                _ship.GameObject.AddComponent<ShipDesignPreset>().Configure("Other", new[] { oldHull });
+
+                Assert.That(filter.ShouldSpawn(_ship, oldHull), Is.False);
+                Assert.That(filter.ShouldSpawn(_ship, state), Is.True);
+                Assert.That(filter.ShouldSpawn(plain, oldHull), Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(oldHull);
+                Object.DestroyImmediate(state);
+                plain.Destroy();
+            }
         }
 
         [Test]

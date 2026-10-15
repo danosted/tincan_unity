@@ -47,6 +47,7 @@ namespace TinCan.Features.ShipDesigns
             builder.Register<ShipHullBuilder>(Lifetime.Singleton).As<IShipHullBuilder>();
             builder.Register<ShipAssemblyUseCase>(Lifetime.Singleton).As<IShipAssembly>().As<IShipSockets>().As<ITickable>();
             builder.Register<ShipDesignFixtureFilter>(Lifetime.Singleton).As<IShipFixtureFilter>();
+            builder.Register<ShipDesignPresetFixtureFilter>(Lifetime.Singleton).As<IShipFixtureFilter>();
         }
 
         public override IEnumerable<GameObject> NetworkedPrefabs

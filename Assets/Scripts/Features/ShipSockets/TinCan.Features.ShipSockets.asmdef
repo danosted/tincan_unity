@@ -3,6 +3,7 @@
     "rootNamespace": "TinCan.Features.ShipSockets",
     "references": [
         "TinCan.Core.Domain",
+        "TinCan.Features.ShipDesigns",
         "TinCan.Interaction",
         "TinCan.Ship",
         "TinCan.UI",
@@ -13,8 +14,10 @@
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Newtonsoft.Json.dll"
+    ],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],

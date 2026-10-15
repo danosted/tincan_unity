@@ -789,6 +789,33 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
+        // The galleon's built-in loadout (Settings/ShipSockets/Galleon.fittings.json): four cannons and the tool rack. The
+        // tool rack comes from ShipDamage, which Test_Shipyard does not load, so here it is skipped and the cannons mount.
+        public static readonly ScenarioEntry GalleonLoadout = new(
+            new Scenario.Builder("GalleonLoadout")
+                .InScene(TestScenes.Shipyard)
+                .Describe("The host gives the ship the built-in galleon -> every peer builds it -> the server mounts the galleon's loadout from its fittings file -> its four cannons stand on their sockets on every peer (the tool rack's feature is not loaded here, so it is skipped).")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("FlyDesign", "Galleon"))
+                .Act(s => s
+                    .WaitUntil("ShipDesignBuilt", 30f, "471")
+                    .WaitUntil("FittingsMounted", 15f, "4")
+                    .Expect("SocketFitted", "weapon.cannon")
+                    .Wait(0.5f, "the screenshot is taken at the end of a frame")
+                    .Checkpoint("fitted"))
+                .Assert(s => s
+                    .WaitUntil("FittingsMounted", 60f, "4"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
         // Off the starboard rail (the test ship's deck spans x -4.2..6.3, top y -3.49) and 5 m above the deck, aiming at
         // the deck's middle: the line clears the 1 m rail even after a short fall.
         public static readonly ScenarioEntry HookAboard = new(
@@ -833,7 +860,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

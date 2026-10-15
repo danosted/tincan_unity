@@ -13,8 +13,10 @@ namespace TinCan.Features.ShipSockets
     /// <summary>
     /// Ship sockets: the integration between ships' parts and the systems that mount things on them. Free sockets (from
     /// the parts' <c>ShipSocket</c> markers, through <c>IShipSockets</c>) become interaction targets; E on one opens the
-    /// fitting menu; the server mounts the choice and replicates what is mounted where. Fittings come from other features
-    /// (<c>IExtension&lt;ShipFittingDefinition&gt;</c>). Plan: .docs/plans/modular-airship-builder.md (S5).
+    /// fitting menu; the server mounts the choice and replicates what is mounted where. A design's loadout file
+    /// (<c>&lt;design key&gt;.fittings.json</c>) is mounted when a ship is built from it. Fittings come from other features
+    /// (<c>IExtension&lt;ShipFittingDefinition&gt;</c>). Plans: .docs/plans/modular-airship-builder.md (S5),
+    /// .docs/plans/ship-fitting-loadouts.md.
     /// </summary>
     [CreateAssetMenu(fileName = "ShipSocketsFeatureInstaller", menuName = "TinCan/Features/Ship Sockets Feature Installer")]
     public class ShipSocketsFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<ShipFixtureDefinition>
@@ -34,6 +36,8 @@ namespace TinCan.Features.ShipSockets
             builder.RegisterInstance(_config);
             builder.Register<ShipFittingCatalog>(Lifetime.Singleton).As<IShipFittingCatalog>();
             builder.Register<ShipFittingUseCase>(Lifetime.Singleton).As<IShipFittings>().As<ITickable>();
+            builder.Register<FileShipFittingLoadoutStore>(Lifetime.Singleton).As<IShipFittingLoadoutStore>();
+            builder.Register<ShipFittingLoadoutUseCase>(Lifetime.Singleton).As<ITickable>();
             builder.Register<ShipSocketTargetsUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
             builder.Register<MountFittingInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
             builder.Register<ShipFittingChoice>(Lifetime.Singleton);

@@ -13,7 +13,9 @@ The canonical description is `.docs/NETWORK_TEST_HARNESS.md` ("Scenarios" and "T
    the front over whatever the developer is doing. Before running `-Scenario` or `-All`, tell the developer which
    scenarios and tiers will run and roughly how long it takes (about 15–25 s per scenario per tier, plus a minute for
    compile and tests), and wait for a yes. `-UpTo Compile` and `-UpTo Tests` don't play and need no confirmation.
-   Iterate on those, then ask once for the play run at the end.
+   Iterate on those, then ask once for the play run at the end. If the run has to wait for the Editor behind other
+   sessions, ask for the yes when it joins the queue and start without asking again when your turn comes
+   (`AGENTS.md`, "Several sessions at once").
 3. **Run** from the repo root, in PowerShell, with the Editor open:
    ```powershell
    .\.tools\verify.ps1 -Scenario <Name> -SaveDirtyScenes

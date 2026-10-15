@@ -36,6 +36,7 @@
         "TinCan.Features.ShipDesigns",
         "TinCan.Features.Shipyard",
         "TinCan.Features.ShipSockets",
+        "TinCan.Features.GrappleHook",
         "TinCan.DevTools",
         "TinCan.DevTools.Editor",
         "TinCan.Tests.Shared",

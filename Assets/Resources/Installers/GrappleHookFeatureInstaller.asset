@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b75350e86c706f409de26ba4f76323a, type: 3}
+  m_Name: GrappleHookFeatureInstaller
+  m_EditorClassIdentifier: TinCan.Features.GrappleHook::TinCan.Features.GrappleHook.GrappleHookFeatureInstaller
+  _config: {fileID: 11400000, guid: 1e54d7c71dfc25444b49f55197d06124, type: 2}
+  _rackFixture: {fileID: 11400000, guid: 7a65476d8fc4c3c49b909efaa6cb5560, type: 2}
+  _stateFixture: {fileID: 11400000, guid: 1010baf9857f1e944bbc59af12224b6f, type: 2}
+  _items:
+  - {fileID: 11400000, guid: 7c60588b6204a374c92570a8cd27ab68, type: 2}

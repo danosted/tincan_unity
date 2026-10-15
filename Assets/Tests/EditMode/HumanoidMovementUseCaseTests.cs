@@ -39,7 +39,7 @@ namespace TinCan.Tests.EditMode
             _eventPublisher = new FakeEventPublisher();
             _processor = new HumanoidMovementProcessor();
             _abilitySystem = new AbilitySystemUseCase(_abilityRegistry, _actorRegistry, _timeService, _eventPublisher);
-            _useCase = new HumanoidMovementUseCase(_inputService, FakeInputContexts.Humanoid(), _networkService, _processor, _abilitySystem, _actorRegistry, _timeService, FakeInputContexts.NoContributors);
+            _useCase = new HumanoidMovementUseCase(_inputService, FakeInputContexts.Humanoid(), _networkService, _processor, _abilitySystem, _actorRegistry, _timeService, FakeInputContexts.NoContributors, FakeInputContexts.NoMotionContributors);
 
             // Wide, solid platform collider positioned just below the character so a downward
             // raycast hits it, and stays under the character even after a single large test-only jump.
@@ -115,6 +115,38 @@ namespace TinCan.Tests.EditMode
 
             float expectedRise = _movementView.JumpForce * _timeService.DeltaTime;
             Assert.That(_movementView.Transform.position.y - before, Is.EqualTo(expectedRise).Within(0.001f));
+        }
+
+        [Test]
+        public void MotionContributor_SetsTheStepsVelocity_AndTheBodyKeepsItAsMomentum()
+        {
+            var push = new PushOnce(new Vector3(3f, 0f, 0f));
+            var useCase = new HumanoidMovementUseCase(_inputService, FakeInputContexts.Humanoid(), _networkService, _processor, _abilitySystem,
+                _actorRegistry, _timeService, FakeInputContexts.NoContributors, new IHumanoidMotionContributor[] { push });
+            useCase.Tick(); // settle onto the platform (the push is spent here)
+            Vector3 afterPush = _movementView.Transform.position;
+
+            Assert.That(afterPush.x, Is.EqualTo(3f * _timeService.DeltaTime).Within(0.001f), "The body moved by the contributed velocity.");
+            Assert.That(push.SawReplay, Is.False);
+
+            useCase.Tick();
+            Assert.That(_movementView.Transform.position.x - afterPush.x, Is.GreaterThan(0.05f), "The contributed velocity became momentum.");
+        }
+
+        private sealed class PushOnce : IHumanoidMotionContributor
+        {
+            private Vector3? _velocity;
+            public bool SawReplay { get; private set; }
+
+            public PushOnce(Vector3 velocity) => _velocity = velocity;
+
+            public void Contribute(IHumanoidCharacterView character, in HumanoidInputState input, ref HumanoidMotionStep step)
+            {
+                SawReplay |= step.IsReplay;
+                if (_velocity is not { } velocity) return;
+                step.Velocity = velocity;
+                _velocity = null;
+            }
         }
 
         [Test]

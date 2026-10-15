@@ -1,0 +1,21 @@
+{
+    "name": "TinCan.Features.GrappleHook",
+    "rootNamespace": "TinCan.Features.GrappleHook",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Gas",
+        "TinCan.Humanoid",
+        "TinCan.Items",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

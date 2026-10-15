@@ -60,6 +60,10 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
   - A station that takes over the controls is a context (tag condition, silences the body) plus an
     `IHumanoidInputContributor` that writes its part of the predicted input (`StationAim`). It is still one input
     stream, predicted and tick-exact.
+  - Something that moves the body beyond its own legs (the grappling hook reeling it in) is an
+    `IHumanoidMotionContributor` (`Core/Humanoid/`). It changes one step's world velocity, after the body's momentum,
+    jump and gravity and before the move. It runs on the server and on the predicting owner, and again in replay
+    (`HumanoidMotionStep.IsReplay`), where it must reproduce the motion and change no state.
   - The generated [`INPUT_MAP.md`](INPUT_MAP.md) shows what listens to what.
 
 - **Equipment grants abilities.** What a player holds is an `ItemDefinition` whose id the server writes into

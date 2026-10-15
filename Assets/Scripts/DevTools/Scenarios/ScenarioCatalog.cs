@@ -789,7 +789,51 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, ShipStairs };
+        // Off the starboard rail (the test ship's deck spans x -4.2..6.3, top y -3.49) and 5 m above the deck, aiming at
+        // the deck's middle: the line clears the 1 m rail even after a short fall.
+        public static readonly ScenarioEntry HookAboard = new(
+            new Scenario.Builder("HookAboard")
+                .InScene(TestScenes.GrappleHook)
+                .Describe("Hold the grappling hook, fall beside the ship -> fire at the deck and reel -> back aboard, line seen on both peers, then let go.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("EquipSubject", "ITEM_GrappleHook")
+                    .Do("PlaceSubjectAtShipLocal", "15,1.51,0"))
+                .Act(s => s
+                    .WaitUntil("SubjectHolds", 5f, "ITEM_GrappleHook")
+                    .WaitUntil("SubjectHasTag", 3f, "State.Carrying.GrappleHook")
+                    .Expect("SubjectVisualShown", "Carry_GrappleHook")
+                    .WaitUntil("SubjectNearShipLocal", 10f, "15,1.51,0,4")
+                    .Do("AimAtShipLocal", "1.05,-3.49,0")
+                    .WaitUntil("HookAim", 2f, "InRange")
+                    .Expect("SubjectPose")
+                    .Hold(3f, ScriptedAction.Primary)
+                    .WaitUntil("SubjectOnShip", 5f)
+                    .WaitUntil("SubjectUnhooked", 3f)
+                    .Checkpoint("aboard"))
+                .Assert(s => s
+                    .WaitUntil("SubjectHooked", 30f)
+                    .WaitUntil("HookLineDrawn", 3f)
+                    .Expect("SubjectPose")
+                    .Wait(0.3f, "reeling")
+                    .Expect("SubjectPose")
+                    .Wait(0.3f, "reeling")
+                    .Expect("SubjectPose")
+                    .Wait(0.6f, "reeling")
+                    .Expect("SubjectPose")
+                    .WaitUntil("SubjectOnShip", 10f)
+                    .WaitUntil("SubjectUnhooked", 5f)
+                    .Expect("SubjectHolds", "ITEM_GrappleHook"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

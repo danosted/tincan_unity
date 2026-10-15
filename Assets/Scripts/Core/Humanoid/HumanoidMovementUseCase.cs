@@ -20,6 +20,7 @@ namespace TinCan.Core.Humanoid
         private readonly HumanoidMovementProcessor _processor;
         private readonly AbilitySystemUseCase _abilitySystem;
         private readonly IReadOnlyList<IHumanoidInputContributor> _contributors;
+        private readonly IReadOnlyList<IHumanoidMotionContributor> _motionContributors;
         // Horizontal momentum, in the yaw frame of _velocityFrames[id] (the platform underfoot; world when absent).
         private readonly Dictionary<Guid, Vector3> _horizontalVelocities = new();
         private readonly Dictionary<Guid, Transform?> _velocityFrames = new();
@@ -49,13 +50,15 @@ namespace TinCan.Core.Humanoid
             AbilitySystemUseCase abilitySystem,
             IActorRegistry registry,
             ITimeService timeService,
-            IReadOnlyList<IHumanoidInputContributor> contributors)
+            IReadOnlyList<IHumanoidInputContributor> contributors,
+            IReadOnlyList<IHumanoidMotionContributor> motionContributors)
             : base(input, networkService, registry, timeService)
         {
             _controls = controls;
             _processor = processor;
             _abilitySystem = abilitySystem;
             _contributors = contributors;
+            _motionContributors = motionContributors;
         }
 
         /// <summary>
@@ -238,7 +241,7 @@ namespace TinCan.Core.Humanoid
                 ground.IsPlatformSupported = IsOnMovingGround(movement);
                 ground.MovingGroundTransform = VelocityFrame(character.Id);
 
-                IntegrateMotion(character, entries[i].Input, ground, TimeService.DeltaTime);
+                IntegrateMotion(character, entries[i].Input, ground, TimeService.DeltaTime, isReplay: true);
                 history.Replace(i, CaptureState(character, entries[i].State.Sequence));
             }
         }
@@ -316,7 +319,7 @@ namespace TinCan.Core.Humanoid
                 Physics.SyncTransforms();
             }
 
-            IntegrateMotion(character, input, ground, deltaTime);
+            IntegrateMotion(character, input, ground, deltaTime, isReplay: false);
 
             ApplyPlatformYaw(character, ground.RotationDelta, isCaptured);
         }
@@ -324,12 +327,14 @@ namespace TinCan.Core.Humanoid
         /// <summary>
         /// One tick of momentum, jump and gravity from <paramref name="input"/>, then the move. Shared by live
         /// simulation and prediction replay so both step identically. Horizontal momentum is in the yaw frame of
-        /// <see cref="GroundData.MovingGroundTransform"/>.
+        /// <see cref="GroundData.MovingGroundTransform"/>. Motion contributors (a grappling hook) adjust the result
+        /// before the move, in replay too.
         /// </summary>
-        private void IntegrateMotion(IHumanoidCharacterView character, HumanoidInputState input, GroundData ground, float deltaTime)
+        private void IntegrateMotion(IHumanoidCharacterView character, HumanoidInputState input, GroundData ground, float deltaTime, bool isReplay)
         {
             var movement = character.Movement;
             Quaternion frameYaw = FrameYaw(ground.MovingGroundTransform);
+            Vector3 momentum = frameYaw * LocalHorizontalVelocity(character.Id) + Vector3.up * VerticalVelocity(character.Id);
 
             Vector3 localDirection = input.LookRotation * input.MovementDirection;
             localDirection.y = 0;
@@ -365,9 +370,24 @@ namespace TinCan.Core.Humanoid
                 jumpForce,
                 deltaTime);
 
+            Vector3 velocity = frameYaw * _horizontalVelocities[character.Id] + Vector3.up * _verticalVelocities[character.Id];
+            if (_motionContributors.Count > 0) velocity = ContributeMotion(character, input, velocity, momentum, ground.IsGrounded, deltaTime, isReplay, frameYaw);
+
             // 3. Calculate Final Movement
-            Vector3 intentionalMotion = (frameYaw * _horizontalVelocities[character.Id] + (Vector3.up * _verticalVelocities[character.Id])) * deltaTime;
-            movement.Move(intentionalMotion);
+            movement.Move(velocity * deltaTime);
+        }
+
+        /// <summary>Lets every motion contributor adjust this step's world velocity, then keeps the result as the momentum.</summary>
+        private Vector3 ContributeMotion(IHumanoidCharacterView character, HumanoidInputState input, Vector3 velocity, Vector3 momentum, bool isGrounded,
+            float deltaTime, bool isReplay, Quaternion frameYaw)
+        {
+            var step = new HumanoidMotionStep(velocity, momentum, deltaTime, isGrounded, isReplay);
+            foreach (var contributor in _motionContributors) contributor.Contribute(character, input, ref step);
+            if (step.Velocity == velocity) return velocity;
+
+            _horizontalVelocities[character.Id] = Quaternion.Inverse(frameYaw) * new Vector3(step.Velocity.x, 0f, step.Velocity.z);
+            _verticalVelocities[character.Id] = step.Velocity.y;
+            return step.Velocity;
         }
 
         private static void ApplyPlatformYaw(IHumanoidCharacterView character, Quaternion rotationDelta, bool isCaptured)

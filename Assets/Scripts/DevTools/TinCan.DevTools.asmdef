@@ -26,6 +26,7 @@
         "TinCan.Features.ShipDesigns",
         "TinCan.Features.Shipyard",
         "TinCan.Features.ShipSockets",
+        "TinCan.Features.GrappleHook",
         "TinCan.Features.Boarding",
         "TinCan.UI",
         "Unity.Netcode.Runtime",

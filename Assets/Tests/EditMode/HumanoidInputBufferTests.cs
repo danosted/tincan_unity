@@ -227,7 +227,7 @@ namespace TinCan.Tests.EditMode
             var time = new Fakes.FakeTimeService();
             var registry = new Fakes.FakeActorRegistry();
             var abilities = new TinCan.Core.Gas.AbilitySystemUseCase(new Fakes.FakeAbilityRegistry(), registry, time, new Fakes.FakeEventPublisher());
-            var useCase = new HumanoidMovementUseCase(new Fakes.FakeInputReader(), Fakes.FakeInputContexts.Humanoid(), new Fakes.FakeNetworkService(), new HumanoidMovementProcessor(), abilities, registry, time, Fakes.FakeInputContexts.NoContributors);
+            var useCase = new HumanoidMovementUseCase(new Fakes.FakeInputReader(), Fakes.FakeInputContexts.Humanoid(), new Fakes.FakeNetworkService(), new HumanoidMovementProcessor(), abilities, registry, time, Fakes.FakeInputContexts.NoContributors, Fakes.FakeInputContexts.NoMotionContributors);
             var movement = new Fakes.FakeHumanoidMovementView("Buffered");
             var character = new BufferedCharacter(movement);
             registry.Register(character);

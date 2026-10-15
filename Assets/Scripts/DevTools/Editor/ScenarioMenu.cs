@@ -106,6 +106,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "ShipStairs (Host + Client, Lag100)")]
         public static void ShipStairsDuo() => RunDuo("ShipStairs", "Lag100");
 
+        [MenuItem(Root + "HookAboard (Host)")]
+        public static void HookAboardSolo() => RunSolo("HookAboard");
+
+        [MenuItem(Root + "HookAboard (Host + Client, Lag100)")]
+        public static void HookAboardDuo() => RunDuo("HookAboard", "Lag100");
+
         [MenuItem(Root + "IslandsPerVoyage (Host)")]
         public static void IslandsPerVoyageSolo() => RunSolo("IslandsPerVoyage");
 

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfa45aab7b9477e4d82247ab04f793fe, type: 3}
+  m_Name: GrappleHookConfig
+  m_EditorClassIdentifier: TinCan.Features.GrappleHook::TinCan.Features.GrappleHook.GrappleHookConfig
+  CarryingTag: {fileID: 11400000, guid: 6762168bb5181b94f9d3465e81ceb282, type: 2}
+  FireInput: {fileID: 11400000, guid: 228c6f632dea57046a0b40d23fb4e13d, type: 2}
+  MaxRange: 50
+  HookableLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  BreakDistance: 70
+  ReelSpeed: 18
+  ReelAcceleration: 60
+  ArriveDistance: 1.5
+  ArriveSpeed: 4
+  ArriveHopSpeed: 5
+  LineMaterial: {fileID: 2100000, guid: 87cb8dbc771e247459e8a5d68b6c118e, type: 2}
+  LineWidth: 0.04
+  LineStartName: HookTip
+  MarkerSightFactor: 2
+  MarkerScreenSize: 0.012
+  InRangeMaterial: {fileID: 2100000, guid: e7c911aab9a14ae40811bbdbae620771, type: 2}
+  OutOfRangeMaterial: {fileID: 2100000, guid: 52a133ca0930cd042b0e8716d13c5407, type: 2}

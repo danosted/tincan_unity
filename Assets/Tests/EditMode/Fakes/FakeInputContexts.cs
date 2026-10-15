@@ -59,5 +59,6 @@ namespace TinCan.Tests.EditMode.Fakes
         }
 
         public static IReadOnlyList<IHumanoidInputContributor> NoContributors => new IHumanoidInputContributor[0];
+        public static IReadOnlyList<IHumanoidMotionContributor> NoMotionContributors => new IHumanoidMotionContributor[0];
     }
 }

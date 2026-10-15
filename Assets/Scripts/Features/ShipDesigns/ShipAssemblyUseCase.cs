@@ -15,7 +15,9 @@ namespace TinCan.Features.ShipDesigns
     /// <summary>
     /// Every peer, per frame: builds each ship from the design its state replicates (<see cref="ShipHullAssembler"/>:
     /// plain children, diffed by instance id when the design changes, the on-board volume fitted). On the server,
-    /// functional parts (the helm) are spawned once as networked fixtures at their design pose. Unknown parts are skipped.
+    /// functional parts (the helm) are spawned once as networked fixtures at their design pose; when the design changes,
+    /// those the new design no longer has, or has moved, turned or swapped, are despawned and the new ones spawned.
+    /// Unknown parts are skipped.
     /// </summary>
     public sealed class ShipAssemblyUseCase : ITickable, IDisposable, IShipAssembly, IShipSockets
     {
@@ -32,7 +34,9 @@ namespace TinCan.Features.ShipDesigns
             public IAirshipView Ship { get; }
             public ShipHullAssembler Hull { get; }
             public ulong Hash;
-            public readonly HashSet<int> SpawnedFunctional = new();
+
+            /// <summary>Server: the functional parts spawned for the ship, by instance id, with the placement they stand for.</summary>
+            public readonly Dictionary<int, (ShipPartPlacement Placement, GameObject? Module)> SpawnedFunctional = new();
         }
 
         private readonly IActorRegistry _actors;
@@ -115,14 +119,8 @@ namespace TinCan.Features.ShipDesigns
         private void Assemble(BuiltShip built, ShipDesign design)
         {
             var shipTransform = built.Ship.Transform;
-            foreach (var (placement, part) in built.Hull.Apply(design, shipTransform))
-            {
-                if (!_network.IsServer || part.NetworkedPrefab == null || !built.SpawnedFunctional.Add(placement.InstanceId)) continue;
-
-                var position = shipTransform.TransformPoint(ShipPartPose.LocalPosition(placement, part));
-                var rotation = shipTransform.rotation * ShipPartPose.LocalRotation(placement);
-                _spawning.SpawnModule(part.NetworkedPrefab, position, rotation, built.Ship);
-            }
+            built.Hull.Apply(design, shipTransform);
+            if (_network.IsServer) SpawnFunctionalParts(built, design);
 
             CollectSockets(built);
 
@@ -131,6 +129,41 @@ namespace TinCan.Features.ShipDesigns
             _events.LogInfo(LogSource, $"Ship {built.Ship.Id} built from \"{design.Name}\" ({design.Parts.Count} parts, " +
                                        $"hash {ShipDesignHash.ToText(built.Hash)}{skipped}).");
         }
+
+        /// <summary>
+        /// Server: the ship's spawned functional parts match the design's. A part is kept only while the design still has
+        /// it, unchanged (same part, cell and orientation); anything else is despawned, and every functional part not
+        /// standing is spawned at its design pose.
+        /// </summary>
+        private void SpawnFunctionalParts(BuiltShip built, ShipDesign design)
+        {
+            var wanted = new Dictionary<int, (ShipPartPlacement Placement, GameObject Prefab)>();
+            foreach (var placement in design.Parts)
+            {
+                if (_catalog.TryGet(placement.PartId, out var part) && part.NetworkedPrefab != null) wanted[placement.InstanceId] = (placement, part.NetworkedPrefab);
+            }
+
+            foreach (var (id, spawned) in built.SpawnedFunctional.ToList())
+            {
+                if (wanted.TryGetValue(id, out var keep) && SamePose(keep.Placement, spawned.Placement)) continue;
+
+                if (spawned.Module != null) _spawning.DespawnModule(spawned.Module);
+                built.SpawnedFunctional.Remove(id);
+            }
+
+            var shipTransform = built.Ship.Transform;
+            foreach (var (id, (placement, prefab)) in wanted)
+            {
+                if (built.SpawnedFunctional.ContainsKey(id) || !_catalog.TryGet(placement.PartId, out var part)) continue;
+
+                var position = shipTransform.TransformPoint(ShipPartPose.LocalPosition(placement, part));
+                var rotation = shipTransform.rotation * ShipPartPose.LocalRotation(placement);
+                built.SpawnedFunctional[id] = (placement, _spawning.SpawnModule(prefab, position, rotation, built.Ship));
+            }
+        }
+
+        private static bool SamePose(ShipPartPlacement a, ShipPartPlacement b) =>
+            a.PartId == b.PartId && a.Cell.Equals(b.Cell) && a.Orientation == b.Orientation;
 
         /// <summary>The sockets of the parts built for a ship: index i is the i-th ShipSocket under the part.</summary>
         private void CollectSockets(BuiltShip built)

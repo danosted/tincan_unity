@@ -20,14 +20,20 @@ namespace TinCan.Tests.EditMode
         private sealed class RecordingModuleSpawner : IModuleSpawningService
         {
             public List<(GameObject Prefab, Vector3 Position, Quaternion Rotation, IActor Ship)> Calls { get; } = new();
+            public List<GameObject> Despawned { get; } = new();
+
+            /// <summary>Each spawn returns a new stand-in object, so a despawn names which spawn it undid.</summary>
+            public List<GameObject> Modules { get; } = new();
 
             public GameObject SpawnModule(GameObject prefab, Vector3 worldPosition, Quaternion worldRotation, IActor parentShip)
             {
                 Calls.Add((prefab, worldPosition, worldRotation, parentShip));
-                return prefab;
+                var module = new GameObject($"{prefab.name} #{Calls.Count}");
+                Modules.Add(module);
+                return module;
             }
 
-            public void DespawnModule(GameObject module) { }
+            public void DespawnModule(GameObject module) => Despawned.Add(module);
         }
 
         private sealed class ClientNetwork : INetworkService
@@ -73,6 +79,7 @@ namespace TinCan.Tests.EditMode
         [TearDown]
         public void TearDown()
         {
+            foreach (var module in _spawner.Modules) Object.DestroyImmediate(module);
             _ship.Destroy();
             _parts.Dispose();
             Object.DestroyImmediate(_config);
@@ -164,6 +171,48 @@ namespace TinCan.Tests.EditMode
             Assert.That(_builder.Removals, Is.EqualTo(2), "part 3 as it was and part 4");
             Assert.That(_builder.Standing.Count, Is.EqualTo(3));
             Assert.That(_spawner.Calls.Count, Is.EqualTo(1), "the helm stays");
+            Assert.That(_spawner.Despawned, Is.Empty);
+        }
+
+        [Test]
+        public void AnotherDesign_ReplacesTheHelm_WhereTheNewDesignHasIt()
+        {
+            // The shipyard's Launch onto a built ship: the old helm (part 1 at the origin) must not stay behind.
+            var assembly = Assembly();
+            _state.Set(Ship());
+            assembly.Tick();
+            var oldHelm = _spawner.Modules.Single();
+
+            _state.Set(Design((Beam, 0, -1, 0, 0), (Beam, 0, -1, 2, 0), (Helm, 0, 0, 2, 0)));
+            assembly.Tick();
+
+            Assert.That(_spawner.Despawned, Is.EqualTo(new[] { oldHelm }));
+            Assert.That(_spawner.Calls.Count, Is.EqualTo(2));
+            // Cell (0,0,2) with the pivot half a cell down, on a ship at (0, 40, 0) turned 90° (local +Z is world +X).
+            Assert.That(Vector3.Distance(_spawner.Calls[1].Position, new Vector3(2f, 39.5f, 0f)), Is.LessThan(0.001f));
+            Assert.That(assembly.TryGetBuilt(_ship.Id, out _, out var count), Is.True);
+            Assert.That(count, Is.EqualTo(3), "two beams and one helm");
+        }
+
+        [Test]
+        public void AHelmThatMoves_IsRespawnedAtItsNewPose_AndOneThatGoes_IsDespawned()
+        {
+            var assembly = Assembly();
+            var first = Ship();
+            _state.Set(first);
+            assembly.Tick();
+
+            // Same instance id, another cell.
+            _state.Set(first.WithParts(new[] { new ShipPartPlacement(1, Helm, new ShipGridCell(1, 0, 0), 0), first.Parts[1] }, 3));
+            assembly.Tick();
+            Assert.That(_spawner.Despawned, Is.EqualTo(new[] { _spawner.Modules[0] }));
+            Assert.That(_spawner.Calls.Count, Is.EqualTo(2));
+
+            // No helm at all: the moved one goes too.
+            _state.Set(first.WithParts(new[] { first.Parts[1] }, 3));
+            assembly.Tick();
+            Assert.That(_spawner.Despawned, Is.EqualTo(new[] { _spawner.Modules[0], _spawner.Modules[1] }));
+            Assert.That(_spawner.Calls.Count, Is.EqualTo(2));
         }
 
         [Test]

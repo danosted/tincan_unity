@@ -257,7 +257,7 @@ move the subject.
 | `Test_Cannon` | Stations, Cannon, SkyHazards | CannonShot, HazardStrike |
 | `Test_Voyage` | Fuel, ShipDamage, Stations, Cannon, SkyHazards, Voyage, SkyIslands | VoyageLoop, LateJoinBoarding, IslandsPerVoyage, IslandRam |
 | `Test_Helm` | Stations, Helm (the test ship has a quarterdeck at the airship's height for the helm) | HelmSteer |
-| `Test_Shipyard` | Stations, Helm, ShipDesigns, Shipyard, ShipSockets, Cannon (its stations only as fittings); the ship is `ModularShip_Prefab` (no geometry), built from the starter design (ShipStairs switches it to the galleon). Offline, the main menu has a Shipyard row | DesignedShipFlies, ShipyardRoundTrip, MountFitting, ShipStairs |
+| `Test_Shipyard` | Stations, Helm, ShipDesigns, Shipyard, ShipSockets, Cannon (its stations only as fittings); the ship is `ModularShip_Prefab` (no geometry), built from the starter design (ShipStairs and GalleonLoadout switch it to the galleon, which brings its loadout). Offline, the main menu has a Shipyard row | DesignedShipFlies, ShipyardRoundTrip, MountFitting, ShipStairs, GalleonLoadout |
 | `Test_GrappleHook` | GrappleHook | HookAboard |
 
 **The scenes are generated.** `DevTools/Editor/TestRangeSceneBuilder.cs` (**TinCan > Dev > Test Range > Rebuild

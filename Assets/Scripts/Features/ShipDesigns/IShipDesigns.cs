@@ -4,7 +4,8 @@ namespace TinCan.Features.ShipDesigns
     /// <summary>
     /// Which design ships are built from. The server gives every ship without a design the selected one: the design
     /// handed over by <see cref="Select"/> (the shipyard's Launch), else the stored design named by the
-    /// <c>-shipDesign &lt;name&gt;</c> launch argument, else <see cref="ShipDesignsConfig.DefaultDesign"/>.
+    /// <c>-shipDesign &lt;name&gt;</c> launch argument, else the design the ship's own <see cref="ShipDesignPreset"/> names,
+    /// else <see cref="ShipDesignsConfig.DefaultDesign"/>.
     /// </summary>
     public interface IShipDesigns
     {

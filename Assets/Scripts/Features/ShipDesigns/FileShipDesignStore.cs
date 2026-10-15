@@ -15,7 +15,8 @@ namespace TinCan.Features.ShipDesigns
     /// </summary>
     public sealed class FileShipDesignStore : IShipDesignStore
     {
-        private const string FolderName = "Ships";
+        /// <summary>The designs folder under <c>persistentDataPath</c>; files that belong to a design live beside it.</summary>
+        public const string FolderName = "Ships";
 
         private readonly string _directory;
         private readonly IReadOnlyDictionary<string, string> _builtIns;

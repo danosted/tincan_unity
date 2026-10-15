@@ -15,8 +15,9 @@ namespace TinCan.DevTools.Scenarios
     /// <summary>
     /// Scenario steps for ship sockets. Commands: stand the subject on the deck just aft of the ship's first socket
     /// (server); pick a fitting in the open fitting menu (subject peer). Probes: the fitting menu is open on this peer; a
-    /// fitting is mounted (replicated) and its object stands on its socket on this peer. Plan:
-    /// .docs/plans/modular-airship-builder.md (S5).
+    /// fitting is mounted (replicated) and its object stands on its socket on this peer; FittingsMounted "n": at least n
+    /// fittings are mounted on sockets this peer's ship has. Plans: .docs/plans/modular-airship-builder.md (S5),
+    /// .docs/plans/ship-fitting-loadouts.md.
     /// </summary>
     public sealed class ShipSocketsScenarioLibrary : IScenarioLibrary
     {
@@ -54,6 +55,7 @@ namespace TinCan.DevTools.Scenarios
                 ? ScenarioCheck.Pass("the fitting menu is open")
                 : ScenarioCheck.Fail($"menu: {_menus.Current?.MenuId ?? "none"}")),
             new ScenarioProbe("SocketFitted", CheckFitted),
+            new ScenarioProbe("FittingsMounted", CheckMountedCount),
         };
 
         private ScenarioCheck PlaceAtSocket()
@@ -98,6 +100,19 @@ namespace TinCan.DevTools.Scenarios
                 .Min();
             string detail = $"{fittingId} in {mounted[0].Socket}, its object {standing:0.00} m from the socket";
             return standing < 0.5f ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
+
+        /// <summary>This peer: at least that many fittings are mounted (replicated), each on a socket the ship has here.</summary>
+        private ScenarioCheck CheckMountedCount(string minimum)
+        {
+            var ship = Ship();
+            var state = _actors.GetActors<IShipFittingState>().FirstOrDefault(s => s.Ship != null);
+            if (ship == null || state == null) return ScenarioCheck.Fail("no ship or no sockets state");
+
+            var sockets = _sockets.SocketsOf(ship.Id).Where(s => s.Mount != null).Select(s => s.Id).ToHashSet();
+            int placed = state.Mounted.Count(m => sockets.Contains(m.Socket));
+            string detail = $"{placed} of {state.Mounted.Count} mounted fitting(s) on a socket of this peer's ship";
+            return placed >= int.Parse(minimum, System.Globalization.CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
         private IAirshipView? Ship() => _actors.GetActors<IAirshipView>().FirstOrDefault();

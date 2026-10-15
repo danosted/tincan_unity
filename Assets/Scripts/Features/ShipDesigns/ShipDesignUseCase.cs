@@ -12,7 +12,7 @@ namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// Server, per frame: gives every ship whose design state has no design yet the selected design (see
-    /// <see cref="IShipDesigns"/>), after validating it. A design with blocking problems is refused and the ship stays
+    /// <see cref="IShipDesigns"/>; a ship prefab can name its own with a <see cref="ShipDesignPreset"/>), after validating it. A design with blocking problems is refused and the ship stays
     /// bare, with the problems in the log. Plan: .docs/plans/modular-airship-builder.md.
     /// </summary>
     public sealed class ShipDesignUseCase : ITickable, IShipDesigns
@@ -30,8 +30,10 @@ namespace TinCan.Features.ShipDesigns
         private readonly IEventPublisher _events;
         private readonly IReadOnlyList<string> _launchArguments;
         private readonly HashSet<System.Guid> _refused = new();
+        private readonly Dictionary<string, ShipDesign?> _presets = new(System.StringComparer.OrdinalIgnoreCase);
         private ShipDesign? _selected;
         private bool _loaded;
+        private bool _chosen;
 
         [Inject]
         public ShipDesignUseCase(IActorRegistry actors, INetworkService network, IShipPartCatalog catalog, IShipDesignStore store,
@@ -60,6 +62,7 @@ namespace TinCan.Features.ShipDesigns
         {
             _selected = design;
             _loaded = true;
+            _chosen = true;
             _refused.Clear();
         }
 
@@ -71,7 +74,7 @@ namespace TinCan.Features.ShipDesigns
             {
                 if (state.DesignHash != 0 || state.Ship == null || _refused.Contains(state.Id)) continue;
 
-                var design = Selected();
+                var design = DesignFor(state.Ship);
                 if (design == null || !TryApply(state, design, out _)) _refused.Add(state.Id);
             }
         }
@@ -103,16 +106,35 @@ namespace TinCan.Features.ShipDesigns
             return true;
         }
 
+        /// <summary>
+        /// Per ship: the shipyard's choice, else the launch argument's, else the ship's own <see cref="ShipDesignPreset"/>,
+        /// else the config's default.
+        /// </summary>
+        private ShipDesign? DesignFor(IAirshipView ship)
+        {
+            if (_chosen || ArgumentValue(LaunchArgument) != null) return Selected();
+
+            var transform = ship.Transform;
+            var preset = transform != null ? transform.GetComponent<ShipDesignPreset>() : null;
+            if (preset == null || string.IsNullOrEmpty(preset.DesignKey)) return Selected();
+
+            if (!_presets.TryGetValue(preset.DesignKey, out var design)) _presets[preset.DesignKey] = design = Load(preset.DesignKey);
+            return design;
+        }
+
         private ShipDesign? Selected()
         {
             if (_loaded) return _selected;
             _loaded = true;
-
-            string key = ArgumentValue(LaunchArgument) ?? _config.DefaultDesign;
-            var result = _store.Load(key);
-            if (result.Succeeded) _selected = result.Design;
-            else _events.LogError(LogSource, $"Design \"{key}\" could not be loaded: {result.Error}");
+            _selected = Load(ArgumentValue(LaunchArgument) ?? _config.DefaultDesign);
             return _selected;
+        }
+
+        private ShipDesign? Load(string key)
+        {
+            var result = _store.Load(key);
+            if (!result.Succeeded) _events.LogError(LogSource, $"Design \"{key}\" could not be loaded: {result.Error}");
+            return result.Design;
         }
 
         private string? ArgumentValue(string flag)

@@ -219,7 +219,10 @@ A design's parts carry mass, lift, thrust and hull; the server turns them into t
 through `Core/Ship/IAirshipTuning.cs`. The shipyard (`Features/Shipyard/`) builds designs offline.
 Parts can carry sockets (`Core/Ship/Sockets/`). A separate integration feature (ShipSockets) lets players mount a
 feature's fittings in them (E on a free socket, then a choice the server validates); the builder never knows about it.
-Plan: [plans/modular-airship-builder.md](plans/modular-airship-builder.md).
+What a design comes with lives in its own loadout file beside the design (`<key>.fittings.json`), which the server
+mounts when the ship is built. A ship prefab can name the design it flies (`ShipDesignPreset`): `Galleon_Prefab` in
+`cheesed_scene`. Plans: [plans/modular-airship-builder.md](plans/modular-airship-builder.md),
+[plans/ship-fitting-loadouts.md](plans/ship-fitting-loadouts.md).
 
 ## A Play session, end to end
 

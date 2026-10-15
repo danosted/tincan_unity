@@ -2,14 +2,18 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using TinCan.Core.Domain.Features;
 using TinCan.Core.Entities;
 using TinCan.Core.Interaction;
 using TinCan.Core.Ship.Sockets;
+using TinCan.Features.ShipDesigns;
 using TinCan.Features.ShipSockets;
 using Unity.Netcode;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace TinCan.DevTools.Editor
@@ -32,6 +36,22 @@ namespace TinCan.DevTools.Editor
 
         public const string CannonFittingId = "weapon.cannon";
         public const string ToolRackFittingId = "storage.tool_rack";
+
+        public const string GalleonDesignKey = "Galleon";
+        public const string GalleonLoadoutPath = "Assets/Settings/ShipSockets/Galleon.fittings.json";
+        public const string GalleonPrefabPath = "Assets/Prefabs/Airship/Galleon_Prefab.prefab";
+        public const string GalleonProfilePath = "Assets/Settings/FeatureProfiles/Profile_Galleon.asset";
+        private const string SandboxProfilePath = "Assets/Settings/FeatureProfiles/Profile_FuelSandbox.asset";
+        private const string GalleonScenePath = "Assets/Scenes/cheesed_scene.unity";
+
+        /// <summary>Fixed-pose fixtures placed for Airship_Prefab's hull; on the Galleon they would float or sit in a part.</summary>
+        private static readonly string[] OldHullFixtures =
+        {
+            "Assets/Settings/Fixtures/FuelSystemFixture.asset",
+            "Assets/Settings/Fixtures/NetRackFixture.asset",
+            "Assets/Settings/Fixtures/GrappleHookRackFixture.asset",
+            "Assets/Settings/Fixtures/ShipDamageSocketsFixture.asset",
+        };
 
         [MenuItem("TinCan/Dev/Ship Sockets/Build Assets")]
         public static void Build()
@@ -62,6 +82,126 @@ namespace TinCan.DevTools.Editor
 
             AssetDatabase.SaveAssets();
             Debug.Log("[ShipSocketsAssetBuilder] Ship socket assets built.");
+        }
+
+        /// <summary>
+        /// TinCan > Dev > Ship Sockets > Build Galleon Airship: the Galleon's built-in loadout (four cannons, the tool rack),
+        /// Galleon_Prefab (the modular ship with a preset: it flies the Galleon, and the fixed-pose fixtures made for the
+        /// old hull stay off it), Profile_Galleon (the sandbox's features plus ship designs and sockets), and both wired into
+        /// cheesed_scene's scope. Airship_Prefab is untouched. Run Build Assets first. Plan:
+        /// .docs/plans/ship-fitting-loadouts.md.
+        /// </summary>
+        [MenuItem("TinCan/Dev/Ship Sockets/Build Galleon Airship")]
+        public static void BuildGalleonAirship()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogWarning("[ShipSocketsAssetBuilder] Stop Play mode before building the Galleon airship.");
+                return;
+            }
+
+            var loadout = WriteText(GalleonLoadoutPath, ShipFittingLoadoutJsonCodec.Encode(GalleonLoadout()));
+            var config = Load<ShipSocketsConfig>(ConfigPath);
+            AddUnique(config, nameof(ShipSocketsConfig.BuiltInLoadouts), loadout);
+
+            GalleonPrefab();
+            Asset<FeatureProfile>(GalleonProfilePath, p =>
+            {
+                AddUnique(p, "_includes", Load<FeatureProfile>(SandboxProfilePath));
+                AddUnique(p, "_installers", Load<FeatureInstaller>(Installers + "ShipDesignsFeatureInstaller.asset"), Load<FeatureInstaller>(InstallerPath));
+            });
+            AssetDatabase.SaveAssets();
+
+            if (WireScene(GalleonScenePath, GalleonPrefabPath, GalleonProfilePath)) Debug.Log($"[ShipSocketsAssetBuilder] Galleon airship built; {GalleonScenePath} flies it.");
+        }
+
+        /// <summary>
+        /// The Galleon's mount plates (Galleon.ship.json): cannons at the bow and the stern, the tool rack in the hold. The
+        /// other three hold plates stay free for players. The socket ids are part instance ids in the committed design.
+        /// </summary>
+        public static ShipFittingLoadout GalleonLoadout() => new(new[]
+        {
+            new ShipFittingPlacement(new ShipSocketId(70, 0), ToolRackFittingId), // hold, port, forward (-3,-4,3)
+            new ShipFittingPlacement(new ShipSocketId(254, 0), CannonFittingId), // main deck, port bow (-3,-1,6)
+            new ShipFittingPlacement(new ShipSocketId(323, 0), CannonFittingId), // main deck, starboard bow (3,-1,6)
+            new ShipFittingPlacement(new ShipSocketId(386, 0), CannonFittingId), // quarterdeck, port stern (-3,2,-7)
+            new ShipFittingPlacement(new ShipSocketId(422, 0), CannonFittingId), // quarterdeck, starboard stern (3,2,-7)
+        });
+
+        /// <summary>A variant of the modular ship (no geometry; the design builds it) whose preset names the Galleon.</summary>
+        private static GameObject GalleonPrefab()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(GalleonPrefabPath);
+            GameObject root;
+            if (existing != null)
+            {
+                root = PrefabUtility.LoadPrefabContents(GalleonPrefabPath);
+            }
+            else
+            {
+                root = (GameObject)PrefabUtility.InstantiatePrefab(Load<GameObject>(ShipDesignsAssetBuilder.ModularShipPath));
+                root.name = "Galleon_Prefab";
+            }
+
+            try
+            {
+                var preset = root.GetComponent<ShipDesignPreset>();
+                if (preset == null) preset = root.AddComponent<ShipDesignPreset>();
+                preset.Configure(GalleonDesignKey, OldHullFixtures.Select(Load<ShipFixtureDefinition>));
+                EditorUtility.SetDirty(preset);
+                PrefabUtility.SaveAsPrefabAsset(root, GalleonPrefabPath);
+            }
+            finally
+            {
+                if (existing != null) PrefabUtility.UnloadPrefabContents(root);
+                else Object.DestroyImmediate(root);
+            }
+
+            var prefab = Load<GameObject>(GalleonPrefabPath);
+            if (existing == null) Rehash(prefab);
+            return prefab;
+        }
+
+        /// <summary>Sets a scene's scope to fly the given ship with the given profile, then reopens the scene that was open.</summary>
+        private static bool WireScene(string scenePath, string shipPath, string profilePath)
+        {
+            var active = SceneManager.GetActiveScene();
+            if (active.isDirty)
+            {
+                Debug.LogError($"[ShipSocketsAssetBuilder] '{active.name}' has unsaved changes; save it, then build again to wire {scenePath}.");
+                return false;
+            }
+
+            string returnTo = active.path;
+            var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+            var scope = scene.GetRootGameObjects().Select(o => o.GetComponent("ProjectLifetimeScope")).FirstOrDefault(c => c != null)
+                        ?? throw new InvalidOperationException($"{scenePath} has no ProjectLifetimeScope at its root.");
+            // Load assets only after OpenScene: opening a scene unloads unused assets, so an earlier reference is dead.
+            var fields = new SerializedObject(scope);
+            fields.FindProperty("_airshipPrefab").objectReferenceValue = Load<GameObject>(shipPath);
+            fields.FindProperty("_featureProfile").objectReferenceValue = Load<FeatureProfile>(profilePath);
+            fields.ApplyModifiedProperties();
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            if (!string.IsNullOrEmpty(returnTo) && returnTo != scenePath) EditorSceneManager.OpenScene(returnTo, OpenSceneMode.Single);
+            return true;
+        }
+
+        private static void Rehash(GameObject prefab)
+        {
+            var networkObject = prefab.GetComponent<NetworkObject>();
+            typeof(NetworkObject).GetMethod("OnValidate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)
+                ?.Invoke(networkObject, null);
+            EditorUtility.SetDirty(networkObject);
+            EditorUtility.SetDirty(prefab);
+        }
+
+        private static TextAsset WriteText(string path, string text)
+        {
+            EnsureFolder(path);
+            File.WriteAllText(Path.GetFullPath(path), text);
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            return Load<TextAsset>(path);
         }
 
         private static ShipFittingDefinition Fitting(string asset, string fittingId, string displayName, string prefabPath) =>

@@ -112,7 +112,9 @@ whose use case isn't there). The rules:
      that makes it work does. For example, Fuel contributes the jerry can, the net-catch minigame the net, and ship
      damage the repair tool.
      - An item brings its own held visual: `ItemDefinition.HeldVisual`, a prefab under `Assets/Prefabs/Items/`. The
-       equipment mediator instantiates it under the player's `Visual`.
+       equipment mediator instantiates it under the player's `Visual/HeldItems` socket. Pose the prefab as it should
+       sit relative to `Visual` at a level look; in first person the socket follows the camera, so that pose holds at
+       any pitch.
      - Anything that animates the held item lives on that prefab, the way `NetSwingVisualView` lives on
        `Carry_Net.prefab`, never on the player prefab.
    - Runtime grants from the feature's own use case (`StationOccupancyUseCase`, `EquipmentAbilityBinder`,

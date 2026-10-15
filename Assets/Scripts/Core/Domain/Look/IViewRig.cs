@@ -22,5 +22,11 @@ namespace TinCan.Core.Domain.Look
 
         /// <summary>Height above the body root the camera looks from, given the body's eye height (targeting CameraAim).</summary>
         float AimHeight(float eyeHeight);
+
+        /// <summary>
+        /// Where the local player's held items are drawn this frame. <paramref name="held"/> carries them; at rest it sits
+        /// on the body's visual root, where the item prefabs were posed. Returns its world pose, or null to leave it at rest.
+        /// </summary>
+        (Vector3 Position, Quaternion Rotation)? PlaceHeld(Transform held, in ViewPose pose, float deltaTime);
     }
 }

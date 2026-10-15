@@ -318,6 +318,11 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
             return;
         }
 
+        // TinCan: overlay cameras (the first-person held-item camera) draw on top of a base camera that already has the
+        // clouds; running here would composite them again over the whole frame.
+        if (renderingData.cameraData.renderType == CameraRenderType.Overlay)
+            return;
+
     #if UNITY_EDITOR
         bool isEditingPrefab = UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage() != null;
         bool isSceneViewFocused = UnityEditor.SceneView.lastActiveSceneView != null && UnityEditor.SceneView.lastActiveSceneView.hasFocus;

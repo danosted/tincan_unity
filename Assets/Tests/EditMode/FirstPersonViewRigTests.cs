@@ -83,5 +83,73 @@ namespace TinCan.Tests.EditMode
 
             Assert.That(body.shadowCastingMode, Is.EqualTo(ShadowCastingMode.On));
         }
+
+        [Test]
+        public void PlaceHeld_FirstFrame_HangsTheItemsFromTheEyesAlongTheLook()
+        {
+            var rig = new FirstPersonViewRig(_config);
+            var pose = new ViewPose(new Vector3(1f, 2f, 3f), eyeHeight: 0.7f, pitch: 30f, yaw: 45f);
+
+            var placed = rig.PlaceHeld(_bodyObject.transform, pose, deltaTime: 0.02f);
+
+            var (eyes, look) = FirstPersonViewRig.Eyes(pose);
+            var expected = HeldItemSway.Hold(eyes, look, 0.7f);
+            Assert.That(placed.HasValue, Is.True);
+            Assert.That(Vector3.Distance(placed!.Value.Position, expected.Position), Is.LessThan(1e-4f));
+            Assert.That(Quaternion.Angle(placed.Value.Rotation, look), Is.LessThan(1e-3f));
+        }
+
+        [Test]
+        public void PlaceHeld_AfterATurn_TrailsTheLookWithinTheCap()
+        {
+            _config.HeldSwayMaxAngle = 5f;
+            var rig = new FirstPersonViewRig(_config);
+            rig.PlaceHeld(_bodyObject.transform, new ViewPose(Vector3.zero, 0.7f, 0f, 0f), 0.02f);
+
+            var placed = rig.PlaceHeld(_bodyObject.transform, new ViewPose(Vector3.zero, 0.7f, 0f, 60f), 0.02f);
+
+            float lag = Quaternion.Angle(placed!.Value.Rotation, Quaternion.Euler(0f, 60f, 0f));
+            Assert.That(lag, Is.GreaterThan(0.1f));
+            Assert.That(lag, Is.LessThanOrEqualTo(5.01f));
+        }
+
+        [Test]
+        public void Take_WithoutAHeldItemLayer_AddsNoOverlayCamera()
+        {
+            _config.HeldItemLayer = string.Empty;
+            var camera = _cameraObject.GetComponent<Camera>();
+
+            new FirstPersonViewRig(_config).Take(camera, System.Array.Empty<Renderer>());
+
+            Assert.That(camera.GetComponentsInChildren<Camera>().Length, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Overlay_DrawsOnlyHeldItems_AndDetachPutsEverythingBack()
+        {
+            const int layer = 30;
+            var camera = _cameraObject.GetComponent<Camera>();
+            camera.cullingMask = ~0;
+            var socket = new GameObject("HeldItems").transform;
+            socket.SetParent(_bodyObject.transform, false);
+            var item = new GameObject("Carry_Test", typeof(MeshRenderer));
+            item.transform.SetParent(socket, false);
+            var overlay = new HeldItemOverlay(layer);
+
+            overlay.Attach(camera);
+            overlay.Mark(socket);
+
+            Assert.That(camera.cullingMask & (1 << layer), Is.Zero);
+            Assert.That(overlay.Overlay, Is.Not.Null);
+            Assert.That(overlay.Overlay!.cullingMask, Is.EqualTo(1 << layer));
+            Assert.That(item.layer, Is.EqualTo(layer));
+            Assert.That(_bodyObject.layer, Is.EqualTo(0), "only what the socket carries moves");
+
+            overlay.Detach();
+
+            Assert.That(camera.cullingMask, Is.EqualTo(~0));
+            Assert.That(item.layer, Is.EqualTo(0));
+            Assert.That(camera.GetComponentsInChildren<Camera>().Length, Is.EqualTo(1));
+        }
     }
 }

@@ -12,7 +12,8 @@ namespace TinCan.Core.Humanoid
     /// View: a player's look (yaw and pitch, read into the predicted input) and the camera the local player sees through.
     /// It switches the camera and its ears on for the local possessor and off otherwise. Where the camera sits is the
     /// profile's camera rig (<see cref="IViewRig"/>): each frame the rig places it from where the body is drawn, after
-    /// the visual smoothing (order -50). The rig also gives the aim height targeting uses, on every peer.
+    /// the visual smoothing (order -50), and may move the local player's held items with it
+    /// (<see cref="IHumanoidVisualAnchor.HeldSocket"/>). The rig also gives the aim height targeting uses, on every peer.
     /// </summary>
     public class LookView : MonoBehaviour, ILookView, IPossessionReceiver
     {
@@ -63,8 +64,14 @@ namespace TinCan.Core.Humanoid
             if (!IsActive || _cameraPivot == null || _rig == null) return;
 
             Vector3 drawn = _anchor != null ? _anchor.VisualPosition : transform.position;
-            var (position, rotation) = _rig.Place(new ViewPose(drawn, EyeHeight, Pitch, Yaw));
+            var pose = new ViewPose(drawn, EyeHeight, Pitch, Yaw);
+            var (position, rotation) = _rig.Place(pose);
             _cameraPivot.SetPositionAndRotation(position, rotation);
+
+            var held = _anchor?.HeldSocket;
+            if (held == null) return;
+            var placed = _rig.PlaceHeld(held, pose, Time.deltaTime);
+            if (placed.HasValue) held.SetPositionAndRotation(placed.Value.Position, placed.Value.Rotation);
         }
 
         public void ApplyLook(float pitch, float yaw)
@@ -89,6 +96,10 @@ namespace TinCan.Core.Humanoid
         {
             if (IsActive && _cameraPivot != null) _rig?.Release(Camera, Body);
             IsActive = false;
+
+            // Held items go back on the body, where everyone else sees them.
+            var held = _anchor?.HeldSocket;
+            if (held != null) held.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             if (_cameraPivot != null) _cameraPivot.gameObject.SetActive(false);
         }
 

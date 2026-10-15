@@ -23,6 +23,8 @@ namespace TinCan.Features.ThirdPersonCamera
 
         public float AimHeight(float eyeHeight) => _config.Height;
 
+        public (Vector3 Position, Quaternion Rotation)? PlaceHeld(Transform held, in ViewPose pose, float deltaTime) => null;
+
         public static (Vector3 Position, Quaternion Rotation) Orbit(in ViewPose pose, float distance, float height)
         {
             Quaternion rotation = Quaternion.Euler(pose.Pitch, pose.Yaw, 0f);

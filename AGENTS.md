@@ -35,6 +35,16 @@ The human entry point is [`.docs/README.md`](.docs/README.md). Keep it and the d
 - In documentation, cite file paths rather than pasting code.
 - Finish implementation work with a human-readable summary: what changed, which files to read first, what to look at in the Editor, what still needs a human playtest.
 
+## Several sessions at once
+
+Several AI sessions (and the developer) can work on this repo at the same time, and they share one working tree, one Editor and one compile. A compile or test run sees everyone's half-finished edits, and two Play runs wreck each other.
+
+- **The Editor lock.** `verify.ps1`, `build.ps1` and `perf.ps1 analyze-gc` hold `.tools/logs/editor.lock` while they drive the Editor; a second run waits (`-LockWaitSeconds`, default 1800; 0 stops at once with exit code 2) and prints who holds it. Set `$env:TINCAN_LOCK_OWNER` to your session name when you run them. Never delete the lock by hand: a holder whose process is gone is taken over automatically. Implementation: `Enter-EditorLock` in `.tools/modules/TinCan.Common.psm1`.
+- **Compile and test through `verify.ps1`** (`-UpTo Compile`, `-UpTo Tests`), not raw `unity` CLI or MCP calls, so the lock covers them. Inspecting Editor state (Console, scene, hierarchy) needs no lock.
+- **Before a compile, test or play run, or before editing shared files**, list the other sessions (Claude Code: `ListAgents`). If any are active, message them once with what you will touch (files, assets, scenes) and run, and avoid files they said they are editing.
+- **A compile error or failing test in a file you did not touch** belongs to whoever is editing it: ask them (or the developer) instead of fixing it, and rerun after they answer.
+- **Long parallel work** that would hold the Editor for a long time or churn shared assets can move to its own `git worktree` with its own Editor, if the developer agrees (it costs a second Unity instance).
+
 ## Unity Editor operations
 
 - Use workspace file tools for source code and text files; never rewrite C# through an Editor command.

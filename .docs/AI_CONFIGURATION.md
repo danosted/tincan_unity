@@ -125,8 +125,8 @@ When discussing implementations, the AI should be mindful of potential Unity ver
 1.  **Check for Errors:** Immediately after any file edit, check diagnostics on the modified files for compilation errors, syntax issues, or lint warnings.
 2.  **Verify API Usage:** Check for deprecated API usage (e.g., ensure `linearVelocity` is used instead of `velocity` if required by the Unity version).
 3.  **Validate Logic & Syntax:** Briefly review the resulting file to ensure no "end-of-file expected" or brace mismatch issues were introduced by the edit tool.
-4.  **Unity Recompilation:** After modifying C# code, prefer dedicated Unity MCP compilation and status tools when exposed. If MCP is unavailable or disconnects during domain reload, run `unity cmd recompile && unity cmd recompile_status`. In either path, verify completion without compiler errors.
-5.  **Tests:** `unity cmd run_tests --mode EditMode` must be green before reporting done.
+4.  **Unity Recompilation:** After modifying C# code, run `.\.tools\verify.ps1 -UpTo Compile` and verify completion without compiler errors. It holds the Editor lock, so it never collides with another session's run (`AGENTS.md`, "Several sessions at once"). Raw `unity cmd recompile` or MCP compile tools are the fallback only when no other session is active.
+5.  **Tests:** `.\.tools\verify.ps1 -UpTo Tests` must be green before reporting done.
 6.  **Editor Objects:** Use Unity MCP tools or `unity cmd` for live Editor state and serialized object changes. Preserve Undo, explicitly save affected scenes or assets, and verify the result through Console logs or Scene captures as appropriate.
 
 ---

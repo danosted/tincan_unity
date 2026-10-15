@@ -265,7 +265,9 @@ designs select it in their scope. `Airship_Prefab` and its scenes stay as they a
 ## Decisions (developer, 2026-10-04)
 1. **Building is offline and solo first** (S3 as written). The co-op drydock comes later, on the same data and edit
    commands.
-2. **1 m grid cells.** The deck is one cell; players (about 1.8 m) fit under a 2-cell ceiling.
+2. **1 m grid cells.** The deck is one cell; players (about 1.8 m) fit under a 2-cell ceiling. *Corrected
+   2026-10-14:* the player capsule is 2 m tall, so decks stacked 2 cells apart leave too little headroom; they are 3
+   cells apart (`airship-parts-pack.md`).
 3. **JSON through Newtonsoft** (`com.unity.nuget.newtonsoft-json` 3.2.2, already installed). System.Text.Json was the
    first choice, but it is not in Unity's game runtime (6000.4.5f1, Mono `unityjit`/`unityaot`; the Editor's copies
    are tooling only). It would come in as plugin DLLs whose dependencies (`Microsoft.Bcl.AsyncInterfaces`,

@@ -24,7 +24,9 @@ param(
     [switch]$ImageOnly,
     [switch]$Client,
     [switch]$Perf,
-    [int]$TimeoutMinutes = 30
+    [int]$TimeoutMinutes = 30,
+    # How long to wait while another run holds the Editor lock (AGENTS.md, "Several sessions at once").
+    [int]$LockWaitSeconds = 1800
 )
 
 $ErrorActionPreference = "Stop"
@@ -38,12 +40,25 @@ $menuSuffix = if ($Perf) { " (Perf)" } else { "" }
 $ServerDir = Join-Path $ProjectRoot "Builds/LinuxServer$suffix"
 $imageName = if ($Perf) { "tincan-server-perf" } else { "tincan-server" }
 
-if (-not $ImageOnly) {
-    if (-not (Invoke-PlayerBuild "Linux server$menuSuffix" "TinCan/Build/Linux Server$menuSuffix" "LinuxServer${suffix}FromCommandLine" $ServerDir -TimeoutMinutes $TimeoutMinutes)) { exit $ExitFail }
+try {
+    # Player builds run in the open Editor: hold the Editor lock (TinCan.Common.psm1, Enter-EditorLock).
+    if (-not $ImageOnly -or $Client) { Enter-EditorLock -Purpose "build$(if ($Perf) { ' -Perf' })$(if ($Client) { ' -Client' })" -WaitSeconds $LockWaitSeconds }
+    if (-not $ImageOnly) {
+        if (-not (Invoke-PlayerBuild "Linux server$menuSuffix" "TinCan/Build/Linux Server$menuSuffix" "LinuxServer${suffix}FromCommandLine" $ServerDir -TimeoutMinutes $TimeoutMinutes)) { exit $ExitFail }
+    }
+    if ($Image -or $ImageOnly) {
+        if (-not (Invoke-ServerImageBuild $ServerDir -Image $imageName)) { exit $ExitFail }
+    }
+    if ($Client) {
+        if (-not (Invoke-PlayerBuild "Windows client$menuSuffix" "TinCan/Build/Windows Client$menuSuffix" "WindowsClient${suffix}FromCommandLine" (Join-Path $ProjectRoot "Builds/Win64$suffix") -TimeoutMinutes $TimeoutMinutes)) { exit $ExitFail }
+    }
 }
-if ($Image -or $ImageOnly) {
-    if (-not (Invoke-ServerImageBuild $ServerDir -Image $imageName)) { exit $ExitFail }
+catch {
+    $reason = Get-UnusableReason $_
+    if (-not $reason) { throw }
+    Write-Tier "Build" "STOP" $reason
+    exit $ExitUnusable
 }
-if ($Client) {
-    if (-not (Invoke-PlayerBuild "Windows client$menuSuffix" "TinCan/Build/Windows Client$menuSuffix" "WindowsClient${suffix}FromCommandLine" (Join-Path $ProjectRoot "Builds/Win64$suffix") -TimeoutMinutes $TimeoutMinutes)) { exit $ExitFail }
+finally {
+    Exit-EditorLock
 }

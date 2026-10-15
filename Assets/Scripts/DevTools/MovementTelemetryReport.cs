@@ -27,7 +27,7 @@ namespace TinCan.DevTools
         public PredictionSummary prediction;
         public string notes =
             "Latencies are measured on the locally rendered pose in ship-local space. " +
-            "Floors from movement physics alone (75 m/s2 both ways): start about one tick (the first tick moves ~8 cm), stop ~50 ms from a walk to half speed, plus up to one tick.";
+            "Floors from movement physics alone (200 m/s2 both ways): start about one tick (the first tick moves ~22 cm), stop within one tick from a walk to half speed, plus up to one tick.";
     }
 
     /// <summary>

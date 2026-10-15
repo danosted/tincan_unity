@@ -108,6 +108,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.HumanoidMovement.HumanoidControllerView
   _walkSpeed: 7
   _sprintMultiplier: 1.8
+  _acceleration: 200
+  _deceleration: 200
   _jumpForce: 8
   _gravity: 20
   _eyeHeight: 0.7

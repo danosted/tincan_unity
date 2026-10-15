@@ -36,6 +36,13 @@ namespace TinCan.Features.GrappleHook
         [Tooltip("How quickly the holder's velocity turns toward the reel, m/s². Higher feels stiffer.")]
         [Min(0.1f)] public float ReelAcceleration = 60f;
 
+        [Header("Climb")]
+        [Tooltip("When something stops the reel (a rail, the hull below a deck edge), the holder rises at least this fast, m/s, until over it.")]
+        [Min(0f)] public float ClimbSpeed = 6f;
+
+        [Tooltip("A step counts as stopped when it closed less than this fraction of the distance its speed should have covered.")]
+        [Range(0f, 1f)] public float StallFraction = 0.35f;
+
         [Header("Arrival")]
         [Tooltip("Within this distance of the hook point (from the body's centre) the holder has arrived and the hook lets go.")]
         [Min(0.1f)] public float ArriveDistance = 1.5f;

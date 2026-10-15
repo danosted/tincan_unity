@@ -25,10 +25,12 @@ namespace TinCan.Features.GrappleHook
         /// toward the reel at <see cref="GrappleHookConfig.ReelAcceleration"/>. Within
         /// <see cref="GrappleHookConfig.ArriveDistance"/> it has arrived: the speed drops to
         /// <see cref="GrappleHookConfig.ArriveSpeed"/> and it hops up at least <see cref="GrappleHookConfig.ArriveHopSpeed"/>.
-        /// Beyond <see cref="GrappleHookConfig.BreakDistance"/> the line snaps and the velocity is left alone.
+        /// Beyond <see cref="GrappleHookConfig.BreakDistance"/> the line snaps and the velocity is left alone. When
+        /// <paramref name="blocked"/> (something stopped the last step, see <see cref="IsBlocked"/>) it climbs: it rises at
+        /// least at <see cref="GrappleHookConfig.ClimbSpeed"/>, up a wall or a rail until it is over the edge.
         /// </summary>
         public (Vector3 Velocity, GrappleReelOutcome Outcome) Reel(Vector3 velocity, Vector3 position, Vector3 hookPoint,
-            GrappleHookConfig config, float deltaTime)
+            GrappleHookConfig config, float deltaTime, bool blocked = false)
         {
             Vector3 toHook = hookPoint - position;
             float distance = toHook.magnitude;
@@ -37,8 +39,31 @@ namespace TinCan.Features.GrappleHook
             if (distance <= config.ArriveDistance) return (Arrival(velocity, config), GrappleReelOutcome.Arrived);
 
             Vector3 reel = toHook / distance * config.ReelSpeed;
-            return (Vector3.MoveTowards(velocity, reel, config.ReelAcceleration * deltaTime), GrappleReelOutcome.Reeling);
+            Vector3 reeled = Vector3.MoveTowards(velocity, reel, config.ReelAcceleration * deltaTime);
+            if (blocked) reeled.y = Mathf.Max(reeled.y, config.ClimbSpeed);
+            return (reeled, GrappleReelOutcome.Reeling);
         }
+
+        /// <summary>
+        /// Whether the last step was stopped short: moving with <paramref name="momentum"/> it should have come
+        /// noticeably closer to <paramref name="hookPoint"/>, but the distance (<paramref name="previousDistance"/> then,
+        /// measured from <paramref name="position"/> now) shrank by less than <see cref="GrappleHookConfig.StallFraction"/>
+        /// of that.
+        /// </summary>
+        public static bool IsBlocked(Vector3 momentum, Vector3 position, Vector3 hookPoint, float previousDistance,
+            GrappleHookConfig config, float deltaTime)
+        {
+            Vector3 toHook = hookPoint - position;
+            float distance = toHook.magnitude;
+            if (distance <= Mathf.Epsilon) return false;
+
+            float expected = Vector3.Dot(momentum, toHook / distance) * deltaTime;
+            if (expected < MinExpectedProgress) return false;
+            return previousDistance - distance < expected * config.StallFraction;
+        }
+
+        // Below this much expected progress in a step (metres) the reel is still starting, not blocked.
+        private const float MinExpectedProgress = 0.05f;
 
         private static Vector3 Arrival(Vector3 velocity, GrappleHookConfig config)
         {

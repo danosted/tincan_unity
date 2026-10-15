@@ -13,7 +13,8 @@ namespace TinCan.Features.GrappleHook
     /// <summary>
     /// Application Layer: the grappling hook, inside the predicted movement simulation (server and predicting owner).
     /// While a player holds the hook (its carrying tag), pressing the fire input casts a ray along their look; where it
-    /// catches becomes their anchor. Holding the input reels them toward it (<see cref="GrappleHookProcessor"/>);
+    /// catches becomes their anchor. Holding the input reels them toward it (<see cref="GrappleHookProcessor"/>), and
+    /// when something stops the reel (a rail, the hull under a deck edge) it climbs them over it;
     /// releasing it, arriving, the line snapping or putting the hook away lets go. Nothing here is an RPC: the input bit
     /// and the tag are already in the predicted stream, so owner and server reach the same anchor from the same input.
     /// A replay pulls for the inputs the anchor covered and changes nothing. After humanoid movement the server
@@ -33,6 +34,9 @@ namespace TinCan.Features.GrappleHook
         // The latest anchor per player, kept after it lets go so a replay of older inputs still pulls.
         private readonly Dictionary<Guid, GrappleAnchor> _anchors = new();
         private readonly HashSet<Guid> _fireHeld = new();
+        // Per player: the input of the last reeling step and its distance to the hook, to tell a blocked reel (climb).
+        // Replay rewrites it step by step exactly as the live steps did, so it is a trace, not state.
+        private readonly Dictionary<Guid, (uint Sequence, float Distance)> _reelTrace = new();
         private readonly List<GrappleLineSnapshot> _lines = new();
         private IGrappleLineState? _publishedTo;
         private bool _linesChanged = true;
@@ -93,7 +97,7 @@ namespace TinCan.Features.GrappleHook
                 return;
             }
 
-            var (velocity, outcome) = _processor.Reel(step.Momentum, character.Movement.Transform.position, anchor.WorldPoint, _config, step.DeltaTime);
+            var (velocity, outcome) = ReelStep(character, input.Sequence, anchor, step);
             step.Velocity = velocity;
             switch (outcome)
             {
@@ -133,7 +137,20 @@ namespace TinCan.Features.GrappleHook
         private void Replay(IHumanoidCharacterView character, HumanoidInputState input, bool fireHeld, ref HumanoidMotionStep step)
         {
             if (!fireHeld || !_anchors.TryGetValue(character.Id, out var anchor) || !anchor.IsValid || !anchor.CoversInput(input.Sequence)) return;
-            step.Velocity = _processor.Reel(step.Momentum, character.Movement.Transform.position, anchor.WorldPoint, _config, step.DeltaTime).Velocity;
+            step.Velocity = ReelStep(character, input.Sequence, anchor, step).Velocity;
+        }
+
+        // One reel step, live or replayed: blocked when the previous input's step (if this player reeled on it) came up
+        // short, so the reel climbs over what stopped it.
+        private (Vector3 Velocity, GrappleReelOutcome Outcome) ReelStep(IHumanoidCharacterView character, uint sequence, GrappleAnchor anchor,
+            HumanoidMotionStep step)
+        {
+            Vector3 position = character.Movement.Transform.position;
+            Vector3 hookPoint = anchor.WorldPoint;
+            bool blocked = _reelTrace.TryGetValue(character.Id, out var last) && last.Sequence == sequence - 1 &&
+                           GrappleHookProcessor.IsBlocked(step.Momentum, position, hookPoint, last.Distance, _config, step.DeltaTime);
+            _reelTrace[character.Id] = (sequence, Vector3.Distance(position, hookPoint));
+            return _processor.Reel(step.Momentum, position, hookPoint, _config, step.DeltaTime, blocked);
         }
 
         private void TryAttach(IHumanoidCharacterView character, HumanoidInputState input)

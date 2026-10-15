@@ -40,9 +40,9 @@ namespace TinCan.Tests.EditMode
         private float Sprint => _body.WalkSpeed * _body.SprintMultiplier;
 
         [Test]
-        public void FromRest_ReachesWalkingSpeed_WithinThreeTicks()
+        public void FromRest_ReachesWalkingSpeed_WithinTwoTicks()
         {
-            Assert.That(TicksUntil(Vector3.zero, Vector3.forward, Walk, v => v.magnitude >= Walk * 0.99f), Is.LessThanOrEqualTo(3));
+            Assert.That(TicksUntil(Vector3.zero, Vector3.forward, Walk, v => v.magnitude >= Walk * 0.99f), Is.LessThanOrEqualTo(2));
         }
 
         [Test]
@@ -54,27 +54,27 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void Released_StopsFromWalking_WithinThreeTicks()
+        public void Released_StopsFromWalking_WithinTwoTicks()
         {
-            Assert.That(TicksUntil(Vector3.forward * Walk, Vector3.zero, Walk, v => v.magnitude < 0.01f), Is.LessThanOrEqualTo(3));
+            Assert.That(TicksUntil(Vector3.forward * Walk, Vector3.zero, Walk, v => v.magnitude < 0.01f), Is.LessThanOrEqualTo(2));
         }
 
         [Test]
-        public void Released_StopsFromSprinting_WithinSixTicks()
+        public void Released_StopsFromSprinting_WithinThreeTicks()
         {
-            Assert.That(TicksUntil(Vector3.forward * Sprint, Vector3.zero, Sprint, v => v.magnitude < 0.01f), Is.LessThanOrEqualTo(6));
+            Assert.That(TicksUntil(Vector3.forward * Sprint, Vector3.zero, Sprint, v => v.magnitude < 0.01f), Is.LessThanOrEqualTo(3));
         }
 
         [Test]
-        public void Reversing_IsAtFullSpeedTheOtherWay_WithinSixTicks()
+        public void Reversing_IsAtFullSpeedTheOtherWay_WithinThreeTicks()
         {
-            Assert.That(TicksUntil(Vector3.forward * Walk, Vector3.back, Walk, v => Vector3.Dot(v, Vector3.back) >= Walk * 0.99f), Is.LessThanOrEqualTo(6));
+            Assert.That(TicksUntil(Vector3.forward * Walk, Vector3.back, Walk, v => Vector3.Dot(v, Vector3.back) >= Walk * 0.99f), Is.LessThanOrEqualTo(3));
         }
 
         [Test]
-        public void Strafing_TurnsTheVelocityWithinFourTicks()
+        public void Strafing_TurnsTheVelocityWithinTwoTicks()
         {
-            Assert.That(TicksUntil(Vector3.forward * Walk, Vector3.right, Walk, v => Vector3.Angle(v, Vector3.right) < 5f), Is.LessThanOrEqualTo(4));
+            Assert.That(TicksUntil(Vector3.forward * Walk, Vector3.right, Walk, v => Vector3.Angle(v, Vector3.right) < 5f), Is.LessThanOrEqualTo(2));
         }
 
         private Vector3 Step(Vector3 velocity, Vector3 direction, float speed) =>

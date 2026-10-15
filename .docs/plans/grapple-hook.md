@@ -31,6 +31,10 @@ falling off the airship. It also reaches higher decks and sky-island rock.
   in that object's local space, so each peer draws it on its own view of the ship.
 - **Drawing:** `GrappleLinePresenter` runs per frame on every peer. The local player's line comes from its own
   simulation. Other players' lines come from the replicated state (on the server, from its own simulation).
+- **Climb:** a reel that something stops (the rail, the hull under a deck edge) climbs. If the last step closed less
+  than `StallFraction` of what its speed should have covered (`GrappleHookProcessor.IsBlocked`), the holder rises at
+  `ClimbSpeed` until over it. The first host + client run pinned the client against the rail, which this fixed. It
+  uses the previous input's step only, so owner, server and replay agree.
 
 ## Assets
 Built by **TinCan > Dev > Grapple Hook > Build Assets** (`DevTools/Editor/GrappleHookAssetBuilder.cs`):
@@ -40,8 +44,8 @@ Built by **TinCan > Dev > Grapple Hook > Build Assets** (`DevTools/Editor/Grappl
 - `Profile_FuelSandbox`, and `Profile_Test_GrappleHook` with its scene `Test_GrappleHook`.
 
 ## Progress
-- [x] S1: hook, reel, rack, replicated line, EditMode tests, scenario `HookAboard` (2026-10-14; solo passes, host + client pending).
-- [x] S2: aim marker (2026-10-14; EditMode tests pass, not yet run in Play). While you hold the hook and are not hooked, `GrappleAimPresenter` shows a marker
+- [x] S1: hook, reel, rack, replicated line, EditMode tests, scenario `HookAboard` (2026-10-14; solo and host + client pass 2026-10-15).
+- [x] S2: aim marker (2026-10-14; checked in `HookAboard`, 2026-10-15). While you hold the hook and are not hooked, `GrappleAimPresenter` shows a marker
   where the next press would go: green within `MaxRange`, red up to `MarkerSightFactor` times further, hidden when nothing
   is in sight. It runs the hook's own query from the eye along the live look. Scenario step `HookAim InRange` in `HookAboard`.
 - [ ] Playtest: tune feel (`ReelSpeed`, `ReelAcceleration`, the arrival hop), the held pose and the rack's spot on the

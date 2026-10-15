@@ -148,6 +148,28 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void AReelThatSomethingStops_Climbs_InLiveAndReplay()
+        {
+            var useCase = UseCase();
+            var speed = new Vector3(0f, 0f, 18f);
+            Contribute(useCase, Input(1, fire: true));
+            Contribute(useCase, Input(2, fire: true), speed);
+
+            // The body did not move: something (the rail) stopped it.
+            var blocked = Contribute(useCase, Input(3, fire: true), speed);
+            Assert.That(blocked.Velocity.y, Is.GreaterThanOrEqualTo(_config.ClimbSpeed), "Climbs over what stopped it.");
+
+            _movement.Transform.position += new Vector3(0f, 0f, 0.6f);
+            var free = Contribute(useCase, Input(4, fire: true), speed);
+            Assert.That(free.Velocity.y, Is.LessThan(_config.ClimbSpeed), "Moving freely again: no climb.");
+
+            _movement.Transform.position -= new Vector3(0f, 0f, 0.6f);
+            Contribute(useCase, Input(2, fire: true), speed, replay: true);
+            var replayed = Contribute(useCase, Input(3, fire: true), speed, replay: true);
+            Assert.That(replayed.Velocity.y, Is.GreaterThanOrEqualTo(_config.ClimbSpeed), "A replay climbs where the live step did.");
+        }
+
+        [Test]
         public void TheHookPoint_MovesWithWhatItCaughtOn()
         {
             var useCase = UseCase();

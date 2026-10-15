@@ -74,6 +74,28 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void Reel_WhenBlocked_ClimbsAtLeastAtTheClimbSpeed()
+        {
+            _config.ClimbSpeed = 6f;
+            var (velocity, outcome) = _processor.Reel(new Vector3(0f, 0f, 18f), Vector3.zero, new Vector3(0f, -2f, 20f), _config, 1f / 30f, blocked: true);
+
+            Assert.That(outcome, Is.EqualTo(GrappleReelOutcome.Reeling));
+            Assert.That(velocity.y, Is.EqualTo(6f).Within(1e-4f), "Up the rail, even though the hook point is lower.");
+        }
+
+        [Test]
+        public void IsBlocked_WhenTheLastStepClosedLittleOfWhatItsSpeedShouldHave()
+        {
+            _config.StallFraction = 0.35f;
+            var hook = new Vector3(0f, 0f, 20f);
+            var momentum = new Vector3(0f, 0f, 18f); // 0.6 m expected in a 30 Hz step
+
+            Assert.That(GrappleHookProcessor.IsBlocked(momentum, Vector3.zero, hook, previousDistance: 20.05f, _config, 1f / 30f), Is.True, "Pinned against a rail.");
+            Assert.That(GrappleHookProcessor.IsBlocked(momentum, Vector3.zero, hook, previousDistance: 20.6f, _config, 1f / 30f), Is.False, "Moving freely.");
+            Assert.That(GrappleHookProcessor.IsBlocked(Vector3.zero, Vector3.zero, hook, previousDistance: 20f, _config, 1f / 30f), Is.False, "Still starting to reel.");
+        }
+
+        [Test]
         public void Reach_IsInRangeUpToMaxRange_OutOfRangeBeyond_NoneWithoutASurface()
         {
             Assert.That(GrappleHookProcessor.Reach(null, 50f), Is.EqualTo(GrappleAimReach.None));

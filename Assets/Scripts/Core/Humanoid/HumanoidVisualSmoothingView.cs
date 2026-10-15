@@ -11,6 +11,12 @@ namespace TinCan.Core.Humanoid
 
         /// <summary>The body's own renderers (on the visual root itself, not what it holds), for rigs that hide the body.</summary>
         IReadOnlyList<Renderer> BodyRenderers { get; }
+
+        /// <summary>
+        /// Carries the held items (the equipment mediator puts their visuals here). At rest it sits on the visual root;
+        /// a camera rig may move it for the local player (first person keeps it in view). Null without a visual root.
+        /// </summary>
+        Transform? HeldSocket { get; }
     }
 
     /// <summary>
@@ -29,6 +35,21 @@ namespace TinCan.Core.Humanoid
         public Vector3 VisualPosition => _visualRoot != null ? _visualRoot.position : transform.position;
 
         public IReadOnlyList<Renderer> BodyRenderers => _visualRoot != null ? _visualRoot.GetComponents<Renderer>() : System.Array.Empty<Renderer>();
+
+        /// <summary>The held-items socket's name; the equipment mediator finds it by this name.</summary>
+        public const string HeldSocketName = "HeldItems";
+
+        public Transform? HeldSocket { get; private set; }
+
+        private void Awake()
+        {
+            if (_visualRoot == null) return;
+
+            HeldSocket = _visualRoot.Find(HeldSocketName);
+            if (HeldSocket != null) return;
+            HeldSocket = new GameObject(HeldSocketName).transform;
+            HeldSocket.SetParent(_visualRoot, false);
+        }
 
         public void Commit(Transform? platform) => _interpolation.Commit(platform, transform.position, transform.rotation, Time.time);
 

@@ -13,7 +13,8 @@ namespace TinCan.Features.TargetOutline
     /// (<see cref="TargetOutlineConfig.RenderingLayer"/>). Two render-graph passes after transparents: the marked
     /// renderers are drawn white into a one-channel mask, then a full-screen pass draws the outline colour where a pixel
     /// is outside the mask but within <see cref="TargetOutlineConfig.Width"/> pixels of it. Constant width on any mesh,
-    /// no material changes. Does nothing while nothing is outlined, and only for game cameras.
+    /// no material changes. Does nothing while nothing is outlined, and only for game cameras that are not overlays
+    /// (the first-person held-item camera).
     /// </summary>
     public sealed class TargetOutlineRendererFeature : ScriptableRendererFeature
     {
@@ -33,6 +34,7 @@ namespace TinCan.Features.TargetOutline
         {
             if (_pass == null || _config == null || _config.Highlighted == 0) return;
             if (renderingData.cameraData.cameraType != CameraType.Game) return;
+            if (renderingData.cameraData.renderType == CameraRenderType.Overlay) return;
             renderer.EnqueuePass(_pass);
         }
 

@@ -3,6 +3,7 @@
     "rootNamespace": "TinCan.Features.FirstPersonCamera",
     "references": [
         "TinCan.Core.Domain",
+        "Unity.RenderPipelines.Universal.Runtime",
         "VContainer"
     ],
     "includePlatforms": [],

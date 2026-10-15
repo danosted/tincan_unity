@@ -15,6 +15,7 @@ namespace TinCan.Tests.EditMode
             public void Release(Camera camera, System.Collections.Generic.IReadOnlyList<Renderer> body) { }
             public (Vector3 Position, Quaternion Rotation) Place(in ViewPose pose) => (pose.VisualPosition, Quaternion.identity);
             public float AimHeight(float eyeHeight) => eyeHeight;
+            public (Vector3 Position, Quaternion Rotation)? PlaceHeld(Transform held, in ViewPose pose, float deltaTime) => null;
         }
 
         [Test]

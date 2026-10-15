@@ -15,5 +15,16 @@ namespace TinCan.Features.FirstPersonCamera
 
         [Tooltip("Hide the player's own body from their camera (it still casts its shadow). Held items stay visible.")]
         public bool HideBody = true;
+
+        [Header("Held items")]
+        [Tooltip("How quickly held items catch up with the look, per second. Higher is tighter; lower sways more.")]
+        [Min(0.1f)] public float HeldSwaySharpness = 16f;
+
+        [Tooltip("The most held items trail the look, in degrees, so a fast turn never swings them out of view.")]
+        [Range(0f, 20f)] public float HeldSwayMaxAngle = 5f;
+
+        [Tooltip("Layer held items are drawn on, by an overlay camera on top of the world so they never clip into walls. " +
+                 "Must exist in Tags and Layers; empty draws them with the world (they can clip).")]
+        public string HeldItemLayer = "FirstPersonHeld";
     }
 }

@@ -12,13 +12,15 @@ namespace TinCan.Core.Items
     /// <summary>
     /// Infrastructure Layer: the player's held item, as an item id the server writes. On every change, every peer
     /// shows the held item's visual (the item's <see cref="ItemDefinition.HeldVisual"/> prefab, instantiated once under
-    /// the player's <c>Visual</c> and then shown or hidden), and the server and the owning client apply its grants
+    /// the player's <c>Visual/HeldItems</c> socket, or <c>Visual</c> without one, and then shown or hidden), and the server and the owning client apply its grants
     /// through <see cref="EquipmentAbilityBinder"/>. Proxies only draw.
     /// </summary>
     public class EquipmentNetworkMediator : NetworkBehaviour, IEquipment
     {
         private const string LogSource = "Items";
         private const string VisualRootName = "Visual";
+        // HumanoidVisualSmoothingView.HeldSocketName: the socket under Visual that a first-person rig keeps in view.
+        private const string HeldSocketName = "HeldItems";
 
         private readonly NetworkVariable<int> _heldId = new(
             ItemCatalog.None,
@@ -104,7 +106,7 @@ namespace TinCan.Core.Items
 
             // First time this item is held here: build its visual. Named after the prefab so it can be found by name
             // (scenarios check "Carry_Net" and friends).
-            var parent = transform.FindDescendant(VisualRootName) ?? transform;
+            var parent = transform.FindDescendant(HeldSocketName) ?? transform.FindDescendant(VisualRootName) ?? transform;
             var visual = Instantiate(held.HeldVisual, parent, false);
             visual.name = held.HeldVisual.name;
             visual.SetActive(true);

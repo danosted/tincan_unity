@@ -39,6 +39,10 @@ If an open scene is marked modified, save it instead of stopping. Unity otherwis
 If the Editor pipeline stays unresponsive after focusing its window, close it (unity close --force, which discards
 unsaved changes) and reopen it (unity open). Without this switch the script stops with exit code 2 instead.
 
+.PARAMETER LockWaitSeconds
+How long to wait while another run holds the Editor lock (.tools/logs/editor.lock; AGENTS.md, "Several sessions at
+once"), then stop with exit code 2. 0 stops at once. Name yourself as the holder with $env:TINCAN_LOCK_OWNER.
+
 .PARAMETER KeepScene
 Leave the scenario's test-range scene open instead of reopening the scene that was open when the script started.
 Faster when running several verifies in a row; the next run then skips the scene switch.
@@ -62,7 +66,8 @@ param(
     [int]$ScenarioTimeoutSeconds = 240,
     [switch]$SaveDirtyScenes,
     [switch]$RestartEditor,
-    [switch]$KeepScene
+    [switch]$KeepScene,
+    [int]$LockWaitSeconds = 1800
 )
 
 $ErrorActionPreference = "Stop"
@@ -77,6 +82,8 @@ if (($UpTo -in @("Solo", "Duo")) -and $Scenario.Count -eq 0 -and -not $All) { th
 $lastTier = [array]::IndexOf($Tiers, $UpTo)
 
 try {
+    $what = if ($All) { "-All" } elseif ($Scenario.Count -gt 0) { $Scenario -join "," } else { "" }
+    Enter-EditorLock -Purpose "verify $what up to $UpTo".Replace("  ", " ") -WaitSeconds $LockWaitSeconds
     $modal = Restore-Editor -RestartEditor:$RestartEditor
     if ($modal) { Stop-Unusable $modal }
 
@@ -104,4 +111,7 @@ catch {
     if (-not $reason) { throw }
     Write-Tier "Editor" "STOP" $reason
     exit $ExitUnusable
+}
+finally {
+    Exit-EditorLock
 }

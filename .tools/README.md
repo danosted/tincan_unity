@@ -63,6 +63,13 @@ Note: `ProjectSettings/ProjectVersion.txt` is owned by the Unity Editor and is l
 Exit code 0 pass, 1 a tier failed, 2 the Editor was not usable. Tiers, flags and the guards against Editor and MPPM
 failures: [`.docs/NETWORK_TEST_HARNESS.md`](../.docs/NETWORK_TEST_HARNESS.md), "Scenarios".
 
+**The Editor lock.** `verify.ps1`, `build.ps1` (player builds) and `perf.ps1 analyze-gc` hold `.tools/logs/editor.lock`
+while they use the open Editor, so two runs (two agent sessions, or an agent and you) never overlap. A second run
+waits up to `-LockWaitSeconds` (default 1800; 0 stops at once with exit code 2) and prints who holds it; the file is
+JSON (owner, purpose, since, pid). `$env:TINCAN_LOCK_OWNER` names the holder (default: your user name). A lock left by
+a crashed or killed run is taken over automatically, so never delete it by hand. Rules for several sessions:
+[`AGENTS.md`](../AGENTS.md), "Several sessions at once".
+
 ### `build.ps1`
 
 **Purpose:** Build the Linux dedicated server, its container image and (with `-Client`) the matching Windows client

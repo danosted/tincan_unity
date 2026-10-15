@@ -759,7 +759,37 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting };
+        // The galleon has 472 parts; one of them (the helm) is spawned rather than built. Its starboard stairs rise aft
+        // from the main deck at cell (3, 0, 4) to the quarterdeck, whose walking surface is 2.5 m in ship space.
+        public static readonly ScenarioEntry ShipStairs = new(
+            new Scenario.Builder("ShipStairs")
+                .InScene(TestScenes.Shipyard)
+                .Describe("The host gives the ship the built-in galleon -> every peer builds it -> stand at the foot of the starboard stairs on the main deck, facing aft -> walk forward -> up the stairs onto the quarterdeck, 3 m higher, still on the ship.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("FlyDesign", "Galleon")
+                    .WaitUntil("ShipDesignBuilt", 30f, "471")
+                    .Wait(1f, "the rebuilt ship settles")
+                    .Do("PlaceSubjectAtCell", "3,0,4,180"))
+                .Act(s => s
+                    .WaitUntil("ShipDesignBuilt", 30f, "471")
+                    .WaitUntil("SubjectOnShip", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceShipYaw", "180")
+                    .Checkpoint("foot-of-stairs")
+                    .Hold(4f, ScriptedAction.MoveForward)
+                    .WaitUntil("SubjectFeetAbove", 5f, "2.3")
+                    .Expect("SubjectOnShip")
+                    .Checkpoint("quarterdeck"))
+                .Assert(s => s
+                    .WaitUntil("SubjectFeetAbove", 60f, "2.3"))
+                .Build(),
+            builder => builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, ShipStairs };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

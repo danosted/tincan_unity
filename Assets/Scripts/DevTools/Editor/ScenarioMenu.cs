@@ -100,6 +100,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "MountFitting (Host + Client, Lag100)")]
         public static void MountFittingDuo() => RunDuo("MountFitting", "Lag100");
 
+        [MenuItem(Root + "ShipStairs (Host)")]
+        public static void ShipStairsSolo() => RunSolo("ShipStairs");
+
+        [MenuItem(Root + "ShipStairs (Host + Client, Lag100)")]
+        public static void ShipStairsDuo() => RunDuo("ShipStairs", "Lag100");
+
         [MenuItem(Root + "IslandsPerVoyage (Host)")]
         public static void IslandsPerVoyageSolo() => RunSolo("IslandsPerVoyage");
 

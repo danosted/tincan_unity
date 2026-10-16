@@ -8,9 +8,10 @@ namespace TinCan.Features.Shipyard
 {
     /// <summary>
     /// Pure: where a part may go so it is built onto the ship, never floating. A spot is good when the part's cells are free
-    /// and at least one of them touches a part already there (shares a face). The aimed cell wins if it is good; otherwise
-    /// the nearest good cell on the same level within <see cref="Radius"/> cells, so the ghost snaps to the ship's edge.
-    /// The first part of an empty design may go anywhere.
+    /// and at least one of them touches the ship: shares a face with a part already there, or rests on a plank floor of
+    /// the frame or meets one of its beams (<see cref="ShipFrameContact"/>, the validator's rule). The aimed cell wins if it
+    /// is good; otherwise the nearest good cell on the same level within <see cref="Radius"/> cells, so the ghost snaps to
+    /// the ship's edge. The first part of a design with neither parts nor frame may go anywhere.
     /// </summary>
     public sealed class ShipyardSnapProcessor
     {
@@ -22,18 +23,20 @@ namespace TinCan.Features.Shipyard
         };
 
         public bool TrySnap(ShipDesign design, IShipPartCatalog catalog, ShipPartDefinition part, byte orientation,
-            ShipGridCell aimed, out ShipGridCell cell)
+            ShipGridCell aimed, out ShipGridCell cell, ShipFrameTuning? frameTuning = null)
         {
             var taken = ShipPartFootprints.Occupancy(design, catalog);
-            if (taken.Count == 0)
+            var shape = ShipFrameShape.From(design.Frame);
+            if (taken.Count == 0 && design.Frame.Nodes.Count == 0)
             {
                 cell = aimed;
                 return true;
             }
 
+            var tuning = frameTuning ?? ShipFrameTuning.Default;
             foreach (var candidate in Around(aimed))
             {
-                if (!Attaches(taken, ShipPartFootprints.CellsOf(candidate, orientation, part).ToList())) continue;
+                if (!Attaches(taken, shape, ShipPartFootprints.CellsOf(candidate, orientation, part).ToList(), tuning)) continue;
                 cell = candidate;
                 return true;
             }
@@ -42,11 +45,13 @@ namespace TinCan.Features.Shipyard
             return false;
         }
 
-        /// <summary>The cells free, and at least one sharing a face with a taken cell.</summary>
-        public static bool Attaches(IReadOnlyDictionary<ShipGridCell, int> taken, IReadOnlyCollection<ShipGridCell> cells)
+        /// <summary>The cells free, and at least one sharing a face with a taken cell, resting on the frame's planks or meeting a beam.</summary>
+        public static bool Attaches(IReadOnlyDictionary<ShipGridCell, int> taken, ShipFrameShape frame, IReadOnlyCollection<ShipGridCell> cells,
+            ShipFrameTuning tuning)
         {
             if (cells.Any(taken.ContainsKey)) return false;
-            return cells.Any(c => Faces.Any(face => taken.ContainsKey(c + face)));
+            if (cells.Any(c => Faces.Any(face => taken.ContainsKey(c + face)))) return true;
+            return frame.Frame.Nodes.Count > 0 && cells.Any(c => ShipFrameContact.TouchedNodes(frame, c, tuning).Any());
         }
 
         /// <summary>The aimed cell, then the cells on its level within the radius, nearest first (ties in a fixed order).</summary>

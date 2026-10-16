@@ -53,6 +53,14 @@ namespace TinCan.DevTools.Editor
             HostTags.Where(tag => !tag.StartsWith("netsim")).ToArray(),
             ClientTags.Where(tag => !tag.StartsWith("netsim")).ToArray());
 
+        /// <summary>Starts Player 2's Editor, if it is not running, without tags or Play: what verify.ps1 calls when no clone is up.</summary>
+        [MenuItem(Root + "Launch Player 2")]
+        public static void LaunchPlayerTwo()
+        {
+            if (IsClone || !TryGetMppm(out _, out _, out var playerTwo)) return;
+            EnsureLaunched(playerTwo!);
+        }
+
         [MenuItem(Root + "Run Tilt Test (Lag100)")]
         public static void RunTiltTest() => Run(
             new[] { "autohost", "netsim:Lag100", "bot:PilotTilt" },

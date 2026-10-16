@@ -5,7 +5,8 @@ using UnityEngine;
 namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
-    /// Instantiates part visuals under a "DesignedHull" child of the ship, so they ride it and their colliders are its deck.
+    /// Instantiates part visuals and frame meshes under a "DesignedHull" child of the ship, so they ride it and their
+    /// colliders are its deck.
     /// The ship's <see cref="ParentLocalSpaceVolume"/> box is resized to the design, with room above for players.
     /// </summary>
     public sealed class ShipHullBuilder : IShipHullBuilder
@@ -24,9 +25,12 @@ namespace TinCan.Features.ShipDesigns
             return instance;
         }
 
+        public object BuildMesh(Transform ship, string name, ShipFrameMesh mesh, Material? material) =>
+            ShipFrameMeshObjects.Create(Hull(ship), name, mesh, material, collider: true);
+
         public void Remove(object handle)
         {
-            if (handle is GameObject instance && instance != null) Object.Destroy(instance);
+            if (handle is GameObject instance && instance != null) ShipFrameMeshObjects.Destroy(instance);
         }
 
         public void FitShipVolume(Transform ship, Bounds localBounds)

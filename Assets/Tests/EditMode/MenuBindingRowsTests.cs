@@ -22,6 +22,7 @@ namespace TinCan.Tests.EditMode
 
             public IReadOnlyList<InputBindingSlot> Slots => List;
             public string Describe(InputBindingSlot slot) => Keys[slot.BindingIndex];
+            public string DescribeAction(InputActionId action) => action.DisplayName;
             public InputBindingSlot? Rebinding { get; set; }
             public string? LastMessage { get; set; }
             public event Action? Changed;

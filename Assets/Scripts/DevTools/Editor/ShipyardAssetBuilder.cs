@@ -7,6 +7,7 @@ using TinCan.Features.Shipyard;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace TinCan.DevTools.Editor
@@ -25,6 +26,7 @@ namespace TinCan.DevTools.Editor
         private const string OldFloorPath = "Assets/Materials/Shipyard/M_ShipyardFloor.mat";
         private const string MenuPath = "Assets/UI/Menus/Menu_Shipyard.asset";
         private const string InstallerPath = "Assets/Resources/Installers/ShipyardFeatureInstaller.asset";
+        private const string PanelSettingsPath = "Assets/Settings/UI/DefaultPanelSettings.asset";
 
         [MenuItem("TinCan/Dev/Shipyard/Build Assets")]
         public static void Build()
@@ -40,6 +42,7 @@ namespace TinCan.DevTools.Editor
                 c.GhostMaterial = ghost;
                 c.FloorMaterial = floor;
                 c.Menu = menu;
+                c.PanelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(PanelSettingsPath);
             });
             var installer = Asset<ShipyardFeatureInstaller>(InstallerPath, i =>
             {

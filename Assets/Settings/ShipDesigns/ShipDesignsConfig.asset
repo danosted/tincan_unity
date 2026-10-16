@@ -17,6 +17,9 @@ MonoBehaviour:
     MaxExtent: 128
     MaxTextLength: 2000000
     MaxNameLength: 64
+    MaxFrameElements: 16384
+    MaxStories: 8
+    MaxFaceNodes: 64
   Flight:
     SpeedPerThrustOverMass: 24
     MaxSpeed: 30
@@ -24,7 +27,26 @@ MonoBehaviour:
     ReferenceMass: 600
     TurnScaleRange: {x: 0.3, y: 1.5}
     MinHealth: 100
+  Frames:
+    MaxDrift: 0.8
+    MaxFloorSlope: 30
+    MinEdgeLength: 0.3
+    MinFaceArea: 0.25
+    RestTolerance: 0.25
+    MinHeadroom: 2.2
+    PlankThickness: 0.15
+    BeamWidth: 0.2
+    TextureMetres: 2
+    RailHeight: 1
+    PlankMassPerSquareMetre: 3
+    PlankHullPerSquareMetre: 5
+    BeamMassPerMetre: 1
+    BeamHullPerMetre: 2
+  FramePlanks: {fileID: 2100000, guid: 9ee42e8ed6179fd4ab86c63d8d9d1ffa, type: 2}
+  FrameBeams: {fileID: 2100000, guid: 0f53535672978d64a98af4c778a9f491, type: 2}
   BuiltInDesigns:
   - {fileID: 4900000, guid: 703ad1adcd7d5f64da3fea612463da02, type: 3}
   - {fileID: 4900000, guid: 348ddaf73aaeb514a8abda537648cc18, type: 3}
+  - {fileID: 4900000, guid: f35ddc663a37288469509f160f298308, type: 3}
+  - {fileID: 4900000, guid: 67128e0f1b9bcac42ad53492e835e467, type: 3}
   DefaultDesign: Starter

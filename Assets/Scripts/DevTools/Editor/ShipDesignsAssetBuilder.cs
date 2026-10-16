@@ -30,6 +30,8 @@ namespace TinCan.DevTools.Editor
         public const string ConfigPath = DesignsFolder + "ShipDesignsConfig.asset";
         public const string StarterPath = DesignsFolder + "Starter.ship.json";
         public const string GalleonPath = DesignsFolder + "Galleon.ship.json";
+        public const string RaftPath = DesignsFolder + "Raft.ship.json";
+        public const string FrameGalleonPath = DesignsFolder + "FrameGalleon.ship.json";
         public const string InstallerPath = "Assets/Resources/Installers/ShipDesignsFeatureInstaller.asset";
         private const string PrefabsFolder = "Assets/Prefabs/ShipParts/";
         private const string MaterialsFolder = "Assets/Materials/ShipParts/";
@@ -134,10 +136,13 @@ namespace TinCan.DevTools.Editor
 
             var starter = WriteDesign(StarterPath, StarterDesign());
             var galleon = WriteDesign(GalleonPath, GalleonDesign());
+            var raft = WriteDesign(RaftPath, ShipFrameDesigns.RaftDesign());
+            var frameGalleon = WriteDesign(FrameGalleonPath, ShipFrameDesigns.FrameGalleonDesign());
             var config = Asset<ShipDesignsConfig>(ConfigPath, designs =>
             {
-                designs.BuiltInDesigns = new List<TextAsset> { starter, galleon };
+                designs.BuiltInDesigns = new List<TextAsset> { starter, galleon, raft, frameGalleon };
                 designs.DefaultDesign = "Starter";
+                ConfigureFrames(designs, raft, frameGalleon);
             });
 
             var stateFixture = Asset<ShipFixtureDefinition>(StateFixturePath, fixture =>
@@ -166,6 +171,46 @@ namespace TinCan.DevTools.Editor
             AssetDatabase.SaveAssets();
             Debug.Log($"[ShipDesignsAssetBuilder] Ship design assets built ({installer.name}, starter design with {StarterDesign().Parts.Count} parts, "
                       + $"galleon with {GalleonDesign().Parts.Count}).");
+        }
+
+        /// <summary>
+        /// TinCan > Dev > Ship Designs > Build Frame Designs: only the frame part of <see cref="Build"/>, so it can run
+        /// without rebuilding every part prefab: writes the built-in frame designs (the raft, the frame galleon) and gives the config the
+        /// frame materials, limits and the raft as a built-in. Plan: .docs/plans/ship-frames.md.
+        /// </summary>
+        [MenuItem("TinCan/Dev/Ship Designs/Build Frame Designs")]
+        public static void BuildFrameDesigns()
+        {
+            var raft = WriteDesign(RaftPath, ShipFrameDesigns.RaftDesign());
+            var frameGalleon = WriteDesign(FrameGalleonPath, ShipFrameDesigns.FrameGalleonDesign());
+            Asset<ShipDesignsConfig>(ConfigPath, designs => ConfigureFrames(designs, raft, frameGalleon));
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[ShipDesignsAssetBuilder] Frame designs built (raft: {ShipFrameDesigns.RaftDesign().Frame}; frame galleon: {ShipFrameDesigns.FrameGalleonDesign().Frame}).");
+        }
+
+        private static void ConfigureFrames(ShipDesignsConfig designs, params TextAsset[] frameDesigns)
+        {
+            foreach (var design in frameDesigns)
+            {
+                if (!designs.BuiltInDesigns.Contains(design)) designs.BuiltInDesigns.Add(design);
+            }
+
+            designs.FramePlanks = Material("M_ShipDeck", new Color(0.66f, 0.52f, 0.34f));
+            designs.FrameBeams = Material("M_ShipHull", new Color(0.45f, 0.30f, 0.18f));
+
+            // Frame limits came after the asset was first made; give them their defaults, keep the rest as tuned.
+            var limits = designs.Limits;
+            var defaults = ShipDesignLimits.Default;
+            limits.MaxFrameElements = defaults.MaxFrameElements;
+            limits.MaxStories = defaults.MaxStories;
+            limits.MaxFaceNodes = defaults.MaxFaceNodes;
+            designs.Limits = limits;
+
+            // Frame tuning added after the asset was made (S3): defaults for what it does not have yet.
+            var frames = designs.Frames;
+            if (frames.MinHeadroom <= 0f) frames.MinHeadroom = ShipFrameTuning.Default.MinHeadroom;
+            if (frames.RailHeight <= 0f) frames.RailHeight = ShipFrameTuning.Default.RailHeight;
+            designs.Frames = frames;
         }
 
         /// <summary>

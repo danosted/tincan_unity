@@ -19,5 +19,19 @@ namespace TinCan.Features.ShipDesigns
         TooHeavy,
         /// <summary>No part gives thrust: the ship cannot move.</summary>
         NoThrust,
+        /// <summary>A frame element names a node or story that is not there.</summary>
+        FrameReference,
+        /// <summary>An edge joins a node to itself, skips a story, is too short, or doubles another.</summary>
+        BadEdge,
+        /// <summary>A face is too small, crosses itself, spans stories, has a side that is not an edge, or overlaps another plank face.</summary>
+        BadFace,
+        /// <summary>A node with fewer than two edges.</summary>
+        DanglingNode,
+        /// <summary>A node drifts further from its story's floor plane than the tuning allows.</summary>
+        DriftOutOfBand,
+        /// <summary>A plank floor is steeper than a player can walk.</summary>
+        FloorTooSteep,
+        /// <summary>Too many stories or frame elements.</summary>
+        FrameTooLarge,
     }
 }

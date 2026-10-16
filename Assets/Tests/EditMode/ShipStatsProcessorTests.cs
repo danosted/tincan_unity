@@ -35,6 +35,23 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void TheFrame_AddsMassAndHull_ByPlankAreaAndBeamLength()
+        {
+            var tuning = ShipFrameTuning.Default;
+            var withFrame = ShipFrameTestDesigns.Deck();
+            var withoutFrame = withFrame.WithFrame(TinCan.Features.ShipDesigns.ShipFrame.Empty, withFrame.NextPartInstanceId);
+            var (area, length) = TinCan.Features.ShipDesigns.ShipFrameShape.From(withFrame.Frame).Totals();
+
+            var framed = _stats.Compute(withFrame, _parts.Catalog, _tuning, tuning);
+            var bare = Compute(withoutFrame);
+
+            Assert.That(area, Is.EqualTo(16f).Within(0.05f), "4 x 4 m, slightly more for the drifted corner");
+            Assert.That(length, Is.EqualTo(16f).Within(0.05f));
+            Assert.That(framed.Mass - bare.Mass, Is.EqualTo(area * tuning.PlankMassPerSquareMetre + length * tuning.BeamMassPerMetre).Within(1e-3f));
+            Assert.That(framed.Hull - bare.Hull, Is.EqualTo(area * tuning.PlankHullPerSquareMetre + length * tuning.BeamHullPerMetre).Within(1e-3f));
+        }
+
+        [Test]
         public void Speed_IsThrustOverMass_Capped()
         {
             var light = Compute(Design((Helm, 0, 0, 0, 0)));

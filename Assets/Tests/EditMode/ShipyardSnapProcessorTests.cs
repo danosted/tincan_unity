@@ -26,6 +26,17 @@ namespace TinCan.Tests.EditMode
             _snap.TrySnap(design ?? Ship, _parts.Catalog, _parts[part], 0, aimed, out cell);
 
         [Test]
+        public void APart_RestingOnTheFrameDeck_IsOnTheShip_ButOneHighAboveItIsNot()
+        {
+            var deck = ShipFrameTestDesigns.Deck();
+
+            // (1, 0, 1) touches no part (the helm is at (0, 0, 0)): it stands on the deck's planks.
+            Assert.That(Snap(new ShipGridCell(1, 0, 1), out var onDeck, design: deck), Is.True);
+            Assert.That(onDeck, Is.EqualTo(new ShipGridCell(1, 0, 1)));
+            Assert.That(Snap(new ShipGridCell(1, 3, 1), out _, design: deck), Is.False, "nothing to stand on three cells up");
+        }
+
+        [Test]
         public void ACellTouchingTheShip_IsUsedAsAimed()
         {
             Assert.That(Snap(new ShipGridCell(1, 0, 0), out var beside), Is.True);

@@ -62,24 +62,31 @@ function Invoke-FocusEditor {
     [TinCanVerify.Focus]::SetForegroundWindow($handle) | Out-Null
 }
 
-# Causes outside the Editor that focusing cannot fix: no Editor open, or no Unity Hub. Without the Hub the Editor keeps
-# retrying its Hub connection on the main thread and every pipeline command times out; a Hub dialog (for example
-# updated terms) also keeps the Editor from starting. Terms are for the developer to accept, never this script.
+# Causes outside the Editor that focusing cannot fix, for an Editor whose main thread does not answer: none open, or
+# perhaps a Unity Hub dialog it waits on (sign-in, updated terms; once seen on 2026-09-27). The Editor runs without the
+# Hub, so a missing Hub is only a hint. Terms are for the developer to accept, never this script.
 function Get-EnvironmentProblem {
     if (-not (Get-MainEditorProcessId)) { return "no Unity Editor is open for this project. Open it from Unity Hub." }
     if (-not (Get-Process -Name "Unity Hub" -ErrorAction SilentlyContinue)) {
-        return "Unity Hub is not running, so the Editor stalls waiting for it. Start Unity Hub (accept any dialog it shows), then rerun."
+        return "the Editor does not answer, and Unity Hub is not running. If a Hub dialog (sign-in, updated terms) holds the Editor, start the Hub and answer it; otherwise focus or restart the Editor."
     }
     return $null
 }
 
 # Recovery ladder: wait, focus the window, and only with -RestartEditor close (discarding unsaved changes) and reopen.
+# An Editor in Play mode is never ready; it may be the developer's playtest, so this stops instead of ending it.
 function Restore-Editor([switch]$RestartEditor) {
     $modal = Wait-EditorReady 20
     if (-not $modal) { return $null }
     if ($modal -like "modal*") { return $modal }
-    $problem = Get-EnvironmentProblem
-    if ($problem) { return $problem }
+    $status = Invoke-Unity @("editor_status") 15
+    if ($status.playMode -and $status.playMode -ne "stopped") {
+        return "the Editor is in Play mode ($($status.playMode)). Stop it, then rerun."
+    }
+    if (-not (Test-EditorAlive)) {
+        $problem = Get-EnvironmentProblem
+        if ($problem) { return $problem }
+    }
 
     Write-Tier "Editor" "note" "pipeline not answering; focusing the Editor window"
     Invoke-FocusEditor

@@ -8,7 +8,7 @@ namespace TinCan.Features.ShipDesigns
     public sealed class ShipDesignEdit
     {
         private ShipDesignEdit(ShipDesignEditKind kind, string partId, ShipGridCell cell, byte orientation, int instanceId,
-            ShipPartPlacement? placement)
+            ShipPartPlacement? placement, ShipFrameEdit? frameEdit = null)
         {
             Kind = kind;
             PartId = partId;
@@ -16,6 +16,7 @@ namespace TinCan.Features.ShipDesigns
             Orientation = orientation;
             InstanceId = instanceId;
             Placement = placement;
+            FrameEdit = frameEdit;
         }
 
         public ShipDesignEditKind Kind { get; }
@@ -27,6 +28,9 @@ namespace TinCan.Features.ShipDesigns
         /// <summary>The part a <see cref="ShipDesignEditKind.Restore"/> puts back.</summary>
         public ShipPartPlacement? Placement { get; }
 
+        /// <summary>The frame change a <see cref="ShipDesignEditKind.Frame"/> makes.</summary>
+        public ShipFrameEdit? FrameEdit { get; }
+
         public static ShipDesignEdit Place(string partId, ShipGridCell cell, byte orientation) =>
             new(ShipDesignEditKind.Place, partId, cell, orientation, 0, null);
 
@@ -36,10 +40,13 @@ namespace TinCan.Features.ShipDesigns
         public static ShipDesignEdit Restore(ShipPartPlacement placement) =>
             new(ShipDesignEditKind.Restore, placement.PartId, placement.Cell, placement.Orientation, placement.InstanceId, placement);
 
+        public static ShipDesignEdit Frame(ShipFrameEdit edit) => new(ShipDesignEditKind.Frame, string.Empty, default, 0, 0, null, edit);
+
         public override string ToString() => Kind switch
         {
             ShipDesignEditKind.Place => $"Place {PartId} at {Cell} orientation {Orientation}",
             ShipDesignEditKind.Remove => $"Remove #{InstanceId}",
+            ShipDesignEditKind.Frame => $"Frame: {FrameEdit}",
             _ => $"Restore {Placement}",
         };
     }

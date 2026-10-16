@@ -112,6 +112,24 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "GalleonLoadout (Host + Client, Lag100)")]
         public static void GalleonLoadoutDuo() => RunDuo("GalleonLoadout", "Lag100");
 
+        [MenuItem(Root + "FrameDeck (Host)")]
+        public static void FrameDeckSolo() => RunSolo("FrameDeck");
+
+        [MenuItem(Root + "FrameDeck (Host + Client, Lag100)")]
+        public static void FrameDeckDuo() => RunDuo("FrameDeck", "Lag100");
+
+        [MenuItem(Root + "FrameRoundTrip (Host)")]
+        public static void FrameRoundTripSolo() => RunSolo("FrameRoundTrip");
+
+        [MenuItem(Root + "FrameRoundTrip (Host + Client, Lag100)")]
+        public static void FrameRoundTripDuo() => RunDuo("FrameRoundTrip", "Lag100");
+
+        [MenuItem(Root + "FrameStories (Host)")]
+        public static void FrameStoriesSolo() => RunSolo("FrameStories");
+
+        [MenuItem(Root + "FrameStories (Host + Client, Lag100)")]
+        public static void FrameStoriesDuo() => RunDuo("FrameStories", "Lag100");
+
         [MenuItem(Root + "HookAboard (Host)")]
         public static void HookAboardSolo() => RunSolo("HookAboard");
 

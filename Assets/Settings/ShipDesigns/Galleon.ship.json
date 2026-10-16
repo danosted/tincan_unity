@@ -1,8 +1,8 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "name": "Galleon",
   "author": "TinCan",
-  "nextPartInstanceId": 477,
+  "nextId": 477,
   "parts": [
     {"id":1,"part":"hull.block","cell":[-1,-5,-6],"rot":0},
     {"id":2,"part":"hull.block","cell":[-1,-5,-5],"rot":0},

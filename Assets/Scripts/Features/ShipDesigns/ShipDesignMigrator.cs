@@ -7,7 +7,7 @@ namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// Brings an older design file up to <see cref="ShipDesignFormat.CurrentVersion"/>, one version at a time, before it
-    /// is decoded. <see cref="Current"/> holds the game's migrations (none while the format is at version 1).
+    /// is decoded. <see cref="Current"/> holds the game's migrations.
     /// </summary>
     public sealed class ShipDesignMigrator
     {
@@ -20,7 +20,7 @@ namespace TinCan.Features.ShipDesigns
             _targetVersion = targetVersion;
         }
 
-        public static ShipDesignMigrator Current { get; } = new(System.Array.Empty<IShipDesignMigration>());
+        public static ShipDesignMigrator Current { get; } = new(new IShipDesignMigration[] { new ShipDesignMigrationV1() });
 
         /// <summary>Migrates the file from its version to the target, or says which step is missing.</summary>
         public bool TryMigrate(JObject file, int fromVersion, out string? error)

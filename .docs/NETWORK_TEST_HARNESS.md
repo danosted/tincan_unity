@@ -163,7 +163,9 @@ out, or a modal dialog is open). The script guards against the MPPM and Editor f
 - Before a host + client run it reopens the host's scene in every clone. Otherwise a clone that relaunched with an
   empty scene "plays" nothing, and one holding an old copy of a rebuilt scene runs that. It first waits (up to 30 s)
   for the clone to leave Play mode from the previous run, since a playing clone refuses to open a scene. Afterwards
-  it confirms the clone's active scene and stops with `STOP` if it doesn't match, or if no clone is running at all.
+  it confirms the clone's active scene and stops with `STOP` if it doesn't match. When no clone is running at all (MPPM
+  does not relaunch Player 2 after an Editor restart), it launches Player 2 through **TinCan > Dev > Net Harness >
+  Launch Player 2** and waits up to 5 minutes for it to answer, then stops with `STOP` if it never does.
   Before this check, a failed switch went unnoticed and only showed up as the client never joining.
 - Before every play tier it sets each Game view, in the Editor and in every clone, to **Play Unfocused**, so Play
   doesn't pull Unity or Player 2 in front of whatever the developer is working in. The setting has been seen to
@@ -257,7 +259,7 @@ move the subject.
 | `Test_Cannon` | Stations, Cannon, SkyHazards | CannonShot, HazardStrike |
 | `Test_Voyage` | Fuel, ShipDamage, Stations, Cannon, SkyHazards, Voyage, SkyIslands | VoyageLoop, LateJoinBoarding, IslandsPerVoyage, IslandRam |
 | `Test_Helm` | Stations, Helm (the test ship has a quarterdeck at the airship's height for the helm) | HelmSteer |
-| `Test_Shipyard` | Stations, Helm, ShipDesigns, Shipyard, ShipSockets, Cannon (its stations only as fittings); the ship is `ModularShip_Prefab` (no geometry), built from the starter design (ShipStairs and GalleonLoadout switch it to the galleon, which brings its loadout). Offline, the main menu has a Shipyard row | DesignedShipFlies, ShipyardRoundTrip, MountFitting, ShipStairs, GalleonLoadout |
+| `Test_Shipyard` | Stations, Helm, ShipDesigns, Shipyard, ShipSockets, Cannon (its stations only as fittings); the ship is `ModularShip_Prefab` (no geometry), built from the starter design (ShipStairs and GalleonLoadout switch it to the galleon, which brings its loadout; FrameDeck to the raft, whose deck is generated from a frame; FrameStories to the two-story frame galleon). Offline, the main menu has a Shipyard row | DesignedShipFlies, ShipyardRoundTrip, MountFitting, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories |
 | `Test_GrappleHook` | GrappleHook | HookAboard |
 | `Test_Respawn` | GrappleHook, Respawn | OverboardRespawn, LeashClimb, WinchRescue |
 | `Test_Navigation` | Stations, Helm, Voyage, SkyIslands, SkyHazards, Navigation | CompassCourse, ChartPlot, ChartIslands, ChartHazards |
@@ -281,7 +283,8 @@ check in the POC scene.
 | Symptom | Cause and fix |
 |---|---|
 | Scenarios take about a minute each instead of 10-25 s, `Main thread operation timed out after 5000ms` in the Console, or the client sometimes never joins | A long-lived Editor (a day of domain reloads and Play sessions; 3+ GB per Editor) slows everything. Restart the Editor and its clone from Unity Hub. Measured: InteractRack solo 57 s → 9 s, host + client 60 s → 23 s after a restart. The timeout lines themselves are harmless: a CLI poll landed while the main thread was busy. |
-| `verify.ps1` stops with "Unity Hub is not running" or "no Unity Editor is open" | The Editor waits on the Hub (for example a terms dialog after an update), or no Editor is open. Start the Hub, answer its dialog yourself, open the project, rerun. |
+| `verify.ps1` stops with "the Editor is in Play mode" | A Play session (perhaps your playtest) keeps the Editor from being ready, and the script does not end it for you. Stop Play, rerun. |
+| `verify.ps1` stops with "no Unity Editor is open" or "the Editor does not answer, and Unity Hub is not running" | No Editor is open, or its main thread is stuck. The Editor runs without the Hub, but a Hub dialog (sign-in, terms after an update) can hold it: start the Hub and answer it yourself. Otherwise focus or restart the Editor, then rerun. |
 | Solo passes, host + client: `until SubjectReady timed out`, client report missing | The clone ran an old copy of the scene. Clones do not reload a scene that changed on disk; `verify.ps1` reopens it in each clone. From the menu, reopen the scene in Player 2 by hand. |
 | `VContainerException ... CloudEnvironmentView` | The area profile lacks `CloudSubmersionFeatureInstaller`. Include `Profile_Test_Core`. |
 | No ship, players stand on the grey fall catcher | The scene's scope has no profile, so the test-range installer did not register the ship. Run Rebuild Scenes. |

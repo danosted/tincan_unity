@@ -37,7 +37,58 @@ namespace TinCan.Tests.EditMode
             var validation = new ShipDesignValidator().Validate(design, parts.Catalog, ShipDesignLimits.Default);
             Assert.That(validation.IsValid && validation.Problems.Count == 0, Is.True, validation.ToString());
 
+            var asVersion2 = text.Replace("\"formatVersion\": 1,", "\"formatVersion\": 2,").Replace("\"nextPartInstanceId\":", "\"nextId\":");
+            Assert.That(_codec.Encode(design), Is.EqualTo(asVersion2), "saved again, it is the same design in version 2's canonical form");
+        }
+
+        [Test]
+        public void TheV2GoldenFile_Loads_WithItsFrame_AndIsWrittenBackByteForByte()
+        {
+            var text = File.ReadAllText(GoldenPath("v2-golden.ship.json")).Replace("\r\n", "\n");
+
+            var result = _codec.Decode(text);
+
+            Assert.That(result.Succeeded, Is.True, result.Error);
+            var design = result.Design!;
+            Assert.That(design.NextPartInstanceId, Is.EqualTo(ShipFrameTestDesigns.NextId));
+            var frame = design.Frame;
+            Assert.That(frame.Base, Is.EqualTo(-5));
+            Assert.That(frame.StoryHeights, Is.EqualTo(new[] { 30 }));
+            Assert.That(frame.Nodes.Select(n => (n.Id, n.X, n.Y, n.Z)), Is.EqualTo(new[] { (1, -20, 0, -20), (2, -20, 0, 20), (3, 20, 2, 20), (4, 20, 0, -20) }));
+            Assert.That(frame.Edges.Select(e => (e.A, e.B, e.Railing)), Is.EqualTo(new[] { (1, 2, false), (2, 3, true), (3, 4, false), (4, 1, false) }));
+            Assert.That(frame.Faces.Select(f => (f.Id, f.Fill)), Is.EqualTo(new[] { (9, ShipFrameFill.Planks) }));
+            Assert.That(frame.Faces[0].Nodes, Is.EqualTo(new[] { 1, 2, 3, 4 }));
+
+            using var parts = new ShipDesignTestParts();
+            var validation = new ShipDesignValidator().Validate(design, parts.Catalog, ShipDesignLimits.Default);
+            Assert.That(validation.Problems, Is.Empty, validation.ToString());
+
             Assert.That(_codec.Encode(design), Is.EqualTo(text), "the canonical form is the file format");
+            Assert.That(_codec.Encode(ShipFrameTestDesigns.Deck()), Is.EqualTo(text), "the golden file is the test deck");
+        }
+
+        [Test]
+        public void ADesignWithAFrame_RoundTrips_AndOneWithoutWritesNoFrame()
+        {
+            var design = ShipFrameTestDesigns.Deck();
+
+            var back = _codec.Decode(_codec.Encode(design)).Design!;
+
+            Assert.That(ShipDesignHash.Compute(back), Is.EqualTo(ShipDesignHash.Compute(design)));
+            Assert.That(_codec.Encode(Design((Helm, 0, 0, 0, 0))), Does.Not.Contain(ShipDesignFormat.FrameField));
+        }
+
+        [TestCase("{\"formatVersion\":2,\"parts\":[],\"frame\":[]}", "not an object")]
+        [TestCase("{\"formatVersion\":2,\"parts\":[],\"frame\":{\"nodes\":[{\"id\":1,\"story\":0,\"pos\":[0,0]}]}}", "three whole numbers")]
+        [TestCase("{\"formatVersion\":2,\"parts\":[],\"frame\":{\"faces\":[{\"id\":1,\"nodes\":[1,2,3],\"fill\":\"glass\"}]}}", "no fill")]
+        [TestCase("{\"formatVersion\":2,\"parts\":[],\"frame\":{\"edges\":[{\"id\":1,\"a\":1}]}}", "\"b\"")]
+        [TestCase("{\"formatVersion\":2,\"parts\":[],\"frame\":{\"stories\":[30,30,30,30,30,30,30,30,30]}}", "stories")]
+        public void BrokenFrames_AreRefused_WithAReason(string text, string reason)
+        {
+            var result = _codec.Decode(text);
+
+            Assert.That(result.Succeeded, Is.False);
+            Assert.That(result.Error, Does.Contain(reason));
         }
 
         [Test]

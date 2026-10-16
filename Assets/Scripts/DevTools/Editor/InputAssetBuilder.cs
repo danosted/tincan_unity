@@ -72,18 +72,23 @@ namespace TinCan.DevTools.Editor
             ["FreeCamera/Move"] = ("Fly", "Fly the free camera (spectator, a dev tool: not in the Controls menu).", false),
             ["DevTools/ToggleNetOverlay"] = ("Net Overlay", "Show or hide the net harness readout.", false),
             ["Shipyard/Point"] = ("Shipyard Cursor", "Where the cursor points in the shipyard.", false),
-            ["Shipyard/Orbit"] = ("Shipyard Orbit", "Turn the shipyard camera while Orbit is held.", false),
-            ["Shipyard/OrbitHold"] = ("Orbit Camera", "Hold to orbit the shipyard camera around the ship.", true),
-            ["Shipyard/Zoom"] = ("Shipyard Zoom", "Zoom the shipyard camera.", false),
-            ["Shipyard/Place"] = ("Place Part", "Place the selected part where the cursor points.", true),
-            ["Shipyard/DeleteMode"] = ("Delete Mode", "Toggle delete mode in the shipyard: click a highlighted part to delete it.", true),
+            ["Shipyard/Look"] = ("Shipyard Look", "Turn the shipyard camera while Look is held.", false),
+            ["Shipyard/LookHold"] = ("Look Around", "Hold to look around the shipyard with the mouse.", true),
+            ["Shipyard/Fly"] = ("Fly", "Fly the shipyard camera along the view.", true),
+            ["Shipyard/Rise"] = ("Fly Down / Up", "Fly the shipyard camera down or up.", true),
+            ["Shipyard/Fast"] = ("Fly Faster", "Fly the shipyard camera faster while held.", true),
+            ["Shipyard/Zoom"] = ("Push Camera", "Move the shipyard camera straight forward or back.", false),
+            ["Shipyard/Place"] = ("Place / Pick", "Parts: place the selected part where the cursor points. Frame: pick, add, join or drag a node.", true),
+            ["Shipyard/DeleteMode"] = ("Delete Mode", "Toggle delete mode in the shipyard: click a highlighted part, node, edge or face to delete it.", true),
             ["Shipyard/Rotate"] = ("Turn Part", "Turn the selected part a quarter turn.", true),
-            ["Shipyard/NextPart"] = ("Next Part", "Select the next part.", true),
-            ["Shipyard/PreviousPart"] = ("Previous Part", "Select the previous part.", true),
+            ["Shipyard/Mode"] = ("Parts / Frame", "Switch the shipyard between placing parts and drawing the frame.", true),
+            ["Shipyard/Fill"] = ("Plank Face", "Frame mode: plank or open the face under the cursor.", true),
+            ["Shipyard/Height"] = ("Node Height", "Frame mode: hold while dragging a node to raise or lower it.", true),
+            ["Shipyard/Extrude"] = ("Extrude", "Frame mode: push the wall under the cursor out, grow an outer floor edge, or raise a story on a floor.", true),
             ["Shipyard/Undo"] = ("Undo", "Undo the last change to the design.", true),
             ["Shipyard/Redo"] = ("Redo", "Redo the change just undone.", true),
-            ["Shipyard/LevelUp"] = ("Level Up", "Build one level higher in the shipyard.", true),
-            ["Shipyard/LevelDown"] = ("Level Down", "Build one level lower in the shipyard.", true),
+            ["Shipyard/LevelUp"] = ("Level Up", "Parts: build one level higher. Frame: work on the story above.", true),
+            ["Shipyard/LevelDown"] = ("Level Down", "Parts: build one level lower. Frame: work on the story below.", true),
         };
 
         [MenuItem("TinCan/Dev/Input/Build Assets")]
@@ -174,21 +179,26 @@ namespace TinCan.DevTools.Editor
             var shipyard = Context<ShipyardInputContext>("Context_Shipyard", c =>
             {
                 c.Point = Id("Shipyard/Point");
-                c.Orbit = Id("Shipyard/Orbit");
-                c.OrbitHold = Id("Shipyard/OrbitHold");
+                c.Look = Id("Shipyard/Look");
+                c.LookHold = Id("Shipyard/LookHold");
+                c.Fly = Id("Shipyard/Fly");
+                c.Rise = Id("Shipyard/Rise");
+                c.Fast = Id("Shipyard/Fast");
                 c.Zoom = Id("Shipyard/Zoom");
                 c.Place = Id("Shipyard/Place");
                 c.DeleteMode = Id("Shipyard/DeleteMode");
                 c.Rotate = Id("Shipyard/Rotate");
-                c.NextPart = Id("Shipyard/NextPart");
-                c.PreviousPart = Id("Shipyard/PreviousPart");
+                c.Mode = Id("Shipyard/Mode");
+                c.Fill = Id("Shipyard/Fill");
+                c.Height = Id("Shipyard/Height");
+                c.Extrude = Id("Shipyard/Extrude");
                 c.Undo = Id("Shipyard/Undo");
                 c.Redo = Id("Shipyard/Redo");
                 c.LevelUp = Id("Shipyard/LevelUp");
                 c.LevelDown = Id("Shipyard/LevelDown");
                 c.Configure(InputContextActivation.WhileOpened, 500, blocksAllLower: true);
                 c.SetContents(None(), NoActions(), new[] { new InputRoute(Id("Global/Cancel"), shipyardMenu) },
-                    "The shipyard is open (contributed by its installer): build with the mouse, everything below is silent; Cancel opens the shipyard menu. Read by ShipyardUseCase.");
+                    "The shipyard is open (contributed by its installer): fly the camera, build with the mouse, everything below is silent; Cancel opens the shipyard menu. Read by ShipyardUseCase.");
             });
             var leashed = Context<InputContext>("Context_Leashed", c =>
             {

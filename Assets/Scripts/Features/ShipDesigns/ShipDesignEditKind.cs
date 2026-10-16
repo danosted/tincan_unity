@@ -8,5 +8,7 @@ namespace TinCan.Features.ShipDesigns
         Remove,
         /// <summary>Puts a removed part back with its own instance id (undoing a remove).</summary>
         Restore,
+        /// <summary>A change to the frame (<see cref="ShipFrameEdit"/>).</summary>
+        Frame,
     }
 }

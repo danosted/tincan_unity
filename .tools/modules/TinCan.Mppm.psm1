@@ -23,13 +23,36 @@ function Get-ClonePaths {
     return $script:ClonePaths
 }
 
+# No clone running (MPPM does not relaunch Player 2 after an Editor restart): launch it through the harness menu, wait
+# for it to show in `unity status` and answer, and return the clone paths. The first launch of a clone takes minutes.
+function Start-PlayerTwo([int]$TimeoutSeconds = 300) {
+    Write-Tier "Editor" "note" "no Player 2 running; launching it (TinCan > Dev > Net Harness > Launch Player 2)"
+    Invoke-Unity @("menu", "--path", "TinCan/Dev/Net Harness/Launch Player 2") 30 | Out-Null
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds 3
+        $script:ClonePaths = $null
+        $clones = @(Get-ClonePaths)
+        if ($clones.Count -eq 0) { continue }
+
+        $ready = @($clones | Where-Object { $null -ne (Invoke-Unity @("editor_status", "--project-path", $_) 15).playMode })
+        if ($ready.Count -eq $clones.Count) {
+            Write-Tier "Editor" "note" "Player 2 is up"
+            return $clones
+        }
+    }
+
+    Stop-Unusable "Player 2 did not come up within $TimeoutSeconds s; start it in Window > Multiplayer > Multiplayer Play Mode"
+}
+
 function Sync-CloneScenes {
     $main = Invoke-Unity @("list_open_scenes") 20
     $mainScene = @($main.scenes | Where-Object { $_.isActive })[0].path
     if (-not $mainScene) { return }
 
     $clones = @(Get-ClonePaths)
-    if ($clones.Count -eq 0) { Stop-Unusable "no MPPM clone found for host + client (unity status lists none); start Player 2 in Window > Multiplayer > Multiplayer Play Mode" }
+    if ($clones.Count -eq 0) { $clones = @(Start-PlayerTwo) }
 
     foreach ($clone in $clones) {
         $name = Split-Path $clone -Leaf

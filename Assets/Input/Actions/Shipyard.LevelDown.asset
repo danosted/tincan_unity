@@ -15,5 +15,5 @@ MonoBehaviour:
   _actionId: c51bbb7e-c59d-4f52-b339-0f9e87a84bb1
   _path: Shipyard/LevelDown
   _displayName: Level Down
-  _description: Build one level lower in the shipyard.
+  _description: 'Parts: build one level lower. Frame: work on the story below.'
   _rebindable: 1

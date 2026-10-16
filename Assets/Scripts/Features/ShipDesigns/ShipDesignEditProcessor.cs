@@ -9,23 +9,27 @@ namespace TinCan.Features.ShipDesigns
     /// <summary>
     /// Pure: applies one <see cref="ShipDesignEdit"/> to a design. A place or restore is refused when the part type is
     /// unknown, the orientation invalid, a cell beyond the limits or already taken, or the design full; removing a part
-    /// that isn't there is refused too. Disconnecting parts is allowed (the validator reports it), so a builder can
-    /// rework a ship in any order. Instance ids are never reused.
+    /// that isn't there is refused too. Frame edits go to <see cref="ShipFrameEditProcessor"/>. Disconnecting parts is
+    /// allowed (the validator reports it), so a builder can rework a ship in any order. Instance ids are never reused, and
+    /// new parts skip the ids the frame uses.
     /// </summary>
     public sealed class ShipDesignEditProcessor
     {
+        private readonly ShipFrameEditProcessor _frames = new();
+
         public ShipDesignEditResult Apply(ShipDesign design, ShipDesignEdit edit, IShipPartCatalog catalog, ShipDesignLimits limits) =>
             edit.Kind switch
             {
                 ShipDesignEditKind.Place => Place(design, edit, catalog, limits),
                 ShipDesignEditKind.Remove => Remove(design, edit.InstanceId),
                 ShipDesignEditKind.Restore => Restore(design, edit, catalog, limits),
+                ShipDesignEditKind.Frame when edit.FrameEdit != null => _frames.Apply(design, edit.FrameEdit, limits),
                 _ => ShipDesignEditResult.Refused(design, $"Unknown edit {edit.Kind}."),
             };
 
         private static ShipDesignEditResult Place(ShipDesign design, ShipDesignEdit edit, IShipPartCatalog catalog, ShipDesignLimits limits)
         {
-            int instanceId = Math.Max(design.NextPartInstanceId, design.Parts.Count == 0 ? 1 : design.Parts.Max(p => p.InstanceId) + 1);
+            int instanceId = Math.Max(design.NextPartInstanceId, design.IdFloor);
             var placement = new ShipPartPlacement(instanceId, edit.PartId, edit.Cell, edit.Orientation);
             var refusal = RefusalToAdd(design, placement, catalog, limits);
             if (refusal != null) return ShipDesignEditResult.Refused(design, refusal);

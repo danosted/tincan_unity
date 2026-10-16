@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f054790d1b959a448b9f151402a98236, type: 3}
   m_Name: Context_Shipyard
   m_EditorClassIdentifier: TinCan.Features.Shipyard::TinCan.Features.Shipyard.ShipyardInputContext
-  _description: 'The shipyard is open (contributed by its installer): build with
-    the mouse, everything below is silent; Cancel opens the shipyard menu. Read by
-    ShipyardUseCase.'
+  _description: 'The shipyard is open (contributed by its installer): fly the camera,
+    build with the mouse, everything below is silent; Cancel opens the shipyard menu.
+    Read by ShipyardUseCase.'
   _activation: 5
   _possessedKind: 0
   _tag: {fileID: 0}
@@ -26,14 +26,19 @@ MonoBehaviour:
   - Action: {fileID: 11400000, guid: d4c2589aa24d2d849be5e35a6b405ca8, type: 2}
     Command: {fileID: 11400000, guid: 783a1d96ea4c25f4aa8ad9e2d19923b4, type: 2}
   Point: {fileID: 11400000, guid: 280f952d92da3754fba1781991eb1768, type: 2}
-  Orbit: {fileID: 11400000, guid: 96a57e2538720a442a14b18c4f8b2c9f, type: 2}
-  OrbitHold: {fileID: 11400000, guid: dc2687cc89db6b34d9bd2b70b49ad6cf, type: 2}
+  Look: {fileID: 11400000, guid: b4d42a944d53b0f47ac7c0d0b2599a9a, type: 2}
+  LookHold: {fileID: 11400000, guid: 8fa0fc0d399436e4c92a129a08653d7c, type: 2}
+  Fly: {fileID: 11400000, guid: 8aea13bddb0bf4948a5d60ca8416e150, type: 2}
+  Rise: {fileID: 11400000, guid: d1292cf4f37cfba4cb407d60eafc1e6b, type: 2}
+  Fast: {fileID: 11400000, guid: 48ec84fadc6068e4ca39bade205d1e98, type: 2}
   Zoom: {fileID: 11400000, guid: b56a4dcffa5dddf4e98a032168dc59b3, type: 2}
   Place: {fileID: 11400000, guid: af0329952f30a9848b885c4ce7dec420, type: 2}
   DeleteMode: {fileID: 11400000, guid: 7fc07b019fe496e45bf430c6d4690bd2, type: 2}
   Rotate: {fileID: 11400000, guid: 9702f40f66646304682db8c1120aa981, type: 2}
-  NextPart: {fileID: 11400000, guid: 69ab7f5f2cb32014b87b76840115aa5a, type: 2}
-  PreviousPart: {fileID: 11400000, guid: f6514e4c98282f34aa80405b10f81a29, type: 2}
+  Mode: {fileID: 11400000, guid: 2aaa3e3919769d041b1bc282f5c9e0f2, type: 2}
+  Fill: {fileID: 11400000, guid: 3b6e56fef4b83974daa15e587169dc9f, type: 2}
+  Height: {fileID: 11400000, guid: ea2b2e3293c174f4dba9efef6399c7e4, type: 2}
+  Extrude: {fileID: 11400000, guid: 206c058429360c948a637a6a662a5e65, type: 2}
   Undo: {fileID: 11400000, guid: 41044afcae123044781b5978a4aa248c, type: 2}
   Redo: {fileID: 11400000, guid: 0b74351fbe248454898932d69f8b6a43, type: 2}
   LevelUp: {fileID: 11400000, guid: aae7282d78ae4c946921cd181a01259b, type: 2}

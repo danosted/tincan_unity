@@ -9,8 +9,9 @@ using Newtonsoft.Json.Linq;
 namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
-    /// The design file format: JSON, one line per part so files diff well. Written in canonical form (parts in instance
-    /// id order, fixed field order, "\n" line ends), so a design always produces the same text.
+    /// The design file format: JSON, one line per part (and per frame node, edge and face, <see cref="ShipFrameJson"/>) so
+    /// files diff well. Written in canonical form (parts in instance id order, fixed field order, "\n" line ends), so a
+    /// design always produces the same text. A design without a frame writes no frame section.
     /// Reading: the text must fit the limits; a file newer than <see cref="ShipDesignFormat.CurrentVersion"/> is refused,
     /// an older one migrated first. Fields this build does not know are kept as raw JSON and written back, at the top
     /// level and on each part, so a file from a later build survives a load and save. Plan:
@@ -21,7 +22,7 @@ namespace TinCan.Features.ShipDesigns
         private static readonly HashSet<string> TopLevelFields = new()
         {
             ShipDesignFormat.FormatVersionField, ShipDesignFormat.NameField, ShipDesignFormat.AuthorField,
-            ShipDesignFormat.NextPartInstanceIdField, ShipDesignFormat.PartsField,
+            ShipDesignFormat.NextIdField, ShipDesignFormat.PartsField, ShipDesignFormat.FrameField,
         };
 
         private static readonly HashSet<string> PartFields = new()
@@ -51,7 +52,7 @@ namespace TinCan.Features.ShipDesigns
             writer.WriteValue(design.Name);
             writer.WritePropertyName(ShipDesignFormat.AuthorField);
             writer.WriteValue(design.Author);
-            writer.WritePropertyName(ShipDesignFormat.NextPartInstanceIdField);
+            writer.WritePropertyName(ShipDesignFormat.NextIdField);
             writer.WriteValue(design.NextPartInstanceId);
             WriteExtensions(writer, design.Extensions);
 
@@ -59,6 +60,12 @@ namespace TinCan.Features.ShipDesigns
             writer.WriteStartArray();
             foreach (var part in design.Parts.OrderBy(p => p.InstanceId)) WritePart(writer, part);
             writer.WriteEndArray();
+
+            if (!design.Frame.IsEmpty)
+            {
+                writer.WritePropertyName(ShipDesignFormat.FrameField);
+                ShipFrameJson.Write(writer, design.Frame);
+            }
 
             writer.WriteEndObject();
             writer.Flush();
@@ -112,13 +119,22 @@ namespace TinCan.Features.ShipDesigns
                 parts.Add(ReadPart(part, i));
             }
 
+            var frame = ShipFrame.Empty;
+            if (file[ShipDesignFormat.FrameField] is { } frameToken)
+            {
+                if (frameToken is not JObject frameObject) return ShipDesignDecodeResult.Failed($"\"{ShipDesignFormat.FrameField}\" is not an object.");
+                var frameError = ShipFrameJson.TryRead(frameObject, _limits, out frame);
+                if (frameError != null) return ShipDesignDecodeResult.Failed(frameError);
+            }
+
             string name = ReadString(file, ShipDesignFormat.NameField, "the file") ?? string.Empty;
             string author = ReadString(file, ShipDesignFormat.AuthorField, "the file") ?? string.Empty;
-            int nextId = file.ContainsKey(ShipDesignFormat.NextPartInstanceIdField)
-                ? ReadInt(file, ShipDesignFormat.NextPartInstanceIdField, "the file")
-                : (parts.Count == 0 ? 1 : parts.Max(p => p.InstanceId) + 1);
+            var design = new ShipDesign(name, author, 0, parts, Extensions(file, TopLevelFields), frame);
+            int nextId = file.ContainsKey(ShipDesignFormat.NextIdField)
+                ? ReadInt(file, ShipDesignFormat.NextIdField, "the file")
+                : design.IdFloor;
 
-            return ShipDesignDecodeResult.Read(new ShipDesign(name, author, nextId, parts, Extensions(file, TopLevelFields)));
+            return ShipDesignDecodeResult.Read(new ShipDesign(name, author, nextId, parts, design.Extensions, frame));
         }
 
         private static JObject Parse(string text)

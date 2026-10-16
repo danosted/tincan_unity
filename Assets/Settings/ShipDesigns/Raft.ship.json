@@ -1,0 +1,62 @@
+{
+  "formatVersion": 2,
+  "name": "Raft",
+  "author": "TinCan",
+  "nextId": 45,
+  "parts": [
+    {"id":30,"part":"core.helm","cell":[0,0,0],"rot":0},
+    {"id":31,"part":"prop.engine","cell":[0,0,-6],"rot":0},
+    {"id":32,"part":"hull.mast","cell":[-2,0,-2],"rot":0},
+    {"id":33,"part":"hull.mast","cell":[-2,1,-2],"rot":0},
+    {"id":34,"part":"hull.mast","cell":[-2,2,-2],"rot":0},
+    {"id":35,"part":"hull.mast","cell":[-2,0,2],"rot":0},
+    {"id":36,"part":"hull.mast","cell":[-2,1,2],"rot":0},
+    {"id":37,"part":"hull.mast","cell":[-2,2,2],"rot":0},
+    {"id":38,"part":"hull.mast","cell":[2,0,-2],"rot":0},
+    {"id":39,"part":"hull.mast","cell":[2,1,-2],"rot":0},
+    {"id":40,"part":"hull.mast","cell":[2,2,-2],"rot":0},
+    {"id":41,"part":"hull.mast","cell":[2,0,2],"rot":0},
+    {"id":42,"part":"hull.mast","cell":[2,1,2],"rot":0},
+    {"id":43,"part":"hull.mast","cell":[2,2,2],"rot":0},
+    {"id":44,"part":"lift.envelope","cell":[0,3,0],"rot":0}
+  ],
+  "frame": {
+    "base": -5,
+    "stories": [30],
+    "nodes": [
+      {"id":1,"story":0,"pos":[0,2,100]},
+      {"id":2,"story":0,"pos":[25,1,80]},
+      {"id":3,"story":0,"pos":[40,0,45]},
+      {"id":4,"story":0,"pos":[42,0,0]},
+      {"id":5,"story":0,"pos":[40,0,-40]},
+      {"id":6,"story":0,"pos":[28,0,-70]},
+      {"id":7,"story":0,"pos":[0,1,-82]},
+      {"id":8,"story":0,"pos":[-28,0,-70]},
+      {"id":9,"story":0,"pos":[-40,0,-40]},
+      {"id":10,"story":0,"pos":[-42,0,0]},
+      {"id":11,"story":0,"pos":[-40,0,45]},
+      {"id":12,"story":0,"pos":[-25,1,80]}
+    ],
+    "edges": [
+      {"id":13,"a":1,"b":2},
+      {"id":14,"a":2,"b":3},
+      {"id":15,"a":3,"b":4},
+      {"id":16,"a":4,"b":5},
+      {"id":17,"a":5,"b":6},
+      {"id":18,"a":6,"b":7},
+      {"id":19,"a":7,"b":8},
+      {"id":20,"a":8,"b":9},
+      {"id":21,"a":9,"b":10},
+      {"id":22,"a":10,"b":11},
+      {"id":23,"a":11,"b":12},
+      {"id":24,"a":12,"b":1},
+      {"id":25,"a":3,"b":11},
+      {"id":26,"a":5,"b":9}
+    ],
+    "faces": [
+      {"id":27,"nodes":[1,2,3,11,12],"fill":"planks"},
+      {"id":28,"nodes":[11,3,4,5,9,10],"fill":"planks"},
+      {"id":29,"nodes":[9,5,6,7,8],"fill":"planks"}
+    ]
+  }
+}

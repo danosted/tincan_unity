@@ -1,8 +1,8 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "name": "Starter",
   "author": "TinCan",
-  "nextPartInstanceId": 96,
+  "nextId": 96,
   "parts": [
     {"id":1,"part":"hull.deck","cell":[-2,-1,-4],"rot":0},
     {"id":2,"part":"hull.deck","cell":[-2,-1,-3],"rot":0},

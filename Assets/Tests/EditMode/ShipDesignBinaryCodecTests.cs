@@ -2,6 +2,7 @@
 using System.Linq;
 using NUnit.Framework;
 using TinCan.Features.ShipDesigns;
+using TinCan.Tests.EditMode.Fakes;
 using static TinCan.Tests.EditMode.Fakes.ShipDesignTestParts;
 
 namespace TinCan.Tests.EditMode
@@ -33,6 +34,35 @@ namespace TinCan.Tests.EditMode
             var viaNetwork = ShipDesignBinaryCodec.Decode(ShipDesignBinaryCodec.Encode(viaFile), ShipDesignLimits.Default).Design!;
 
             Assert.That(json.Encode(viaNetwork), Is.EqualTo(json.Encode(design)));
+        }
+
+        [Test]
+        public void TheFrame_RoundTrips_AndCountsInTheHash()
+        {
+            var json = new ShipDesignJsonCodec(ShipDesignLimits.Default);
+            var design = ShipFrameTestDesigns.Deck();
+
+            var back = ShipDesignBinaryCodec.Decode(ShipDesignBinaryCodec.Encode(design), ShipDesignLimits.Default).Design!;
+
+            Assert.That(json.Encode(back), Is.EqualTo(json.Encode(design)));
+            Assert.That(ShipDesignHash.Compute(ShipFrameTestDesigns.Deck(ShipFrameFill.Open)), Is.Not.EqualTo(ShipDesignHash.Compute(design)));
+        }
+
+        [Test]
+        public void ABigFrame_IsCompact_AndTooBigAFrame_IsRefusedBeforeReadingIt()
+        {
+            // A 100 x 30 m deck outline of 260 nodes and edges and one face: a few bytes an element.
+            var nodes = Enumerable.Range(0, 130).Select(i => new ShipFrameNode(i + 1, 0, i < 65 ? i * 15 : (129 - i) * 15, 0, i < 65 ? 0 : 300)).ToList();
+            var edges = nodes.Select((n, i) => new ShipFrameEdge(200 + i, n.Id, nodes[(i + 1) % nodes.Count].Id)).ToList();
+            var frame = new ShipFrame(0, new[] { 30 }, nodes, edges, new[] { new ShipFrameFace(400, nodes.Take(64).Select(n => n.Id).ToList(), ShipFrameFill.Planks) });
+            var design = ShipFrameTestDesigns.FrameOnly(frame);
+
+            int bytes = ShipDesignBinaryCodec.Encode(design).Length;
+            Assert.That(bytes, Is.LessThan(frame.ElementCount * 10), $"{bytes} bytes for {frame.ElementCount} elements");
+
+            var limits = ShipDesignLimits.Default;
+            limits.MaxFrameElements = 100;
+            Assert.That(ShipDesignBinaryCodec.Decode(ShipDesignBinaryCodec.Encode(design), limits).Error, Does.Contain("more than 100"));
         }
 
         [Test]
@@ -80,7 +110,9 @@ namespace TinCan.Tests.EditMode
         public void TheHash_IsPinned_SoItIsTheSameOnEveryPlatformAndBuild()
         {
             // If the network form changes on purpose, update this value; every peer must agree on it.
-            Assert.That(ShipDesignHash.ToText(ShipDesignHash.Compute(Sample())), Is.EqualTo("d2a261783aea4373"));
+            // Network version 2 (the frame, .docs/plans/ship-frames.md) moved it from d2a261783aea4373.
+            string hash = ShipDesignHash.ToText(ShipDesignHash.Compute(Sample()));
+            Assert.That(hash, Is.EqualTo("ff8ce700480257d0"), $"the hash is now {hash}");
             Assert.That(ShipDesignHash.ToText(0x0123456789abcdefUL), Is.EqualTo("0123456789abcdef"));
         }
     }

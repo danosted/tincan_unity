@@ -9,14 +9,15 @@ namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// The compact form the server sends to every peer: a part-id palette (each part type once), then per part its
-    /// instance id, palette index, cell (zig-zag varints) and orientation, about 6 bytes a part. Canonical: parts in
+    /// instance id, palette index, cell (zig-zag varints) and orientation, about 6 bytes a part; then the frame (stories,
+    /// nodes, edges, faces; zig-zag varints, a few bytes each). Canonical: parts in
     /// instance id order, palette in order of first use, so equal designs give equal bytes (<see cref="ShipDesignHash"/>).
     /// It carries what building needs, not <see cref="ShipDesign.Extensions"/>: peers build ships, they never save the
     /// server's file. Both ends run the same build, so it has its own version byte instead of migrations.
     /// </summary>
     public static class ShipDesignBinaryCodec
     {
-        private const byte Version = 1;
+        private const byte Version = 2;
         private const int MaxStringBytes = 1024;
 
         public static byte[] Encode(ShipDesign design)
@@ -52,6 +53,8 @@ namespace TinCan.Features.ShipDesigns
                 writer.Write(part.Orientation);
             }
 
+            WriteFrame(writer, design.Frame);
+
             writer.Flush();
             return stream.ToArray();
         }
@@ -86,13 +89,98 @@ namespace TinCan.Features.ShipDesigns
                     parts.Add(new ShipPartPlacement(instanceId, palette[index], cell, reader.ReadByte()));
                 }
 
+                var frameError = ReadFrame(reader, limits, out var frame);
+                if (frameError != null) return ShipDesignDecodeResult.Failed(frameError);
+
                 if (reader.BaseStream.Position != reader.BaseStream.Length) return ShipDesignDecodeResult.Failed("There is more after the design.");
-                return ShipDesignDecodeResult.Read(new ShipDesign(name, author, nextId, parts));
+                return ShipDesignDecodeResult.Read(new ShipDesign(name, author, nextId, parts, frame: frame));
             }
             catch (Exception e) when (e is EndOfStreamException or OverflowException or FormatException or ArgumentException)
             {
                 return ShipDesignDecodeResult.Failed($"The network design is not readable: {e.Message}");
             }
+        }
+
+        private static void WriteFrame(BinaryWriter writer, ShipFrame frame)
+        {
+            WriteVarInt(writer, ZigZag(frame.Base));
+            WriteVarInt(writer, (uint)frame.StoryHeights.Count);
+            foreach (int height in frame.StoryHeights) WriteVarInt(writer, ZigZag(height));
+
+            WriteVarInt(writer, (uint)frame.Nodes.Count);
+            foreach (var node in frame.Nodes)
+            {
+                WriteVarInt(writer, ZigZag(node.Id));
+                WriteVarInt(writer, ZigZag(node.Story));
+                WriteVarInt(writer, ZigZag(node.X));
+                WriteVarInt(writer, ZigZag(node.Y));
+                WriteVarInt(writer, ZigZag(node.Z));
+            }
+
+            WriteVarInt(writer, (uint)frame.Edges.Count);
+            foreach (var edge in frame.Edges)
+            {
+                WriteVarInt(writer, ZigZag(edge.Id));
+                WriteVarInt(writer, ZigZag(edge.A));
+                WriteVarInt(writer, ZigZag(edge.B));
+                writer.Write(edge.Railing ? (byte)1 : (byte)0);
+            }
+
+            WriteVarInt(writer, (uint)frame.Faces.Count);
+            foreach (var face in frame.Faces)
+            {
+                WriteVarInt(writer, ZigZag(face.Id));
+                WriteVarInt(writer, (uint)face.Nodes.Count);
+                foreach (int node in face.Nodes) WriteVarInt(writer, ZigZag(node));
+                writer.Write((byte)face.Fill);
+            }
+        }
+
+        private static string? ReadFrame(BinaryReader reader, ShipDesignLimits limits, out ShipFrame frame)
+        {
+            frame = ShipFrame.Empty;
+            int @base = UnZigZag(ReadVarInt(reader));
+            int storyCount = checked((int)ReadVarInt(reader));
+            if (storyCount > limits.MaxStories) return $"The frame has {storyCount} stories; at most {limits.MaxStories}.";
+            var stories = new int[storyCount];
+            for (int i = 0; i < storyCount; i++) stories[i] = UnZigZag(ReadVarInt(reader));
+
+            int budget = limits.MaxFrameElements;
+            int nodeCount = checked((int)ReadVarInt(reader));
+            if ((budget -= nodeCount) < 0) return $"The frame has more than {limits.MaxFrameElements} nodes, edges and faces.";
+            var nodes = new List<ShipFrameNode>(nodeCount);
+            for (int i = 0; i < nodeCount; i++)
+            {
+                nodes.Add(new ShipFrameNode(UnZigZag(ReadVarInt(reader)), UnZigZag(ReadVarInt(reader)),
+                    UnZigZag(ReadVarInt(reader)), UnZigZag(ReadVarInt(reader)), UnZigZag(ReadVarInt(reader))));
+            }
+
+            int edgeCount = checked((int)ReadVarInt(reader));
+            if ((budget -= edgeCount) < 0) return $"The frame has more than {limits.MaxFrameElements} nodes, edges and faces.";
+            var edges = new List<ShipFrameEdge>(edgeCount);
+            for (int i = 0; i < edgeCount; i++)
+            {
+                edges.Add(new ShipFrameEdge(UnZigZag(ReadVarInt(reader)), UnZigZag(ReadVarInt(reader)), UnZigZag(ReadVarInt(reader)),
+                    reader.ReadByte() != 0));
+            }
+
+            int faceCount = checked((int)ReadVarInt(reader));
+            if ((budget -= faceCount) < 0) return $"The frame has more than {limits.MaxFrameElements} nodes, edges and faces.";
+            var faces = new List<ShipFrameFace>(faceCount);
+            for (int i = 0; i < faceCount; i++)
+            {
+                int id = UnZigZag(ReadVarInt(reader));
+                int corners = checked((int)ReadVarInt(reader));
+                if (corners > limits.MaxFaceNodes) return $"Face {i} has {corners} corners; at most {limits.MaxFaceNodes}.";
+                var loop = new int[corners];
+                for (int c = 0; c < corners; c++) loop[c] = UnZigZag(ReadVarInt(reader));
+                byte fill = reader.ReadByte();
+                if (fill > (byte)ShipFrameFill.Planks) return $"Face {i} has an unknown fill {fill}.";
+                faces.Add(new ShipFrameFace(id, loop, (ShipFrameFill)fill));
+            }
+
+            frame = new ShipFrame(@base, stories, nodes, edges, faces);
+            return null;
         }
 
         private static void WriteString(BinaryWriter writer, string value)

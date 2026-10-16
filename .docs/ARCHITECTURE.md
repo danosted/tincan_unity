@@ -224,7 +224,9 @@ ship a validated design. The ShipDesignState fixture replicates it, and every pe
 islands do. Functional parts (the helm) are spawned by the server as networked fixtures at their design pose. A design
 that places a part keeps the same prefab's installer fixture off the ship (`Core/Ship/Fixtures/IShipFixtureFilter.cs`).
 A design's parts carry mass, lift, thrust and hull; the server turns them into the ship's speed, turn rate and health
-through `Core/Ship/IAirshipTuning.cs`. The shipyard (`Features/Shipyard/`) builds designs offline.
+through `Core/Ship/IAirshipTuning.cs`. A design can also carry a frame (stories of nodes, beams and plank faces); every peer
+generates the hull from it, one mesh per story, and parts stand on it ([plans/ship-frames.md](plans/ship-frames.md)).
+The shipyard (`Features/Shipyard/`) builds designs offline.
 Parts can carry sockets (`Core/Ship/Sockets/`). A separate integration feature (ShipSockets) lets players mount a
 feature's fittings in them (E on a free socket, then a choice the server validates); the builder never knows about it.
 What a design comes with lives in its own loadout file beside the design (`<key>.fittings.json`), which the server

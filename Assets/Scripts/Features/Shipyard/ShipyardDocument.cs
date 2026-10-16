@@ -47,6 +47,18 @@ namespace TinCan.Features.Shipyard
             return result;
         }
 
+        /// <summary>
+        /// Takes a design made by several edits at once (a frame tool gesture) as one step: <paramref name="undo"/> undoes
+        /// all of it.
+        /// </summary>
+        public void Commit(ShipDesign design, ShipDesignEdit undo)
+        {
+            Design = design;
+            _undo.Push(undo);
+            _redo.Clear();
+            IsDirty = true;
+        }
+
         public bool Undo() => Step(_undo, _redo);
 
         public bool Redo() => Step(_redo, _undo);

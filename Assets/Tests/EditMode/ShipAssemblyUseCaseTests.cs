@@ -283,5 +283,35 @@ namespace TinCan.Tests.EditMode
                 Object.DestroyImmediate(mountVisual);
             }
         }
+
+        [Test]
+        public void AFrame_BuildsPlanksAndBeams_AndOnlyAChangedStoryIsRebuilt()
+        {
+            var assembly = Assembly();
+            var deck = ShipFrameTestDesigns.Deck();
+            _state.Set(deck);
+            assembly.Tick();
+
+            Assert.That(_builder.Meshes.Select(m => m.Name), Is.EquivalentTo(new[] { "Planks0", "Beams0" }));
+            Assert.That(assembly.BuiltFrameMeshes(_ship.Id), Is.EqualTo(2));
+            Assert.That(_builder.Volume!.Value.min.x, Is.EqualTo(-2f).Within(1e-4f), "the volume covers the deck");
+            Assert.That(_builder.Volume!.Value.min.y, Is.LessThan(-0.5f - 0.15f), "and its underside");
+
+            // A new part, frame unchanged: no mesh is rebuilt.
+            _state.Set(deck.WithParts(deck.Parts.Append(new ShipPartPlacement(11, Block, new ShipGridCell(1, 0, 1), 0)), 12));
+            assembly.Tick();
+            Assert.That(_builder.MeshBuilds, Is.EqualTo(2));
+
+            // The deck goes open: the story is rebuilt, beams only.
+            _state.Set(ShipFrameTestDesigns.Deck(ShipFrameFill.Open));
+            assembly.Tick();
+            Assert.That(_builder.Meshes.Select(m => m.Name), Is.EqualTo(new[] { "Beams0" }));
+
+            // No frame at all: nothing generated stands.
+            _state.Set(Ship());
+            assembly.Tick();
+            Assert.That(_builder.Meshes, Is.Empty);
+            Assert.That(assembly.BuiltFrameMeshes(_ship.Id), Is.Zero);
+        }
     }
 }

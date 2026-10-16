@@ -15,6 +15,6 @@ MonoBehaviour:
   _actionId: 97e8b067-1a36-4da0-b7fd-af5afa931afd
   _path: Shipyard/DeleteMode
   _displayName: Delete Mode
-  _description: 'Toggle delete mode in the shipyard: click a highlighted part to
-    delete it.'
+  _description: 'Toggle delete mode in the shipyard: click a highlighted part, node,
+    edge or face to delete it.'
   _rebindable: 1

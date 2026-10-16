@@ -17,8 +17,10 @@ namespace TinCan.DevTools.Scenarios
     /// (subject peer). Probes: ShipDesignBuilt: this peer has built the ship from the design its state replicates, with
     /// at least the given number of parts standing. SubjectOnShip: the ground under the subject on this peer belongs to
     /// the ship (a built part or the helm). ShipTopSpeed: the ship's replicated top speed, set from the design's parts
-    /// (S4). SubjectFeetAbove "y": the subject's feet are at least that high in ship space on this peer. Plans:
-    /// .docs/plans/modular-airship-builder.md, .docs/plans/airship-parts-pack.md.
+    /// (S4). SubjectFeetAbove "y": the subject's feet are at least that high in ship space on this peer. ShipFrameBuilt "n":
+    /// at least n generated frame meshes (planks and beams per story) stand for the ship on this peer. SubjectStandsOn
+    /// "prefix": the ground under the subject is a part of the ship whose name starts with the prefix ("Planks" for a frame
+    /// floor). Plans: .docs/plans/modular-airship-builder.md, .docs/plans/airship-parts-pack.md, .docs/plans/ship-frames.md.
     /// </summary>
     public sealed class ShipDesignsScenarioLibrary : IScenarioLibrary
     {
@@ -55,6 +57,8 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("SubjectOnShip", _ => CheckOnShip()),
             new ScenarioProbe("ShipTopSpeed", CheckTopSpeed),
             new ScenarioProbe("SubjectFeetAbove", CheckFeetAbove),
+            new ScenarioProbe("ShipFrameBuilt", CheckFrameBuilt),
+            new ScenarioProbe("SubjectStandsOn", CheckStandsOn),
         };
 
         private ScenarioCheck CheckBuilt(string minimumParts)
@@ -94,6 +98,33 @@ namespace TinCan.DevTools.Scenarios
 
             string detail = $"standing on {hit.collider.name}, {hit.distance - 0.5f:0.00} m below the feet pivot";
             return hit.collider.transform.IsChildOf(ship.Transform) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
+
+        private ScenarioCheck CheckFrameBuilt(string minimumMeshes)
+        {
+            var state = _actors.GetActors<IShipDesignState>().FirstOrDefault(s => s.Ship != null);
+            if (state == null) return ScenarioCheck.Fail("no ship design state on a ship");
+
+            int meshes = _assembly.BuiltFrameMeshes(state.Ship!.Id);
+            string detail = $"{meshes} frame meshes built";
+            return meshes >= int.Parse(minimumMeshes, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
+
+        private ScenarioCheck CheckStandsOn(string namePrefix)
+        {
+            var body = _subject.Body;
+            var ship = _actors.GetActors<IAirshipView>().FirstOrDefault();
+            if (body == null || ship == null) return ScenarioCheck.Fail("no subject or no ship");
+
+            var from = body.position + Vector3.up * 0.5f;
+            if (!Physics.Raycast(from, Vector3.down, out var hit, 4f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                return ScenarioCheck.Fail($"nothing under the subject at {body.position}");
+            }
+
+            string detail = $"standing on {hit.collider.name}";
+            bool match = hit.collider.transform.IsChildOf(ship.Transform) && hit.collider.name.StartsWith(namePrefix, System.StringComparison.Ordinal);
+            return match ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
         /// <summary>Server, as the shipyard's Launch: the stored design becomes the selected one and every ship flies it.</summary>

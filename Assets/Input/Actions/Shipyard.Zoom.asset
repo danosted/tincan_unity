@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.InputActionId
   _actionId: f5ba5f4b-6cb8-4309-8317-f5f7660c9fb3
   _path: Shipyard/Zoom
-  _displayName: Shipyard Zoom
-  _description: Zoom the shipyard camera.
+  _displayName: Push Camera
+  _description: Move the shipyard camera straight forward or back.
   _rebindable: 0

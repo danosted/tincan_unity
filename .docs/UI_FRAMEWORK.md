@@ -154,6 +154,14 @@ A `MenuItemKind.Bindings` row expands at snapshot time into one `Binding` row pe
 
 Write a new `MonoBehaviour` implementing `IInjectedView` that takes `IMenuSystem` (and `INetworkService` for cursor handling) via `[Inject]`, subscribes to `Changed`, and renders `Current`. Add it to the `GameLifetimeScope` prefab; injection is automatic. The model, commands, menus and tests are untouched.
 
+## Feature panels
+
+A feature with a screen of its own can draw it itself, model and view split the same way: a pure presenter builds a
+snapshot, and a code-built UI Toolkit view on the feature's own `UIDocument` (with
+`Settings/UI/DefaultPanelSettings`) renders it. The shipyard does this: `ShipyardPanelPresenter` builds the parts and
+controls panels, `ShipyardPanelView` draws them, and clicks over a panel are kept from the build. The keys a panel shows
+come from `IInputBindings.DescribeAction`, never typed text, so rebinding shows.
+
 ## Known limits
 
 - Rows are rendered top to bottom with no layout options; the view is a placeholder.

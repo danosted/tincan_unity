@@ -8,36 +8,49 @@ namespace TinCan.Features.Shipyard
     /// <summary>
     /// Building in the shipyard: live while the shipyard is open (<see cref="InputContextActivation.WhileOpened"/>), and it
     /// silences everything below it. <see cref="ShipyardUseCase"/> reads the slots; Cancel is routed to
-    /// <see cref="OpenShipyardMenuCommand"/>.
+    /// <see cref="OpenShipyardMenuCommand"/>. The camera flies (WASD, Q/E, Shift; look while the right button is held),
+    /// the cursor builds. Plan: .docs/plans/ship-frames.md (S2).
     /// </summary>
     [CreateAssetMenu(fileName = "Context_Shipyard", menuName = "TinCan/Input/Shipyard Context")]
     public sealed class ShipyardInputContext : InputContext
     {
         [Tooltip("The cursor's position on screen (pixels).")]
         public InputActionId? Point;
-        [Tooltip("Mouse movement while orbiting.")]
-        public InputActionId? Orbit;
-        [Tooltip("Held to orbit the camera around the ship.")]
-        public InputActionId? OrbitHold;
-        [Tooltip("Zoom in and out (scroll).")]
+        [Tooltip("Mouse movement: turns the camera while LookHold is held.")]
+        public InputActionId? Look;
+        [Tooltip("Held to look around with the mouse.")]
+        public InputActionId? LookHold;
+        [Tooltip("Fly the camera along the view (WASD).")]
+        public InputActionId? Fly;
+        [Tooltip("Fly the camera down and up (Q/E).")]
+        public InputActionId? Rise;
+        [Tooltip("Held to fly faster.")]
+        public InputActionId? Fast;
+        [Tooltip("Move the camera straight forward and back (scroll).")]
         public InputActionId? Zoom;
-        [Tooltip("Place the selected part where the cursor points (in delete mode: delete the highlighted part).")]
+        [Tooltip("Parts mode: place the selected part (in delete mode: delete). Frame mode: pick, add, join, drag nodes.")]
         public InputActionId? Place;
-        [Tooltip("Toggle delete mode: the part under the cursor is highlighted, and Place deletes it.")]
+        [Tooltip("Toggle delete mode: what is under the cursor is highlighted, and Place deletes it.")]
         public InputActionId? DeleteMode;
         [Tooltip("Turn the selected part a quarter turn.")]
         public InputActionId? Rotate;
-        public InputActionId? NextPart;
-        public InputActionId? PreviousPart;
+        [Tooltip("Switch between building with parts and drawing the frame.")]
+        public InputActionId? Mode;
+        [Tooltip("Frame mode: plank or open the face under the cursor.")]
+        public InputActionId? Fill;
+        [Tooltip("Frame mode: held while dragging a node, the drag raises or lowers it instead of moving it.")]
+        public InputActionId? Height;
+        [Tooltip("Frame mode: extrude what is under the cursor: push a wall out, grow a floor edge, raise a story on a floor.")]
+        public InputActionId? Extrude;
         public InputActionId? Undo;
         public InputActionId? Redo;
-        [Tooltip("Move the working level up (new parts go on it).")]
+        [Tooltip("The working level up (parts mode) or the working story up (frame mode).")]
         public InputActionId? LevelUp;
         public InputActionId? LevelDown;
 
         protected override IEnumerable<InputActionId?> Slots => new[]
         {
-            Point, Orbit, OrbitHold, Zoom, Place, DeleteMode, Rotate, NextPart, PreviousPart, Undo, Redo, LevelUp, LevelDown,
+            Point, Look, LookHold, Fly, Rise, Fast, Zoom, Place, DeleteMode, Rotate, Mode, Fill, Height, Extrude, Undo, Redo, LevelUp, LevelDown,
         };
     }
 }

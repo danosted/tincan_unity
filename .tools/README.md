@@ -53,7 +53,7 @@ Note: `ProjectSettings/ProjectVersion.txt` is owned by the Unity Editor and is l
 ### `verify.ps1`
 
 **Purpose:** The feedback loop for a feature: compile, EditMode tests, then live scenarios (solo, host + client)
-**Needs:** the Unity Editor open on the project, and Unity Hub running
+**Needs:** the Unity Editor open on the project, not in Play mode (Unity Hub is not needed)
 **Usage:**
 ```powershell
 .\.tools\verify.ps1 -UpTo Tests            # compile + EditMode tests
@@ -116,7 +116,7 @@ flow. Shared logic lives in the modules (plan: `.docs/plans/tools-modules.md`):
 |---|---|
 | `TinCan.Common` | project root, `Start-ToolLog` + `Write-Log` (console and `logs/<name>-<time>.log`), `Write-Section`, `Write-Tier`, exit codes, `Stop-Unusable` |
 | `TinCan.Editor` | `Invoke-Unity`, Editor readiness and recovery, modal dialogs, scenes, Play Unfocused |
-| `TinCan.Mppm` | MPPM clone paths, clone scene sync, network prefab hash check |
+| `TinCan.Mppm` | MPPM clone paths, launching Player 2 when none runs, clone scene sync, network prefab hash check |
 | `TinCan.Verify` | the compile, test and scenario tiers, the batch table |
 | `TinCan.Build` | player builds, in the open Editor (after checking it is not stalled) or a batch-mode one |
 | `TinCan.Container` | container images and game containers through Podman (the engine is named once, `$Engine`): start with limits, wait, collect logs |

@@ -1,0 +1,28 @@
+{
+  "formatVersion": 2,
+  "name": "Golden Frame",
+  "author": "Tests",
+  "nextId": 11,
+  "parts": [
+    {"id":10,"part":"core.helm","cell":[0,0,0],"rot":0}
+  ],
+  "frame": {
+    "base": -5,
+    "stories": [30],
+    "nodes": [
+      {"id":1,"story":0,"pos":[-20,0,-20]},
+      {"id":2,"story":0,"pos":[-20,0,20]},
+      {"id":3,"story":0,"pos":[20,2,20]},
+      {"id":4,"story":0,"pos":[20,0,-20]}
+    ],
+    "edges": [
+      {"id":5,"a":1,"b":2},
+      {"id":6,"a":2,"b":3,"rail":true},
+      {"id":7,"a":3,"b":4},
+      {"id":8,"a":4,"b":1}
+    ],
+    "faces": [
+      {"id":9,"nodes":[1,2,3,4],"fill":"planks"}
+    ]
+  }
+}

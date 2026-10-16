@@ -55,6 +55,8 @@ namespace TinCan.Core.Input
         public string Describe(InputBindingSlot slot) =>
             _reader.Find(slot.Action) is { } action ? action.GetBindingDisplayString(slot.BindingIndex) : "?";
 
+        public string DescribeAction(InputActionId action) => _reader.Find(action) is { } found ? found.GetBindingDisplayString() : "?";
+
         public void StartRebind(InputBindingSlot slot)
         {
             CancelRebind();

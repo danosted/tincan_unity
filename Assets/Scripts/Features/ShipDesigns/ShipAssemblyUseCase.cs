@@ -78,6 +78,8 @@ namespace TinCan.Features.ShipDesigns
             return true;
         }
 
+        public int BuiltFrameMeshes(Guid shipId) => _built.TryGetValue(shipId, out var built) ? built.Hull.BuiltFrameMeshes : 0;
+
         public void Tick()
         {
             _states.Clear();
@@ -90,7 +92,7 @@ namespace TinCan.Features.ShipDesigns
 
                 if (!_built.TryGetValue(ship.Id, out var built))
                 {
-                    built = new BuiltShip(ship, new ShipHullAssembler(_catalog, _builder, buildFunctionalParts: false));
+                    built = new BuiltShip(ship, new ShipHullAssembler(_catalog, _builder, buildFunctionalParts: false, _config));
                     _built.Add(ship.Id, built);
                 }
 

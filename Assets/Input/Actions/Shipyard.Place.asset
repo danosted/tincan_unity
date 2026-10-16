@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.InputActionId
   _actionId: d8432f5b-be79-4005-8269-7e33b3c0bc71
   _path: Shipyard/Place
-  _displayName: Place Part
-  _description: Place the selected part where the cursor points.
+  _displayName: Place / Pick
+  _description: 'Parts: place the selected part where the cursor points. Frame: pick,
+    add, join or drag a node.'
   _rebindable: 1

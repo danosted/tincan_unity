@@ -1,14 +1,18 @@
 #nullable enable
 using System.Collections.Generic;
+using System.Linq;
 using TinCan.Core.Ship.Parts;
 
 namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// Pure: everything wrong with a design, as a list the shipyard can show. The server runs it on every design before
-    /// it builds or replicates one. Rules: ids unique, positive and below the next id; orientations valid; every cell
-    /// within the limits; no two parts in one cell; exactly one core part; every part joined to the core through
-    /// face-adjacent cells; lift at least mass; some thrust. Unknown parts are reported but take no part in the geometry.
+    /// it builds or replicates one. Rules: ids (of parts and frame elements alike) unique, positive and below the next id;
+    /// orientations valid; every cell within the limits; no two parts in one cell; the frame's own rules
+    /// (<see cref="ShipFrameValidator"/>); exactly one core part; every part and every piece of frame joined to the core,
+    /// part to part through face-adjacent cells, through frame edges, and part to frame where a part rests on planks or
+    /// meets a beam (<see cref="ShipFrameContact"/>); lift at least mass (the frame weighs too); some thrust. Unknown parts
+    /// are reported but take no part in the geometry.
     /// </summary>
     public sealed class ShipDesignValidator
     {
@@ -17,8 +21,9 @@ namespace TinCan.Features.ShipDesigns
             new(1, 0, 0), new(-1, 0, 0), new(0, 1, 0), new(0, -1, 0), new(0, 0, 1), new(0, 0, -1),
         };
 
-        public ShipDesignValidation Validate(ShipDesign design, IShipPartCatalog catalog, ShipDesignLimits limits)
+        public ShipDesignValidation Validate(ShipDesign design, IShipPartCatalog catalog, ShipDesignLimits limits, ShipFrameTuning? frameTuning = null)
         {
+            var tuning = frameTuning ?? ShipFrameTuning.Default;
             var problems = new List<ShipDesignProblem>();
 
             if (design.Name.Length > limits.MaxNameLength)
@@ -37,7 +42,7 @@ namespace TinCan.Features.ShipDesigns
 
             foreach (var placement in design.Parts)
             {
-                CheckIdentity(design, placement, seenIds, problems);
+                CheckIdentity(design, placement.InstanceId, placement.ToString(), seenIds, problems);
 
                 if (!ShipPartOrientation.IsValid(placement.Orientation))
                 {
@@ -56,14 +61,25 @@ namespace TinCan.Features.ShipDesigns
                 Occupy(placement, part, limits, occupancy, problems);
             }
 
-            CheckCoreAndConnection(known, occupancy, problems);
-            CheckFlight(known, problems);
+            var frame = design.Frame;
+            foreach (var node in frame.Nodes) CheckIdentity(design, node.Id, node.ToString(), seenIds, problems);
+            foreach (var edge in frame.Edges) CheckIdentity(design, edge.Id, edge.ToString(), seenIds, problems);
+            foreach (var face in frame.Faces) CheckIdentity(design, face.Id, face.ToString(), seenIds, problems);
+
+            var shape = ShipFrameShape.From(frame);
+            ShipFrameValidator.Validate(shape, tuning, limits, problems);
+
+            CheckCoreAndConnection(known, occupancy, shape, tuning, problems);
+            CheckFlight(known, shape, tuning, problems);
             return new ShipDesignValidation(problems);
         }
 
-        private static void CheckFlight(List<(ShipPartPlacement Placement, ShipPartDefinition Part)> known, List<ShipDesignProblem> problems)
+        private static void CheckFlight(List<(ShipPartPlacement Placement, ShipPartDefinition Part)> known, ShipFrameShape shape, ShipFrameTuning tuning,
+            List<ShipDesignProblem> problems)
         {
-            float mass = 0f, lift = 0f, thrust = 0f;
+            var (plankArea, beamLength) = shape.Totals();
+            float mass = plankArea * tuning.PlankMassPerSquareMetre + beamLength * tuning.BeamMassPerMetre;
+            float lift = 0f, thrust = 0f;
             foreach (var (_, part) in known)
             {
                 mass += part.Stats.Mass;
@@ -75,18 +91,17 @@ namespace TinCan.Features.ShipDesigns
             if (thrust <= 0f) problems.Add(new(ShipDesignProblemKind.NoThrust, 0, "Nothing drives the ship: add an engine."));
         }
 
-        private static void CheckIdentity(ShipDesign design, ShipPartPlacement placement, HashSet<int> seenIds, List<ShipDesignProblem> problems)
+        private static void CheckIdentity(ShipDesign design, int id, string what, HashSet<int> seenIds, List<ShipDesignProblem> problems)
         {
-            if (placement.InstanceId < 1 || placement.InstanceId >= design.NextPartInstanceId)
+            if (id < 1 || id >= design.NextPartInstanceId)
             {
-                problems.Add(new(ShipDesignProblemKind.InvalidInstanceId, placement.InstanceId,
-                    $"{placement}: ids run from 1 to below the design's next id ({design.NextPartInstanceId})."));
+                problems.Add(new(ShipDesignProblemKind.InvalidInstanceId, id,
+                    $"{what}: ids run from 1 to below the design's next id ({design.NextPartInstanceId})."));
             }
 
-            if (!seenIds.Add(placement.InstanceId))
+            if (!seenIds.Add(id))
             {
-                problems.Add(new(ShipDesignProblemKind.DuplicateInstanceId, placement.InstanceId,
-                    $"Two parts have the id {placement.InstanceId}."));
+                problems.Add(new(ShipDesignProblemKind.DuplicateInstanceId, id, $"Two parts or frame elements have the id {id}."));
             }
         }
 
@@ -114,7 +129,7 @@ namespace TinCan.Features.ShipDesigns
         }
 
         private static void CheckCoreAndConnection(List<(ShipPartPlacement Placement, ShipPartDefinition Part)> known,
-            Dictionary<ShipGridCell, int> occupancy, List<ShipDesignProblem> problems)
+            Dictionary<ShipGridCell, int> occupancy, ShipFrameShape shape, ShipFrameTuning tuning, List<ShipDesignProblem> problems)
         {
             ShipPartPlacement? core = null;
             foreach (var (placement, part) in known)
@@ -136,41 +151,79 @@ namespace TinCan.Features.ShipDesigns
                 return;
             }
 
-            var reached = Reach(core.InstanceId, occupancy);
+            var joined = Join(occupancy, shape, tuning);
+            int root = joined.Find(core.InstanceId);
             foreach (var (placement, _) in known)
             {
-                if (reached.Contains(placement.InstanceId)) continue;
+                if (joined.Find(placement.InstanceId) == root) continue;
                 problems.Add(new(ShipDesignProblemKind.Disconnected, placement.InstanceId,
                     $"{placement} is not joined to the core."));
             }
+
+            // One problem per loose piece of frame, named by its lowest node.
+            var reported = new HashSet<int>();
+            foreach (var node in shape.Frame.Nodes)
+            {
+                int piece = joined.Find(node.Id);
+                if (piece == root || !reported.Add(piece)) continue;
+                problems.Add(new(ShipDesignProblemKind.Disconnected, node.Id, $"The frame around {node} is not joined to the core."));
+            }
         }
 
-        /// <summary>The parts joined to the start part through face-adjacent occupied cells.</summary>
-        private static HashSet<int> Reach(int start, Dictionary<ShipGridCell, int> occupancy)
+        /// <summary>Which parts and frame nodes hang together: union-find over part instance ids and node ids.</summary>
+        private static UnionFind Join(Dictionary<ShipGridCell, int> occupancy, ShipFrameShape shape, ShipFrameTuning tuning)
         {
-            var reached = new HashSet<int> { start };
-            var visited = new HashSet<ShipGridCell>();
-            var frontier = new Queue<ShipGridCell>();
-            foreach (var pair in occupancy)
+            var joined = new UnionFind();
+            foreach (var (cell, owner) in occupancy)
             {
-                if (pair.Value != start) continue;
-                visited.Add(pair.Key);
-                frontier.Enqueue(pair.Key);
-            }
-
-            while (frontier.Count > 0)
-            {
-                var cell = frontier.Dequeue();
+                joined.Find(owner);
                 foreach (var step in Neighbours)
                 {
-                    var next = cell + step;
-                    if (!occupancy.TryGetValue(next, out var owner) || !visited.Add(next)) continue;
-                    reached.Add(owner);
-                    frontier.Enqueue(next);
+                    if (occupancy.TryGetValue(cell + step, out var other)) joined.Union(owner, other);
                 }
             }
 
-            return reached;
+            var frame = shape.Frame;
+            foreach (var node in frame.Nodes) joined.Find(node.Id);
+            foreach (var edge in frame.Edges)
+            {
+                if (frame.TryGetNode(edge.A, out _) && frame.TryGetNode(edge.B, out _)) joined.Union(edge.A, edge.B);
+            }
+
+            if (frame.Nodes.Count == 0) return joined;
+            foreach (var (cell, owner) in occupancy)
+            {
+                foreach (int node in ShipFrameContact.TouchedNodes(shape, cell, tuning)) joined.Union(owner, node);
+            }
+
+            return joined;
+        }
+
+        private sealed class UnionFind
+        {
+            private readonly Dictionary<int, int> _parent = new();
+
+            public int Find(int id)
+            {
+                if (!_parent.TryGetValue(id, out int parent))
+                {
+                    _parent[id] = id;
+                    return id;
+                }
+
+                if (parent == id) return id;
+                int root = Find(parent);
+                _parent[id] = root;
+                return root;
+            }
+
+            public void Union(int a, int b)
+            {
+                int rootA = Find(a), rootB = Find(b);
+                if (rootA == rootB) return;
+                if (rootA < rootB) _parent[rootB] = rootA;
+                else _parent[rootA] = rootB;
+            }
         }
     }
 }

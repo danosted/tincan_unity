@@ -55,23 +55,28 @@ A menu is open: everything below is silent; Cancel steps back.
 
 ### Context_Shipyard
 
-The shipyard is open (contributed by its installer): build with the mouse, everything below is silent; Cancel opens the shipyard menu. Read by ShipyardUseCase.
+The shipyard is open (contributed by its installer): fly the camera, build with the mouse, everything below is silent; Cancel opens the shipyard menu. Read by ShipyardUseCase.
 
 | Action | Default keys | Meaning | Rebindable |
 |---|---|---|---|
 | Shipyard/Point | `mouse position` | Where the cursor points in the shipyard. | no |
-| Shipyard/Orbit | `mouse delta` | Turn the shipyard camera while Orbit is held. | no |
-| Shipyard/OrbitHold | `mouse rightButton` / `mouse middleButton` | Hold to orbit the shipyard camera around the ship. | yes |
-| Shipyard/Zoom | `mouse scroll/y` | Zoom the shipyard camera. | no |
-| Shipyard/Place | `mouse leftButton` | Place the selected part where the cursor points. | yes |
-| Shipyard/DeleteMode | `x` | Toggle delete mode in the shipyard: click a highlighted part to delete it. | yes |
+| Shipyard/Look | `mouse delta` | Turn the shipyard camera while Look is held. | no |
+| Shipyard/LookHold | `mouse rightButton` | Hold to look around the shipyard with the mouse. | yes |
+| Shipyard/Fly | `w` / `s` / `a` / `d` | Fly the shipyard camera along the view. | yes |
+| Shipyard/Rise | `q` / `e` | Fly the shipyard camera down or up. | yes |
+| Shipyard/Fast | `leftShift` | Fly the shipyard camera faster while held. | yes |
+| Shipyard/Zoom | `mouse scroll/y` | Move the shipyard camera straight forward or back. | no |
+| Shipyard/Place | `mouse leftButton` | Parts: place the selected part where the cursor points. Frame: pick, add, join or drag a node. | yes |
+| Shipyard/DeleteMode | `x` | Toggle delete mode in the shipyard: click a highlighted part, node, edge or face to delete it. | yes |
 | Shipyard/Rotate | `r` | Turn the selected part a quarter turn. | yes |
-| Shipyard/NextPart | `e` | Select the next part. | yes |
-| Shipyard/PreviousPart | `q` | Select the previous part. | yes |
+| Shipyard/Mode | `tab` | Switch the shipyard between placing parts and drawing the frame. | yes |
+| Shipyard/Fill | `f` | Frame mode: plank or open the face under the cursor. | yes |
+| Shipyard/Height | `leftAlt` | Frame mode: hold while dragging a node to raise or lower it. | yes |
+| Shipyard/Extrude | `g` | Frame mode: push the wall under the cursor out, grow an outer floor edge, or raise a story on a floor. | yes |
 | Shipyard/Undo | `ctrl` / `z` | Undo the last change to the design. | yes |
 | Shipyard/Redo | `ctrl` / `y` | Redo the change just undone. | yes |
-| Shipyard/LevelUp | `pageUp` | Build one level higher in the shipyard. | yes |
-| Shipyard/LevelDown | `pageDown` | Build one level lower in the shipyard. | yes |
+| Shipyard/LevelUp | `pageUp` | Parts: build one level higher. Frame: work on the story above. | yes |
+| Shipyard/LevelDown | `pageDown` | Parts: build one level lower. Frame: work on the story below. | yes |
 | Global/Cancel | `escape` | Back out: close the menu, or open the main menu. | yes |
 
 | Pressing | Runs | Handled by |

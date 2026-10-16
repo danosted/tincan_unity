@@ -17,6 +17,9 @@ namespace TinCan.Core.Domain.Input
         /// <summary>The key as the player reads it: "Space", "W", "Left Button".</summary>
         string Describe(InputBindingSlot slot);
 
+        /// <summary>All of an action's keys as the player reads them, rebindable or not: "W/A/S/D", "Right Button".</summary>
+        string DescribeAction(InputActionId action);
+
         /// <summary>The slot waiting for a key, if any.</summary>
         InputBindingSlot? Rebinding { get; }
 

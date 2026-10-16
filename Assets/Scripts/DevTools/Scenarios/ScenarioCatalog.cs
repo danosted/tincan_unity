@@ -816,6 +816,121 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
+        // The frame galleon (Settings/ShipDesigns/FrameGalleon.ship.json, .docs/plans/ship-frames.md, S3): a hold (floor
+        // -3.5 m) under a main deck (-0.5 m), slanted planked walls between them, three stairs from the hold up through a
+        // railed hatch. 21 parts, one (the helm) spawned rather than built; two stories of planks and beams. The subject
+        // starts in the hold aft of the stairs, facing the bow.
+        public static readonly ScenarioEntry FrameStories = new(
+            new Scenario.Builder("FrameStories")
+                .InScene(TestScenes.Shipyard)
+                .Describe("The host gives the ship the built-in frame galleon -> every peer builds its two stories, walls and railings -> stand on the hold floor at the foot of the stairs -> walk forward -> up through the hatch onto the main deck, 3 m higher, still on the planks of the ship.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("FlyDesign", "FrameGalleon")
+                    .WaitUntil("ShipDesignBuilt", 30f, "20")
+                    .WaitUntil("ShipFrameBuilt", 10f, "4")
+                    .Wait(1f, "the rebuilt ship settles")
+                    .Do("PlaceSubjectAtCell", "0,-3,-4,0"))
+                .Act(s => s
+                    .WaitUntil("ShipDesignBuilt", 30f, "20")
+                    .WaitUntil("ShipFrameBuilt", 10f, "4")
+                    .WaitUntil("SubjectOnShip", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .WaitUntil("SubjectStandsOn", 5f, "Planks0")
+                    .Do("FaceShipYaw", "0")
+                    .Checkpoint("in-the-hold")
+                    .Hold(4f, ScriptedAction.MoveForward)
+                    .WaitUntil("SubjectFeetAbove", 5f, "-0.7")
+                    .Wait(0.5f, "the body settles")
+                    .Expect("SubjectStandsOn", "Planks1")
+                    .Expect("SubjectOnShip")
+                    .Checkpoint("main-deck"))
+                .Assert(s => s
+                    .WaitUntil("SubjectFeetAbove", 60f, "-0.7"))
+                .Build(),
+            builder => builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        // The shipyard's frame tools (.docs/plans/ship-frames.md, S2): a 4 x 4 m planked square drawn beside the starter's
+        // starboard deck (its -X side on the deck's edge at x 2.5, so it joins the ship), saved, loaded, launched.
+        public static readonly ScenarioEntry FrameRoundTrip = new(
+            new Scenario.Builder("FrameRoundTrip")
+                .InScene(TestScenes.Shipyard)
+                .Describe("The host opens the shipyard on the starter, switches to frame mode, clicks four corners and back to the first -> a planked face beside the deck -> saves, starts a new ship, loads it back with its frame -> launches it -> every peer builds the frame deck.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .Do("ShipyardOpen")
+                    .Do("ShipyardMode", "Frame")
+                    .Do("ShipyardFrameClick", "2.5 -2")
+                    .Do("ShipyardFrameClick", "2.5 2")
+                    .Do("ShipyardFrameClick", "6.5 2")
+                    .Do("ShipyardFrameClick", "6.5 -2")
+                    .Do("ShipyardFrameClick", "2.5 -2")
+                    .Expect("ShipyardFrame", "4 4 1")
+                    .Wait(0.5f, "the preview renders")
+                    .Checkpoint("drawn")
+                    .Wait(0.5f, "the screenshot is taken at the end of a frame")
+                    .Do("ShipyardSave", "Frame Scenario Ship")
+                    .Do("ShipyardNew")
+                    .Expect("ShipyardFrame", "0 0 0")
+                    .Do("ShipyardLoad", "Frame Scenario Ship")
+                    .Expect("ShipyardFrame", "4 4 1")
+                    .Do("ShipyardLaunch")
+                    .Do("ShipyardForget", "Frame Scenario Ship"))
+                .Act(s => s
+                    .WaitUntil("ShipDesignBuilt", 30f, "94")
+                    .WaitUntil("ShipFrameBuilt", 30f, "2")
+                    .Checkpoint("rebuilt"))
+                .Assert(s => s
+                    .WaitUntil("ShipFrameBuilt", 30f, "2"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipyardScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        // The raft (Settings/ShipDesigns/Raft.ship.json, .docs/plans/ship-frames.md): a deck generated from a frame, 15 parts
+        // (one, the helm, spawned rather than built) and one story's planks and beams. The subject starts on the starboard
+        // waist at cell (3, 0, 0), between the masts, and walks aft across the seam onto the stern planks.
+        public static readonly ScenarioEntry FrameDeck = new(
+            new Scenario.Builder("FrameDeck")
+                .InScene(TestScenes.Shipyard)
+                .Describe("The host gives the ship the built-in raft -> every peer builds its parts and generates its frame deck -> stand on the generated planks, away from every part -> walk aft across the seam between two plank faces -> still standing on planks, on the ship.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("FlyDesign", "Raft")
+                    .WaitUntil("ShipDesignBuilt", 30f, "14")
+                    .WaitUntil("ShipFrameBuilt", 10f, "2")
+                    .Wait(1f, "the rebuilt ship settles")
+                    .Do("PlaceSubjectAtCell", "3,0,0,180"))
+                .Act(s => s
+                    .WaitUntil("ShipDesignBuilt", 30f, "14")
+                    .WaitUntil("ShipFrameBuilt", 10f, "2")
+                    .WaitUntil("SubjectOnShip", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .WaitUntil("SubjectStandsOn", 5f, "Planks")
+                    .Do("FaceShipYaw", "180")
+                    .Checkpoint("on-planks")
+                    .Hold(0.8f, ScriptedAction.MoveForward)
+                    .Wait(1f, "the body settles")
+                    .Expect("SubjectStandsOn", "Planks")
+                    .Expect("SubjectFeetAbove", "-0.6")
+                    .Expect("SubjectOnShip")
+                    .Checkpoint("walked-aft"))
+                .Assert(s => s
+                    .WaitUntil("ShipFrameBuilt", 60f, "2")
+                    .Expect("ShipDesignBuilt", "14"))
+                .Build(),
+            builder => builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
         // Off the starboard rail (the test ship's deck spans x -4.2..6.3, top y -3.49) and 5 m above the deck, aiming at
         // the deck's middle: the line clears the 1 m rail even after a short fall.
         public static readonly ScenarioEntry HookAboard = new(
@@ -1244,7 +1359,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<NavigationScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

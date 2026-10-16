@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using TinCan.Core.Domain.Input;
 using TinCan.Core.Input;
@@ -61,14 +62,19 @@ namespace TinCan.Tests.EditMode
             _designs.DefaultDesign = "Starter";
             _controls = Make<ShipyardInputContext>();
             _controls.Point = Action("Point");
-            _controls.Orbit = Action("Orbit");
-            _controls.OrbitHold = Action("OrbitHold");
+            _controls.Look = Action("Look");
+            _controls.LookHold = Action("LookHold");
+            _controls.Fly = Action("Fly");
+            _controls.Rise = Action("Rise");
+            _controls.Fast = Action("Fast");
             _controls.Zoom = Action("Zoom");
             _controls.Place = Action("Place");
             _controls.DeleteMode = Action("DeleteMode");
             _controls.Rotate = Action("Rotate");
-            _controls.NextPart = Action("NextPart");
-            _controls.PreviousPart = Action("PreviousPart");
+            _controls.Mode = Action("Mode");
+            _controls.Fill = Action("Fill");
+            _controls.Height = Action("Height");
+            _controls.Extrude = Action("Extrude");
             _controls.Undo = Action("Undo");
             _controls.Redo = Action("Redo");
             _controls.LevelUp = Action("LevelUp");
@@ -84,7 +90,7 @@ namespace TinCan.Tests.EditMode
             _directory = Path.Combine(Path.GetTempPath(), "TinCanShipyard_" + System.Guid.NewGuid().ToString("N"));
             _store = new FileShipDesignStore(_directory,
                 new Dictionary<string, string> { ["Starter"] = _codec.Encode(Design((Helm, 0, 0, 0, 0), (Beam, -1, -1, 0, 0))) }, _codec, 100_000);
-            _shipyard = new ShipyardUseCase(_config, _controls, _input, _switch, _stage, _parts.Catalog, _store, new ShipDesignEditProcessor(),
+            _shipyard = new ShipyardUseCase(_config, _controls, _input, new FakeInputBindings(), _switch, _stage, _parts.Catalog, _store, new ShipDesignEditProcessor(),
                 new ShipDesignValidator(), new ShipStatsProcessor(), _designs, _shipDesigns, _hud, _network, new FakeActorRegistry());
         }
 
@@ -197,7 +203,7 @@ namespace TinCan.Tests.EditMode
             _shipyard.Select(Block);
 
             Press(_controls.LevelDown);
-            Assert.That((_shipyard.Level, _stage.Level), Is.EqualTo((-1, -1)));
+            Assert.That((_shipyard.Level, _stage.FloorY), Is.EqualTo((-1, ShipyardAimProcessor.FloorY(-1))));
             Assert.That(_hud.All[ShipyardUseCase.HudPart], Does.Contain("level -1"));
 
             PointAtFloor(2, 0);
@@ -236,36 +242,186 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void Keys_CycleParts_AndTurnThem()
+        public void ThePartsPanel_ListsEveryPart_AClickSelectsOne_AndRTurnsIt()
         {
             _shipyard.Open();
-            var first = _shipyard.SelectedPart;
 
-            Press(_controls.NextPart);
-            Assert.That(_shipyard.SelectedPart, Is.Not.SameAs(first));
-            Press(_controls.PreviousPart);
-            Assert.That(_shipyard.SelectedPart, Is.SameAs(first));
-            Press(_controls.PreviousPart);
-            Assert.That(_shipyard.SelectedPart, Is.SameAs(_parts.Catalog.Parts[^1]), "wraps around");
+            Assert.That(_stage.Panel!.Mode, Is.EqualTo(ShipyardMode.Parts));
+            Assert.That(_stage.Panel.Parts.Count, Is.EqualTo(_parts.Catalog.Parts.Count));
+
+            _stage.ClickPart(Beam);
+            Assert.That(_shipyard.SelectedPart!.PartId, Is.EqualTo(Beam));
+            Assert.That(_stage.Panel.Parts.Single(p => p.Selected).PartId, Is.EqualTo(Beam));
 
             Press(_controls.Rotate, _controls.Rotate, _controls.Rotate);
             Assert.That(_shipyard.Orientation, Is.EqualTo(1), "one press per frame");
         }
 
         [Test]
-        public void OrbitAndZoom_ReachTheStage_OrbitOnlyWhileHeld()
+        public void TheControlsPanel_ShowsTheKeysFromTheBindings_ForTheMode()
         {
             _shipyard.Open();
-            _input.Vectors[_controls.Orbit!] = new Vector2(10f, 4f);
-            _input.Axes[_controls.Zoom!] = 1f;
+            Assert.That(_stage.Panel!.Controls, Has.Some.Matches<ShipyardControlRow>(r => r.Keys == "Shipyard/Fly" && r.Action == "Fly"));
+            Assert.That(_stage.Panel.Controls, Has.Some.Matches<ShipyardControlRow>(r => r.Action == "Turn the part"));
 
-            _shipyard.Tick();
-            Assert.That(_stage.Orbited, Is.EqualTo(Vector2.zero));
-            Assert.That(_stage.Zoomed, Is.EqualTo(_config.ZoomStep).Within(1e-4f), "one notch: the reader reports 1");
+            Press(_controls.Mode);
 
-            _input.Pressed.Add(_controls.OrbitHold!);
-            _shipyard.Tick();
-            Assert.That(_stage.Orbited, Is.EqualTo(new Vector2(10f, 4f) * _config.OrbitSpeed));
+            Assert.That(_stage.Panel.Mode, Is.EqualTo(ShipyardMode.Frame));
+            Assert.That(_stage.Panel.Parts, Is.Empty);
+            Assert.That(_stage.Panel.Controls, Has.Some.Matches<ShipyardControlRow>(r => r.Keys == "Shipyard/Fill" && r.Action == "Plank or open a face"));
+        }
+
+        [Test]
+        public void AClickOverAPanel_IsThePanels_NotTheBuilds()
+        {
+            _shipyard.Open();
+            _shipyard.Select(Block);
+            PointAtFloor(1, 0);
+            _stage.OverPanel = true;
+
+            Press(_controls.Place);
+
+            Assert.That(_shipyard.Design!.Parts.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void TheCamera_FramesTheShip_FliesWithTheKeys_AndLooksOnlyWhileHeld()
+        {
+            _shipyard.Open();
+            var start = _stage.CameraPose!.Value;
+            Assert.That(Vector3.Dot(start.Forward, (Vector3.zero - start.Position).normalized), Is.GreaterThan(0.95f), "it looks at the ship");
+
+            _input.Vectors[_controls.Look!] = new Vector2(10f, 0f);
+            _input.Vectors[_controls.Fly!] = new Vector2(0f, 1f);
+            _shipyard.Tick(0.5f);
+            var flown = _stage.CameraPose!.Value;
+            Assert.That(flown.Yaw, Is.EqualTo(start.Yaw), "no look without the button");
+            Assert.That(Vector3.Distance(flown.Position, start.Position + start.Forward * (_config.FlySpeed * 0.5f)), Is.LessThan(1e-3f));
+
+            _input.Pressed.Add(_controls.LookHold!);
+            _shipyard.Tick(0f);
+            Assert.That(_stage.Looking, Is.True);
+            Assert.That(_stage.CameraPose!.Value.Yaw, Is.EqualTo(start.Yaw + 10f * _config.LookSpeed).Within(1e-4f));
+
+            _input.Pressed.Remove(_controls.LookHold!);
+            _shipyard.Tick(0f);
+            Assert.That(_stage.Looking, Is.False);
+        }
+
+        [Test]
+        public void FrameMode_ClickingFourCornersAndBack_DrawsAPlankedFace_UndoneInOneStep()
+        {
+            _shipyard.Open();
+            Press(_controls.Mode);
+            foreach (var corner in new[] { new Vector3(3f, 0f, -1f), new Vector3(3f, 0f, 1f), new Vector3(5f, 0f, 1f), new Vector3(5f, 0f, -1f) })
+            {
+                Assert.That(_shipyard.FrameClickAt(corner), Is.True, _shipyard.Message);
+            }
+
+            Assert.That(_shipyard.FrameClickAt(new Vector3(3f, 0f, -1f)), Is.True, "back to the first corner closes the loop");
+
+            var frame = _shipyard.Design!.Frame;
+            Assert.That((frame.Nodes.Count, frame.Edges.Count, frame.Faces.Count), Is.EqualTo((4, 4, 1)));
+            Assert.That(frame.Faces[0].Fill, Is.EqualTo(ShipFrameFill.Planks));
+            Assert.That(frame.Base, Is.EqualTo(-5), "the first story's floor is the working level's");
+            Assert.That(_stage.Marks!.Value.Selected, Is.EqualTo(frame.Nodes[0].Id));
+
+            Press(_controls.Undo);
+            Assert.That((_shipyard.Design!.Frame.Edges.Count, _shipyard.Design.Frame.Faces.Count), Is.EqualTo((3, 0)), "the closing edge and its face go together");
+        }
+
+        [Test]
+        public void FrameMode_DraggingANodeMovesIt_AltDraggingRaisesIt_AndFillOpensAFace()
+        {
+            _shipyard.Open();
+            Press(_controls.Mode);
+            foreach (var corner in new[] { new Vector3(3f, 0f, -1f), new Vector3(3f, 0f, 1f), new Vector3(5f, 0f, 1f), new Vector3(5f, 0f, -1f), new Vector3(3f, 0f, -1f) })
+            {
+                _shipyard.FrameClickAt(corner);
+            }
+
+            int corner0 = _shipyard.Design!.Frame.Nodes[0].Id;
+            _stage.Ray = new ShipyardRay(new Vector3(3f, 10f, -1f), Vector3.down);
+            _input.Vectors[_controls.Point!] = new Vector2(50f, 50f);
+            Press(_controls.Place);
+            _input.Pressed.Add(_controls.Place!);
+            _stage.Ray = new ShipyardRay(new Vector3(2f, 10f, -1.5f), Vector3.down);
+            _input.Vectors[_controls.Point!] = new Vector2(30f, 40f);
+            _shipyard.Tick(0f);
+            Assert.That(_stage.Shown!.Frame.Nodes[0].X, Is.EqualTo(20), "shown where it is dragged");
+            Assert.That(_shipyard.Design!.Frame.Nodes[0].X, Is.EqualTo(30), "not yet committed");
+            _input.Pressed.Remove(_controls.Place!);
+            _shipyard.Tick(0f);
+
+            _shipyard.Design!.Frame.TryGetNode(corner0, out var moved);
+            Assert.That((moved.X, moved.Z), Is.EqualTo((20, -15)));
+            Assert.That(_shipyard.SelectedNode, Is.EqualTo(corner0));
+
+            // Alt held at the start of a drag: moving the mouse up raises the node, one unit per HeightPixelsPerUnit.
+            _stage.Ray = new ShipyardRay(new Vector3(2f, 10f, -1.5f), Vector3.down);
+            _input.Pressed.Add(_controls.Height!);
+            _input.Vectors[_controls.Point!] = new Vector2(100f, 100f);
+            Press(_controls.Place);
+            _input.Pressed.Add(_controls.Place!);
+            _input.Vectors[_controls.Point!] = new Vector2(100f, 100f + 3f * _config.HeightPixelsPerUnit);
+            _shipyard.Tick(0f);
+            _input.Pressed.Remove(_controls.Place!);
+            _input.Pressed.Remove(_controls.Height!);
+            _shipyard.Tick(0f);
+            _shipyard.Design!.Frame.TryGetNode(corner0, out var raised);
+            Assert.That((raised.X, raised.Y, raised.Z), Is.EqualTo((20, 3, -15)), "raised 30 cm, not moved");
+
+            _stage.Ray = new ShipyardRay(new Vector3(4f, 10f, 0f), Vector3.down);
+            Press(_controls.Fill);
+            Assert.That(_shipyard.Design!.Frame.Faces[0].Fill, Is.EqualTo(ShipFrameFill.Open));
+        }
+
+        [Test]
+        public void FrameMode_ClickingANode_SelectsIt_WithoutMovingIt_EvenOffCentre()
+        {
+            _shipyard.Open();
+            Press(_controls.Mode);
+            _shipyard.FrameClickAt(new Vector3(3f, 0f, -1f));
+            _shipyard.FrameClickAt(new Vector3(3f, 0f, 1f));
+            int first = _shipyard.Design!.Frame.Nodes[0].Id;
+            var before = _shipyard.Design.Frame.Position(first);
+
+            // Pressed 0.3 m off the node's centre, the mouse jittering by two pixels before the release.
+            _stage.Ray = new ShipyardRay(new Vector3(3.3f, 10f, -1f), Vector3.down);
+            _input.Vectors[_controls.Point!] = new Vector2(50f, 50f);
+            Press(_controls.Place);
+            _input.Pressed.Add(_controls.Place!);
+            _input.Vectors[_controls.Point!] = new Vector2(52f, 50f);
+            _stage.Ray = new ShipyardRay(new Vector3(3.6f, 10f, -1f), Vector3.down);
+            _shipyard.Tick(0f);
+            _input.Pressed.Remove(_controls.Place!);
+            _shipyard.Tick(0f);
+
+            Assert.That(_shipyard.Design!.Frame.Position(first), Is.EqualTo(before));
+            Assert.That(_shipyard.SelectedNode, Is.EqualTo(first));
+        }
+
+        [Test]
+        public void FrameMode_ARightClickDeselects_ButLookingAroundDoesNot()
+        {
+            _shipyard.Open();
+            Press(_controls.Mode);
+            _shipyard.FrameClickAt(new Vector3(3f, 0f, -1f));
+            int node = _shipyard.SelectedNode!.Value;
+
+            _input.Pressed.Add(_controls.LookHold!);
+            _input.Vectors[_controls.Look!] = new Vector2(40f, 0f);
+            _shipyard.Tick(0f);
+            _input.Pressed.Remove(_controls.LookHold!);
+            _shipyard.Tick(0f);
+            Assert.That(_shipyard.SelectedNode, Is.EqualTo(node), "a right drag only looks around");
+
+            _input.Vectors[_controls.Look!] = Vector2.zero;
+            _input.Pressed.Add(_controls.LookHold!);
+            _shipyard.Tick(0f);
+            _input.Pressed.Remove(_controls.LookHold!);
+            _shipyard.Tick(0f);
+            Assert.That(_shipyard.SelectedNode, Is.Null);
         }
 
         [Test]

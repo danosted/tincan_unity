@@ -8,8 +8,11 @@ namespace TinCan.DevTools.Scenarios
 {
     /// <summary>
     /// Scenario steps for the shipyard, on the peer that runs them (the shipyard is local; the host uses it). Commands:
-    /// open, place a part ("partId x y z"), save, new, load, launch, and forget a saved design (deletes its file).
-    /// Probe: ShipyardParts, the open design has this many parts. Plan: .docs/plans/modular-airship-builder.md (S3).
+    /// open, place a part ("partId x y z"), save, new, load, launch, and forget a saved design (deletes its file); the
+    /// frame tools: ShipyardMode "Parts" or "Frame", ShipyardFrameClick "x z" and ShipyardFrameFill "x z" (metres in ship
+    /// space: a click straight down there). Probes: ShipyardParts, the open design has this many parts; ShipyardFrame
+    /// "nodes edges faces", its frame has these counts. Plans: .docs/plans/modular-airship-builder.md (S3),
+    /// .docs/plans/ship-frames.md (S2).
     /// </summary>
     public sealed class ShipyardScenarioLibrary : IScenarioLibrary
     {
@@ -33,11 +36,15 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioCommand("ShipyardForget", name => _store.TryDelete(name)
                 ? ScenarioCheck.Pass($"deleted {name}")
                 : ScenarioCheck.Fail($"no saved design {name}")),
+            new ScenarioCommand("ShipyardMode", SetMode),
+            new ScenarioCommand("ShipyardFrameClick", point => Check(_shipyard.FrameClickAt(Point(point)))),
+            new ScenarioCommand("ShipyardFrameFill", point => Check(_shipyard.FrameFillAt(Point(point)))),
         };
 
         public System.Collections.Generic.IEnumerable<ScenarioProbe> Probes => new[]
         {
             new ScenarioProbe("ShipyardParts", CheckParts),
+            new ScenarioProbe("ShipyardFrame", CheckFrame),
         };
 
         private ScenarioCheck Place(string argument)
@@ -57,6 +64,31 @@ namespace TinCan.DevTools.Scenarios
 
             string detail = $"\"{design.Name}\" has {design.Parts.Count} parts";
             return design.Parts.Count == int.Parse(count, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
+
+        private ScenarioCheck SetMode(string mode)
+        {
+            if (!System.Enum.TryParse<ShipyardMode>(mode, out var parsed)) return ScenarioCheck.Fail($"no mode {mode}");
+            _shipyard.SetMode(parsed);
+            return ScenarioCheck.Pass($"mode {parsed}");
+        }
+
+        /// <summary>"x z" in metres: a point on the ship's floor plan (the frame tools find the height).</summary>
+        private static UnityEngine.Vector3 Point(string argument)
+        {
+            var xz = argument.Split(' ', System.StringSplitOptions.RemoveEmptyEntries).Select(w => float.Parse(w, CultureInfo.InvariantCulture)).ToArray();
+            return new UnityEngine.Vector3(xz[0], 0f, xz[1]);
+        }
+
+        private ScenarioCheck CheckFrame(string counts)
+        {
+            var frame = _shipyard.Design?.Frame;
+            if (frame == null) return ScenarioCheck.Fail("no design open");
+
+            string detail = $"{frame.Nodes.Count} {frame.Edges.Count} {frame.Faces.Count}";
+            return detail == string.Join(" ", counts.Split(' ', System.StringSplitOptions.RemoveEmptyEntries))
+                ? ScenarioCheck.Pass($"frame {detail}")
+                : ScenarioCheck.Fail($"frame {detail} (nodes edges faces)");
         }
 
         private ScenarioCheck Check(bool done) => done ? ScenarioCheck.Pass(_shipyard.Message) : ScenarioCheck.Fail(_shipyard.Message);

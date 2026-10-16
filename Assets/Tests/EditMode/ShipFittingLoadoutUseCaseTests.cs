@@ -29,6 +29,8 @@ namespace TinCan.Tests.EditMode
                 builtParts = 0;
                 return Built.TryGetValue(shipId, out hash);
             }
+
+            public int BuiltFrameMeshes(Guid shipId) => 0;
         }
 
         private sealed class RecordingFittings : IShipFittings

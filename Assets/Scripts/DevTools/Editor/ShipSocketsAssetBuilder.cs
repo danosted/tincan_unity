@@ -37,6 +37,7 @@ namespace TinCan.DevTools.Editor
         public const string CannonFittingId = "weapon.cannon";
         public const string ToolRackFittingId = "storage.tool_rack";
         public const string LeashWinchFittingId = "rescue.leash_winch";
+        public const string ChartTableFittingId = "navigation.chart_table";
 
         public const string GalleonDesignKey = "Galleon";
         public const string GalleonLoadoutPath = "Assets/Settings/ShipSockets/Galleon.fittings.json";
@@ -52,6 +53,7 @@ namespace TinCan.DevTools.Editor
             "Assets/Settings/Fixtures/NetRackFixture.asset",
             "Assets/Settings/Fixtures/GrappleHookRackFixture.asset",
             "Assets/Settings/Fixtures/LeashWinchFixture.asset",
+            "Assets/Settings/Fixtures/ChartTableFixture.asset",
             "Assets/Settings/Fixtures/ShipDamageSocketsFixture.asset",
         };
 
@@ -119,8 +121,8 @@ namespace TinCan.DevTools.Editor
 
         /// <summary>
         /// The Galleon's mount plates (Galleon.ship.json): cannons at the bow and the stern, the tool rack in the hold, the
-    /// leash winch (Respawn) on the starboard balcony. The
-        /// other three hold plates stay free for players. The socket ids are part instance ids in the committed design.
+        /// leash winch (Respawn) on the starboard balcony, the chart table (Navigation) in the starboard forward hold. The
+        /// other two hold plates stay free for players. The socket ids are part instance ids in the committed design.
         /// </summary>
         public static ShipFittingLoadout GalleonLoadout() => new(new[]
         {
@@ -130,6 +132,7 @@ namespace TinCan.DevTools.Editor
             new ShipFittingPlacement(new ShipSocketId(386, 0), CannonFittingId), // quarterdeck, port stern (-3,2,-7)
             new ShipFittingPlacement(new ShipSocketId(422, 0), CannonFittingId), // quarterdeck, starboard stern (3,2,-7)
             new ShipFittingPlacement(new ShipSocketId(473, 0), LeashWinchFittingId), // the starboard balcony off the quarterdeck (5,2,-6)
+            new ShipFittingPlacement(new ShipSocketId(166, 0), ChartTableFittingId), // hold, starboard, forward (3,-4,3): the chart room
         });
 
         /// <summary>A variant of the modular ship (no geometry; the design builds it) whose preset names the Galleon.</summary>

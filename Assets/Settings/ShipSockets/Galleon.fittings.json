@@ -2,6 +2,7 @@
   "formatVersion": 1,
   "fittings": [
     {"part":70,"socket":0,"fitting":"storage.tool_rack"},
+    {"part":166,"socket":0,"fitting":"navigation.chart_table"},
     {"part":254,"socket":0,"fitting":"weapon.cannon"},
     {"part":323,"socket":0,"fitting":"weapon.cannon"},
     {"part":386,"socket":0,"fitting":"weapon.cannon"},

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
+using TinCan.Core.Domain.Navigation;
 using UnityEngine;
 using VContainer;
 
@@ -27,6 +28,9 @@ namespace TinCan.Features.SkyHazards
 
             builder.RegisterInstance(_config);
             builder.Register<SkyHazardFieldProcessor>(Lifetime.Transient);
+            builder.Register<HazardZoneLayoutProcessor>(Lifetime.Transient);
+            builder.Register<HazardZoneMap>(Lifetime.Singleton);
+            builder.Register<SkyHazardChartSource>(Lifetime.Singleton).As<IChartSource>();
             builder.Register<HazardDriftProcessor>(Lifetime.Transient);
             builder.Register<PhysicsShipContactQuery>(Lifetime.Singleton).As<IShipContactQuery>();
             builder.Register<SkyHazardSpawningService>(Lifetime.Singleton).As<ISkyHazardSpawner>();

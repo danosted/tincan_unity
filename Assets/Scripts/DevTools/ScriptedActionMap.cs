@@ -2,6 +2,7 @@
 using TinCan.Core.Domain.Input;
 using TinCan.Core.Humanoid;
 using TinCan.Features.Helm;
+using TinCan.Features.Navigation;
 using TinCan.Features.Weapons.Cannon;
 using UnityEngine;
 using VContainer;
@@ -16,6 +17,9 @@ namespace TinCan.DevTools
     {
         /// <summary>Mouse counts per frame of a scripted aim sweep.</summary>
         private const float AimSweep = 20f;
+
+        /// <summary>Mouse counts per frame of a scripted chart cursor sweep: slow, so a short hold stays on the chart.</summary>
+        private const float CursorSweep = 4f;
 
         private readonly IObjectResolver _resolver;
 
@@ -50,6 +54,17 @@ namespace TinCan.DevTools
                 ScriptedAction.GunnerAimLeft => (Get<GunnerInputContext>()?.Aim, new Vector2(-AimSweep, 0f)),
                 ScriptedAction.GunnerAimUp => (Get<GunnerInputContext>()?.Aim, new Vector2(0f, AimSweep)),
                 ScriptedAction.GunnerAimDown => (Get<GunnerInputContext>()?.Aim, new Vector2(0f, -AimSweep)),
+                ScriptedAction.NavigatorCursorRight => (Get<NavigatorInputContext>()?.Cursor, new Vector2(CursorSweep, 0f)),
+                ScriptedAction.NavigatorCursorLeft => (Get<NavigatorInputContext>()?.Cursor, new Vector2(-CursorSweep, 0f)),
+                ScriptedAction.NavigatorCursorUp => (Get<NavigatorInputContext>()?.Cursor, new Vector2(0f, CursorSweep)),
+                ScriptedAction.NavigatorCursorDown => (Get<NavigatorInputContext>()?.Cursor, new Vector2(0f, -CursorSweep)),
+                ScriptedAction.NavigatorPlace => (Get<NavigatorInputContext>()?.Place, Vector2.right),
+                ScriptedAction.NavigatorRemove => (Get<NavigatorInputContext>()?.Remove, Vector2.right),
+                ScriptedAction.NavigatorRaise => (Get<NavigatorInputContext>()?.Altitude, Vector2.right),
+                ScriptedAction.NavigatorLower => (Get<NavigatorInputContext>()?.Altitude, Vector2.left),
+                ScriptedAction.NavigatorZoomIn => (Get<NavigatorInputContext>()?.Zoom, Vector2.right),
+                ScriptedAction.NavigatorZoomOut => (Get<NavigatorInputContext>()?.Zoom, Vector2.left),
+                ScriptedAction.NavigatorLeave => (Get<NavigatorInputContext>()?.Leave, Vector2.right),
                 ScriptedAction.Cancel => (Get<GlobalInputContext>()?.Cancel, Vector2.right),
                 ScriptedAction.SwitchPossession => (Get<GlobalInputContext>()?.SwitchPossession, Vector2.right),
                 _ => (null, Vector2.zero),

@@ -400,6 +400,52 @@ namespace TinCan.Tests.EditMode
             Assert.That(ShipHealth, Is.EqualTo(1000f));
         }
 
+        private sealed class FakeSessionLayout : ISessionLayout
+        {
+            public System.Guid Id { get; } = System.Guid.NewGuid();
+            public bool IsSimulating => true;
+            public int LayoutSeed => 42;
+            public Vector3 Origin => Vector3.zero;
+            public Vector3 Destination => new(0f, 0f, 4000f);
+        }
+
+        [Test]
+        public void DuringAVoyage_OutsideEveryHazardZone_TheFieldThins()
+        {
+            _config.DriftSpeed = 0f;
+            _config.OutsideZoneScale = 0.35f;
+            _actors.Register(new FakeSessionLayout());
+            var hazards = UseCase(fieldEnabled: true, out _);
+
+            for (int i = 0; i < 40; i++) hazards.Tick();
+
+            Assert.That(hazards.FieldScale, Is.EqualTo(0.35f), "the ship starts clear of every zone");
+            Assert.That(_spawner.Spawned, Has.Count.EqualTo(1), "3 x 0.35, rounded");
+        }
+
+        [Test]
+        public void InsideAHazardZone_TheFieldIsWhole()
+        {
+            _config.DriftSpeed = 0f;
+            _actors.Register(new FakeSessionLayout());
+            var hazards = UseCase(fieldEnabled: true, out var zones);
+            _ship.Transform.position = zones.Zones[0].Center;
+
+            for (int i = 0; i < 40; i++) hazards.Tick();
+
+            Assert.That(hazards.FieldScale, Is.EqualTo(1f));
+            Assert.That(_spawner.Spawned, Has.Count.EqualTo(3));
+        }
+
+        private SkyHazardUseCase UseCase(bool fieldEnabled, out HazardZoneMap zones)
+        {
+            _config.FieldEnabled = fieldEnabled;
+            zones = new HazardZoneMap(_actors, new HazardZoneLayoutProcessor(), _config);
+            var abilities = new AbilitySystemUseCase(new FakeAbilityRegistry(), _actors, _time, _events);
+            return new SkyHazardUseCase(new FakeNetworkService(), _actors, _time, _events, _spawner, _field, _drift, _contact,
+                abilities, _config, new System.Random(1), null, zones);
+        }
+
         private SkyHazardUseCase UseCase(bool fieldEnabled, params IWorldObstacleQuery[] obstacles)
         {
             _config.FieldEnabled = fieldEnabled;

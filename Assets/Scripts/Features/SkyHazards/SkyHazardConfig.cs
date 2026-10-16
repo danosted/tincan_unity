@@ -29,6 +29,25 @@ namespace TinCan.Features.SkyHazards
         [Tooltip("Each player beyond the first multiplies the spawn interval by this (below 1: a bigger crew, faster spawns).")]
         [Range(0.1f, 1f)] public float SpawnIntervalScalePerExtraPlayer = 0.8f;
 
+        [Header("Hazard zones (during a voyage)")]
+        [Tooltip("A voyage lays zones of thick hazards along its route (from its seed, the same on every peer, and on the " +
+                 "navigator's chart). Off, or before any voyage: the field is the same everywhere.")]
+        public bool ZonesEnabled = true;
+        [Tooltip("Outside every zone the field keeps this share of its hazards, and spawns this much slower.")]
+        [Range(0f, 1f)] public float OutsideZoneScale = 0.35f;
+        [Tooltip("Metres along the route between zones.")]
+        [Min(100f)] public float ZoneSpacing = 900f;
+        [Tooltip("Radius range of a zone, in metres (level).")]
+        public Vector2 ZoneRadius = new(220f, 400f);
+        [Tooltip("A zone's centre sits up to this many metres to either side of the route.")]
+        [Min(0f)] public float ZoneLateralSpread = 250f;
+        [Tooltip("Half the height of a zone's band, in metres.")]
+        public Vector2 ZoneHalfHeight = new(50f, 110f);
+        [Tooltip("A zone's middle sits up to this many metres above or below the route.")]
+        [Min(0f)] public float ZoneAltitudeJitter = 40f;
+        [Tooltip("No zone comes within this many metres (beyond its radius) of the voyage's start or destination.")]
+        [Min(0f)] public float ZoneKeepClear = 300f;
+
         [Header("Drift and ship contact")]
         [Tooltip("Metres per second a field hazard homes on the ship. 0: field hazards hang still. Targets placed with " +
                  "SpawnAt stay still unless asked to drift.")]
@@ -44,5 +63,6 @@ namespace TinCan.Features.SkyHazards
 
         public SkyHazardFieldShape FieldShape => new(FieldMin, FieldMax);
         public SkyHazardCrewScaling CrewScaling => new(MaxAlive, MaxAlivePerExtraPlayer, SpawnInterval, SpawnIntervalScalePerExtraPlayer);
+        public HazardZoneRules ZoneRules => new(ZoneSpacing, ZoneRadius, ZoneLateralSpread, ZoneHalfHeight, ZoneAltitudeJitter, ZoneKeepClear);
     }
 }

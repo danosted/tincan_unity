@@ -145,6 +145,28 @@
                 { "name": "", "id": "6eee9910-f664-4471-a6b0-9d644822ea31", "path": "<Keyboard>/pageUp", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "LevelUp", "isComposite": false, "isPartOfComposite": false },
                 { "name": "", "id": "6beebe99-188e-435d-bf6f-d2d9a248d383", "path": "<Keyboard>/pageDown", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "LevelDown", "isComposite": false, "isPartOfComposite": false }
             ]
+        },
+        {
+            "name": "Navigator",
+            "id": "bccea7b8-5b69-457e-b938-aad589de1634",
+            "actions": [
+                { "name": "Cursor", "type": "Value", "id": "145f6f61-bd16-442a-b5fc-60d26fb6919c", "expectedControlType": "Vector2", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Place", "type": "Button", "id": "4fb1fbe4-5ddf-48f4-8877-59c95b767e98", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Remove", "type": "Button", "id": "91176909-484e-4311-a362-bcc88812a620", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Altitude", "type": "Value", "id": "1cda5948-362d-4552-8e1e-df03071c58e9", "expectedControlType": "Axis", "processors": "", "interactions": "", "initialStateCheck": true },
+                { "name": "Zoom", "type": "Value", "id": "18be923f-975c-42a6-b735-ed9efd347961", "expectedControlType": "Axis", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Leave", "type": "Button", "id": "6684a28a-7dbd-4287-9c7d-3d6d887a45c8", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false }
+            ],
+            "bindings": [
+                { "name": "", "id": "fea26305-8ee4-4964-98f4-505543c664d4", "path": "<Mouse>/delta", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Cursor", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "4cc0f774-1ff4-4650-819a-fc813ba58e19", "path": "<Mouse>/leftButton", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Place", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "63974940-aa1a-41c8-8b01-0b7c75d6ec96", "path": "<Mouse>/rightButton", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Remove", "isComposite": false, "isPartOfComposite": false },
+                { "name": "SpaceShift", "id": "29d54180-3654-4bec-83e0-4a792bb6e9b3", "path": "1DAxis", "interactions": "", "processors": "", "groups": "", "action": "Altitude", "isComposite": true, "isPartOfComposite": false },
+                { "name": "negative", "id": "9e22084b-a881-4ce9-9f9b-2a0a26673757", "path": "<Keyboard>/leftShift", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Altitude", "isComposite": false, "isPartOfComposite": true },
+                { "name": "positive", "id": "02e84ddf-6635-4757-92af-95aadad001bd", "path": "<Keyboard>/space", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Altitude", "isComposite": false, "isPartOfComposite": true },
+                { "name": "", "id": "de8f7210-8efa-4af2-b08b-0db1f4f85e5c", "path": "<Mouse>/scroll/y", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Zoom", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "95769b9b-7b7e-40e9-afd5-1d54b89c214b", "path": "<Keyboard>/e", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Leave", "isComposite": false, "isPartOfComposite": false }
+            ]
         }
     ],
     "controlSchemes": [

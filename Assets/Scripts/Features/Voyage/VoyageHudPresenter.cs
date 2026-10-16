@@ -10,8 +10,8 @@ namespace TinCan.Features.Voyage
 {
     /// <summary>
     /// Presentation, every peer, every frame: the voyage on the HUD. A "Voyage" meter fills with progress, and a line
-    /// says what matters now: the countdown, then distance and where the destination lies (for the pilot), then the
-    /// outcome. Reads the replicated state and this peer's view of the ship, so it needs nothing from the server.
+    /// says what matters now: the countdown, then the distance (and, in development builds only, where the destination
+    /// lies; players steer by the compass at the helm), then the outcome. Reads the replicated state and this peer's view of the ship, so it needs nothing from the server.
     /// </summary>
     public class VoyageHudPresenter : ITickable
     {
@@ -61,8 +61,11 @@ namespace TinCan.Features.Voyage
                 case VoyagePhase.Lost:
                     return "the ship is lost";
                 default:
+                    // The bearing is a development aid: in the game the compass at the helm shows the way.
                     float km = _route.DistanceLeft(position, state.Destination) / 1000f;
-                    return $"{km:0.0} km to go, {Direction(_route.Bearing(position, rotation, state.Destination))}";
+                    return Debug.isDebugBuild
+                        ? $"{km:0.0} km to go, {Direction(_route.Bearing(position, rotation, state.Destination))}"
+                        : $"{km:0.0} km to go";
             }
         }
 

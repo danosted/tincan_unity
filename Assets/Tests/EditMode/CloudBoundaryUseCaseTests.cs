@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using NUnit.Framework;
+using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Ship;
 using TinCan.Features.CloudBoundary;
@@ -76,12 +77,14 @@ namespace TinCan.Tests.EditMode
         private RecordingEventPublisher _events = null!;
         private FakeRespawnService _respawnService = null!;
         private CloudBoundaryUseCase _useCase = null!;
+        private readonly List<IOverboardHandler> _overboard = new();
         private readonly List<FakeAirshipView> _airships = new();
         private readonly List<FakeHumanoidMovementView> _movementViews = new();
 
         [SetUp]
         public void SetUp()
         {
+            _overboard.Clear();
             _config = ScriptableObject.CreateInstance<CloudBoundaryConfig>();
             _registry = new FakeActorRegistry();
             _timeService = new FakeTimeService { DeltaTime = 1f };
@@ -96,7 +99,8 @@ namespace TinCan.Tests.EditMode
                 new NoOpCloudBoundaryExpiryHandler(),
                 _respawnService,
                 new CloudBoundaryProcessor(),
-                _config);
+                _config,
+                _overboard);
         }
 
         [TearDown]
@@ -165,6 +169,51 @@ namespace TinCan.Tests.EditMode
 
             Assert.That(_respawnService.CallCount, Is.Zero);
             Assert.That(movement.Transform.position, Is.EqualTo(new Vector3(0f, -11f, 0f)));
+        }
+
+        [Test]
+        public void FallenCharacter_TakenByAnOverboardHandler_IsNotTeleported()
+        {
+            AddAirship(new Vector3(10f, 20f, 0f));
+            var movement = new FakeHumanoidMovementView("FallenCharacter");
+            movement.Transform.position = new Vector3(0f, -11f, 0f);
+            _movementViews.Add(movement);
+            var character = new FakeHumanoidCharacterView(movement);
+            _registry.Register(character);
+            var handler = new TakingHandler();
+            _overboard.Add(handler);
+
+            _useCase.Tick();
+
+            Assert.That(handler.Taken, Is.EqualTo(new[] { character }), "The handler is asked about the fallen player.");
+            Assert.That(_respawnService.CallCount, Is.Zero, "It took the player, so no teleport.");
+        }
+
+        [Test]
+        public void FallenCharacter_ADecliningHandler_LeavesTheTeleport()
+        {
+            AddAirship(new Vector3(10f, 20f, 0f));
+            var movement = new FakeHumanoidMovementView("FallenCharacter");
+            movement.Transform.position = new Vector3(0f, -11f, 0f);
+            _movementViews.Add(movement);
+            _registry.Register(new FakeHumanoidCharacterView(movement));
+            _overboard.Add(new TakingHandler { Takes = false });
+
+            _useCase.Tick();
+
+            Assert.That(_respawnService.CallCount, Is.EqualTo(1));
+        }
+
+        private sealed class TakingHandler : IOverboardHandler
+        {
+            public bool Takes { get; set; } = true;
+            public List<IActor> Taken { get; } = new();
+
+            public bool TryHandleOverboard(IActor character)
+            {
+                Taken.Add(character);
+                return Takes;
+            }
         }
 
         private FakeAirshipView AddAirship(Vector3 position)

@@ -1,0 +1,24 @@
+{
+    "name": "TinCan.Features.Respawn",
+    "rootNamespace": "TinCan.Features.Respawn",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Gas",
+        "TinCan.Humanoid",
+        "TinCan.Interaction",
+        "TinCan.Items",
+        "TinCan.Ship",
+        "TinCan.UI",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

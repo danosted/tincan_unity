@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09bf0cd2fa7f6cb4d93ddaee0d342057, type: 3}
+  m_Name: GE_Overboard
+  m_EditorClassIdentifier: TinCan.Gas::TinCan.Core.Gas.GameplayEffectDefinition
+  DurationType: 2
+  DurationSeconds: 0
+  Modifiers: []
+  GrantedTags:
+  - {fileID: 11400000, guid: cb3b6a7f1f9e41243b19b5b9efbdb4ef, type: 2}
+  Cues: []

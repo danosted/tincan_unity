@@ -118,6 +118,30 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "HookAboard (Host + Client, Lag100)")]
         public static void HookAboardDuo() => RunDuo("HookAboard", "Lag100");
 
+        [MenuItem(Root + "OverboardRespawn (Host)")]
+        public static void OverboardRespawnSolo() => RunSolo("OverboardRespawn");
+
+        [MenuItem(Root + "OverboardRespawn (Host + Client, Lag100)")]
+        public static void OverboardRespawnDuo() => RunDuo("OverboardRespawn", "Lag100");
+
+        [MenuItem(Root + "LeashClimb (Host)")]
+        public static void LeashClimbSolo() => RunSolo("LeashClimb");
+
+        [MenuItem(Root + "LeashClimb (Host + Client, Lag100)")]
+        public static void LeashClimbDuo() => RunDuo("LeashClimb", "Lag100");
+
+        [MenuItem(Root + "WinchRescue (Host)")]
+        public static void WinchRescueSolo() => RunSolo("WinchRescue");
+
+        [MenuItem(Root + "WinchRescue (Host + Client, Lag100)")]
+        public static void WinchRescueDuo() => RunDuo("WinchRescue", "Lag100");
+
+        [MenuItem(Root + "GalleonLeashClimb (Host)")]
+        public static void GalleonLeashClimbSolo() => RunSolo("GalleonLeashClimb");
+
+        [MenuItem(Root + "GalleonLeashClimb (Host + Client, Lag100)")]
+        public static void GalleonLeashClimbDuo() => RunDuo("GalleonLeashClimb", "Lag100");
+
         [MenuItem(Root + "IslandsPerVoyage (Host)")]
         public static void IslandsPerVoyageSolo() => RunSolo("IslandsPerVoyage");
 

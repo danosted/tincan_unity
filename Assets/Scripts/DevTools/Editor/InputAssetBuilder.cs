@@ -14,6 +14,7 @@ using TinCan.Core.UI;
 using TinCan.Core.UI.Commands;
 using TinCan.Features.FreeCamera;
 using TinCan.Features.Helm;
+using TinCan.Features.Respawn;
 using TinCan.Features.Shipyard;
 using TinCan.Features.Weapons.Cannon;
 using UnityEditor;
@@ -94,6 +95,7 @@ namespace TinCan.DevTools.Editor
             var toggleCursor = Command<ToggleCursorCommand>("Command_ToggleCursor", "Free or recapture the cursor while flying the free camera.");
             var toggleOverlay = Command<ToggleNetOverlayCommand>("Command_ToggleNetOverlay", "Show or hide the net harness readout.");
             var shipyardMenu = Command<OpenShipyardMenuCommand>("Command_OpenShipyardMenu", "Open the shipyard menu: save, load, new, launch, exit.");
+            var leashMenu = Command<OpenLeashMenuCommand>("Command_OpenLeashMenu", "On the leash: open the respawn choice.");
 
             // Contexts (priority: higher sees an action first)
             var global = Context<GlobalInputContext>("Context_Global", c =>
@@ -180,6 +182,12 @@ namespace TinCan.DevTools.Editor
                 c.Configure(InputContextActivation.WhileOpened, 500, blocksAllLower: true);
                 c.SetContents(None(), NoActions(), new[] { new InputRoute(Id("Global/Cancel"), shipyardMenu) },
                     "The shipyard is open (contributed by its installer): build with the mouse, everything below is silent; Cancel opens the shipyard menu. Read by ShipyardUseCase.");
+            });
+            var leashed = Context<InputContext>("Context_Leashed", c =>
+            {
+                c.Configure(InputContextActivation.WhilePossessedHasTag, 450, tag: Load<GameplayTag>("Assets/Abilities/Tags/State.Leashed.asset"));
+                c.SetContents(None(), NoActions(), new[] { new InputRoute(Id("Humanoid/Interact"), leashMenu) },
+                    "Hanging on a ship's leash (State.Leashed; contributed by the Respawn installer). Walking stays live: forward climbs the rope. Interact opens the respawn choice.");
             });
             var rebinding = Context<InputContext>("Context_Rebinding", c =>
             {

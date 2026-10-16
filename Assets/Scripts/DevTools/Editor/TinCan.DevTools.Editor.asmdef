@@ -24,6 +24,7 @@
         "TinCan.Features.Shipyard",
         "TinCan.Features.ShipSockets",
         "TinCan.Features.GrappleHook",
+        "TinCan.Features.Respawn",
         "TinCan.DevTools",
         "TinCan.Humanoid",
         "TinCan.Input",

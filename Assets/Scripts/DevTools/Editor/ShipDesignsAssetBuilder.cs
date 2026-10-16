@@ -55,6 +55,7 @@ namespace TinCan.DevTools.Editor
         public const string HullMount = "hull.mount";
         public const string Stairs = "hull.stairs";
         public const string Rail = "hull.rail";
+        public const string RailGate = "hull.rail_gate";
         public const string Wall = "hull.wall";
         public const string WallWindow = "hull.wall_window";
         public const string Bow = "hull.bow";
@@ -114,6 +115,8 @@ namespace TinCan.DevTools.Editor
             var stairs = Part("PART_Stairs", Stairs, "Stairs", "Hull", false, StairsPrefab(planks), null, Vector3.zero,
                 new ShipPartStats(15f, hull: 15f), Cells(1, 3, 5));
             var rail = Part("PART_Rail", Rail, "Rail", "Hull", false, RailPrefab(wood), null, Vector3.zero, new ShipPartStats(2f, hull: 3f));
+            // A rail with its middle left open: a way through to a balcony or a gangway.
+            var railGate = Part("PART_RailGate", RailGate, "Rail gate", "Hull", false, RailPrefab(wood, gate: true), null, Vector3.zero, new ShipPartStats(1f, hull: 2f));
             // A wall as tall as a level (3 cells), capped by a deck slab: it carries the deck above it.
             var wall = Part("PART_Wall", Wall, "Hull wall", "Hull", false, WallPrefab(wood, planks), null, Vector3.zero,
                 new ShipPartStats(6f, hull: 15f), Cells(1, 3, 1));
@@ -146,7 +149,7 @@ namespace TinCan.DevTools.Editor
             var installer = Asset<ShipDesignsFeatureInstaller>(InstallerPath, i =>
             {
                 SetField(i, "_config", config);
-                SetList(i, "_parts", new Object[] { block, deck, armour, engine, balloon, mast, envelope, mount, stairs, rail, wall, windowWall, bow, propeller });
+                SetList(i, "_parts", new Object[] { block, deck, armour, engine, balloon, mast, envelope, mount, stairs, rail, railGate, wall, windowWall, bow, propeller });
                 SetField(i, "_stateFixture", stateFixture);
             });
             var helmInstaller = Load<HelmFeatureInstaller>(HelmInstallerPath);
@@ -295,7 +298,8 @@ namespace TinCan.DevTools.Editor
                 Add(z == -7 && x is -3 or 3 ? HullMount : HullDeck, x, 2, z);
             for (int z = -8; z <= -2; z++)
             {
-                Add(Rail, 4, 3, z, FacesPlusX);
+                // A gate at z -6 opens onto the starboard balcony (appended at the end, so no part id shifts).
+                Add(z == -6 ? RailGate : Rail, 4, 3, z, FacesPlusX);
                 Add(Rail, -4, 3, z, FacesMinusX);
             }
 
@@ -320,6 +324,14 @@ namespace TinCan.DevTools.Editor
                 Add(Balloon, x, -3, z);
             foreach (int x in new[] { -3, 0, 3 })
                 Add(Propeller, x, -3, -9);
+
+            // A small balcony off the quarterdeck's starboard rail (through the gate at z -6), clear of the balloons below: a
+            // mount plate facing out (+X) with rails on its three open sides. Its socket carries the leash winch
+            // (Respawn), so a rope hangs in open air and a climber lands on the balcony. Appended last: ids from 473.
+            Add(HullMount, 5, 2, -6, FacesMinusZ);
+            Add(Rail, 5, 3, -6, FacesPlusX);
+            Add(Rail, 5, 3, -7, FacesPlusZ);
+            Add(Rail, 5, 3, -5, FacesMinusZ);
 
             var placements = parts.Select((p, i) => new ShipPartPlacement(i + 1, p.Part, p.Cell, p.Orientation));
             return new ShipDesign("Galleon", "TinCan", parts.Count + 1, placements);
@@ -447,13 +459,18 @@ namespace TinCan.DevTools.Editor
             return Save(root);
         }
 
-        /// <summary>Two posts and two rails along the cell's +X edge, 1 m high; one box keeps players in.</summary>
-        private static GameObject RailPrefab(Material material)
+        /// <summary>
+        /// Two posts and two rails along the cell's +X edge, 1 m high; one box keeps players in. A gate is the two posts
+        /// alone: a way through.
+        /// </summary>
+        private static GameObject RailPrefab(Material material, bool gate = false)
         {
             const float edge = 0.45f, floor = -0.5f;
-            var root = new GameObject("ShipPart_Rail");
+            var root = new GameObject(gate ? "ShipPart_RailGate" : "ShipPart_Rail");
             foreach (float z in new[] { -0.45f, 0.45f })
                 Piece(root, "Post", PrimitiveType.Cube, new Vector3(edge, floor + 0.5f, z), new Vector3(0.08f, 1f, 0.08f), material, solid: false);
+            if (gate) return Save(root);
+
             Piece(root, "TopRail", PrimitiveType.Cube, new Vector3(edge, floor + 1f, 0f), new Vector3(0.1f, 0.08f, 1f), material, solid: false);
             Piece(root, "MidRail", PrimitiveType.Cube, new Vector3(edge, floor + 0.5f, 0f), new Vector3(0.05f, 0.05f, 1f), material, solid: false);
             var block = new GameObject("Collider");

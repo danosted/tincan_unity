@@ -22,6 +22,7 @@ namespace TinCan.Features.CloudBoundary
         private readonly IHumanoidRespawnService _respawnService;
         private readonly CloudBoundaryProcessor _processor;
         private readonly CloudBoundaryConfig _config;
+        private readonly IReadOnlyList<IOverboardHandler> _overboardHandlers;
         private readonly Dictionary<Guid, CloudEmergencyState> _airshipStates = new();
 
         public CloudBoundaryUseCase(
@@ -33,7 +34,8 @@ namespace TinCan.Features.CloudBoundary
             ICloudBoundaryExpiryHandler expiryHandler,
             IHumanoidRespawnService respawnService,
             CloudBoundaryProcessor processor,
-            CloudBoundaryConfig config)
+            CloudBoundaryConfig config,
+            IReadOnlyList<IOverboardHandler> overboardHandlers)
         {
             _networkService = networkService;
             _actorRegistry = actorRegistry;
@@ -44,6 +46,7 @@ namespace TinCan.Features.CloudBoundary
             _respawnService = respawnService;
             _processor = processor;
             _config = config;
+            _overboardHandlers = overboardHandlers;
         }
 
         public SimulationPhase Phase => SimulationPhase.BeforeHumanoid;
@@ -120,6 +123,9 @@ namespace TinCan.Features.CloudBoundary
                 {
                     continue;
                 }
+
+                // A feature may take the fallen player instead (the overboard choice); otherwise they are teleported home.
+                if (_overboardHandlers.Any(handler => handler.TryHandleOverboard(character))) continue;
 
                 IAirshipView nearestAirship = airships
                     .OrderBy(airship => (airship.Transform.position - position).sqrMagnitude)

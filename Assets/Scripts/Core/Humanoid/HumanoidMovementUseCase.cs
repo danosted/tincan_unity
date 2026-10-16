@@ -21,6 +21,7 @@ namespace TinCan.Core.Humanoid
         private readonly AbilitySystemUseCase _abilitySystem;
         private readonly IReadOnlyList<IHumanoidInputContributor> _contributors;
         private readonly IReadOnlyList<IHumanoidMotionContributor> _motionContributors;
+        private readonly IReadOnlyList<IServerDrivenHumanoidRule> _serverDriven;
         // Horizontal momentum, in the yaw frame of _velocityFrames[id] (the platform underfoot; world when absent).
         private readonly Dictionary<Guid, Vector3> _horizontalVelocities = new();
         private readonly Dictionary<Guid, Transform?> _velocityFrames = new();
@@ -51,7 +52,8 @@ namespace TinCan.Core.Humanoid
             IActorRegistry registry,
             ITimeService timeService,
             IReadOnlyList<IHumanoidInputContributor> contributors,
-            IReadOnlyList<IHumanoidMotionContributor> motionContributors)
+            IReadOnlyList<IHumanoidMotionContributor> motionContributors,
+            IReadOnlyList<IServerDrivenHumanoidRule>? serverDriven = null)
             : base(input, networkService, registry, timeService)
         {
             _controls = controls;
@@ -59,6 +61,7 @@ namespace TinCan.Core.Humanoid
             _abilitySystem = abilitySystem;
             _contributors = contributors;
             _motionContributors = motionContributors;
+            _serverDriven = serverDriven ?? System.Array.Empty<IServerDrivenHumanoidRule>();
         }
 
         /// <summary>
@@ -104,6 +107,15 @@ namespace TinCan.Core.Humanoid
         {
             var predicted = character as IPredictedHumanoid;
             bool isPredictingOwner = isCaptured && predicted is { IsLocallyPredicted: true };
+
+            // A moment only the server can move this body (hanging on a leash): the owner follows its state, predicting nothing.
+            if (isPredictingOwner && IsServerDriven(character))
+            {
+                FollowServer(character, predicted!);
+                _previousInputMasks[character.Id] = input.ActiveInputMask;
+                character.Movement.CommitSimulatedPose();
+                return;
+            }
 
             // 0. Owner: fold in the newest server state before predicting this tick's input.
             if (isPredictingOwner) Reconcile(character, predicted!);
@@ -167,6 +179,32 @@ namespace TinCan.Core.Humanoid
 
             movement.Carry(carried - movement.Transform.position);
             ApplyPlatformYaw(character, rotationDelta, isCaptured: true);
+        }
+
+        private bool IsServerDriven(IHumanoidCharacterView character)
+        {
+            foreach (var rule in _serverDriven)
+            {
+                if (rule.IsServerDriven(character)) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Owner of a server-driven body: takes the newest server state as it is (a snap, drawn as a fade) and keeps no
+        /// prediction history, so prediction resumes cleanly from the server's pose once the rule lets go.
+        /// </summary>
+        private void FollowServer(IHumanoidCharacterView character, IPredictedHumanoid predicted)
+        {
+            if (!predicted.TryTakeAuthoritativeState(out var server)) return;
+
+            Vector3 before = character.Movement.Transform.position;
+            SnapTo(character, server);
+            character.Movement.AbsorbCorrection(character.Movement.Transform.position - before);
+            History(character.Id).Clear();
+            _teleportEpochs[character.Id] = server.TeleportEpoch;
+            predicted.PredictionStats.Acks++;
         }
 
         private void Reconcile(IHumanoidCharacterView character, IPredictedHumanoid predicted)

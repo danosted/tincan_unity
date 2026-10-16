@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2002fe40ba6317a4180a2d8b05e179e1, type: 3}
+  m_Name: Context_Leashed
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.InputContext
+  _description: 'Hanging on a ship''s leash (State.Leashed; contributed by the Respawn
+    installer). Walking stays live: forward climbs the rope. Interact opens the respawn
+    choice.'
+  _activation: 2
+  _possessedKind: 0
+  _tag: {fileID: 11400000, guid: 83c059b4b29bbc54bbfdb5b8763b38f8, type: 2}
+  _priority: 450
+  _blocksAllLower: 0
+  _blocks: []
+  _actions: []
+  _routes:
+  - Action: {fileID: 11400000, guid: 2c88a2ff6516312488aca96ddb360237, type: 2}
+    Command: {fileID: 11400000, guid: 4cc1d7189f4ef2d418b9a0f22260d8a6, type: 2}

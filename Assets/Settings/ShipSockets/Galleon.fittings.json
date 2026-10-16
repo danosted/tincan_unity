@@ -5,6 +5,7 @@
     {"part":254,"socket":0,"fitting":"weapon.cannon"},
     {"part":323,"socket":0,"fitting":"weapon.cannon"},
     {"part":386,"socket":0,"fitting":"weapon.cannon"},
-    {"part":422,"socket":0,"fitting":"weapon.cannon"}
+    {"part":422,"socket":0,"fitting":"weapon.cannon"},
+    {"part":473,"socket":0,"fitting":"rescue.leash_winch"}
   ]
 }

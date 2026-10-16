@@ -22,6 +22,7 @@ plan is the contract those meshes follow, so they replace the greybox visuals wi
 |---|---|---|---|
 | `hull.stairs` | 1 × 3 × 5, rising toward +Z | Ten steps over a ramp collider: 3 m up over 5 m (31°). Its top cells are the stairwell, so a deck tile cannot close it. | 15, 0, 0, 15 |
 | `hull.rail` | 1 | A railing 1 m high along the cell's +X edge; the cell stays walkable. | 2, 0, 0, 3 |
+| `hull.rail_gate` | 1 | The rail's two posts alone: a way through a railing (the Galleon's quarterdeck opens onto its starboard balcony through one). | 1, 0, 0, 2 |
 | `hull.wall` | 1 × 3 × 1 | A 3 m wall along the +X edge, capped by a deck slab at its top, so it carries the deck above. The panel stops under the slab (no shared faces, so no z-fighting). | 6, 0, 0, 15 |
 | `hull.wall_window` | 1 × 3 × 1 | The same wall with a 0.5 × 0.8 m window 1.1 m above the floor. | 5, 0, 0, 12 |
 | `hull.bow` | 9 × 6 × 4 box from the keel up, plus the bowsprit's cells | A prow for a 9-wide hull: tapers from the hull to a point 4 m ahead, plank top flush with the main deck, rails on its outer edges, a bowsprit. Generated mesh (`Assets/Models/ShipParts/Greybox/Bow.asset`) with a convex collider. | 60, 0, 0, 120 |

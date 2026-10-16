@@ -37,6 +37,7 @@
         "TinCan.Features.Shipyard",
         "TinCan.Features.ShipSockets",
         "TinCan.Features.GrappleHook",
+        "TinCan.Features.Respawn",
         "TinCan.DevTools",
         "TinCan.DevTools.Editor",
         "TinCan.Tests.Shared",

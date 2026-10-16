@@ -39,7 +39,8 @@ namespace TinCan.DevTools.Editor
             (TestScenes.Voyage, "Profile_Test_Voyage"),
             (TestScenes.Helm, "Profile_Test_Helm"),
             (TestScenes.Shipyard, "Profile_Test_Shipyard"),
-            (TestScenes.GrappleHook, "Profile_Test_GrappleHook")
+            (TestScenes.GrappleHook, "Profile_Test_GrappleHook"),
+            (TestScenes.Respawn, "Profile_Test_Respawn")
         };
 
         [MenuItem("TinCan/Dev/Test Range/Rebuild Scenes")]

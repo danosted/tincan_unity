@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc2967f641ca1464c93837f66286a182, type: 3}
+  m_Name: RespawnFeatureInstaller
+  m_EditorClassIdentifier: TinCan.Features.Respawn::TinCan.Features.Respawn.RespawnFeatureInstaller
+  _rules: {fileID: 11400000, guid: ebcb2b5ae56b929488800bae18062474, type: 2}
+  _stateFixture: {fileID: 11400000, guid: c71620a751cb7eb41b1e03bfcb74e338, type: 2}
+  _leashFixture: {fileID: 11400000, guid: a98ebd03b997336418dbec864e83240f, type: 2}
+  _leashedControls: {fileID: 11400000, guid: aa282d763bfedce4ea15c3c03afbdcbd, type: 2}
+  _fittings:
+  - {fileID: 11400000, guid: 87d33a3a513a9a94c8673c4178b92839, type: 2}

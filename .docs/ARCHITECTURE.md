@@ -43,6 +43,10 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
   - **Ship-local rule:** player state is always compared in the local space of the platform underfoot, and
     movement is simulated in that platform's yaw frame (input look and momentum). Each peer sees the ship at a
     different pose, so world-space comparison or world-space momentum desyncs on a moving or turning ship.
+  - **Server-driven moments:** while an `IServerDrivenHumanoidRule` (`Core/Humanoid/`) holds, the owner predicts no
+    movement and takes each server state as it is (a snap drawn as a fade). It keeps sending input, which the server may
+    use. This is for motion tied to something each peer sees at a different pose, such as hanging on a leash behind a
+    ship (`Features/Respawn/LeashRopeUseCase.cs`). Prediction resumes from the server's pose when the rule lets go.
 - **Decoupled Prediction Loop:** UseCases that own a simulation loop (e.g., `HumanoidMovementUseCase`) are strictly responsible for passing their predicted `InputState` to auxiliary systems (like `AbilitySystemUseCase.ProcessAbilitySimulation`). Global systems must check `actor is ISimulatedActor` and skip global ticking for actors that handle their own prediction, guaranteeing that simulation physics and abilities share the exact same temporal tick.
   GAS counts time in simulation ticks (`ITimeService.Tick`): effect durations, cooldowns and timing windows are authored in seconds and become whole ticks when applied (`Core/Gas/GameplayTicks.cs`), so owner and server end a window after the same number of ticks. Each actor has one ability controller and one clock: `ActorOrchestrator` registers one controller per `Id` (`AbilityControllerSelection`, the `ISimulatedActor` wins), and the global loop runs on the simulation tick (`ISimulationTickable`, `AfterHumanoid`), never per frame. Reconciliation replays movement only; GAS tags stay server-authoritative.
   Ability-to-ability rules live on `AbilityDefinition`: `CancelAbilitiesWithTag` ends the actor's matching active abilities when this one activates, `BlockAbilitiesWithTag` stops matching ones from activating while this one is active (matching is by `AbilityTag`, parents included), and `EndsImmediately` marks a one-shot ability that ends in its activation tick after applying its effects and cooldown.
@@ -98,6 +102,10 @@ The helm steers the ship through its pilot seam, `Core/Ship/IAirshipPilotInput.c
 The ship is kinematic, so nothing solid stops it by itself; a feature that finds it inside something pushes it out
 through `Core/Ship/IAirshipCollisionResponse.cs` (the movement use case moves it and removes its velocity into the
 surface). Sky islands do this on the server.
+A player who falls overboard (sinks too far below the clouds) is the cloud boundary's to detect and the Respawn feature's to handle,
+through `Core/Domain/IOverboardHandler.cs`: they choose on their own screen, and the rules in one asset
+(`Settings/Respawn/RespawnRules`) decide what a respawn costs. Without the feature they are teleported home as before (plan
+`.docs/plans/overboard-and-rescue.md`).
 - **IPossessable is opt-in:** an object is possessable when it has a `PossessableNetworkMediator` (the replicated
   possessor; a player object is possessed by its owner on spawn). Its actor (`HumanoidPlayer`)
   implements `IPossessable` by forwarding to it. The local free camera is the only other possessable.

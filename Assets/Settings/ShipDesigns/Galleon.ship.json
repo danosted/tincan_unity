@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "name": "Galleon",
   "author": "TinCan",
-  "nextPartInstanceId": 473,
+  "nextPartInstanceId": 477,
   "parts": [
     {"id":1,"part":"hull.block","cell":[-1,-5,-6],"rot":0},
     {"id":2,"part":"hull.block","cell":[-1,-5,-5],"rot":0},
@@ -435,7 +435,7 @@
     {"id":429,"part":"hull.rail","cell":[-4,3,-8],"rot":2},
     {"id":430,"part":"hull.rail","cell":[4,3,-7],"rot":0},
     {"id":431,"part":"hull.rail","cell":[-4,3,-7],"rot":2},
-    {"id":432,"part":"hull.rail","cell":[4,3,-6],"rot":0},
+    {"id":432,"part":"hull.rail_gate","cell":[4,3,-6],"rot":0},
     {"id":433,"part":"hull.rail","cell":[-4,3,-6],"rot":2},
     {"id":434,"part":"hull.rail","cell":[4,3,-5],"rot":0},
     {"id":435,"part":"hull.rail","cell":[-4,3,-5],"rot":2},
@@ -475,6 +475,10 @@
     {"id":469,"part":"lift.balloon","cell":[6,-3,2],"rot":0},
     {"id":470,"part":"prop.propeller","cell":[-3,-3,-9],"rot":0},
     {"id":471,"part":"prop.propeller","cell":[0,-3,-9],"rot":0},
-    {"id":472,"part":"prop.propeller","cell":[3,-3,-9],"rot":0}
+    {"id":472,"part":"prop.propeller","cell":[3,-3,-9],"rot":0},
+    {"id":473,"part":"hull.mount","cell":[5,2,-6],"rot":1},
+    {"id":474,"part":"hull.rail","cell":[5,3,-6],"rot":0},
+    {"id":475,"part":"hull.rail","cell":[5,3,-7],"rot":3},
+    {"id":476,"part":"hull.rail","cell":[5,3,-5],"rot":1}
   ]
 }

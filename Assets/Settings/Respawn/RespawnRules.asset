@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f30865c8163c8534cbce3e95247395d1, type: 3}
+  m_Name: RespawnRules
+  m_EditorClassIdentifier: TinCan.Features.Respawn::TinCan.Features.Respawn.RespawnRules
+  Rules:
+  - Cause: 0
+    CarriedItem: 1
+    DelaySeconds: 0
+  BoardingOffset: {x: 0, y: 3, z: 0}
+  RopeLength: 12
+  CanClimb: 1
+  ClimbSpeed: 2
+  WinchSpeed: 6
+  ArriveDistance: 1.5
+  MaxDragSpeed: 40
+  RopeMaterial: {fileID: 2100000, guid: 5a24de69b26b15847a4f03c7c6dfe875, type: 2}
+  RopeWidth: 0.05
+  OverboardEffect: {fileID: 11400000, guid: 3949de96729ed0946b43d19a1c437585, type: 2}
+  OverboardTag: {fileID: 11400000, guid: cb3b6a7f1f9e41243b19b5b9efbdb4ef, type: 2}
+  LeashedEffect: {fileID: 11400000, guid: 6df479c2a580ee94ab366fa411454323, type: 2}
+  LeashedTag: {fileID: 11400000, guid: 83c059b4b29bbc54bbfdb5b8763b38f8, type: 2}

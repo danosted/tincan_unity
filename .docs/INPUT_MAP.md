@@ -15,6 +15,7 @@ silences it; an action outside every live context reads as released.
 | 950 | Context_DevTools | always | - | (routes only) | NetTestHarnessFeatureInstaller |
 | 900 | Context_Menu | a menu is open | everything below | (routes only) | core (InputConfig) |
 | 500 | Context_Shipyard | WhileOpened | everything below | ShipyardUseCase | ShipyardFeatureInstaller |
+| 450 | Context_Leashed | possessed actor has State.Leashed | - | (routes only) | not loaded |
 | 400 | Context_Gunner | possessed actor has State.Occupying.Cannon | Context_Humanoid, Context_Camera | GunnerAimUseCase | CannonFeatureInstaller |
 | 400 | Context_Helmsman | possessed actor has State.Occupying.Helm | Context_Humanoid | HelmInputUseCase | HelmFeatureInstaller |
 | 300 | Context_FreeCamera | possessing Other | - | FreeCameraMovementUseCase | FreeCameraFeatureInstaller |
@@ -75,6 +76,18 @@ The shipyard is open (contributed by its installer): build with the mouse, every
 | Pressing | Runs | Handled by |
 |---|---|---|
 | Global/Cancel | Command_OpenShipyardMenu | ShipyardMenuInputHandler |
+
+### Context_Leashed
+
+Hanging on a ship's leash (State.Leashed; contributed by the Respawn installer). Walking stays live: forward climbs the rope. Interact opens the respawn choice.
+
+| Action | Default keys | Meaning | Rebindable |
+|---|---|---|---|
+| Humanoid/Interact | `e` | Use what you look at: pick up, pour, man a cannon. | yes |
+
+| Pressing | Runs | Handled by |
+|---|---|---|
+| Humanoid/Interact | Command_OpenLeashMenu | OpenLeashMenuInputHandler |
 
 ### Context_Gunner
 

@@ -759,7 +759,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        // The galleon has 472 parts; one of them (the helm) is spawned rather than built. Its starboard stairs rise aft
+        // The galleon has 476 parts (the starboard balcony added four on 2026-10-16); one of them (the helm) is spawned rather than built. Its starboard stairs rise aft
         // from the main deck at cell (3, 0, 4) to the quarterdeck, whose walking surface is 2.5 m in ship space.
         public static readonly ScenarioEntry ShipStairs = new(
             new Scenario.Builder("ShipStairs")
@@ -771,11 +771,11 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("ShipDesignBuilt", 20f, "95")
                     .Wait(1.5f, "settle after spawn")
                     .Do("FlyDesign", "Galleon")
-                    .WaitUntil("ShipDesignBuilt", 30f, "471")
+                    .WaitUntil("ShipDesignBuilt", 30f, "475")
                     .Wait(1f, "the rebuilt ship settles")
                     .Do("PlaceSubjectAtCell", "3,0,4,180"))
                 .Act(s => s
-                    .WaitUntil("ShipDesignBuilt", 30f, "471")
+                    .WaitUntil("ShipDesignBuilt", 30f, "475")
                     .WaitUntil("SubjectOnShip", 45f)
                     .Wait(0.5f, "teleport settles")
                     .Do("FaceShipYaw", "180")
@@ -802,7 +802,7 @@ namespace TinCan.DevTools.Scenarios
                     .Wait(1.5f, "settle after spawn")
                     .Do("FlyDesign", "Galleon"))
                 .Act(s => s
-                    .WaitUntil("ShipDesignBuilt", 30f, "471")
+                    .WaitUntil("ShipDesignBuilt", 30f, "475")
                     .WaitUntil("FittingsMounted", 15f, "4")
                     .Expect("SocketFitted", "weapon.cannon")
                     .Wait(0.5f, "the screenshot is taken at the end of a frame")
@@ -860,7 +860,155 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout };
+        // Below the starboard rail and 30 m under the deck, where a fall into the clouds would end. Scripted runs switch the
+        // cloud reset off, so the server sends the subject overboard through the same handler the cloud boundary calls.
+        public static readonly ScenarioEntry OverboardRespawn = new(
+            new Scenario.Builder("OverboardRespawn")
+                .InScene(TestScenes.Respawn)
+                .Describe("Hold the hook, fall overboard -> the choice opens on the subject's own screen -> respawn aboard, empty-handed (the rules), on both peers.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("EquipSubject", "ITEM_GrappleHook")
+                    .Do("PlaceSubjectAtShipLocal", "15,-30,0")
+                    .Do("SendSubjectOverboard"))
+                .Act(s => s
+                    .WaitUntil("SubjectHasTag", 10f, "State.Overboard")
+                    .WaitUntil("OverboardMenuOpen", 3f)
+                    .WaitUntil("RespawnHudShows", 3f, "Overboard")
+                    .Checkpoint("overboard")
+                    .Do("ChooseRespawn")
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Overboard")
+                    .WaitUntil("SubjectAboard", 5f)
+                    .Expect("SubjectHolds", "none")
+                    .Checkpoint("aboard"))
+                .Assert(s => s
+                    .WaitUntil("SubjectOverboard", 30f)
+                    .WaitUntil("SubjectNotOverboard", 30f)
+                    .WaitUntil("SubjectAboard", 5f)
+                    .Expect("SubjectHolds", "none")
+                    .Expect("SubjectLacksTag", "State.Overboard"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<RespawnScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        // Slice 2: overboard, take the leash, climb it back aboard (the leash point is the winch fixture on the starboard
+        // side; its rope starts 12 m long). Keeps what you carry. The host draws the client's rope from the leashed tag.
+        public static readonly ScenarioEntry LeashClimb = new(
+            new Scenario.Builder("LeashClimb")
+                .InScene(TestScenes.Respawn)
+                .Describe("Fall overboard holding the hook -> hang on the leash -> climb it -> aboard on deck, still holding the hook, on both peers.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("EquipSubject", "ITEM_GrappleHook")
+                    .Do("PlaceSubjectAtShipLocal", "15,-30,0")
+                    .Do("SendSubjectOverboard"))
+                .Act(s => s
+                    .WaitUntil("SubjectHasTag", 10f, "State.Overboard")
+                    .WaitUntil("OverboardMenuOpen", 3f)
+                    .Do("ChooseLeash")
+                    .WaitUntil("SubjectHasTag", 5f, "State.Leashed")
+                    .WaitUntil("RespawnHudShows", 3f, "On the leash: hold forward to climb, Interact to respawn")
+                    .WaitUntil("LeashRopeDrawn", 3f)
+                    .Checkpoint("leashed")
+                    .Hold(9f, ScriptedAction.MoveForward)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Leashed")
+                    .WaitUntil("SubjectAboard", 5f)
+                    .Expect("SubjectHolds", "ITEM_GrappleHook")
+                    .Checkpoint("aboard"))
+                .Assert(s => s
+                    .WaitUntil("SubjectLeashed", 30f)
+                    .WaitUntil("LeashRopeDrawn", 3f)
+                    .WaitUntil("SubjectNotOverboard", 30f)
+                    .WaitUntil("SubjectAboard", 5f)
+                    .Expect("SubjectHolds", "ITEM_GrappleHook"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<RespawnScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        // Slice 3: the subject hangs on the leash without climbing; the server cranks the winch (as Interact on it does)
+        // and the rope reels them aboard.
+        public static readonly ScenarioEntry WinchRescue = new(
+            new Scenario.Builder("WinchRescue")
+                .InScene(TestScenes.Respawn)
+                .Describe("Fall overboard -> hang on the leash, no climbing -> the winch is cranked -> reeled aboard, on both peers.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("PlaceSubjectAtShipLocal", "15,-30,0")
+                    .Do("SendSubjectOverboard"))
+                .Act(s => s
+                    .WaitUntil("SubjectHasTag", 10f, "State.Overboard")
+                    .WaitUntil("OverboardMenuOpen", 3f)
+                    .Do("ChooseLeash")
+                    .WaitUntil("SubjectHasTag", 5f, "State.Leashed")
+                    .Checkpoint("leashed")
+                    .WaitUntil("SubjectLacksTag", 20f, "State.Leashed")
+                    .WaitUntil("SubjectAboard", 5f)
+                    .Checkpoint("winched-aboard"))
+                .Assert(s => s
+                    .WaitUntil("SubjectLeashed", 30f)
+                    .Wait(1f, "let the leash catch them")
+                    .Do("CrankWinch")
+                    .WaitUntil("SubjectNotOverboard", 20f)
+                    .WaitUntil("SubjectAboard", 5f))
+                .Build(),
+            builder =>
+            {
+                builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<RespawnScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        // The leash on the Galleon (cheesed_scene, the developer's scene, which flies it with Profile_Galleon). The winch is
+        // mounted on the starboard balcony off the quarterdeck (ship space (5,2,-6), its rope hanging past x 5.9), so the
+        // subject falls beside and below it, climbs the rope in open air and lands on the quarterdeck, not inside a wall.
+        public static readonly ScenarioEntry GalleonLeashClimb = new(
+            new Scenario.Builder("GalleonLeashClimb")
+                .InScene("Assets/Scenes/cheesed_scene.unity")
+                .Describe("On the Galleon: fall overboard by the starboard balcony -> hang on its winch's leash -> climb -> aboard on the quarterdeck, on both peers.")
+                .Timeout(150f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn; the design builds")
+                    .Do("PlaceSubjectAtShipLocal", "9,-8,-6")
+                    .Do("SendSubjectOverboard"))
+                .Act(s => s
+                    .WaitUntil("SubjectHasTag", 10f, "State.Overboard")
+                    .WaitUntil("OverboardMenuOpen", 3f)
+                    .Do("ChooseLeash")
+                    .WaitUntil("SubjectHasTag", 5f, "State.Leashed")
+                    .WaitUntil("LeashRopeDrawn", 3f)
+                    .Checkpoint("leashed")
+                    .Hold(9f, ScriptedAction.MoveForward)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Leashed")
+                    .WaitUntil("SubjectAboard", 5f)
+                    .Checkpoint("aboard"))
+                .Assert(s => s
+                    .WaitUntil("SubjectLeashed", 30f)
+                    .WaitUntil("SubjectNotOverboard", 30f)
+                    // Checked at once: the subject still holds forward, so it walks off the landing spot right after.
+                    .Expect("SubjectNearShipLocal", "3.5,3.5,-6,1.5")
+                    .WaitUntil("SubjectAboard", 5f))
+                .Build(),
+            builder =>
+            {
+                builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<RespawnScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

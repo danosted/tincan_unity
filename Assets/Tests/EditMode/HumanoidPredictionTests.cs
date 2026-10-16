@@ -219,6 +219,36 @@ namespace TinCan.Tests.EditMode
             new(sequence, epoch, null, position, Vector3.zero, 0f);
 
         [Test]
+        public void Owner_WhileServerDriven_PredictsNothing_AndTakesTheServersState()
+        {
+            var rule = new ServerDrivenRule { Driven = true };
+            var abilities = new AbilitySystemUseCase(new FakeAbilityRegistry(), _registry, _time, new FakeEventPublisher());
+            var useCase = new HumanoidMovementUseCase(_inputService, _controls, new FakeNetworkService(), new HumanoidMovementProcessor(), abilities,
+                _registry, _time, FakeInputContexts.NoContributors, FakeInputContexts.NoMotionContributors, new IServerDrivenHumanoidRule[] { rule });
+            MakeOwner();
+            _inputService.Vectors[_controls.Move!] = Vector2.up;
+            Vector3 start = _movement.Transform.position;
+
+            useCase.Tick();
+            Assert.That(_movement.Transform.position, Is.EqualTo(start), "Walking input moves nothing: only the server moves this body.");
+
+            _character.Deliver(Server(1, start + new Vector3(0f, 0f, 9f)));
+            useCase.Tick();
+            Assert.That(Vector3.Distance(_movement.Transform.position, start + new Vector3(0f, 0f, 9f)), Is.LessThan(1e-4f), "Took the server's state as it is.");
+            Assert.That(_character.PredictionStats.Corrections, Is.Zero, "Following is not a correction.");
+
+            rule.Driven = false;
+            useCase.Tick();
+            Assert.That(_movement.Transform.position.z, Is.GreaterThan(start.z + 9f), "Predicting again from the server's pose.");
+        }
+
+        private sealed class ServerDrivenRule : IServerDrivenHumanoidRule
+        {
+            public bool Driven { get; set; }
+            public bool IsServerDriven(IHumanoidCharacterView character) => Driven;
+        }
+
+        [Test]
         public void Owner_MatchingAck_DoesNotCorrect()
         {
             MakeOwner();

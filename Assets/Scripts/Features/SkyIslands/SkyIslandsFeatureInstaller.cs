@@ -1,6 +1,7 @@
 #nullable enable
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
+using TinCan.Core.Domain.Navigation;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -10,7 +11,8 @@ namespace TinCan.Features.SkyIslands
     /// <summary>
     /// Sky islands: floating rock around the ship, built on every peer from the session's layout seed (a new layout every
     /// voyage, through <see cref="ISessionLayout"/>), so nothing is replicated. The server pushes the ship out of rock
-    /// and hurts it (<see cref="SkyIslandImpactUseCase"/>).
+    /// and hurts it (<see cref="SkyIslandImpactUseCase"/>). The islands are also on the navigator's chart
+    /// (<see cref="SkyIslandChartSource"/>, read only where Navigation is loaded).
     /// Plan: .docs/plans/sky-islands.md.
     /// </summary>
     [CreateAssetMenu(fileName = "SkyIslandsFeatureInstaller", menuName = "TinCan/Features/Sky Islands Feature Installer")]
@@ -34,6 +36,7 @@ namespace TinCan.Features.SkyIslands
             builder.Register<PhysicsSkyIslandContactQuery>(Lifetime.Singleton).As<ISkyIslandContactQuery>();
             builder.Register<SkyIslandImpactUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
             builder.Register<PhysicsSkyIslandObstacleQuery>(Lifetime.Singleton).As<IWorldObstacleQuery>();
+            builder.Register<SkyIslandChartSource>(Lifetime.Singleton).As<IChartSource>();
         }
     }
 }

@@ -14,6 +14,7 @@ using TinCan.Core.UI;
 using TinCan.Core.UI.Commands;
 using TinCan.Features.FreeCamera;
 using TinCan.Features.Helm;
+using TinCan.Features.Navigation;
 using TinCan.Features.Respawn;
 using TinCan.Features.Shipyard;
 using TinCan.Features.Weapons.Cannon;
@@ -62,6 +63,12 @@ namespace TinCan.DevTools.Editor
             ["Gunner/Aim"] = ("Aim Cannon", "Swing the cannon's barrel.", false),
             ["Gunner/Fire"] = ("Fire Cannon", "Fire the cannon you are manning.", true),
             ["Gunner/Leave"] = ("Leave Cannon", "Step away from the cannon.", true),
+            ["Navigator/Cursor"] = ("Chart Cursor", "Move the cursor on the chart.", false),
+            ["Navigator/Place"] = ("Plot Waypoint", "Add a waypoint on the chart, pick a point of interest, or drag a waypoint while held.", true),
+            ["Navigator/Remove"] = ("Remove Waypoint", "Remove the waypoint under the chart cursor.", true),
+            ["Navigator/Altitude"] = ("Waypoint Altitude", "Raise or lower the selected waypoint while held.", true),
+            ["Navigator/Zoom"] = ("Chart Zoom", "Zoom the chart in or out.", false),
+            ["Navigator/Leave"] = ("Leave Chart Table", "Step away from the chart table.", true),
             ["FreeCamera/Move"] = ("Fly", "Fly the free camera (spectator, a dev tool: not in the Controls menu).", false),
             ["DevTools/ToggleNetOverlay"] = ("Net Overlay", "Show or hide the net harness readout.", false),
             ["Shipyard/Point"] = ("Shipyard Cursor", "Where the cursor points in the shipyard.", false),
@@ -189,6 +196,18 @@ namespace TinCan.DevTools.Editor
                 c.SetContents(None(), NoActions(), new[] { new InputRoute(Id("Humanoid/Interact"), leashMenu) },
                     "Hanging on a ship's leash (State.Leashed; contributed by the Respawn installer). Walking stays live: forward climbs the rope. Interact opens the respawn choice.");
             });
+            var navigator = Context<NavigatorInputContext>("Context_Navigator", c =>
+            {
+                c.Cursor = Id("Navigator/Cursor");
+                c.Place = Id("Navigator/Place");
+                c.Remove = Id("Navigator/Remove");
+                c.Altitude = Id("Navigator/Altitude");
+                c.Zoom = Id("Navigator/Zoom");
+                c.Leave = Id("Navigator/Leave");
+                c.Configure(InputContextActivation.WhilePossessedHasTag, 400, tag: Load<GameplayTag>("Assets/Abilities/Tags/State.Occupying.Chart.asset"));
+            });
+            SetContents(navigator, new InputContext[] { humanoid, camera }, NoActions(), NoRoutes(),
+                "At the chart table (State.Occupying.Chart; contributed by the Navigation installer). Silences walking and looking: the mouse moves the chart cursor (ChartNavigatorUseCase). Leave is the Interact ability bit.");
             var rebinding = Context<InputContext>("Context_Rebinding", c =>
             {
                 c.Configure(InputContextActivation.WhileRebinding, 1000, blocksAllLower: true);
@@ -198,7 +217,7 @@ namespace TinCan.DevTools.Editor
             // Ability inputs: bit order is the config's list order (unchanged: Sprint 0, Primary 1, Interact 2).
             var sprint = AbilityInput("Input_Sprint", Id("Humanoid/Sprint"));
             var primary = AbilityInput("Input_Primary", Id("Humanoid/Primary"), Id("Gunner/Fire"));
-            var interact = AbilityInput("Input_Interact", Id("Humanoid/Interact"), Id("Gunner/Leave"), Id("Airship/Leave"));
+            var interact = AbilityInput("Input_Interact", Id("Humanoid/Interact"), Id("Gunner/Leave"), Id("Airship/Leave"), Id("Navigator/Leave"));
 
             var config = Asset<InputConfig>(Root + "InputConfig.asset", c =>
             {
@@ -221,7 +240,7 @@ namespace TinCan.DevTools.Editor
             BuildControlsMenu();
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[InputAssetBuilder] {ids.Count} actions, 10 contexts, 6 commands, 3 ability inputs and the Controls menu built.");
+            Debug.Log($"[InputAssetBuilder] {ids.Count} actions, 11 contexts, 7 commands, 3 ability inputs and the Controls menu built.");
         }
 
         /// <summary>Menu_Controls (one row per key, Reset, Back), reachable from Menu_Main's Controls row.</summary>

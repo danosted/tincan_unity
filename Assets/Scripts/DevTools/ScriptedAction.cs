@@ -41,5 +41,20 @@ namespace TinCan.DevTools
         // Anywhere (Global context)
         Cancel,
         SwitchPossession,
+
+        // At the chart table (Navigator context)
+        /// <summary>Moves the chart cursor to starboard while held (a slow mouse sweep).</summary>
+        NavigatorCursorRight,
+        NavigatorCursorLeft,
+        NavigatorCursorUp,
+        NavigatorCursorDown,
+        /// <summary>Add a waypoint, pick one or a point of interest (and drag while held).</summary>
+        NavigatorPlace,
+        NavigatorRemove,
+        NavigatorRaise,
+        NavigatorLower,
+        NavigatorZoomIn,
+        NavigatorZoomOut,
+        NavigatorLeave,
     }
 }

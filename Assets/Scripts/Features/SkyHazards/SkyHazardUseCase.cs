@@ -17,7 +17,8 @@ namespace TinCan.Features.SkyHazards
     /// hazard that touches it applies the impact effect to the ship (its health) and is removed. While the field is on,
     /// it keeps a field of drifting hazards in a box ahead of the ship (never inside an obstacle such as island rock,
     /// <see cref="IWorldObstacleQuery"/>), sized for the crew aboard (each extra player raises the limit and speeds up
-    /// spawning), removing those left far behind.
+    /// spawning) and by where the ship is: during a voyage, outside its hazard zones (<see cref="HazardZoneMap"/>) the
+    /// field thins to <see cref="SkyHazardConfig.OutsideZoneScale"/>. Those left far behind are removed.
     /// </summary>
     public class SkyHazardUseCase : ISimulationTickable, ISkyHazards, ISessionParticipant
     {
@@ -40,6 +41,7 @@ namespace TinCan.Features.SkyHazards
         private readonly SkyHazardConfig _config;
         private readonly System.Random _random;
         private readonly IReadOnlyList<IWorldObstacleQuery> _obstacles;
+        private readonly HazardZoneMap? _zones;
         private readonly List<ISkyHazard> _alive = new();
         private readonly HashSet<ISkyHazard> _drifting = new();
         private readonly Dictionary<ISkyHazard, float> _destroyedAt = new();
@@ -50,14 +52,14 @@ namespace TinCan.Features.SkyHazards
         public SkyHazardUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
             ISkyHazardSpawner spawner, SkyHazardFieldProcessor field, HazardDriftProcessor drift, IShipContactQuery contact,
             AbilitySystemUseCase abilities, SkyHazardConfig config, IRandomSource random,
-            IReadOnlyList<IWorldObstacleQuery> obstacles)
+            IReadOnlyList<IWorldObstacleQuery> obstacles, HazardZoneMap zones)
             : this(network, actors, time, events, spawner, field, drift, contact, abilities, config,
-                random.Create("SkyHazards"), obstacles) { }
+                random.Create("SkyHazards"), obstacles, zones) { }
 
         public SkyHazardUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
             ISkyHazardSpawner spawner, SkyHazardFieldProcessor field, HazardDriftProcessor drift, IShipContactQuery contact,
             AbilitySystemUseCase abilities, SkyHazardConfig config, System.Random random,
-            IReadOnlyList<IWorldObstacleQuery>? obstacles = null)
+            IReadOnlyList<IWorldObstacleQuery>? obstacles = null, HazardZoneMap? zones = null)
         {
             _network = network;
             _actors = actors;
@@ -71,6 +73,7 @@ namespace TinCan.Features.SkyHazards
             _config = config;
             _random = random;
             _obstacles = obstacles ?? System.Array.Empty<IWorldObstacleQuery>();
+            _zones = zones;
             FieldEnabled = config.FieldEnabled;
         }
 
@@ -78,6 +81,7 @@ namespace TinCan.Features.SkyHazards
         public int Destroyed { get; private set; }
         public int Hits { get; private set; }
         public bool FieldEnabled { get; set; }
+        public float FieldScale { get; private set; } = 1f;
 
         /// <summary>Session start: every hazard leaves the sky.</summary>
         public void ResetForSession()
@@ -117,10 +121,13 @@ namespace TinCan.Features.SkyHazards
             if (ship == null) return;
 
             DriftAndStrike(ship);
+            FieldScale = ZoneScale(ship.Transform.position);
             if (!FieldEnabled) return;
 
             RemoveDistant(ship.Transform.position);
-            var (maxAlive, spawnInterval) = _field.ForCrew(_actors.CrewCount(), _config.CrewScaling);
+            var (crewMax, crewInterval) = _field.ForCrew(_actors.CrewCount(), _config.CrewScaling);
+            int maxAlive = Mathf.RoundToInt(crewMax * FieldScale);
+            float spawnInterval = crewInterval / Mathf.Max(FieldScale, 0.05f);
             if (_alive.Count < maxAlive && _elapsed >= _nextSpawnAt)
             {
                 var position = _field.SpawnPoint(ship.Transform.position, ship.Transform.rotation, _config.FieldShape,
@@ -133,6 +140,13 @@ namespace TinCan.Features.SkyHazards
                 SpawnAt(position, drifts: true);
                 _nextSpawnAt = _elapsed + spawnInterval;
             }
+        }
+
+        /// <summary>1 inside a hazard zone or where there are none; the config's outside share elsewhere.</summary>
+        private float ZoneScale(Vector3 shipPosition)
+        {
+            if (_zones == null || _zones.Zones.Count == 0) return 1f;
+            return _zones.IsInside(shipPosition) ? 1f : _config.OutsideZoneScale;
         }
 
         private void RemoveDestroyed()

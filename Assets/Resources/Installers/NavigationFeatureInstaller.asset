@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98597d6df51a2b447a606a12db8bd886, type: 3}
+  m_Name: NavigationFeatureInstaller
+  m_EditorClassIdentifier: TinCan.Features.Navigation::TinCan.Features.Navigation.NavigationFeatureInstaller
+  _config: {fileID: 11400000, guid: 64c926336d0571d43ac03a43d75b90a5, type: 2}
+  _stateFixture: {fileID: 11400000, guid: b166157975c9ec941b33356e478265c8, type: 2}
+  _tableFixture: {fileID: 11400000, guid: d1783c3a3189ee84682462ec9c620b37, type: 2}
+  _controls: {fileID: 11400000, guid: cc21abf8f24156b40b5a76733ddb905c, type: 2}
+  _fittings:
+  - {fileID: 11400000, guid: e53fde1229c00d340952a1de8958005a, type: 2}

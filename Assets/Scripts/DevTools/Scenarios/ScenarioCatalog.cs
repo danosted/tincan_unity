@@ -1008,7 +1008,243 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<RespawnScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb };
+        /// <summary>
+        /// The compass at the helm follows the ship's route: a voyage lays a course to its destination, the server plots a
+        /// route through a point off to starboard, the subject takes the helm and sees the compass point there, then the
+        /// server puts that waypoint on the ship and the compass moves on to the destination. Plan: navigation-compass.md (S1).
+        /// </summary>
+        public static readonly ScenarioEntry CompassCourse = new(
+            new Scenario.Builder("CompassCourse")
+                .InScene(TestScenes.Navigation)
+                .Describe("Voyage -> course to the destination on both peers, compass at the helm -> a route via starboard -> " +
+                          "take the helm, compass points starboard -> waypoint reached -> compass points at the destination.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("VoyageBegin")
+                    .WaitUntil("RouteEndsAtDestination", 5f)
+                    .Do("PlotSideRoute")
+                    .Do("PlaceSubjectAtHelm"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtHelm", 45f)
+                    .WaitUntil("RouteWaypoints", 10f, "2")
+                    .WaitUntil("ActiveWaypoint", 5f, "0")
+                    .WaitUntil("CompassAtHelm", 5f)
+                    .WaitUntil("CompassPointsAtActive", 5f)
+                    .Expect("CompassArrowSide", "starboard")
+                    .Expect("RouteEndsAtDestination")
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceHelm")
+                    .WaitUntil("InteractTargetIs", 5f, "HelmStation")
+                    .Checkpoint("compass-starboard")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Helm")
+                    .WaitUntil("ActiveWaypoint", 30f, "1")
+                    .WaitUntil("CompassPointsAtActive", 5f)
+                    .Checkpoint("compass-destination")
+                    .Hold(0.3f, ScriptedAction.HelmLeave)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Helm"))
+                .Assert(s => s
+                    .WaitUntil("HelmManned", 60f)
+                    .Do("ReachFirstWaypoint")
+                    .WaitUntil("ActiveWaypoint", 5f, "1")
+                    .WaitUntil("HelmFree", 30f))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<HelmScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<NavigationScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>
+        /// The navigator plots with real input: the subject takes the chart table (its view switches to the table's
+        /// camera), sweeps the cursor to starboard and clicks, which bends the course to the destination through a new
+        /// waypoint; holding Raise lifts it; right-click removes it; Leave. The server checks each step in the replicated
+        /// route, which only the player at the table may change. Plan: navigation-compass.md (S2).
+        /// </summary>
+        public static readonly ScenarioEntry ChartPlot = new(
+            new Scenario.Builder("ChartPlot")
+                .InScene(TestScenes.Navigation)
+                .Describe("Take the chart table -> click to starboard: a waypoint before the destination on both peers -> " +
+                          "raise it -> remove it -> leave.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("VoyageBegin")
+                    .WaitUntil("RouteEndsAtDestination", 5f)
+                    .Do("PlaceSubjectAtChartTable"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtChartTable", 45f)
+                    .WaitUntil("RouteEndsAtDestination", 10f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceChartTable")
+                    .WaitUntil("InteractTargetIs", 5f, "ChartTable")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Chart")
+                    .WaitUntil("ChartTableManned", 5f)
+                    .WaitUntil("ChartShowsWaypoints", 5f, "1")
+                    .Hold(0.25f, ScriptedAction.NavigatorCursorRight)
+                    .Tap(ScriptedAction.NavigatorPlace)
+                    .WaitUntil("RouteWaypoints", 5f, "2")
+                    .Expect("RouteEndsAtDestination")
+                    .WaitUntil("ChartShowsWaypoints", 5f, "2")
+                    .Checkpoint("plotted")
+                    .Hold(1f, ScriptedAction.NavigatorRaise)
+                    .WaitUntil("FirstWaypointAboveShip", 5f, "30")
+                    .Checkpoint("raised")
+                    .Tap(ScriptedAction.NavigatorRemove)
+                    .WaitUntil("RouteWaypoints", 5f, "1")
+                    .Hold(0.3f, ScriptedAction.NavigatorLeave)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Chart"))
+                .Assert(s => s
+                    .WaitUntil("ChartTableManned", 60f)
+                    .WaitUntil("RouteWaypoints", 30f, "2")
+                    .Expect("FirstWaypointToStarboard")
+                    .WaitUntil("FirstWaypointAboveShip", 20f, "30")
+                    .WaitUntil("RouteWaypoints", 20f, "1")
+                    .Expect("RouteEndsAtDestination")
+                    .WaitUntil("ChartTableFree", 30f))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<NavigationScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>
+        /// Sky islands on the chart: the subject sits at the chart table and sees the seeded islands as rock, and the
+        /// voyage's destination. The server marks the nearest hidden landmark discovered (as a flyby would); the
+        /// discovery replicates and the landmark appears on the subject's chart. Plan: navigation-compass.md (S3).
+        /// </summary>
+        public static readonly ScenarioEntry ChartIslands = new(
+            new Scenario.Builder("ChartIslands")
+                .InScene(TestScenes.Navigation)
+                .Describe("Take the chart table -> islands as rock and the destination on the chart -> a landmark is " +
+                          "discovered on the server -> it appears on the subject's chart -> leave.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("VoyageBegin")
+                    .WaitUntil("RouteEndsAtDestination", 5f)
+                    .Do("PlaceSubjectAtChartTable"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtChartTable", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceChartTable")
+                    .WaitUntil("InteractTargetIs", 5f, "ChartTable")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Chart")
+                    .WaitUntil("ChartShowsRocks", 10f, "1")
+                    .WaitUntil("ChartShowsPoints", 5f, "1")
+                    .WaitUntil("DiscoveredPoints", 30f, "1")
+                    .WaitUntil("ChartShowsPoints", 5f, "2")
+                    .Checkpoint("islands-charted")
+                    .Hold(0.3f, ScriptedAction.NavigatorLeave)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Chart"))
+                .Assert(s => s
+                    .WaitUntil("ChartTableManned", 60f)
+                    .Do("DiscoverNearestLandmark")
+                    .WaitUntil("DiscoveredPoints", 5f, "1")
+                    .WaitUntil("ChartTableFree", 30f))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<NavigationScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>
+        /// Hazard zones: a voyage lays them along its route from its seed. The subject at the chart table sees them as
+        /// hazard columns; the server's field is thinned where the ship starts (clear of every zone). Plan:
+        /// navigation-compass.md (S4).
+        /// </summary>
+        public static readonly ScenarioEntry ChartHazards = new(
+            new Scenario.Builder("ChartHazards")
+                .InScene(TestScenes.Navigation)
+                .Describe("Voyage -> hazard zones along the route on the subject's chart -> the server thins the field " +
+                          "outside them -> leave.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("VoyageBegin")
+                    .WaitUntil("RouteEndsAtDestination", 5f)
+                    .Do("PlaceSubjectAtChartTable"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtChartTable", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceChartTable")
+                    .WaitUntil("InteractTargetIs", 5f, "ChartTable")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Chart")
+                    .WaitUntil("ChartShowsHazards", 10f, "1")
+                    .Checkpoint("hazards-charted")
+                    .Hold(0.3f, ScriptedAction.NavigatorLeave)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Chart"))
+                .Assert(s => s
+                    .WaitUntil("ChartTableManned", 60f)
+                    .WaitUntil("HazardFieldScale", 5f, "0.35")
+                    .WaitUntil("ChartTableFree", 30f))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<NavigationScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>
+        /// The Galleon in the game scene: its loadout mounts the chart table in the starboard forward hold; the subject
+        /// takes it, looks through the table's camera in first person and plots a waypoint, then leaves. Plan:
+        /// navigation-compass.md (S2).
+        /// </summary>
+        public static readonly ScenarioEntry GalleonChartTable = new(
+            new Scenario.Builder("GalleonChartTable")
+                .InScene("Assets/Scenes/cheesed_scene.unity")
+                .Describe("On the Galleon: the chart table in the hold -> take it -> the chart shows the course -> plot a waypoint -> leave.")
+                .Timeout(150f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn; the design builds")
+                    .Do("VoyageBegin")
+                    .WaitUntil("RouteEndsAtDestination", 5f)
+                    .Do("PlaceSubjectAtChartTable"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtChartTable", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceChartTable")
+                    .WaitUntil("InteractTargetIs", 5f, "ChartTable")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Chart")
+                    .WaitUntil("ChartShowsWaypoints", 5f, "1")
+                    .Hold(0.25f, ScriptedAction.NavigatorCursorLeft)
+                    .Tap(ScriptedAction.NavigatorPlace)
+                    .WaitUntil("RouteWaypoints", 5f, "2")
+                    .WaitUntil("ChartShowsWaypoints", 5f, "2")
+                    .Checkpoint("galleon-chart")
+                    .Hold(0.3f, ScriptedAction.NavigatorLeave)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Chart"))
+                .Assert(s => s
+                    .WaitUntil("ChartTableManned", 60f)
+                    .WaitUntil("RouteWaypoints", 30f, "2")
+                    .Expect("RouteEndsAtDestination")
+                    .WaitUntil("ChartTableFree", 30f))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<NavigationScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

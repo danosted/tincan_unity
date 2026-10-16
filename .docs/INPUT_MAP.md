@@ -18,6 +18,7 @@ silences it; an action outside every live context reads as released.
 | 450 | Context_Leashed | possessed actor has State.Leashed | - | (routes only) | not loaded |
 | 400 | Context_Gunner | possessed actor has State.Occupying.Cannon | Context_Humanoid, Context_Camera | GunnerAimUseCase | CannonFeatureInstaller |
 | 400 | Context_Helmsman | possessed actor has State.Occupying.Helm | Context_Humanoid | HelmInputUseCase | HelmFeatureInstaller |
+| 400 | Context_Navigator | possessed actor has State.Occupying.Chart | Context_Humanoid, Context_Camera | ChartNavigatorUseCase | NavigationFeatureInstaller |
 | 300 | Context_FreeCamera | possessing Other | - | FreeCameraMovementUseCase | FreeCameraFeatureInstaller |
 | 200 | Context_Humanoid | possessing Humanoid | - | HumanoidMovementUseCase, TargetOutlinePresenter | core (InputConfig) |
 | 100 | Context_Camera | always | - | FreeCameraMovementUseCase, PlayerLookUseCase | core (InputConfig) |
@@ -110,6 +111,19 @@ At the helm (State.Occupying.Helm). Silences walking but not looking: the helmsm
 | Airship/Pitch | `space` / `leftShift` | Nose the airship up or down. | yes |
 | Airship/Leave | `e` | Let go of the helm. | yes |
 
+### Context_Navigator
+
+At the chart table (State.Occupying.Chart; contributed by the Navigation installer). Silences walking and looking: the mouse moves the chart cursor (ChartNavigatorUseCase). Leave is the Interact ability bit.
+
+| Action | Default keys | Meaning | Rebindable |
+|---|---|---|---|
+| Navigator/Cursor | `mouse delta` | Move the cursor on the chart. | no |
+| Navigator/Place | `mouse leftButton` | Add a waypoint on the chart, pick a point of interest, or drag a waypoint while held. | yes |
+| Navigator/Remove | `mouse rightButton` | Remove the waypoint under the chart cursor. | yes |
+| Navigator/Altitude | `leftShift` / `space` | Raise or lower the selected waypoint while held. | yes |
+| Navigator/Zoom | `mouse scroll/y` | Zoom the chart in or out. | no |
+| Navigator/Leave | `e` | Step away from the chart table. | yes |
+
 ### Context_FreeCamera
 
 Flying the spectator camera. Read by FreeCameraMovementUseCase; Cancel frees the cursor.
@@ -167,4 +181,4 @@ any of its actions is pressed in a live context.
 |---|---|---|
 | 0 | Input_Sprint | Humanoid/Sprint |
 | 1 | Input_Primary | Humanoid/Primary, Gunner/Fire |
-| 2 | Input_Interact | Humanoid/Interact, Gunner/Leave, Airship/Leave |
+| 2 | Input_Interact | Humanoid/Interact, Gunner/Leave, Airship/Leave, Navigator/Leave |

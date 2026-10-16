@@ -18,6 +18,12 @@ namespace TinCan.Features.SkyHazards
 
         bool FieldEnabled { get; set; }
 
+        /// <summary>
+        /// How strong the field is where the ship is now: 1 inside a hazard zone (or without zones),
+        /// <see cref="SkyHazardConfig.OutsideZoneScale"/> outside every zone.
+        /// </summary>
+        float FieldScale { get; }
+
         /// <summary>A hazard here. It hangs still (a target) unless <paramref name="drifts"/>, when it homes on the ship like the field's.</summary>
         ISkyHazard? SpawnAt(Vector3 position, bool drifts = false);
     }

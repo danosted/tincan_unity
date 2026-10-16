@@ -52,6 +52,15 @@ namespace TinCan.Features.SkyIslands
         [Tooltip("Islands built per frame at most; the rest wait for the next frames.")]
         [Min(1)] public int MaxBuildsPerFrame = 2;
 
+        [Header("Chart (Navigation)")]
+        [Tooltip("Main islands at least this wide (radius, metres) are landmarks: points of interest on the navigator's chart.")]
+        [Min(0f)] public float LandmarkMinRadius = 70f;
+        [Tooltip("A landmark appears on the chart once the ship has come within this many metres of it.")]
+        [Min(0f)] public float LandmarkDiscoverRadius = 450f;
+        [Tooltip("Landmarks are charted this many metres (level) either side of the voyage's route (around the origin " +
+                 "before any voyage).")]
+        [Min(100f)] public float LandmarkCorridor = 1500f;
+
         [Header("Meshes")]
         public SkyIslandMeshResolution MainVisual = new(48, 6, 14);
         public SkyIslandMeshResolution MainCollision = new(16, 2, 5);

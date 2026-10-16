@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 123007a0fdfdc5644870b5afdeceaf52, type: 3}
+  m_Name: NavigationConfig
+  m_EditorClassIdentifier: TinCan.Features.Navigation::TinCan.Features.Navigation.NavigationConfig
+  MaxWaypoints: 8
+  WaypointRadius: 60
+  CompassPrefab: {fileID: 6348670063291263810, guid: 528f2c6b09a08cb44b3a809ce6bd47e6, type: 3}
+  CompassLocalPosition: {x: 1.1, y: 2.05, z: -0.15}
+  ArrowTurnSpeed: 240
+  ChartRange: 3000
+  ChartRangeLimits: {x: 500, y: 8000}
+  ChartRadius: 0.4
+  AltitudeScale: 0.0006
+  CursorSpeed: 0.0025
+  PickRadius: 0.06
+  AltitudeRate: 60
+  SendInterval: 0.15
+  ShipMarkMaterial: {fileID: 2100000, guid: ccab8278c42a27848aadef71e748a91f, type: 2}
+  RouteMaterial: {fileID: 2100000, guid: 25c9570cc2f196b49b330dd7d208d086, type: 2}
+  ActiveLegMaterial: {fileID: 2100000, guid: f916b7ed271b4604881c182a6a3c1c84, type: 2}
+  PoiMaterial: {fileID: 2100000, guid: 837ad2f2e0074b843bf883a12fa012af, type: 2}
+  RockMaterial: {fileID: 2100000, guid: c4fbaede96632a348bed1a44b759f87b, type: 2}
+  HazardMaterial: {fileID: 2100000, guid: c376adc51effc32488382ad35fbb8c5a, type: 2}
+  CursorMaterial: {fileID: 2100000, guid: 0a4be94ad023fa84491456b122ad5fc2, type: 2}

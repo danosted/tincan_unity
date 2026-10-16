@@ -142,6 +142,36 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "GalleonLeashClimb (Host + Client, Lag100)")]
         public static void GalleonLeashClimbDuo() => RunDuo("GalleonLeashClimb", "Lag100");
 
+        [MenuItem(Root + "CompassCourse (Host)")]
+        public static void CompassCourseSolo() => RunSolo("CompassCourse");
+
+        [MenuItem(Root + "CompassCourse (Host + Client, Lag100)")]
+        public static void CompassCourseDuo() => RunDuo("CompassCourse", "Lag100");
+
+        [MenuItem(Root + "ChartPlot (Host)")]
+        public static void ChartPlotSolo() => RunSolo("ChartPlot");
+
+        [MenuItem(Root + "ChartPlot (Host + Client, Lag100)")]
+        public static void ChartPlotDuo() => RunDuo("ChartPlot", "Lag100");
+
+        [MenuItem(Root + "ChartIslands (Host)")]
+        public static void ChartIslandsSolo() => RunSolo("ChartIslands");
+
+        [MenuItem(Root + "ChartIslands (Host + Client, Lag100)")]
+        public static void ChartIslandsDuo() => RunDuo("ChartIslands", "Lag100");
+
+        [MenuItem(Root + "ChartHazards (Host)")]
+        public static void ChartHazardsSolo() => RunSolo("ChartHazards");
+
+        [MenuItem(Root + "ChartHazards (Host + Client, Lag100)")]
+        public static void ChartHazardsDuo() => RunDuo("ChartHazards", "Lag100");
+
+        [MenuItem(Root + "GalleonChartTable (Host)")]
+        public static void GalleonChartTableSolo() => RunSolo("GalleonChartTable");
+
+        [MenuItem(Root + "GalleonChartTable (Host + Client, Lag100)")]
+        public static void GalleonChartTableDuo() => RunDuo("GalleonChartTable", "Lag100");
+
         [MenuItem(Root + "IslandsPerVoyage (Host)")]
         public static void IslandsPerVoyageSolo() => RunSolo("IslandsPerVoyage");
 

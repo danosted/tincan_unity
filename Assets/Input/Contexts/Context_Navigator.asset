@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90c0bf6a12dcbc544b48b50bc8f88cab, type: 3}
+  m_Name: Context_Navigator
+  m_EditorClassIdentifier: TinCan.Features.Navigation::TinCan.Features.Navigation.NavigatorInputContext
+  _description: 'At the chart table (State.Occupying.Chart; contributed by the Navigation
+    installer). Silences walking and looking: the mouse moves the chart cursor (ChartNavigatorUseCase).
+    Leave is the Interact ability bit.'
+  _activation: 2
+  _possessedKind: 0
+  _tag: {fileID: 11400000, guid: 7c8501cb72dc5b44c834c39b85b251ea, type: 2}
+  _priority: 400
+  _blocksAllLower: 0
+  _blocks:
+  - {fileID: 11400000, guid: 51e1eda036de54a49ab5b0a581f06940, type: 2}
+  - {fileID: 11400000, guid: b4d97b62d0750274aae06cc332a65f1c, type: 2}
+  _actions: []
+  _routes: []
+  Cursor: {fileID: 11400000, guid: c26a1e2f13d8cd4449eedb0fa51218b5, type: 2}
+  Place: {fileID: 11400000, guid: 5e04482bd30172b4b9a749615dd20ebf, type: 2}
+  Remove: {fileID: 11400000, guid: 6e765abfa52460f4aac6a2f4c8d4fa64, type: 2}
+  Altitude: {fileID: 11400000, guid: 8f24d1e3277da6b4a8f63bcb74ad3731, type: 2}
+  Zoom: {fileID: 11400000, guid: ca4d0315c2264bb45961abb8f5f8aa0e, type: 2}
+  Leave: {fileID: 11400000, guid: db29735a7bb21d44ab58f08fe9810ccc, type: 2}

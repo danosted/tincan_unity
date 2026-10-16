@@ -1,0 +1,24 @@
+{
+    "name": "TinCan.Features.Navigation",
+    "rootNamespace": "TinCan.Features.Navigation",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Gas",
+        "TinCan.Humanoid",
+        "TinCan.Interaction",
+        "TinCan.Ship",
+        "TinCan.Features.Stations",
+        "TinCan.Features.Helm",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

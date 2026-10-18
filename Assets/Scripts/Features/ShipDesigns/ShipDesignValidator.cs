@@ -1,27 +1,24 @@
 #nullable enable
 using System.Collections.Generic;
-using System.Linq;
 using TinCan.Core.Ship.Parts;
+using UnityEngine;
 
 namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// Pure: everything wrong with a design, as a list the shipyard can show. The server runs it on every design before
     /// it builds or replicates one. Rules: ids (of parts and frame elements alike) unique, positive and below the next id;
-    /// orientations valid; every cell within the limits; no two parts in one cell; the frame's own rules
-    /// (<see cref="ShipFrameValidator"/>); exactly one core part; every part and every piece of frame joined to the core,
-    /// part to part through face-adjacent cells, through frame edges, and part to frame where a part rests on planks or
-    /// meets a beam (<see cref="ShipFrameContact"/>); lift at least mass (the frame weighs too); some thrust. Unknown parts
-    /// are reported but take no part in the geometry.
+    /// yaws valid; every part held by its anchor (its element there and of the part's kind, a face part's point on its
+    /// plank floor); part blocks within the limits and not overlapping; the frame's own rules
+    /// (<see cref="ShipFrameValidator"/>); exactly one core part and at most one cairn; the frame in one piece with the
+    /// core's anchor, so every part on it is joined too; lift at least mass (the frame weighs too; the spirit lifts when
+    /// there is a cairn); some thrust. Unknown parts are reported but take no part in the geometry. Plan:
+    /// .docs/plans/frame-only-ships.md.
     /// </summary>
     public sealed class ShipDesignValidator
     {
-        private static readonly ShipGridCell[] Neighbours =
-        {
-            new(1, 0, 0), new(-1, 0, 0), new(0, 1, 0), new(0, -1, 0), new(0, 0, 1), new(0, 0, -1),
-        };
-
-        public ShipDesignValidation Validate(ShipDesign design, IShipPartCatalog catalog, ShipDesignLimits limits, ShipFrameTuning? frameTuning = null)
+        public ShipDesignValidation Validate(ShipDesign design, IShipPartCatalog catalog, ShipDesignLimits limits, ShipFrameTuning? frameTuning = null,
+            ShipStatsTuning? flight = null)
         {
             var tuning = frameTuning ?? ShipFrameTuning.Default;
             var problems = new List<ShipDesignProblem>();
@@ -36,18 +33,35 @@ namespace TinCan.Features.ShipDesigns
                 problems.Add(new(ShipDesignProblemKind.TooManyParts, 0, $"{design.Parts.Count} parts; at most {limits.MaxParts}."));
             }
 
-            var occupancy = new Dictionary<ShipGridCell, int>();
-            var known = new List<(ShipPartPlacement Placement, ShipPartDefinition Part)>();
             var seenIds = new HashSet<int>();
+            var frame = design.Frame;
+            foreach (var placement in design.Parts) CheckIdentity(design, placement.InstanceId, placement.ToString(), seenIds, problems);
+            foreach (var node in frame.Nodes) CheckIdentity(design, node.Id, node.ToString(), seenIds, problems);
+            foreach (var edge in frame.Edges) CheckIdentity(design, edge.Id, edge.ToString(), seenIds, problems);
+            foreach (var face in frame.Faces) CheckIdentity(design, face.Id, face.ToString(), seenIds, problems);
+            foreach (var stair in frame.Stairs) CheckIdentity(design, stair.Id, stair.ToString(), seenIds, problems);
 
+            var shape = ShipFrameShape.From(frame);
+            ShipFrameValidator.Validate(shape, tuning, limits, problems);
+
+            var anchored = CheckParts(design, catalog, shape, limits, problems);
+            CheckCoreAndConnection(anchored, shape, problems);
+            CheckFlight(design, catalog, tuning, flight ?? ShipStatsTuning.Default, problems);
+            return new ShipDesignValidation(problems);
+        }
+
+        /// <summary>Each part's yaw, anchor, blocks and overlaps; returns the known parts their anchors hold.</summary>
+        private static List<(ShipPartPlacement Placement, ShipPartDefinition Part)> CheckParts(ShipDesign design, IShipPartCatalog catalog,
+            ShipFrameShape shape, ShipDesignLimits limits, List<ShipDesignProblem> problems)
+        {
+            var anchored = new List<(ShipPartPlacement, ShipPartDefinition)>();
+            var taken = new ShipPartBlocks();
             foreach (var placement in design.Parts)
             {
-                CheckIdentity(design, placement.InstanceId, placement.ToString(), seenIds, problems);
-
                 if (!ShipPartOrientation.IsValid(placement.Orientation))
                 {
                     problems.Add(new(ShipDesignProblemKind.InvalidOrientation, placement.InstanceId,
-                        $"{placement} has no orientation {placement.Orientation} (0–{ShipPartOrientation.Count - 1})."));
+                        $"{placement} has no yaw {placement.Orientation} (0–{ShipPartOrientation.Count - 1})."));
                 }
 
                 if (!catalog.TryGet(placement.PartId, out var part))
@@ -57,38 +71,50 @@ namespace TinCan.Features.ShipDesigns
                     continue;
                 }
 
-                known.Add((placement, part));
-                Occupy(placement, part, limits, occupancy, problems);
+                if (part.Attach != placement.Anchor.Kind || !ShipPartPose.TryGetAnchorPoint(placement.Anchor, shape, out var point))
+                {
+                    problems.Add(new(ShipDesignProblemKind.UnanchoredPart, placement.InstanceId, part.Attach != placement.Anchor.Kind
+                        ? $"{placement}: a {part.DisplayName} goes on a {part.Attach.ToString().ToLowerInvariant()}."
+                        : $"{placement}: there is no {(placement.Anchor.Kind == ShipPartAttach.Node ? "node" : "plank floor")} there to hold it."));
+                    continue;
+                }
+
+                anchored.Add((placement, part));
+                var blocks = ShipPartPose.Blocks(placement, part, point);
+                foreach (var block in blocks)
+                {
+                    if (!limits.Contains(ShipFrameUnits.FromMetres(block.x), ShipFrameUnits.FromMetres(block.y), ShipFrameUnits.FromMetres(block.z)))
+                    {
+                        problems.Add(new(ShipDesignProblemKind.OutOfBounds, placement.InstanceId,
+                            $"{placement} reaches more than {limits.MaxExtent} m from the origin."));
+                        break;
+                    }
+
+                    if (taken.TryGetOverlap(block, placement.InstanceId, out var other))
+                    {
+                        problems.Add(new(ShipDesignProblemKind.Overlap, placement.InstanceId, $"{placement} overlaps part #{other}."));
+                        break;
+                    }
+                }
+
+                foreach (var block in blocks) taken.Add(block, placement.InstanceId);
             }
 
-            var frame = design.Frame;
-            foreach (var node in frame.Nodes) CheckIdentity(design, node.Id, node.ToString(), seenIds, problems);
-            foreach (var edge in frame.Edges) CheckIdentity(design, edge.Id, edge.ToString(), seenIds, problems);
-            foreach (var face in frame.Faces) CheckIdentity(design, face.Id, face.ToString(), seenIds, problems);
-
-            var shape = ShipFrameShape.From(frame);
-            ShipFrameValidator.Validate(shape, tuning, limits, problems);
-
-            CheckCoreAndConnection(known, occupancy, shape, tuning, problems);
-            CheckFlight(known, shape, tuning, problems);
-            return new ShipDesignValidation(problems);
+            return anchored;
         }
 
-        private static void CheckFlight(List<(ShipPartPlacement Placement, ShipPartDefinition Part)> known, ShipFrameShape shape, ShipFrameTuning tuning,
+        private static void CheckFlight(ShipDesign design, IShipPartCatalog catalog, ShipFrameTuning tuning, ShipStatsTuning flight,
             List<ShipDesignProblem> problems)
         {
-            var (plankArea, beamLength) = shape.Totals();
-            float mass = plankArea * tuning.PlankMassPerSquareMetre + beamLength * tuning.BeamMassPerMetre;
-            float lift = 0f, thrust = 0f;
-            foreach (var (_, part) in known)
+            var stats = new ShipStatsProcessor().Compute(design, catalog, flight, tuning);
+            if (!stats.CanLift)
             {
-                mass += part.Stats.Mass;
-                lift += part.Stats.Lift;
-                thrust += part.Stats.Thrust;
+                problems.Add(new(ShipDesignProblemKind.TooHeavy, 0, stats.Lift > 0f
+                    ? $"The spirit lifts {stats.Lift:0} but the ship weighs {stats.Mass:0}: lose weight."
+                    : "Nothing lifts the ship: place a cairn for its spirit."));
             }
 
-            if (lift < mass) problems.Add(new(ShipDesignProblemKind.TooHeavy, 0, $"Lift {lift:0} cannot hold mass {mass:0}: add balloons or lose weight."));
-            if (thrust <= 0f) problems.Add(new(ShipDesignProblemKind.NoThrust, 0, "Nothing drives the ship: add an engine."));
+            if (!stats.HasThrust) problems.Add(new(ShipDesignProblemKind.NoThrust, 0, "Nothing drives the ship: add an engine or a propeller."));
         }
 
         private static void CheckIdentity(ShipDesign design, int id, string what, HashSet<int> seenIds, List<ShipDesignProblem> problems)
@@ -105,35 +131,20 @@ namespace TinCan.Features.ShipDesigns
             }
         }
 
-        private static void Occupy(ShipPartPlacement placement, ShipPartDefinition part, ShipDesignLimits limits,
-            Dictionary<ShipGridCell, int> occupancy, List<ShipDesignProblem> problems)
-        {
-            foreach (var cell in ShipPartFootprints.CellsOf(placement, part))
-            {
-                if (!limits.Contains(cell))
-                {
-                    problems.Add(new(ShipDesignProblemKind.OutOfBounds, placement.InstanceId,
-                        $"{placement} reaches {cell}, more than {limits.MaxExtent} cells from the origin."));
-                    return;
-                }
-
-                if (occupancy.TryGetValue(cell, out var other))
-                {
-                    problems.Add(new(ShipDesignProblemKind.Overlap, placement.InstanceId,
-                        $"{placement} overlaps part #{other} at {cell}."));
-                    continue;
-                }
-
-                occupancy.Add(cell, placement.InstanceId);
-            }
-        }
-
-        private static void CheckCoreAndConnection(List<(ShipPartPlacement Placement, ShipPartDefinition Part)> known,
-            Dictionary<ShipGridCell, int> occupancy, ShipFrameShape shape, ShipFrameTuning tuning, List<ShipDesignProblem> problems)
+        private static void CheckCoreAndConnection(List<(ShipPartPlacement Placement, ShipPartDefinition Part)> anchored, ShipFrameShape shape,
+            List<ShipDesignProblem> problems)
         {
             ShipPartPlacement? core = null;
-            foreach (var (placement, part) in known)
+            ShipPartPlacement? cairn = null;
+            foreach (var (placement, part) in anchored)
             {
+                if (part.IsCairn)
+                {
+                    if (cairn == null) cairn = placement;
+                    else problems.Add(new(ShipDesignProblemKind.ExtraCairn, placement.InstanceId,
+                        $"{placement} is a second cairn; a ship has one spirit (#{cairn.InstanceId})."));
+                }
+
                 if (!part.IsCore) continue;
                 if (core == null)
                 {
@@ -147,53 +158,40 @@ namespace TinCan.Features.ShipDesigns
 
             if (core == null)
             {
-                problems.Add(new(ShipDesignProblemKind.MissingCore, 0, "The design has no core part (the helm)."));
+                problems.Add(new(ShipDesignProblemKind.MissingCore, 0, "The design has no core part (the helm) on its frame."));
                 return;
             }
 
-            var joined = Join(occupancy, shape, tuning);
-            int root = joined.Find(core.InstanceId);
-            foreach (var (placement, _) in known)
+            var pieces = Pieces(shape.Frame);
+            int root = pieces.Find(NodeOf(core.Anchor, shape.Frame));
+            foreach (var (placement, _) in anchored)
             {
-                if (joined.Find(placement.InstanceId) == root) continue;
-                problems.Add(new(ShipDesignProblemKind.Disconnected, placement.InstanceId,
-                    $"{placement} is not joined to the core."));
+                if (pieces.Find(NodeOf(placement.Anchor, shape.Frame)) == root) continue;
+                problems.Add(new(ShipDesignProblemKind.Disconnected, placement.InstanceId, $"{placement} is on a piece of frame apart from the core's."));
             }
 
             // One problem per loose piece of frame, named by its lowest node.
             var reported = new HashSet<int>();
             foreach (var node in shape.Frame.Nodes)
             {
-                int piece = joined.Find(node.Id);
+                int piece = pieces.Find(node.Id);
                 if (piece == root || !reported.Add(piece)) continue;
                 problems.Add(new(ShipDesignProblemKind.Disconnected, node.Id, $"The frame around {node} is not joined to the core."));
             }
         }
 
-        /// <summary>Which parts and frame nodes hang together: union-find over part instance ids and node ids.</summary>
-        private static UnionFind Join(Dictionary<ShipGridCell, int> occupancy, ShipFrameShape shape, ShipFrameTuning tuning)
+        /// <summary>The node an anchor joins the frame through: its node, or its face's first corner.</summary>
+        private static int NodeOf(ShipPartAnchor anchor, ShipFrame frame) =>
+            anchor.Kind == ShipPartAttach.Node ? anchor.Element : frame.TryGetFace(anchor.Element, out var face) && face.Nodes.Count > 0 ? face.Nodes[0] : 0;
+
+        /// <summary>Which frame nodes hang together through edges: union-find over node ids.</summary>
+        private static UnionFind Pieces(ShipFrame frame)
         {
             var joined = new UnionFind();
-            foreach (var (cell, owner) in occupancy)
-            {
-                joined.Find(owner);
-                foreach (var step in Neighbours)
-                {
-                    if (occupancy.TryGetValue(cell + step, out var other)) joined.Union(owner, other);
-                }
-            }
-
-            var frame = shape.Frame;
             foreach (var node in frame.Nodes) joined.Find(node.Id);
             foreach (var edge in frame.Edges)
             {
                 if (frame.TryGetNode(edge.A, out _) && frame.TryGetNode(edge.B, out _)) joined.Union(edge.A, edge.B);
-            }
-
-            if (frame.Nodes.Count == 0) return joined;
-            foreach (var (cell, owner) in occupancy)
-            {
-                foreach (int node in ShipFrameContact.TouchedNodes(shape, cell, tuning)) joined.Union(owner, node);
             }
 
             return joined;

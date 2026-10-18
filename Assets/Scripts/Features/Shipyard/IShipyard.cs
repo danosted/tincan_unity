@@ -25,11 +25,6 @@ namespace TinCan.Features.Shipyard
         ShipPartDefinition? SelectedPart { get; }
         byte Orientation { get; }
 
-        /// <summary>The height level new parts go on.</summary>
-        int Level { get; }
-
-        void ChangeLevel(int delta);
-
         /// <summary>In delete mode what is under the cursor is highlighted and a click deletes it.</summary>
         bool DeleteMode { get; }
 
@@ -62,10 +57,22 @@ namespace TinCan.Features.Shipyard
 
         bool Select(string partId);
         void Rotate();
-        bool PlaceAt(ShipGridCell cell);
-        bool RemoveAt(ShipGridCell cell);
+        /// <summary>Places the selected part on a frame element, if it fits there.</summary>
+        bool PlaceAt(ShipPartAnchor anchor);
 
-        /// <summary>Frame mode: a click straight down onto this ship-space point (x and z), as a player's click there would be.</summary>
+        /// <summary>
+        /// Places the selected part as a click aimed straight down onto this ship-space point would: a face part on the plank
+        /// floor there (snapped to the frame step), a node part on the node there.
+        /// </summary>
+        bool PlaceDownAt(Vector3 point);
+
+        /// <summary>Removes the part whose block holds this ship-space point.</summary>
+        bool RemoveAt(Vector3 point);
+
+        /// <summary>
+        /// Frame mode: a click straight down onto this ship-space point (x and z), as a player's click there would be; true
+        /// when it changed the design or the selection.
+        /// </summary>
         bool FrameClickAt(Vector3 point);
 
         /// <summary>Frame mode: planks or opens the face straight below this ship-space point.</summary>
@@ -73,6 +80,12 @@ namespace TinCan.Features.Shipyard
 
         /// <summary>Frame mode: extrudes what is straight below this ship-space point (a wall, an outer floor edge, a floor).</summary>
         bool FrameExtrudeAt(Vector3 point);
+
+        /// <summary>Frame mode: a railing, a gate or nothing, in turn, on the floor edge straight below this ship-space point.</summary>
+        bool FrameRailingAt(Vector3 point);
+
+        /// <summary>Frame mode: stairs hung from the floor edge straight below this point, turned round, or taken away, in turn.</summary>
+        bool FrameStairsAt(Vector3 point);
 
         bool Undo();
         bool Redo();

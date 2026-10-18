@@ -73,10 +73,12 @@ The shipyard is open (contributed by its installer): fly the camera, build with 
 | Shipyard/Fill | `f` | Frame mode: plank or open the face under the cursor. | yes |
 | Shipyard/Height | `leftAlt` | Frame mode: hold while dragging a node to raise or lower it. | yes |
 | Shipyard/Extrude | `g` | Frame mode: push the wall under the cursor out, grow an outer floor edge, or raise a story on a floor. | yes |
+| Shipyard/Railing | `b` | Frame mode: a railing, a gate or nothing along the floor edge under the cursor, in turn. | yes |
+| Shipyard/Stairs | `t` | Frame mode: hang stairs from the floor edge under the cursor down to the story below; again turns them round, then takes them away. | yes |
 | Shipyard/Undo | `ctrl` / `z` | Undo the last change to the design. | yes |
 | Shipyard/Redo | `ctrl` / `y` | Redo the change just undone. | yes |
-| Shipyard/LevelUp | `pageUp` | Parts: build one level higher. Frame: work on the story above. | yes |
-| Shipyard/LevelDown | `pageDown` | Parts: build one level lower. Frame: work on the story below. | yes |
+| Shipyard/LevelUp | `pageUp` | Frame mode: work on the story above. | yes |
+| Shipyard/LevelDown | `pageDown` | Frame mode: work on the story below. | yes |
 | Global/Cancel | `escape` | Back out: close the menu, or open the main menu. | yes |
 
 | Pressing | Runs | Handled by |

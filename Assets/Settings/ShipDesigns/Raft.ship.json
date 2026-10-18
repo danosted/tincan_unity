@@ -1,24 +1,12 @@
 {
-  "formatVersion": 2,
+  "formatVersion": 4,
   "name": "Raft",
   "author": "TinCan",
-  "nextId": 45,
+  "nextId": 33,
   "parts": [
-    {"id":30,"part":"core.helm","cell":[0,0,0],"rot":0},
-    {"id":31,"part":"prop.engine","cell":[0,0,-6],"rot":0},
-    {"id":32,"part":"hull.mast","cell":[-2,0,-2],"rot":0},
-    {"id":33,"part":"hull.mast","cell":[-2,1,-2],"rot":0},
-    {"id":34,"part":"hull.mast","cell":[-2,2,-2],"rot":0},
-    {"id":35,"part":"hull.mast","cell":[-2,0,2],"rot":0},
-    {"id":36,"part":"hull.mast","cell":[-2,1,2],"rot":0},
-    {"id":37,"part":"hull.mast","cell":[-2,2,2],"rot":0},
-    {"id":38,"part":"hull.mast","cell":[2,0,-2],"rot":0},
-    {"id":39,"part":"hull.mast","cell":[2,1,-2],"rot":0},
-    {"id":40,"part":"hull.mast","cell":[2,2,-2],"rot":0},
-    {"id":41,"part":"hull.mast","cell":[2,0,2],"rot":0},
-    {"id":42,"part":"hull.mast","cell":[2,1,2],"rot":0},
-    {"id":43,"part":"hull.mast","cell":[2,2,2],"rot":0},
-    {"id":44,"part":"lift.envelope","cell":[0,3,0],"rot":0}
+    {"id":30,"part":"core.helm","on":{"face":28,"x":0,"z":0},"rot":0},
+    {"id":31,"part":"prop.engine","on":{"face":29,"x":0,"z":-55},"rot":0},
+    {"id":32,"part":"spirit.cairn","on":{"face":27,"x":0,"z":60},"rot":0}
   ],
   "frame": {
     "base": -5,

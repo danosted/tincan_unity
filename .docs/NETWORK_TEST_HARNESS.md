@@ -259,7 +259,7 @@ move the subject.
 | `Test_Cannon` | Stations, Cannon, SkyHazards | CannonShot, HazardStrike |
 | `Test_Voyage` | Fuel, ShipDamage, Stations, Cannon, SkyHazards, Voyage, SkyIslands | VoyageLoop, LateJoinBoarding, IslandsPerVoyage, IslandRam |
 | `Test_Helm` | Stations, Helm (the test ship has a quarterdeck at the airship's height for the helm) | HelmSteer |
-| `Test_Shipyard` | Stations, Helm, ShipDesigns, Shipyard, ShipSockets, Cannon (its stations only as fittings); the ship is `ModularShip_Prefab` (no geometry), built from the starter design (ShipStairs and GalleonLoadout switch it to the galleon, which brings its loadout; FrameDeck to the raft, whose deck is generated from a frame; FrameStories to the two-story frame galleon). Offline, the main menu has a Shipyard row | DesignedShipFlies, ShipyardRoundTrip, MountFitting, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories |
+| `Test_Shipyard` | Stations, Helm, ShipDesigns, Shipyard, ShipSockets, Cannon (its stations only as fittings); the ship is `ModularShip_Prefab` (no geometry), built from the starter design (ShipStairs, GalleonLoadout and FrameStories switch it to the galleon, which brings its loadout; FrameDeck to the raft). Offline, the main menu has a Shipyard row | DesignedShipFlies, ShipyardRoundTrip, MountFitting, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace |
 | `Test_GrappleHook` | GrappleHook | HookAboard |
 | `Test_Respawn` | GrappleHook, Respawn | OverboardRespawn, LeashClimb, WinchRescue |
 | `Test_Navigation` | Stations, Helm, Voyage, SkyIslands, SkyHazards, Navigation | CompassCourse, ChartPlot, ChartIslands, ChartHazards |

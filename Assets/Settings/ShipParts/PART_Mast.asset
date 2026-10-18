@@ -15,13 +15,19 @@ MonoBehaviour:
   _partId: hull.mast
   _displayName: Mast
   _category: Hull
-  _footprint: []
+  _attach: 1
+  _footprint:
+  - {x: 0, y: 0, z: 0}
+  - {x: 0, y: 1, z: 0}
+  - {x: 0, y: 2, z: 0}
+  - {x: 0, y: 3, z: 0}
   _isCore: 0
+  _isCairn: 0
   _visual: {fileID: 6703280359956287581, guid: 07262cbd46687b748890a0b7dba22cff, type: 3}
   _networkedPrefab: {fileID: 0}
   _pivotOffset: {x: 0, y: 0, z: 0}
   _stats:
-    Mass: 5
+    Mass: 10
     Lift: 0
     Thrust: 0
-    Hull: 10
+    Hull: 15

@@ -19,6 +19,8 @@ namespace TinCan.Features.ShipDesigns
         public Vector2 TurnScaleRange;
         [Tooltip("Health of a ship whose parts add none.")]
         [Min(1f)] public float MinHealth;
+        [Tooltip("The mass a ship's spirit holds up when its design has a cairn: its whole lift, the same for every ship until spirits level up (.docs/plans/spirit-cairn.md).")]
+        [Min(0f)] public float SpiritLift;
 
         public static ShipStatsTuning Default => new()
         {
@@ -28,6 +30,7 @@ namespace TinCan.Features.ShipDesigns
             ReferenceMass = 600f,
             TurnScaleRange = new Vector2(0.3f, 1.5f),
             MinHealth = 100f,
+            SpiritLift = 3000f,
         };
     }
 }

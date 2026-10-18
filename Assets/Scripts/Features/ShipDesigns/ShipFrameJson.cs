@@ -9,8 +9,9 @@ namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// The frame section of a design file: its base, story heights, then one line per node (<c>id</c>, <c>story</c>,
-    /// <c>pos</c> [x, drift, z]), edge (<c>id</c>, <c>a</c>, <c>b</c>, <c>rail</c> only when true) and face (<c>id</c>,
-    /// <c>nodes</c>, <c>fill</c>), each in id order. Reading checks the counts against the limits before building anything.
+    /// <c>pos</c> [x, drift, z]), edge (<c>id</c>, <c>a</c>, <c>b</c>, <c>rail</c> "rail" or "gate" only when it has one),
+    /// face (<c>id</c>, <c>nodes</c>, <c>fill</c>) and flight of stairs (<c>id</c>, <c>edge</c>, <c>dir</c>; the list only
+    /// when there are any), each in id order. Reading checks the counts against the limits before building anything.
     /// Unknown fields inside the frame are not kept (the design's top-level ones are). Plan: .docs/plans/ship-frames.md.
     /// </summary>
     public static class ShipFrameJson
@@ -63,7 +64,7 @@ namespace TinCan.Features.ShipDesigns
                     writer.WriteValue(edge.B);
                     if (!edge.Railing) return;
                     writer.WritePropertyName(ShipDesignFormat.EdgeRailingField);
-                    writer.WriteValue(true);
+                    writer.WriteValue(edge.Rail == ShipFrameRailing.Gate ? ShipDesignFormat.RailGate : ShipDesignFormat.RailRail);
                 });
             }
 
@@ -87,6 +88,26 @@ namespace TinCan.Features.ShipDesigns
             }
 
             writer.WriteEndArray();
+
+            if (frame.Stairs.Count > 0)
+            {
+                writer.WritePropertyName(ShipDesignFormat.FrameStairsField);
+                writer.WriteStartArray();
+                foreach (var stair in frame.Stairs)
+                {
+                    Line(writer, () =>
+                    {
+                        writer.WritePropertyName(ShipDesignFormat.ElementIdField);
+                        writer.WriteValue(stair.Id);
+                        writer.WritePropertyName(ShipDesignFormat.StairEdgeField);
+                        writer.WriteValue(stair.Edge);
+                        writer.WritePropertyName(ShipDesignFormat.StairDirField);
+                        writer.WriteValue(stair.Dir);
+                    });
+                }
+
+                writer.WriteEndArray();
+            }
             writer.WriteEndObject();
         }
 
@@ -100,17 +121,19 @@ namespace TinCan.Features.ShipDesigns
                 var nodes = Array(source, ShipDesignFormat.FrameNodesField);
                 var edges = Array(source, ShipDesignFormat.FrameEdgesField);
                 var faces = Array(source, ShipDesignFormat.FrameFacesField);
+                var stairs = Array(source, ShipDesignFormat.FrameStairsField);
 
                 if (stories.Count > limits.MaxStories) return $"The frame has {stories.Count} stories; at most {limits.MaxStories}.";
-                int elements = nodes.Count + edges.Count + faces.Count;
-                if (elements > limits.MaxFrameElements) return $"The frame has {elements} nodes, edges and faces; at most {limits.MaxFrameElements}.";
+                int elements = nodes.Count + edges.Count + faces.Count + stairs.Count;
+                if (elements > limits.MaxFrameElements) return $"The frame has {elements} nodes, edges, faces and stairs; at most {limits.MaxFrameElements}.";
 
                 int @base = source.ContainsKey(ShipDesignFormat.FrameBaseField) ? ToInt(source[ShipDesignFormat.FrameBaseField]!, "the frame's base") : 0;
                 frame = new ShipFrame(@base,
                     stories.Select((t, i) => ToInt(t, $"story {i}")).ToList(),
                     nodes.Select((t, i) => ReadNode(Object(t, $"node {i}"), i)).ToList(),
                     edges.Select((t, i) => ReadEdge(Object(t, $"edge {i}"), i)).ToList(),
-                    faces.Select((t, i) => ReadFace(Object(t, $"face {i}"), i, limits)).ToList());
+                    faces.Select((t, i) => ReadFace(Object(t, $"face {i}"), i, limits)).ToList(),
+                    stairs.Select((t, i) => ReadStair(Object(t, $"stairs {i}"), i)).ToList());
                 return null;
             }
             catch (Exception e) when (e is FormatException or OverflowException or InvalidCastException)
@@ -140,14 +163,24 @@ namespace TinCan.Features.ShipDesigns
         private static ShipFrameEdge ReadEdge(JObject edge, int index)
         {
             string where = $"edge {index}";
-            bool railing = edge[ShipDesignFormat.EdgeRailingField] switch
+            // Version 3 files wrote true for a railing.
+            var rail = edge[ShipDesignFormat.EdgeRailingField] switch
             {
-                null => false,
-                { Type: JTokenType.Boolean } token => token.Value<bool>(),
-                _ => throw new FormatException($"{where}: \"{ShipDesignFormat.EdgeRailingField}\" is not true or false."),
+                null => ShipFrameRailing.None,
+                { Type: JTokenType.Boolean } token => token.Value<bool>() ? ShipFrameRailing.Rail : ShipFrameRailing.None,
+                { Type: JTokenType.String } token when token.Value<string>() == ShipDesignFormat.RailRail => ShipFrameRailing.Rail,
+                { Type: JTokenType.String } token when token.Value<string>() == ShipDesignFormat.RailGate => ShipFrameRailing.Gate,
+                var token => throw new FormatException($"{where}: there is no railing {token.ToString(Formatting.None)}."),
             };
             return new ShipFrameEdge(Int(edge, ShipDesignFormat.ElementIdField, where), Int(edge, ShipDesignFormat.EdgeAField, where),
-                Int(edge, ShipDesignFormat.EdgeBField, where), railing);
+                Int(edge, ShipDesignFormat.EdgeBField, where), rail);
+        }
+
+        private static ShipFrameStair ReadStair(JObject stair, int index)
+        {
+            string where = $"stairs {index}";
+            return new ShipFrameStair(Int(stair, ShipDesignFormat.ElementIdField, where), Int(stair, ShipDesignFormat.StairEdgeField, where),
+                Int(stair, ShipDesignFormat.StairDirField, where));
         }
 
         private static ShipFrameFace ReadFace(JObject face, int index, ShipDesignLimits limits)

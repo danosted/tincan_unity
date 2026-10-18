@@ -84,7 +84,7 @@ namespace TinCan.Features.ShipDesigns
             error = null;
             if (!_network.IsServer) error = "Only the server gives ships their design.";
 
-            var validation = _validator.Validate(design, _catalog, _config.Limits, _config.Frames);
+            var validation = _validator.Validate(design, _catalog, _config.Limits, _config.Frames, _config.Flight);
             if (error == null && !validation.IsValid) error = $"\"{design.Name}\" cannot fly: {validation}";
             if (error != null)
             {

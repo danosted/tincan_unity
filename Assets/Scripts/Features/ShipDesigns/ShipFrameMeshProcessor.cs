@@ -14,7 +14,9 @@ namespace TinCan.Features.ShipDesigns
     /// <item>Walls: a planked wall face (corners on two stories) is a slab of the same thickness centred on its plane,
     /// built with the lower story.</item>
     /// <item>Railings: posts and two rails along each floor edge marked as railed, <see cref="ShipFrameTuning.RailHeight"/>
-    /// high, built with the beams (so they have colliders: nobody walks off a railed edge).</item>
+    /// high, built with the beams (so they have colliders: nobody walks off a railed edge). A gate is the two end posts.</item>
+    /// <item>Stairs: a block per step, seen but not collided with, and a ramp under their nosings to walk on, collided
+    /// with but not seen (the stairs part did the same); built with the story they stand in.</item>
     /// <item>Beams: a square prism <see cref="ShipFrameTuning.BeamWidth"/> wide along each edge, and a block at each node to
     /// cover the joints. Floor beams hang just under the floor's top (no step to trip on, no z-fighting); posts are
     /// centred on their line.</item>
@@ -36,6 +38,7 @@ namespace TinCan.Features.ShipDesigns
         public IReadOnlyList<ShipFrameStoryMesh> Build(ShipFrameShape shape, ShipFrameTuning tuning)
         {
             var frame = shape.Frame;
+            var flights = shape.Stairs(tuning.StairSlope).ToList();
             var stories = new List<ShipFrameStoryMesh>();
             for (int story = 0; story < frame.StoryHeights.Count; story++)
             {
@@ -54,14 +57,18 @@ namespace TinCan.Features.ShipDesigns
                 }
                 foreach (var node in frame.Nodes.Where(n => n.Story == story)) AddNodeBlock(beams, frame.Position(node), tuning);
 
-                stories.Add(new ShipFrameStoryMesh(story, Fingerprint(shape, story), planks, beams));
+                var steps = new ShipFrameMesh();
+                var ramps = new ShipFrameMesh();
+                foreach (var flight in flights.Where(f => f.Story - 1 == story)) AddStairs(steps, ramps, flight, tuning);
+
+                stories.Add(new ShipFrameStoryMesh(story, Fingerprint(shape, story, tuning), planks, beams, steps, ramps));
             }
 
             return stories;
         }
 
-        /// <summary>A stable hash of what a story's meshes are built from: its floor, nodes, edges and faces.</summary>
-        public static ulong Fingerprint(ShipFrameShape shape, int story)
+        /// <summary>A stable hash of what a story's meshes are built from: its floor, nodes, edges, faces and the stairs in it.</summary>
+        public static ulong Fingerprint(ShipFrameShape shape, int story, ShipFrameTuning tuning)
         {
             var frame = shape.Frame;
             ulong hash = 14695981039346656037UL;
@@ -92,7 +99,7 @@ namespace TinCan.Features.ShipDesigns
             foreach (var edge in shape.Edges.Where(e => e.Story == story))
             {
                 Add(edge.Edge.Id);
-                Add(edge.Edge.Railing ? 1 : 0);
+                Add((int)edge.Edge.Rail);
                 AddPoint(edge.From);
                 AddPoint(edge.To);
             }
@@ -101,6 +108,15 @@ namespace TinCan.Features.ShipDesigns
             {
                 Add(face.Face.Id);
                 foreach (var corner in face.Corners) AddPoint(corner);
+            }
+
+            foreach (var flight in shape.Stairs(tuning.StairSlope).Where(f => f.Story - 1 == story))
+            {
+                Add(flight.Stair.Id);
+                AddPoint(flight.FootA);
+                AddPoint(flight.FootB);
+                AddPoint(flight.TopA);
+                AddPoint(flight.TopB);
             }
 
             return hash;
@@ -209,19 +225,23 @@ namespace TinCan.Features.ShipDesigns
         /// A railing along a floor edge: posts at both ends and at most <see cref="RailPostSpacing"/> apart, a top rail at
         /// <see cref="ShipFrameTuning.RailHeight"/> and a middle rail, following the edge's slope.
         /// </summary>
+        /// <summary>A railing: posts and two rails. A gate is its two end posts alone, a way through.</summary>
         private static void AddRailing(ShipFrameMesh mesh, ShipFrameShape.EdgeShape edge, ShipFrameTuning tuning)
         {
             var axis = edge.To - edge.From;
             if (axis.sqrMagnitude < 1e-6f) return;
 
+            bool gate = edge.Edge.Rail == ShipFrameRailing.Gate;
             var side = Vector3.Cross(Vector3.up, axis).normalized;
             float post = RailWidth * 0.5f;
-            int spans = Mathf.Max(1, Mathf.CeilToInt(axis.magnitude / RailPostSpacing));
+            int spans = gate ? 1 : Mathf.Max(1, Mathf.CeilToInt(axis.magnitude / RailPostSpacing));
             for (int i = 0; i <= spans; i++)
             {
                 var foot = edge.From + axis * ((float)i / spans);
                 AddBox(mesh, foot, foot + Vector3.up * tuning.RailHeight, side * post, Vector3.Cross(Vector3.up, side).normalized * post, tuning.TextureMetres);
             }
+
+            if (gate) return;
 
             foreach (float height in new[] { tuning.RailHeight, tuning.RailHeight * 0.5f })
             {
@@ -229,6 +249,36 @@ namespace TinCan.Features.ShipDesigns
                 var up = Vector3.Cross(axis, side).normalized;
                 AddBox(mesh, edge.From + lift, edge.To + lift, side * post, up * (RailWidth * 0.4f), tuning.TextureMetres);
             }
+        }
+
+        /// <summary>
+        /// A flight: as many steps as its rise needs (each a block from the floor below up to its tread), seen; and one
+        /// ramp under their nosings, from the foot to the landing, to walk on.
+        /// </summary>
+        private static void AddStairs(ShipFrameMesh steps, ShipFrameMesh ramps, ShipFrameShape.StairShape flight, ShipFrameTuning tuning)
+        {
+            int count = Mathf.Max(1, Mathf.CeilToInt(flight.Rise / tuning.StepRise));
+            float tread = flight.Run / count, riser = flight.Rise / count;
+            var halfWidth = flight.TopB - flight.TopA;
+            halfWidth.y = 0f;
+            for (int k = 0; k < count; k++)
+            {
+                // Step k counts up from the foot: its tread is k + 1 risers above the floor below.
+                float height = riser * (k + 1);
+                float middle = flight.Run - tread * (k + 0.5f);
+                var lift = Vector3.down * (flight.Rise - height * 0.5f);
+                AddBox(steps, flight.TopA + flight.Down * middle + lift, flight.TopB + flight.Down * middle + lift,
+                    flight.Down * (tread * 0.5f), Vector3.up * (height * 0.5f), tuning.TextureMetres);
+            }
+
+            const float thickness = 0.1f;
+            var top = (flight.TopA + flight.TopB) * 0.5f;
+            var foot = (flight.FootA + flight.FootB) * 0.5f;
+            var slope = (top - foot).normalized;
+            var normal = Vector3.Cross(slope, halfWidth).normalized;
+            if (normal.y < 0f) normal = -normal;
+            var sink = -normal * (thickness * 0.5f);
+            AddBox(ramps, foot + sink, top + sink, halfWidth * 0.5f, normal * (thickness * 0.5f), tuning.TextureMetres);
         }
 
         private static void AddBeam(ShipFrameMesh mesh, ShipFrameShape.EdgeShape edge, ShipFrameTuning tuning)

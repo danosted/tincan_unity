@@ -1,4 +1,4 @@
-Status: Approved (2026-10-14): greybox parts and the Galleon design built in this change; Blender meshes follow
+Status: Superseded (2026-10-17): its parts (stairs, rail, wall, window wall, bow) became frame elements or were retired, and the Galleon was rebuilt as a frame ([frame-only-ships.md](frame-only-ships.md)); the propeller stays
 
 # Airship parts pack: a big ship with decks, stairs and stations
 

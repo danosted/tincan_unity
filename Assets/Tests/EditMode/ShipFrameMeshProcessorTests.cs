@@ -109,5 +109,32 @@ namespace TinCan.Tests.EditMode
             Assert.That(first[1].Planks.IsEmpty, Is.True, "no face upstairs");
             Assert.That(first[1].Beams.Vertices.Min(v => v.y), Is.GreaterThan(2f), "story 1's floor is 3 m up");
         }
+
+        [Test]
+        public void Stairs_AreStepsToSee_AndOneRampToWalk_InTheStoryBelowTheirLanding()
+        {
+            var tuning = ShipFrameTuning.Default;
+            var stories = new ShipFrameMeshProcessor().Build(ShipFrameTestDesigns.StairWell(), tuning);
+
+            var lower = stories[0];
+            Assert.That(lower.Steps.Triangles.Count, Is.EqualTo(15 * 12 * 3), "3 m at 0.2 m a step: 15 blocks of 12 triangles");
+            Assert.That(lower.Ramps.Triangles.Count, Is.EqualTo(12 * 3), "one ramp");
+            Assert.That(stories[1].Steps.IsEmpty && stories[1].Ramps.IsEmpty, Is.True);
+            Assert.That(lower.Ramps.Vertices.Max(v => v.y), Is.EqualTo(2.5f).Within(0.06f), "up to the landing at 2.5 m");
+            Assert.That(lower.Ramps.Vertices.Max(v => v.z), Is.EqualTo(5f).Within(0.1f), "down to the floor 5 m forward of the landing");
+        }
+
+        [Test]
+        public void AGate_IsTwoPosts_ARailingHasRailsToo()
+        {
+            var tuning = ShipFrameTuning.Default;
+            var deck = ShipFrameTestDesigns.DeckFrame();
+            int Beams(ShipFrameRailing rail) =>
+                new ShipFrameMeshProcessor().Build(deck.With(edges: deck.Edges.Select(e => e.Id == 6 ? e.WithRail(rail) : e)), tuning)[0].Beams.Triangles.Count;
+
+            int none = Beams(ShipFrameRailing.None);
+            Assert.That(Beams(ShipFrameRailing.Gate) - none, Is.EqualTo(2 * 12 * 3), "two posts");
+            Assert.That(Beams(ShipFrameRailing.Rail), Is.GreaterThan(Beams(ShipFrameRailing.Gate)));
+        }
     }
 }

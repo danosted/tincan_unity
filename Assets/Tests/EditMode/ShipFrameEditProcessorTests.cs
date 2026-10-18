@@ -67,7 +67,7 @@ namespace TinCan.Tests.EditMode
             using var parts = new ShipDesignTestParts();
 
             var node = _processor.Apply(design, ShipFrameEdit.AddNode(0, 0, 0, 40), _limits);
-            var part = new ShipDesignEditProcessor().Apply(node.Design, ShipDesignEdit.Place(ShipDesignTestParts.Block, new ShipGridCell(5, 0, 0), 0),
+            var part = new ShipDesignEditProcessor().Apply(node.Design, ShipDesignEdit.Place(ShipDesignTestParts.Block, ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, 10, 10), 0),
                 parts.Catalog, _limits);
 
             Assert.That(node.AddedInstanceId, Is.EqualTo(ShipFrameTestDesigns.NextId));
@@ -130,8 +130,8 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void MergingNodes_CollapsesDoubledEdges_IntoTheLowerId_KeepingARailing()
         {
-            var design = Apply(ShipFrameTestDesigns.Deck(), ShipFrameEdit.SetRailing(5, false));
-            design = Apply(design, ShipFrameEdit.SetRailing(6, true));
+            var design = Apply(ShipFrameTestDesigns.Deck(), ShipFrameEdit.SetRailing(5, ShipFrameRailing.None));
+            design = Apply(design, ShipFrameEdit.SetRailing(6, ShipFrameRailing.Rail));
 
             // Merging 3 into 1 (diagonal corners): edge 6 (2-3, railing) becomes a second 1-2 beside edge 5, and edge 7
             // becomes 1-4, which edge 8 then doubles.
@@ -243,7 +243,7 @@ namespace TinCan.Tests.EditMode
         {
             var design = Apply(ShipFrameTestDesigns.Deck(), ShipFrameEdit.MoveNode(3, 30, -3, 25));
             design = Apply(design, ShipFrameEdit.SetFaceFill(9, ShipFrameFill.Open));
-            design = Apply(design, ShipFrameEdit.SetRailing(7, true));
+            design = Apply(design, ShipFrameEdit.SetRailing(7, ShipFrameRailing.Rail));
 
             var frame = design.Frame;
             frame.TryGetNode(3, out var moved);
@@ -260,10 +260,33 @@ namespace TinCan.Tests.EditMode
             limits.MaxFrameElements = 9;
             limits.MaxStories = 1;
 
-            Assert.That(Refusal(design, ShipFrameEdit.MoveNode(3, 129 * ShipFrameUnits.PerCell, 0, 0)), Does.Contain("from the origin"));
+            Assert.That(Refusal(design, ShipFrameEdit.MoveNode(3, 129 * ShipFrameUnits.PerMetre, 0, 0)), Does.Contain("from the origin"));
             Assert.That(_processor.Apply(design, ShipFrameEdit.AddNode(0, 0, 0, 0), limits).Refusal, Does.Contain("full"));
             Assert.That(_processor.Apply(design, ShipFrameEdit.AddStory(30), limits).Refusal, Does.Contain("stories already"));
             Assert.That(Refusal(design, ShipFrameEdit.AddNode(3, 0, 0, 0)), Does.Contain("no story 3"));
+        }
+
+        [Test]
+        public void Stairs_HangFromAFloorEdgeAboveTheLowestStory_FlipAndGo_AndGoWithTheirEdge()
+        {
+            var well = ShipFrameTestDesigns.FrameOnly(ShipFrameTestDesigns.StairWell().With(stairs: System.Array.Empty<ShipFrameStair>()));
+
+            var added = _processor.Apply(well, ShipFrameEdit.AddStair(15, -1), _limits);
+            Assert.That(added.Applied, Is.True, added.Refusal);
+            int id = added.AddedInstanceId;
+            Assert.That(added.Design.Frame.Stairs.Single().Edge, Is.EqualTo(15));
+
+            Assert.That(Refusal(added.Design, ShipFrameEdit.AddStair(15, 1)), Does.Contain("already"));
+            Assert.That(Refusal(well, ShipFrameEdit.AddStair(9, 1)), Does.Contain("story below"), "edge 9 is on story 0");
+            Assert.That(Refusal(well, ShipFrameEdit.AddStair(17, 1)), Does.Contain("post"));
+
+            var flipped = Apply(added.Design, ShipFrameEdit.FlipStair(id));
+            Assert.That(flipped.Frame.Stairs.Single().Dir, Is.EqualTo(1));
+            Assert.That(Apply(flipped, ShipFrameEdit.RemoveStair(id)).Frame.Stairs, Is.Empty);
+            Assert.That(Apply(added.Design, ShipFrameEdit.RemoveNode(7)).Frame.Stairs, Is.Empty, "its edge went with the node");
+
+            var undone = Apply(added.Design, added.Undo!.FrameEdit!);
+            Assert.That(undone.Frame.Stairs, Is.Empty, "one undo");
         }
     }
 }

@@ -27,6 +27,7 @@ MonoBehaviour:
     ReferenceMass: 600
     TurnScaleRange: {x: 0.3, y: 1.5}
     MinHealth: 100
+    SpiritLift: 3000
   Frames:
     MaxDrift: 0.8
     MaxFloorSlope: 30
@@ -38,6 +39,8 @@ MonoBehaviour:
     BeamWidth: 0.2
     TextureMetres: 2
     RailHeight: 1
+    StairSlope: 31
+    StepRise: 0.2
     PlankMassPerSquareMetre: 3
     PlankHullPerSquareMetre: 5
     BeamMassPerMetre: 1
@@ -48,5 +51,4 @@ MonoBehaviour:
   - {fileID: 4900000, guid: 703ad1adcd7d5f64da3fea612463da02, type: 3}
   - {fileID: 4900000, guid: 348ddaf73aaeb514a8abda537648cc18, type: 3}
   - {fileID: 4900000, guid: f35ddc663a37288469509f160f298308, type: 3}
-  - {fileID: 4900000, guid: 67128e0f1b9bcac42ad53492e835e467, type: 3}
   DefaultDesign: Starter

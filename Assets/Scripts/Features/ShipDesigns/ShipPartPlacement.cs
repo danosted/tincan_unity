@@ -5,8 +5,9 @@ namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// One part placed in a design. <see cref="InstanceId"/> is the placement's own id, unique in its design and never
-    /// reused, so state that later hangs off a part (damage, wiring, settings) survives edits and saves.
+    /// reused, so state that later hangs off a part (damage, wiring, sockets, settings) survives edits and saves.
     /// <see cref="PartId"/> names the part type (<c>ShipPartDefinition.PartId</c>), never an asset name or GUID.
+    /// <see cref="Anchor"/> is the frame element it hangs on, <see cref="Orientation"/> its yaw in quarter turns.
     /// <see cref="Extensions"/> holds fields this build does not know, as raw JSON, so a file from a later build keeps
     /// them through a load and save.
     /// </summary>
@@ -14,22 +15,22 @@ namespace TinCan.Features.ShipDesigns
     {
         private static readonly IReadOnlyDictionary<string, string> NoExtensions = new Dictionary<string, string>();
 
-        public ShipPartPlacement(int instanceId, string partId, ShipGridCell cell, byte orientation,
+        public ShipPartPlacement(int instanceId, string partId, ShipPartAnchor anchor, byte orientation,
             IReadOnlyDictionary<string, string>? extensions = null)
         {
             InstanceId = instanceId;
             PartId = partId;
-            Cell = cell;
+            Anchor = anchor;
             Orientation = orientation;
             Extensions = extensions ?? NoExtensions;
         }
 
         public int InstanceId { get; }
         public string PartId { get; }
-        public ShipGridCell Cell { get; }
+        public ShipPartAnchor Anchor { get; }
         public byte Orientation { get; }
         public IReadOnlyDictionary<string, string> Extensions { get; }
 
-        public override string ToString() => $"#{InstanceId} {PartId} at {Cell} orientation {Orientation}";
+        public override string ToString() => $"#{InstanceId} {PartId} {Anchor} turned {Orientation}";
     }
 }

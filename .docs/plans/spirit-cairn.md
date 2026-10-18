@@ -1,4 +1,4 @@
-Status: Draft
+Status: Draft; the first step (a cairn part, the spirit's lift as one tuning value, balloons retired) was built with [frame-only-ships.md](frame-only-ships.md) on 2026-10-17
 
 # Spirit cairn: a bound spirit lifts the ship, boat parts steer it
 

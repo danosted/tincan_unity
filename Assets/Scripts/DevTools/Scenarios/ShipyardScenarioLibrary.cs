@@ -8,11 +8,13 @@ namespace TinCan.DevTools.Scenarios
 {
     /// <summary>
     /// Scenario steps for the shipyard, on the peer that runs them (the shipyard is local; the host uses it). Commands:
-    /// open, place a part ("partId x y z"), save, new, load, launch, and forget a saved design (deletes its file); the
-    /// frame tools: ShipyardMode "Parts" or "Frame", ShipyardFrameClick "x z" and ShipyardFrameFill "x z" (metres in ship
-    /// space: a click straight down there). Probes: ShipyardParts, the open design has this many parts; ShipyardFrame
-    /// "nodes edges faces", its frame has these counts. Plans: .docs/plans/modular-airship-builder.md (S3),
-    /// .docs/plans/ship-frames.md (S2).
+    /// open, place a part as a click straight down would (ShipyardPlaceDown "partId x z", metres in ship space: a face part
+    /// on the plank floor there, snapped to the frame step; a node part on the node there), save, new, load, launch,
+    /// and forget a saved design (deletes its file); the frame tools: ShipyardMode "Parts" or "Frame", ShipyardFrameClick,
+    /// ShipyardFrameFill, ShipyardFrameRailing and ShipyardFrameStairs "x z" (metres in ship space: straight down there).
+    /// Probes: ShipyardParts, the open design has this many parts; ShipyardFrame "nodes edges faces", its frame has these
+    /// counts. Plans: .docs/plans/modular-airship-builder.md (S3), .docs/plans/ship-frames.md (S2, S4),
+    /// .docs/plans/frame-only-ships.md.
     /// </summary>
     public sealed class ShipyardScenarioLibrary : IScenarioLibrary
     {
@@ -28,7 +30,7 @@ namespace TinCan.DevTools.Scenarios
         public System.Collections.Generic.IEnumerable<ScenarioCommand> Commands => new[]
         {
             new ScenarioCommand("ShipyardOpen", _ => Do(() => _shipyard.Open(), "opened")),
-            new ScenarioCommand("ShipyardPlace", Place),
+            new ScenarioCommand("ShipyardPlaceDown", PlaceDown),
             new ScenarioCommand("ShipyardSave", name => Check(_shipyard.Save(name))),
             new ScenarioCommand("ShipyardNew", _ => Do(_shipyard.New, "new design")),
             new ScenarioCommand("ShipyardLoad", name => Check(_shipyard.Load(name))),
@@ -39,6 +41,8 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioCommand("ShipyardMode", SetMode),
             new ScenarioCommand("ShipyardFrameClick", point => Check(_shipyard.FrameClickAt(Point(point)))),
             new ScenarioCommand("ShipyardFrameFill", point => Check(_shipyard.FrameFillAt(Point(point)))),
+            new ScenarioCommand("ShipyardFrameRailing", point => Check(_shipyard.FrameRailingAt(Point(point)))),
+            new ScenarioCommand("ShipyardFrameStairs", point => Check(_shipyard.FrameStairsAt(Point(point)))),
         };
 
         public System.Collections.Generic.IEnumerable<ScenarioProbe> Probes => new[]
@@ -47,14 +51,12 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("ShipyardFrame", CheckFrame),
         };
 
-        private ScenarioCheck Place(string argument)
+        private ScenarioCheck PlaceDown(string argument)
         {
             var words = argument.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
-            if (words.Length != 4) return ScenarioCheck.Fail("expected \"partId x y z\"");
+            if (words.Length != 3) return ScenarioCheck.Fail("expected \"partId x z\" (metres)");
             if (!_shipyard.Select(words[0])) return ScenarioCheck.Fail($"no part {words[0]}");
-
-            var xyz = words.Skip(1).Select(w => int.Parse(w, CultureInfo.InvariantCulture)).ToArray();
-            return Check(_shipyard.PlaceAt(new ShipGridCell(xyz[0], xyz[1], xyz[2])));
+            return Check(_shipyard.PlaceDownAt(Point($"{words[1]} {words[2]}")));
         }
 
         private ScenarioCheck CheckParts(string count)

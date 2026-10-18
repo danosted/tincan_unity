@@ -36,7 +36,7 @@ namespace TinCan.Features.ShipDesigns
             public ulong Hash;
 
             /// <summary>Server: the functional parts spawned for the ship, by instance id, with the placement they stand for.</summary>
-            public readonly Dictionary<int, (ShipPartPlacement Placement, GameObject? Module)> SpawnedFunctional = new();
+            public readonly Dictionary<int, (string PartId, Vector3 Position, Quaternion Rotation, GameObject? Module)> SpawnedFunctional = new();
         }
 
         private readonly IActorRegistry _actors;
@@ -134,38 +134,39 @@ namespace TinCan.Features.ShipDesigns
 
         /// <summary>
         /// Server: the ship's spawned functional parts match the design's. A part is kept only while the design still has
-        /// it, unchanged (same part, cell and orientation); anything else is despawned, and every functional part not
-        /// standing is spawned at its design pose.
+        /// it, unchanged (same part, same pose: its anchor and the frame under it); anything else is despawned, and every
+        /// functional part not standing is spawned at its design pose. A part its anchor does not hold is not spawned.
         /// </summary>
         private void SpawnFunctionalParts(BuiltShip built, ShipDesign design)
         {
-            var wanted = new Dictionary<int, (ShipPartPlacement Placement, GameObject Prefab)>();
+            var shape = ShipFrameShape.From(design.Frame);
+            var wanted = new Dictionary<int, (string PartId, Vector3 Position, Quaternion Rotation, GameObject Prefab)>();
             foreach (var placement in design.Parts)
             {
-                if (_catalog.TryGet(placement.PartId, out var part) && part.NetworkedPrefab != null) wanted[placement.InstanceId] = (placement, part.NetworkedPrefab);
+                if (!_catalog.TryGet(placement.PartId, out var part) || part.NetworkedPrefab == null) continue;
+                if (ShipPartPose.TryGetPose(placement, part, shape, out var position, out var rotation))
+                {
+                    wanted[placement.InstanceId] = (placement.PartId, position, rotation, part.NetworkedPrefab);
+                }
             }
 
             foreach (var (id, spawned) in built.SpawnedFunctional.ToList())
             {
-                if (wanted.TryGetValue(id, out var keep) && SamePose(keep.Placement, spawned.Placement)) continue;
+                if (wanted.TryGetValue(id, out var keep) && keep.PartId == spawned.PartId && keep.Position == spawned.Position && keep.Rotation == spawned.Rotation) continue;
 
                 if (spawned.Module != null) _spawning.DespawnModule(spawned.Module);
                 built.SpawnedFunctional.Remove(id);
             }
 
             var shipTransform = built.Ship.Transform;
-            foreach (var (id, (placement, prefab)) in wanted)
+            foreach (var (id, (partId, position, rotation, prefab)) in wanted)
             {
-                if (built.SpawnedFunctional.ContainsKey(id) || !_catalog.TryGet(placement.PartId, out var part)) continue;
+                if (built.SpawnedFunctional.ContainsKey(id)) continue;
 
-                var position = shipTransform.TransformPoint(ShipPartPose.LocalPosition(placement, part));
-                var rotation = shipTransform.rotation * ShipPartPose.LocalRotation(placement);
-                built.SpawnedFunctional[id] = (placement, _spawning.SpawnModule(prefab, position, rotation, built.Ship));
+                var module = _spawning.SpawnModule(prefab, shipTransform.TransformPoint(position), shipTransform.rotation * rotation, built.Ship);
+                built.SpawnedFunctional[id] = (partId, position, rotation, module);
             }
         }
-
-        private static bool SamePose(ShipPartPlacement a, ShipPartPlacement b) =>
-            a.PartId == b.PartId && a.Cell.Equals(b.Cell) && a.Orientation == b.Orientation;
 
         /// <summary>The sockets of the parts built for a ship: index i is the i-th ShipSocket under the part.</summary>
         private void CollectSockets(BuiltShip built)

@@ -1,5 +1,6 @@
 #nullable enable
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using TinCan.Features.ShipDesigns;
@@ -58,10 +59,45 @@ namespace TinCan.Tests.EditMode
             var migrator = new ShipDesignMigrator(new IShipDesignMigration[] { new RenamePartsField() }, 2);
             var codec = new ShipDesignJsonCodec(ShipDesignLimits.Default, migrator);
 
-            var result = codec.Decode("{\"formatVersion\":1,\"blocks\":[{\"id\":1,\"part\":\"core.helm\",\"cell\":[0,0,0]}]}");
+            var result = codec.Decode("{\"formatVersion\":1,\"blocks\":[{\"id\":1,\"part\":\"core.helm\",\"on\":{\"node\":1}}]}");
 
             Assert.That(result.Succeeded, Is.True, result.Error);
             Assert.That(result.Design!.Parts[0].PartId, Is.EqualTo("core.helm"));
+        }
+
+        [Test]
+        public void Version2To3_MakesEachCellAPosition_TenTimesIt()
+        {
+            var file = JObject.Parse("{\"parts\":[{\"id\":1,\"part\":\"a\",\"cell\":[1,-2,3],\"rot\":1},{\"id\":2,\"part\":\"b\",\"cell\":[0,0.5,0]}]}");
+
+            new ShipDesignMigrationV2().Migrate(file);
+
+            var parts = (JArray)file[ShipDesignFormat.PartsField]!;
+            Assert.That(parts[0][ShipDesignFormat.V3PartPosField]!.Values<int>(), Is.EqualTo(new[] { 10, -20, 30 }));
+            Assert.That(parts[0][ShipDesignFormat.V2PartCellField], Is.Null);
+            Assert.That(parts[1][ShipDesignFormat.V3PartPosField]![1]!.Value<double>(), Is.EqualTo(0.5), "not a whole number: left for the decoder to refuse");
+        }
+
+        [Test]
+        public void Version3To4_HangsPartsOnTheFloorTheyStandOn_AndKeepsTheRestAsDropped()
+        {
+            var file = JObject.Parse("{\"parts\":[" +
+                                     "{\"id\":10,\"part\":\"core.helm\",\"pos\":[0,0,0],\"rot\":1}," +
+                                     "{\"id\":11,\"part\":\"hull.block\",\"pos\":[300,0,0],\"rot\":0}," +
+                                     "{\"id\":12,\"part\":\"hull.block\",\"pos\":[10,0,10],\"rot\":7}]," +
+                                     "\"frame\":{\"base\":-5,\"stories\":[30],\"nodes\":[{\"id\":1,\"story\":0,\"pos\":[-20,0,-20]},{\"id\":2,\"story\":0,\"pos\":[-20,0,20]}," +
+                                     "{\"id\":3,\"story\":0,\"pos\":[20,0,20]},{\"id\":4,\"story\":0,\"pos\":[20,0,-20]}],\"edges\":[{\"id\":5,\"a\":1,\"b\":2}," +
+                                     "{\"id\":6,\"a\":2,\"b\":3,\"rail\":true},{\"id\":7,\"a\":3,\"b\":4},{\"id\":8,\"a\":4,\"b\":1}]," +
+                                     "\"faces\":[{\"id\":9,\"nodes\":[1,2,3,4],\"fill\":\"planks\"}]}}");
+
+            new ShipDesignMigrationV3().Migrate(file);
+
+            var parts = (JArray)file[ShipDesignFormat.PartsField]!;
+            Assert.That(parts.Count, Is.EqualTo(1));
+            Assert.That(parts[0][ShipDesignFormat.PartAnchorField]!.ToString(Newtonsoft.Json.Formatting.None), Is.EqualTo("{\"face\":9,\"x\":0,\"z\":0}"));
+            Assert.That(parts[0][ShipDesignFormat.V3PartPosField], Is.Null);
+            var dropped = (JArray)file[ShipDesignFormat.DroppedField]!;
+            Assert.That(dropped.Select(p => p["id"]!.Value<int>()), Is.EqualTo(new[] { 11, 12 }), "off the deck; tipped over");
         }
 
         [Test]

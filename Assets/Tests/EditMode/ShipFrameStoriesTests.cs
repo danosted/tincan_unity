@@ -48,7 +48,7 @@ namespace TinCan.Tests.EditMode
         public void Railings_RunOnlyAlongFloorEdges_NotUnderAPlankedWall()
         {
             var frame = ShipFrameTestDesigns.TwoStoryBox();
-            var railed = frame.With(edges: frame.Edges.Select(e => e.Id is 13 or 17 or 9 ? new ShipFrameEdge(e.Id, e.A, e.B, true) : e));
+            var railed = frame.With(edges: frame.Edges.Select(e => e.Id is 13 or 17 or 9 ? e.WithRail(ShipFrameRailing.Rail) : e));
 
             var problems = Validate(railed).Problems.Where(p => p.Kind == ShipDesignProblemKind.BadEdge).ToList();
 
@@ -65,7 +65,7 @@ namespace TinCan.Tests.EditMode
             var tuning = ShipFrameTuning.Default;
 
             var stories = processor.Build(frame, tuning);
-            var railed = processor.Build(frame.With(edges: frame.Edges.Select(e => e.Id == 13 ? new ShipFrameEdge(13, e.A, e.B, true) : e)), tuning);
+            var railed = processor.Build(frame.With(edges: frame.Edges.Select(e => e.Id == 13 ? e.WithRail(ShipFrameRailing.Rail) : e)), tuning);
 
             // Story 0: its floor slab (24 corners) and four wall slabs (24 each); story 1: its floor only.
             Assert.That(stories[0].Planks.Vertices, Has.Count.EqualTo(24 * 5));

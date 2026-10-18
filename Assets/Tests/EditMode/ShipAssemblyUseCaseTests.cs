@@ -88,8 +88,11 @@ namespace TinCan.Tests.EditMode
         private ShipAssemblyUseCase Assembly(INetworkService? network = null) =>
             new(_actors, network ?? new FakeNetworkService(), _parts.Catalog, _config, _builder, _spawner, new FakeEventPublisher());
 
-        private static ShipDesign Ship(params (string Part, int X, int Y, int Z, byte Rot)[] extra) =>
-            Design(new[] { (Helm, 0, 0, 0, (byte)0), (Beam, -1, -1, 0, (byte)0) }.Concat(extra).ToArray());
+        /// <summary>The helm (part 10) on the test floor's middle and a beam (part 11) from x 3 m, then the extra parts (ids from 12).</summary>
+        private static ShipDesign Ship(params (string Part, int X, int Z, byte Rot)[] extra) =>
+            Design(new[] { (Helm, 0, 0, (byte)0), (Beam, 3, 0, (byte)0) }.Concat(extra).ToArray());
+
+        private static ShipPartAnchor At(int x, int z) => ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, x * 10, z * 10);
 
         [Test]
         public void NoDesignYet_BuildsNothing()
@@ -103,19 +106,19 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void ADesign_BuildsItsStructure_AtTheirCells_AndFitsTheVolume()
+        public void ADesign_BuildsItsParts_StandingOnTheirFloor_AndFitsTheVolume()
         {
             var assembly = Assembly();
-            _state.Set(Ship((Block, 0, -1, 1, 1)));
+            _state.Set(Ship((Block, 0, 2, 1)));
 
             assembly.Tick();
 
             Assert.That(_builder.Standing.Select(b => b.Visual), Is.EquivalentTo(new[] { _parts.BeamVisual, _parts.BlockVisual }));
             var block = _builder.Standing.Single(b => b.Visual == _parts.BlockVisual);
-            Assert.That(block.Position, Is.EqualTo(new Vector3(0f, -1f, 1f)));
+            Assert.That(block.Position, Is.EqualTo(new Vector3(0f, -0.5f, 2f)), "on the floor at -0.5 m");
             Assert.That(Quaternion.Angle(block.Rotation, Quaternion.Euler(0f, 90f, 0f)), Is.LessThan(0.01f));
-            Assert.That(_builder.Volume!.Value.min, Is.EqualTo(new Vector3(-1.5f, -1.5f, -0.5f)));
-            Assert.That(_builder.Volume!.Value.max, Is.EqualTo(new Vector3(1.5f, 1.5f, 1.5f)));
+            Assert.That(_builder.Volume!.Value.min.x, Is.EqualTo(-10f).Within(1e-4f), "the floor's width");
+            Assert.That(_builder.Volume!.Value.max.y, Is.EqualTo(1.5f).Within(1e-4f), "the helm's two blocks");
             Assert.That(assembly.TryGetBuilt(_ship.Id, out var hash, out var count), Is.True);
             Assert.That((hash, count), Is.EqualTo((_state.DesignHash, 3)));
         }
@@ -132,7 +135,7 @@ namespace TinCan.Tests.EditMode
             var helm = _spawner.Calls.Single();
             Assert.That(helm.Prefab, Is.SameAs(_parts.HelmPrefab));
             Assert.That(helm.Ship, Is.SameAs(_ship));
-            // Cell (0,0,0) with the pivot half a cell down, on a ship at (0, 40, 0).
+            // On the floor at -0.5 m, on a ship at (0, 40, 0).
             Assert.That(Vector3.Distance(helm.Position, new Vector3(0f, 39.5f, 0f)), Is.LessThan(0.001f));
         }
 
@@ -152,44 +155,65 @@ namespace TinCan.Tests.EditMode
         public void AChangedDesign_RebuildsOnlyWhatChanged()
         {
             var assembly = Assembly();
-            var first = Ship((Block, 0, -1, 1, 0), (Block, 0, -1, -1, 0));
+            var first = Ship((Block, 0, 2, 0), (Block, 0, -2, 0));
             _state.Set(first);
             assembly.Tick();
             int builds = _builder.Builds;
 
-            // Part 3 turns, part 4 goes, a new part 5 comes.
+            // Part 12 turns, part 13 goes, a new part 14 comes.
             var second = first.WithParts(new[]
             {
                 first.Parts[0], first.Parts[1],
-                new ShipPartPlacement(3, Block, new ShipGridCell(0, -1, 1), 2),
-                new ShipPartPlacement(5, Block, new ShipGridCell(2, -1, 1), 0),
-            }, 6);
+                new ShipPartPlacement(12, Block, At(0, 2), 2),
+                new ShipPartPlacement(14, Block, At(-2, 2), 0),
+            }, 15);
             _state.Set(second);
             assembly.Tick();
 
-            Assert.That(_builder.Builds - builds, Is.EqualTo(2), "part 3 again and part 5");
-            Assert.That(_builder.Removals, Is.EqualTo(2), "part 3 as it was and part 4");
+            Assert.That(_builder.Builds - builds, Is.EqualTo(2), "part 12 again and part 14");
+            Assert.That(_builder.Removals, Is.EqualTo(2), "part 12 as it was and part 13");
             Assert.That(_builder.Standing.Count, Is.EqualTo(3));
             Assert.That(_spawner.Calls.Count, Is.EqualTo(1), "the helm stays");
             Assert.That(_spawner.Despawned, Is.Empty);
         }
 
         [Test]
+        public void AFloorThatMoves_MovesThePartsOnIt()
+        {
+            var assembly = Assembly();
+            var deck = ShipFrameTestDesigns.Deck();
+            var withBlock = deck.WithParts(deck.Parts.Append(new ShipPartPlacement(11, Block, ShipPartAnchor.OnFace(9, -15, -15), 0)), 12);
+            _state.Set(withBlock);
+            assembly.Tick();
+            int removals = _builder.Removals;
+
+            // Corner 1 (-2, -2 m) rises 0.5 m: the floor under the block rises with it.
+            var raised = withBlock.WithFrame(withBlock.Frame.With(nodes: withBlock.Frame.Nodes.Select(n => n.Id == 1 ? n.MovedTo(n.X, 5, n.Z) : n)),
+                withBlock.NextPartInstanceId);
+            _state.Set(raised);
+            assembly.Tick();
+
+            var block = _builder.Standing.Single(b => b.Visual == _parts.BlockVisual);
+            Assert.That(block.Position.y, Is.GreaterThan(-0.5f + 0.1f), "it stands on the risen floor");
+            Assert.That(_builder.Removals - removals, Is.GreaterThanOrEqualTo(1));
+        }
+
+        [Test]
         public void AnotherDesign_ReplacesTheHelm_WhereTheNewDesignHasIt()
         {
-            // The shipyard's Launch onto a built ship: the old helm (part 1 at the origin) must not stay behind.
+            // The shipyard's Launch onto a built ship: the old helm (part 10 in the middle) must not stay behind.
             var assembly = Assembly();
             _state.Set(Ship());
             assembly.Tick();
             var oldHelm = _spawner.Modules.Single();
 
-            _state.Set(Design((Beam, 0, -1, 0, 0), (Beam, 0, -1, 2, 0), (Helm, 0, 0, 2, 0)));
+            _state.Set(Design((Beam, 0, 0, 0), (Beam, 0, 2, 0), (Helm, 0, 4, 0)));
             assembly.Tick();
 
             Assert.That(_spawner.Despawned, Is.EqualTo(new[] { oldHelm }));
             Assert.That(_spawner.Calls.Count, Is.EqualTo(2));
-            // Cell (0,0,2) with the pivot half a cell down, on a ship at (0, 40, 0) turned 90° (local +Z is world +X).
-            Assert.That(Vector3.Distance(_spawner.Calls[1].Position, new Vector3(2f, 39.5f, 0f)), Is.LessThan(0.001f));
+            // At z 4 m on the floor, on a ship at (0, 40, 0) turned 90° (local +Z is world +X).
+            Assert.That(Vector3.Distance(_spawner.Calls[1].Position, new Vector3(4f, 39.5f, 0f)), Is.LessThan(0.001f));
             Assert.That(assembly.TryGetBuilt(_ship.Id, out _, out var count), Is.True);
             Assert.That(count, Is.EqualTo(3), "two beams and one helm");
         }
@@ -202,24 +226,25 @@ namespace TinCan.Tests.EditMode
             _state.Set(first);
             assembly.Tick();
 
-            // Same instance id, another cell.
-            _state.Set(first.WithParts(new[] { new ShipPartPlacement(1, Helm, new ShipGridCell(1, 0, 0), 0), first.Parts[1] }, 3));
+            // Same instance id, another spot.
+            _state.Set(first.WithParts(new[] { new ShipPartPlacement(10, Helm, At(-2, 0), 0), first.Parts[1] }, 12));
             assembly.Tick();
             Assert.That(_spawner.Despawned, Is.EqualTo(new[] { _spawner.Modules[0] }));
             Assert.That(_spawner.Calls.Count, Is.EqualTo(2));
 
             // No helm at all: the moved one goes too.
-            _state.Set(first.WithParts(new[] { first.Parts[1] }, 3));
+            _state.Set(first.WithParts(new[] { first.Parts[1] }, 12));
             assembly.Tick();
             Assert.That(_spawner.Despawned, Is.EqualTo(new[] { _spawner.Modules[0], _spawner.Modules[1] }));
             Assert.That(_spawner.Calls.Count, Is.EqualTo(2));
         }
 
         [Test]
-        public void UnknownParts_AreSkipped()
+        public void UnknownParts_AndUnanchoredParts_AreSkipped()
         {
             var assembly = Assembly();
-            _state.Set(Ship(("hull.from_the_future", 0, -1, 1, 0)));
+            var design = Ship(("hull.from_the_future", 0, 2, 0));
+            _state.Set(design.WithParts(design.Parts.Append(new ShipPartPlacement(13, Block, ShipPartAnchor.OnFace(77, 0, 0), 0)), 14));
 
             assembly.Tick();
 
@@ -248,6 +273,7 @@ namespace TinCan.Tests.EditMode
             assembly.Tick();
 
             Assert.That(_builder.Standing, Is.Empty);
+            Assert.That(_builder.Meshes, Is.Empty);
             Assert.That(assembly.TryGetBuilt(_ship.Id, out _, out _), Is.False);
         }
 
@@ -266,12 +292,12 @@ namespace TinCan.Tests.EditMode
                 var assembly = new ShipAssemblyUseCase(_actors, new FakeNetworkService(), catalog, _config, new ShipHullBuilder(), _spawner,
                     new FakeEventPublisher());
                 int version = assembly.Version;
-                _state.Set(Ship(("hull.mount", 2, -1, 0, 0)));
+                _state.Set(Ship(("hull.mount", -3, 0, 0)));
 
                 assembly.Tick();
 
                 var socket = assembly.SocketsOf(_ship.Id).Single();
-                Assert.That(socket.Id, Is.EqualTo(new TinCan.Core.Ship.Sockets.ShipSocketId(3, 0)), "part #3, its first socket");
+                Assert.That(socket.Id, Is.EqualTo(new TinCan.Core.Ship.Sockets.ShipSocketId(12, 0)), "part #12, its first socket");
                 Assert.That(socket.Mount.IsChildOf(_ship.Transform), Is.True);
                 Assert.That(Vector3.Distance(socket.Mount.localPosition, new Vector3(0f, 0.5f, 0f)), Is.LessThan(0.001f));
                 Assert.That(assembly.Version, Is.GreaterThan(version));
@@ -298,7 +324,7 @@ namespace TinCan.Tests.EditMode
             Assert.That(_builder.Volume!.Value.min.y, Is.LessThan(-0.5f - 0.15f), "and its underside");
 
             // A new part, frame unchanged: no mesh is rebuilt.
-            _state.Set(deck.WithParts(deck.Parts.Append(new ShipPartPlacement(11, Block, new ShipGridCell(1, 0, 1), 0)), 12));
+            _state.Set(deck.WithParts(deck.Parts.Append(new ShipPartPlacement(11, Block, ShipPartAnchor.OnFace(9, 10, 10), 0)), 12));
             assembly.Tick();
             Assert.That(_builder.MeshBuilds, Is.EqualTo(2));
 
@@ -308,10 +334,22 @@ namespace TinCan.Tests.EditMode
             Assert.That(_builder.Meshes.Select(m => m.Name), Is.EqualTo(new[] { "Beams0" }));
 
             // No frame at all: nothing generated stands.
-            _state.Set(Ship());
+            _state.Set(ShipDesign.Empty("Bare"));
             assembly.Tick();
             Assert.That(_builder.Meshes, Is.Empty);
             Assert.That(assembly.BuiltFrameMeshes(_ship.Id), Is.Zero);
+        }
+
+        [Test]
+        public void Stairs_BuildSeenSteps_AndACollidingRamp()
+        {
+            var assembly = Assembly();
+            var box = ShipFrameTestDesigns.FrameOnly(ShipFrameTestDesigns.StairWell());
+            _state.Set(box);
+            assembly.Tick();
+
+            Assert.That(_builder.Meshes.Single(m => m.Name == "Steps0").Use, Is.EqualTo(ShipFrameMeshUse.Seen));
+            Assert.That(_builder.Meshes.Single(m => m.Name == "Ramps0").Use, Is.EqualTo(ShipFrameMeshUse.Collider));
         }
     }
 }

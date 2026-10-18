@@ -16,12 +16,13 @@ namespace TinCan.DevTools.Scenarios
         /// <summary>
         /// Drops <paramref name="stand"/> onto the first solid surface below it (along -<paramref name="up"/>, skipping
         /// triggers and the body's own colliders) and lifts it by the body's root-to-feet offset. Returns the point
-        /// unchanged if nothing is found.
+        /// unchanged if nothing is found. The search starts <paramref name="probeAbove"/> above the point (3 m), lower
+        /// where a deck above must not be found first.
         /// </summary>
-        public static Vector3 OnGround(Transform body, Vector3 stand, Vector3 up)
+        public static Vector3 OnGround(Transform body, Vector3 stand, Vector3 up, float probeAbove = ProbeAbove)
         {
-            Vector3 from = stand + up * ProbeAbove;
-            var hits = Physics.RaycastAll(from, -up, ProbeAbove + ProbeDepth, ~0, QueryTriggerInteraction.Ignore);
+            Vector3 from = stand + up * probeAbove;
+            var hits = Physics.RaycastAll(from, -up, probeAbove + ProbeDepth, ~0, QueryTriggerInteraction.Ignore);
             float nearest = float.PositiveInfinity;
             foreach (var hit in hits)
             {

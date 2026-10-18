@@ -17,11 +17,12 @@ using Object = UnityEngine.Object;
 namespace TinCan.DevTools.Editor
 {
     /// <summary>
-    /// TinCan > Dev > Ship Designs > Build Assets: the ship parts (hull block, deck tile, and the helm as the core part,
-    /// contributed by the Helm installer; the parts pack's stairs, rail, wall and propeller), their greybox prefabs and
-    /// materials, the ship designs config and installer, and the built-in designs (written through the codec, so the
-    /// files are in canonical form). Materials are created only when missing, so their colours stay as tuned. Plans:
-    /// .docs/plans/modular-airship-builder.md, .docs/plans/airship-parts-pack.md.
+    /// TinCan > Dev > Ship Designs > Build Assets: the ship parts that hang on a frame (the helm as the core part,
+    /// contributed by the Helm installer; the cairn, the engine, the propeller, the mast, the mount plate), their greybox
+    /// prefabs and materials, the ship designs config and installer, and the built-in designs (<see cref="ShipFrameDesigns"/>,
+    /// written through the codec, so the files are in canonical form). Materials are created only when missing, so their
+    /// colours stay as tuned. Every prefab's pivot is its anchor point: on the floor for a face part, at the node for a
+    /// node part. Plans: .docs/plans/modular-airship-builder.md, .docs/plans/frame-only-ships.md.
     /// </summary>
     public static class ShipDesignsAssetBuilder
     {
@@ -31,11 +32,9 @@ namespace TinCan.DevTools.Editor
         public const string StarterPath = DesignsFolder + "Starter.ship.json";
         public const string GalleonPath = DesignsFolder + "Galleon.ship.json";
         public const string RaftPath = DesignsFolder + "Raft.ship.json";
-        public const string FrameGalleonPath = DesignsFolder + "FrameGalleon.ship.json";
         public const string InstallerPath = "Assets/Resources/Installers/ShipDesignsFeatureInstaller.asset";
         private const string PrefabsFolder = "Assets/Prefabs/ShipParts/";
         private const string MaterialsFolder = "Assets/Materials/ShipParts/";
-        private const string GreyboxMeshesFolder = "Assets/Models/ShipParts/Greybox/";
         private const string HelmInstallerPath = "Assets/Resources/Installers/HelmFeatureInstaller.asset";
         private const string HelmStationPath = "Assets/Prefabs/Airship/Parts/HelmStation.prefab";
         private const string StationsInstallerPath = "Assets/Resources/Installers/StationsFeatureInstaller.asset";
@@ -46,103 +45,56 @@ namespace TinCan.DevTools.Editor
         public const string ProfilePath = "Assets/Settings/FeatureProfiles/Test/Profile_Test_Shipyard.asset";
         private const string CoreProfilePath = "Assets/Settings/FeatureProfiles/Test/Profile_Test_Core.asset";
 
-        public const string HullBlock = "hull.block";
-        public const string HullDeck = "hull.deck";
         public const string CoreHelm = "core.helm";
-        public const string HullArmour = "hull.armour";
+        public const string Cairn = "spirit.cairn";
         public const string Engine = "prop.engine";
-        public const string Balloon = "lift.balloon";
-        public const string Mast = "hull.mast";
-        public const string Envelope = "lift.envelope";
-        public const string HullMount = "hull.mount";
-        public const string Stairs = "hull.stairs";
-        public const string Rail = "hull.rail";
-        public const string RailGate = "hull.rail_gate";
-        public const string Wall = "hull.wall";
-        public const string WallWindow = "hull.wall_window";
-        public const string Bow = "hull.bow";
         public const string Propeller = "prop.propeller";
+        public const string Mast = "hull.mast";
+        public const string HullMount = "hull.mount";
 
-        /// <summary>A deck tile's thickness; its top is flush with the top of its cell, the cell's walkable surface.</summary>
-        private const float DeckThickness = 0.2f;
-
-        // Yaw orientations (ShipPartOrientation: k quarter turns clockwise seen from above). A rail or wall stands on its
-        // cell's +X edge, which faces +X, -Z, -X, +Z for k = 0..3; stairs rise toward +Z for 0 and toward -Z for 2.
-        private const byte FacesPlusX = 0, FacesMinusZ = 1, FacesMinusX = 2, FacesPlusZ = 3;
-        private const byte RisesPlusZ = 0, RisesMinusZ = 2;
+        /// <summary>A mount plate's thickness; it lies on the floor, its socket on top.</summary>
+        private const float PlateThickness = 0.1f;
 
         [MenuItem("TinCan/Dev/Ship Designs/Build Assets")]
         public static void Build()
         {
             var wood = Material("M_ShipHull", new Color(0.45f, 0.30f, 0.18f));
-            var planks = Material("M_ShipDeck", new Color(0.66f, 0.52f, 0.34f));
-
-            var blockPrefab = BoxPrefab("ShipPart_HullBlock", Vector3.zero, Vector3.one * ShipGrid.CellSize, wood);
-            var deckPrefab = BoxPrefab("ShipPart_HullDeck",
-                new Vector3(0f, (ShipGrid.CellSize - DeckThickness) * 0.5f, 0f),
-                new Vector3(ShipGrid.CellSize, DeckThickness, ShipGrid.CellSize), planks);
-
-            var steel = Material("M_ShipArmour", new Color(0.32f, 0.34f, 0.38f));
             var brass = Material("M_ShipEngine", new Color(0.55f, 0.42f, 0.2f));
-            var canvas = Material("M_ShipBalloon", new Color(0.86f, 0.82f, 0.72f));
-            var armourPrefab = BoxPrefab("ShipPart_HullArmour", Vector3.zero, Vector3.one * ShipGrid.CellSize, steel);
-            // The engine fills its cell and the one behind it (-Z).
-            var enginePrefab = BoxPrefab("ShipPart_Engine", new Vector3(0f, 0f, -0.5f), new Vector3(0.9f, 0.9f, 2f), brass);
-            // The balloon fills 3 x 2 x 3 cells around its origin, one layer up.
-            var balloonPrefab = BoxPrefab("ShipPart_Balloon", new Vector3(0f, 0.5f, 0f), new Vector3(3f, 2f, 3f), canvas, PrimitiveType.Sphere);
+            var stone = Material("M_ShipCairn", new Color(0.42f, 0.44f, 0.47f));
+            var spirit = Material("M_ShipSpirit", new Color(0.55f, 0.85f, 1f));
 
-            var block = Part("PART_HullBlock", HullBlock, "Hull block", "Hull", false, blockPrefab, null, Vector3.zero, new ShipPartStats(10f, hull: 25f));
-            var deck = Part("PART_HullDeck", HullDeck, "Deck tile", "Hull", false, deckPrefab, null, Vector3.zero, new ShipPartStats(3f, hull: 5f));
-            var armour = Part("PART_HullArmour", HullArmour, "Armour block", "Hull", false, armourPrefab, null, Vector3.zero, new ShipPartStats(30f, hull: 120f));
-            var engine = Part("PART_Engine", Engine, "Engine", "Drive", false, enginePrefab, null, Vector3.zero, new ShipPartStats(40f, thrust: 400f, hull: 40f),
-                new Vector3Int(0, 0, 0), new Vector3Int(0, 0, -1));
-            var balloon = Part("PART_Balloon", Balloon, "Balloon", "Lift", false, balloonPrefab, null, Vector3.zero, new ShipPartStats(15f, lift: 400f, hull: 10f),
-                Box(3, 2, 3));
-            // A post one cell tall: stack them to hold an envelope above the deck.
-            var mastPrefab = BoxPrefab("ShipPart_Mast", Vector3.zero, new Vector3(0.25f, 1f, 0.25f), wood);
-            var mast = Part("PART_Mast", Mast, "Mast", "Hull", false, mastPrefab, null, Vector3.zero, new ShipPartStats(5f, hull: 10f));
-            // The big top balloon: 5 x 3 x 7 cells, lifting a whole ship from above the deck.
-            var envelopePrefab = BoxPrefab("ShipPart_Envelope", new Vector3(0f, 1f, 0f), new Vector3(4.8f, 2.8f, 6.8f), canvas, PrimitiveType.Sphere);
-            var envelope = Part("PART_Envelope", Envelope, "Envelope", "Lift", false, envelopePrefab, null, Vector3.zero,
-                new ShipPartStats(40f, lift: 1200f, hull: 30f), Box(5, 3, 7));
-            // A deck tile with a socket on top: where fittings (a cannon, a tool rack) are mounted.
-            var mount = Part("PART_HullMount", HullMount, "Mount plate", "Hull", false, MountPrefab(brass), null, Vector3.zero, new ShipPartStats(5f, hull: 10f));
-            // The helm stand is about 4.5 x 2.2 x 3.9 m with its pivot at its base, reaching 2.35 m forward: 3 x 2 x 5 cells,
-            // standing on the floor of its origin cell.
-            var helm = Part("PART_CoreHelm", CoreHelm, "Helm", "Core", true, null, Load<GameObject>(HelmStationPath),
-                new Vector3(0f, -0.5f * ShipGrid.CellSize, 0f), new ShipPartStats(30f, hull: 100f), Box(3, 2, 5));
-
-            // The parts pack (.docs/plans/airship-parts-pack.md): greybox until the Blender meshes replace the visuals.
-            // Stairs: 3 m up over 5 m (31°, under the player's 45° slope limit); the cells above the slope are the stairwell.
-            var stairs = Part("PART_Stairs", Stairs, "Stairs", "Hull", false, StairsPrefab(planks), null, Vector3.zero,
-                new ShipPartStats(15f, hull: 15f), Cells(1, 3, 5));
-            var rail = Part("PART_Rail", Rail, "Rail", "Hull", false, RailPrefab(wood), null, Vector3.zero, new ShipPartStats(2f, hull: 3f));
-            // A rail with its middle left open: a way through to a balcony or a gangway.
-            var railGate = Part("PART_RailGate", RailGate, "Rail gate", "Hull", false, RailPrefab(wood, gate: true), null, Vector3.zero, new ShipPartStats(1f, hull: 2f));
-            // A wall as tall as a level (3 cells), capped by a deck slab: it carries the deck above it.
-            var wall = Part("PART_Wall", Wall, "Hull wall", "Hull", false, WallPrefab(wood, planks), null, Vector3.zero,
-                new ShipPartStats(6f, hull: 15f), Cells(1, 3, 1));
-            // The same wall with a window at eye height.
-            var windowWall = Part("PART_WallWindow", WallWindow, "Hull wall (window)", "Hull", false, WallPrefab(wood, planks, window: true), null,
-                Vector3.zero, new ShipPartStats(5f, hull: 12f), Cells(1, 3, 1));
-            // A prow for a hull 9 cells wide and 5 deep (keel to main deck): it tapers to a point 4 cells ahead, its top
-            // is deck, railed along the edges, with a bowsprit reaching up and forward.
-            var bow = Part("PART_Bow", Bow, "Bow", "Hull", false, BowPrefab(wood, planks), null, Vector3.zero,
-                new ShipPartStats(60f, hull: 120f), BowFootprint());
-            // A nacelle in its cell and a 3 x 3 propeller disc one cell behind it (-Z).
-            var propeller = Part("PART_Propeller", Propeller, "Propeller", "Drive", false, PropellerPrefab(brass, wood), null, Vector3.zero,
-                new ShipPartStats(25f, thrust: 400f, hull: 20f),
+            // The engine fills its block and the one behind it (-Z).
+            var enginePrefab = BoxPrefab("ShipPart_Engine", new Vector3(0f, 0.5f, -0.5f), new Vector3(0.9f, 0.9f, 2f), brass);
+            var engine = Part("PART_Engine", Engine, "Engine", "Drive", ShipPartAttach.Face, enginePrefab, null, Vector3.zero,
+                new ShipPartStats(40f, thrust: 200f, hull: 40f), new Vector3Int(0, 0, 0), new Vector3Int(0, 0, -1));
+            // A nacelle on its node and a 3 x 3 propeller disc one block behind it (-Z).
+            var propeller = Part("PART_Propeller", Propeller, "Propeller", "Drive", ShipPartAttach.Node, PropellerPrefab(brass, wood), null,
+                new Vector3(0f, 0.5f, 0f), new ShipPartStats(25f, thrust: 400f, hull: 20f),
                 new[] { Vector3Int.zero }.Concat(from x in Enumerable.Range(-1, 3) from y in Enumerable.Range(-1, 3) select new Vector3Int(x, y, -1)).ToArray());
+            // A mast 4 m tall standing on its node: for sails, later.
+            var mastPrefab = BoxPrefab("ShipPart_Mast", new Vector3(0f, 2f, 0f), new Vector3(0.25f, 2f, 0.25f), wood, PrimitiveType.Cylinder);
+            var mast = Part("PART_Mast", Mast, "Mast", "Hull", ShipPartAttach.Node, mastPrefab, null, Vector3.zero, new ShipPartStats(10f, hull: 15f),
+                Enumerable.Range(0, 4).Select(y => new Vector3Int(0, y, 0)).ToArray());
+            // A plate on the floor with a socket on top: where fittings (a cannon, a tool rack) are mounted.
+            var mount = Part("PART_HullMount", HullMount, "Mount plate", "Hull", ShipPartAttach.Face, MountPrefab(brass), null, Vector3.zero,
+                new ShipPartStats(5f, hull: 10f));
+            // The cairn: a stone holding the ship's spirit, which lifts the ship (ShipStatsTuning.SpiritLift).
+            var cairn = Part("PART_Cairn", Cairn, "Cairn", "Spirit", ShipPartAttach.Face, CairnPrefab(stone, spirit), null, Vector3.zero,
+                new ShipPartStats(40f, hull: 40f), new Vector3Int(0, 0, 0), new Vector3Int(0, 1, 0));
+            SetFlag(cairn, "_isCairn");
+            // The helm stand is about 4.5 x 2.2 x 3.9 m with its pivot at its base, reaching 2.35 m forward: 3 x 2 x 5 blocks.
+            var helm = Part("PART_CoreHelm", CoreHelm, "Helm", "Core", ShipPartAttach.Face, null, Load<GameObject>(HelmStationPath), Vector3.zero,
+                new ShipPartStats(30f, hull: 100f), Box(3, 2, 5));
+            SetFlag(helm, "_isCore");
 
-            var starter = WriteDesign(StarterPath, StarterDesign());
-            var galleon = WriteDesign(GalleonPath, GalleonDesign());
+            var starter = WriteDesign(StarterPath, ShipFrameDesigns.StarterDesign());
+            var galleon = WriteDesign(GalleonPath, ShipFrameDesigns.GalleonDesign());
             var raft = WriteDesign(RaftPath, ShipFrameDesigns.RaftDesign());
-            var frameGalleon = WriteDesign(FrameGalleonPath, ShipFrameDesigns.FrameGalleonDesign());
             var config = Asset<ShipDesignsConfig>(ConfigPath, designs =>
             {
-                designs.BuiltInDesigns = new List<TextAsset> { starter, galleon, raft, frameGalleon };
-                designs.DefaultDesign = "Starter";
-                ConfigureFrames(designs, raft, frameGalleon);
+                designs.BuiltInDesigns = new List<TextAsset> { starter, galleon, raft };
+                designs.DefaultDesign = ShipFrameDesigns.StarterName;
+                Configure(designs);
             });
 
             var stateFixture = Asset<ShipFixtureDefinition>(StateFixturePath, fixture =>
@@ -154,7 +106,7 @@ namespace TinCan.DevTools.Editor
             var installer = Asset<ShipDesignsFeatureInstaller>(InstallerPath, i =>
             {
                 SetField(i, "_config", config);
-                SetList(i, "_parts", new Object[] { block, deck, armour, engine, balloon, mast, envelope, mount, stairs, rail, railGate, wall, windowWall, bow, propeller });
+                SetList(i, "_parts", new Object[] { cairn, engine, propeller, mast, mount });
                 SetField(i, "_stateFixture", stateFixture);
             });
             var helmInstaller = Load<HelmFeatureInstaller>(HelmInstallerPath);
@@ -169,229 +121,34 @@ namespace TinCan.DevTools.Editor
             });
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[ShipDesignsAssetBuilder] Ship design assets built ({installer.name}, starter design with {StarterDesign().Parts.Count} parts, "
-                      + $"galleon with {GalleonDesign().Parts.Count}).");
+            Debug.Log($"[ShipDesignsAssetBuilder] Ship design assets built ({installer.name}; {ShipFrameDesigns.StarterDesign()}, "
+                      + $"{ShipFrameDesigns.GalleonDesign()}, {ShipFrameDesigns.RaftDesign()}).");
         }
 
-        /// <summary>
-        /// TinCan > Dev > Ship Designs > Build Frame Designs: only the frame part of <see cref="Build"/>, so it can run
-        /// without rebuilding every part prefab: writes the built-in frame designs (the raft, the frame galleon) and gives the config the
-        /// frame materials, limits and the raft as a built-in. Plan: .docs/plans/ship-frames.md.
-        /// </summary>
-        [MenuItem("TinCan/Dev/Ship Designs/Build Frame Designs")]
-        public static void BuildFrameDesigns()
+        /// <summary>The config's frame materials, and defaults for limits and tuning added after the asset was made.</summary>
+        private static void Configure(ShipDesignsConfig designs)
         {
-            var raft = WriteDesign(RaftPath, ShipFrameDesigns.RaftDesign());
-            var frameGalleon = WriteDesign(FrameGalleonPath, ShipFrameDesigns.FrameGalleonDesign());
-            Asset<ShipDesignsConfig>(ConfigPath, designs => ConfigureFrames(designs, raft, frameGalleon));
-            AssetDatabase.SaveAssets();
-            Debug.Log($"[ShipDesignsAssetBuilder] Frame designs built (raft: {ShipFrameDesigns.RaftDesign().Frame}; frame galleon: {ShipFrameDesigns.FrameGalleonDesign().Frame}).");
-        }
-
-        private static void ConfigureFrames(ShipDesignsConfig designs, params TextAsset[] frameDesigns)
-        {
-            foreach (var design in frameDesigns)
-            {
-                if (!designs.BuiltInDesigns.Contains(design)) designs.BuiltInDesigns.Add(design);
-            }
-
             designs.FramePlanks = Material("M_ShipDeck", new Color(0.66f, 0.52f, 0.34f));
             designs.FrameBeams = Material("M_ShipHull", new Color(0.45f, 0.30f, 0.18f));
 
-            // Frame limits came after the asset was first made; give them their defaults, keep the rest as tuned.
             var limits = designs.Limits;
-            var defaults = ShipDesignLimits.Default;
-            limits.MaxFrameElements = defaults.MaxFrameElements;
-            limits.MaxStories = defaults.MaxStories;
-            limits.MaxFaceNodes = defaults.MaxFaceNodes;
+            var defaultLimits = ShipDesignLimits.Default;
+            limits.MaxFrameElements = defaultLimits.MaxFrameElements;
+            limits.MaxStories = defaultLimits.MaxStories;
+            limits.MaxFaceNodes = defaultLimits.MaxFaceNodes;
             designs.Limits = limits;
 
-            // Frame tuning added after the asset was made (S3): defaults for what it does not have yet.
             var frames = designs.Frames;
-            if (frames.MinHeadroom <= 0f) frames.MinHeadroom = ShipFrameTuning.Default.MinHeadroom;
-            if (frames.RailHeight <= 0f) frames.RailHeight = ShipFrameTuning.Default.RailHeight;
+            var defaultFrames = ShipFrameTuning.Default;
+            if (frames.MinHeadroom <= 0f) frames.MinHeadroom = defaultFrames.MinHeadroom;
+            if (frames.RailHeight <= 0f) frames.RailHeight = defaultFrames.RailHeight;
+            if (frames.StairSlope <= 0f) frames.StairSlope = defaultFrames.StairSlope;
+            if (frames.StepRise <= 0f) frames.StepRise = defaultFrames.StepRise;
             designs.Frames = frames;
-        }
 
-        /// <summary>
-        /// The starter ship: a 5 x 9 deck with a keel under it, gunwales along both sides, the helm midships, an
-        /// engine off the stern and an envelope on four masts above the deck (mass 675, lift 1200, thrust 400: about 14 m/s).
-        /// Cell y 0 is the deck's walking level.
-        /// </summary>
-        public static ShipDesign StarterDesign()
-        {
-            var parts = new List<(string Part, ShipGridCell Cell)>();
-            // Two mount plates in the bow deck: sockets for fittings.
-            for (int x = -2; x <= 2; x++)
-            for (int z = -4; z <= 4; z++)
-                parts.Add((z == 4 && x is -1 or 1 ? HullMount : HullDeck, new ShipGridCell(x, -1, z)));
-            for (int x = -1; x <= 1; x++)
-            for (int z = -3; z <= 3; z++)
-                parts.Add((HullBlock, new ShipGridCell(x, -2, z)));
-            for (int z = -4; z <= 4; z++)
-            {
-                parts.Add((HullBlock, new ShipGridCell(-2, 0, z)));
-                parts.Add((HullBlock, new ShipGridCell(2, 0, z)));
-            }
-
-            // Midships: the helmsman stands 2 m behind the wheel, which must still be deck.
-            parts.Add((CoreHelm, new ShipGridCell(0, 0, 0)));
-            // An engine off the stern.
-            parts.Add((Engine, new ShipGridCell(0, -1, -5)));
-            // Four masts, two cells tall, on the gunwales, holding the envelope 3 m above the deck.
-            foreach (int x in new[] { -2, 2 })
-            foreach (int z in new[] { -2, 2 })
-            {
-                parts.Add((Mast, new ShipGridCell(x, 1, z)));
-                parts.Add((Mast, new ShipGridCell(x, 2, z)));
-            }
-
-            parts.Add((Envelope, new ShipGridCell(0, 3, 0)));
-
-            var placements = parts.Select((p, i) => new ShipPartPlacement(i + 1, p.Part, p.Cell, 0));
-            return new ShipDesign("Starter", "TinCan", parts.Count + 1, placements);
-        }
-
-        /// <summary>
-        /// The galleon: three levels on a hull 9 cells wide and 16 long, with a pointed bow at +Z. Decks are 3 cells apart
-        /// (2.8 m headroom under a 0.2 m slab). Hold: floor at y -4, walled all round with windows, reached by a railed
-        /// hatch staircase 3 wide from the main deck. Main deck: y -1, railed sides, two staircases aft up to the
-        /// quarterdeck, two masts carrying the envelope. Quarterdeck: y 2 over a cabin with windows, the helm in the
-        /// middle; the stairs land in lanes clear of the helm stand (4.5 m wide, wider than its 3 cells). Four side
-        /// balloons, three propellers under the stern, mount plates on every level. Plan: .docs/plans/airship-parts-pack.md.
-        /// </summary>
-        public static ShipDesign GalleonDesign()
-        {
-            var parts = new List<(string Part, ShipGridCell Cell, byte Orientation)>();
-            void Add(string part, int x, int y, int z, byte orientation = 0) => parts.Add((part, new ShipGridCell(x, y, z), orientation));
-            // Side walls alternate plain and window, so every other cell looks out.
-            void SideWall(int x, int y, int z, byte orientation) => Add(Math.Abs(z) % 2 == 1 ? WallWindow : Wall, x, y, z, orientation);
-
-            // Keel (to the bow), and the hold floor with two pairs of mount plates.
-            for (int x = -1; x <= 1; x++)
-            for (int z = -6; z <= 7; z++)
-                Add(HullBlock, x, -5, z);
-            for (int x = -4; x <= 4; x++)
-            for (int z = -8; z <= 7; z++)
-                Add(x is -3 or 3 && z is -5 or 3 ? HullMount : HullDeck, x, -4, z);
-
-            // The hold's walls (y -3..-1, their caps are the main deck's edge), solid blocks at the corners.
-            for (int z = -7; z <= 6; z++)
-            {
-                SideWall(4, -3, z, FacesPlusX);
-                SideWall(-4, -3, z, FacesMinusX);
-            }
-
-            for (int x = -3; x <= 3; x++)
-            {
-                Add(Wall, x, -3, 7, FacesPlusZ);
-                Add(Wall, x, -3, -8, FacesMinusZ);
-            }
-
-            Corners(-3);
-
-            // Main deck, open over the hatch: three staircases side by side (x -1..1) rising aft from the hold floor at
-            // z 6 to the main deck at z 1, railed along both sides and across the deep end.
-            for (int x = -3; x <= 3; x++)
-            for (int z = -7; z <= 6; z++)
-            {
-                if (x is >= -1 and <= 1 && z is >= 2 and <= 6) continue;
-                Add(z == 6 && x is -3 or 3 ? HullMount : HullDeck, x, -1, z);
-            }
-
-            for (int x = -1; x <= 1; x++)
-            {
-                Add(Stairs, x, -3, 6, RisesMinusZ);
-                Add(Rail, x, 0, 7, FacesMinusZ);
-            }
-
-            for (int z = 2; z <= 6; z++)
-            {
-                Add(Rail, -2, 0, z, FacesPlusX);
-                Add(Rail, 2, 0, z, FacesMinusX);
-            }
-
-            // The cabin under the quarterdeck: walls at the sides and stern (caps are the quarterdeck's edge), open forward.
-            for (int z = -7; z <= -2; z++)
-            {
-                SideWall(4, 0, z, FacesPlusX);
-                SideWall(-4, 0, z, FacesMinusX);
-            }
-
-            for (int x = -3; x <= 3; x++)
-                Add(Wall, x, 0, -8, FacesMinusZ);
-            Corners(0);
-
-            // Main deck rails forward of the cabin, to the bow.
-            for (int z = -1; z <= 7; z++)
-            {
-                Add(Rail, 4, 0, z, FacesPlusX);
-                Add(Rail, -4, 0, z, FacesMinusX);
-            }
-
-            // The bow: a prow 4 cells long from the keel up to the main deck, its top flush with the deck.
-            Add(Bow, 0, -5, 8);
-
-            // Two staircases rising aft along the sides, from the main deck at z 4 to the quarterdeck's front row at z -2.
-            Add(Stairs, 3, 0, 3, RisesMinusZ);
-            Add(Stairs, -3, 0, 3, RisesMinusZ);
-
-            // Quarterdeck with two mount plates aft, rails on every edge but the stair landings, and the helm (the
-            // helmsman stands about z -7).
-            for (int x = -3; x <= 3; x++)
-            for (int z = -7; z <= -2; z++)
-                Add(z == -7 && x is -3 or 3 ? HullMount : HullDeck, x, 2, z);
-            for (int z = -8; z <= -2; z++)
-            {
-                // A gate at z -6 opens onto the starboard balcony (appended at the end, so no part id shifts).
-                Add(z == -6 ? RailGate : Rail, 4, 3, z, FacesPlusX);
-                Add(Rail, -4, 3, z, FacesMinusX);
-            }
-
-            for (int x = -3; x <= 3; x++)
-                Add(Rail, x, 3, -8, FacesMinusZ);
-            for (int x = -2; x <= 2; x++)
-                Add(Rail, x, 3, -2, FacesPlusZ);
-            Add(CoreHelm, 0, 3, -5);
-
-            // Two masts, five cells tall, holding the envelope over the main deck clear of heads on the stairs.
-            for (int y = 0; y <= 4; y++)
-            {
-                Add(Mast, 2, y, 0);
-                Add(Mast, -2, y, 0);
-            }
-
-            Add(Envelope, 0, 5, 2);
-
-            // Side balloons along the hold walls, propellers under the stern.
-            foreach (int x in new[] { -6, 6 })
-            foreach (int z in new[] { -4, 2 })
-                Add(Balloon, x, -3, z);
-            foreach (int x in new[] { -3, 0, 3 })
-                Add(Propeller, x, -3, -9);
-
-            // A small balcony off the quarterdeck's starboard rail (through the gate at z -6), clear of the balloons below: a
-            // mount plate facing out (+X) with rails on its three open sides. Its socket carries the leash winch
-            // (Respawn), so a rope hangs in open air and a climber lands on the balcony. Appended last: ids from 473.
-            Add(HullMount, 5, 2, -6, FacesMinusZ);
-            Add(Rail, 5, 3, -6, FacesPlusX);
-            Add(Rail, 5, 3, -7, FacesPlusZ);
-            Add(Rail, 5, 3, -5, FacesMinusZ);
-
-            var placements = parts.Select((p, i) => new ShipPartPlacement(i + 1, p.Part, p.Cell, p.Orientation));
-            return new ShipDesign("Galleon", "TinCan", parts.Count + 1, placements);
-
-            // Solid blocks filling a level's four corner columns (3 cells from the given level up).
-            void Corners(int bottom)
-            {
-                for (int y = bottom; y <= bottom + 2; y++)
-                foreach (int x in new[] { -4, 4 })
-                foreach (int z in new[] { -8, 7 })
-                {
-                    if (bottom == 0 && z == 7) continue; // the main deck's bow is open: rails, not a cabin
-                    Add(HullBlock, x, y, z);
-                }
-            }
+            var flight = designs.Flight;
+            if (flight.SpiritLift <= 0f) flight.SpiritLift = ShipStatsTuning.Default.SpiritLift;
+            designs.Flight = flight;
         }
 
         /// <summary>The ShipDesignState fixture: a NetworkObject carrying a ship's design, riding the ship as a child.</summary>
@@ -467,211 +224,21 @@ namespace TinCan.DevTools.Editor
             (from x in Enumerable.Range(-(width / 2), width) from y in Enumerable.Range(0, height) from z in Enumerable.Range(-(depth / 2), depth)
                 select new Vector3Int(x, y, z)).ToArray();
 
-        /// <summary>Cells from the origin cell up (+Y) and forward (+Z), centred across X.</summary>
-        private static Vector3Int[] Cells(int width, int height, int depth) =>
-            (from x in Enumerable.Range(-(width / 2), width) from y in Enumerable.Range(0, height) from z in Enumerable.Range(0, depth)
-                select new Vector3Int(x, y, z)).ToArray();
 
-        /// <summary>
-        /// Ten steps, 0.3 m up and 0.5 m deep, from the floor of the origin cell to the top of the cell 3 up and 5
-        /// forward. The steps are only seen; feet ride one ramp collider through the middle of the step noses, which
-        /// starts at the floor just before the first step and ends 0.15 m above the deck it reaches.
-        /// </summary>
-        private static GameObject StairsPrefab(Material material)
+        /// <summary>A stone pillar on the floor with the spirit, a glowing ball, above it.</summary>
+        private static GameObject CairnPrefab(Material stone, Material spirit)
         {
-            const int steps = 10;
-            const float rise = 0.3f, tread = 0.5f, floor = -0.5f;
-            var root = new GameObject("ShipPart_Stairs");
-            for (int i = 0; i < steps; i++)
-            {
-                float height = rise * (i + 1);
-                Piece(root, $"Step_{i:00}", PrimitiveType.Cube, new Vector3(0f, floor + height * 0.5f, floor + tread * (i + 0.5f)),
-                    new Vector3(1f, height, tread), material, solid: false);
-            }
-
-            // The ramp's top surface: y = floor + rise/2 + slope * (z - floor), from the floor up to the last step's far edge.
-            float slope = rise / tread;
-            var start = new Vector3(0f, floor, floor - rise * 0.5f / slope);
-            var end = new Vector3(0f, floor + rise * 0.5f + slope * tread * steps, floor + tread * steps);
-            const float thickness = 0.1f;
-            var along = (end - start).normalized;
-            var normal = Vector3.Cross(along, Vector3.right).normalized;
-            var ramp = new GameObject("Ramp");
-            ramp.transform.SetParent(root.transform, false);
-            ramp.transform.localPosition = (start + end) * 0.5f - normal * thickness * 0.5f;
-            ramp.transform.localRotation = Quaternion.LookRotation(along, normal);
-            ramp.AddComponent<BoxCollider>().size = new Vector3(1f, thickness, (end - start).magnitude);
+            var root = new GameObject("ShipPart_Cairn");
+            Piece(root, "Stone", PrimitiveType.Cube, new Vector3(0f, 0.6f, 0f), new Vector3(0.8f, 1.2f, 0.8f), stone, solid: true);
+            Piece(root, "Spirit", PrimitiveType.Sphere, new Vector3(0f, 1.55f, 0f), Vector3.one * 0.45f, spirit, solid: false);
             return Save(root);
         }
 
-        /// <summary>
-        /// Two posts and two rails along the cell's +X edge, 1 m high; one box keeps players in. A gate is the two posts
-        /// alone: a way through.
-        /// </summary>
-        private static GameObject RailPrefab(Material material, bool gate = false)
+        private static void SetFlag(ShipPartDefinition part, string field)
         {
-            const float edge = 0.45f, floor = -0.5f;
-            var root = new GameObject(gate ? "ShipPart_RailGate" : "ShipPart_Rail");
-            foreach (float z in new[] { -0.45f, 0.45f })
-                Piece(root, "Post", PrimitiveType.Cube, new Vector3(edge, floor + 0.5f, z), new Vector3(0.08f, 1f, 0.08f), material, solid: false);
-            if (gate) return Save(root);
-
-            Piece(root, "TopRail", PrimitiveType.Cube, new Vector3(edge, floor + 1f, 0f), new Vector3(0.1f, 0.08f, 1f), material, solid: false);
-            Piece(root, "MidRail", PrimitiveType.Cube, new Vector3(edge, floor + 0.5f, 0f), new Vector3(0.05f, 0.05f, 1f), material, solid: false);
-            var block = new GameObject("Collider");
-            block.transform.SetParent(root.transform, false);
-            block.transform.localPosition = new Vector3(edge, floor + 0.55f, 0f);
-            block.AddComponent<BoxCollider>().size = new Vector3(0.1f, 1.1f, 1f);
-            return Save(root);
-        }
-
-        /// <summary>
-        /// A 3 m wall along the +X edge of its three cells, with a deck slab on top flush with the level above. The panel
-        /// stops under the slab: no two faces share a plane, so nothing flickers (z-fighting) along the deck's edge. With
-        /// a window, the panel is four pieces around a 0.5 x 0.8 m opening 1.1 m above the floor.
-        /// </summary>
-        private static GameObject WallPrefab(Material wall, Material deck, bool window = false)
-        {
-            const float x = 0.4f, thickness = 0.2f, floor = -0.5f;
-            float top = 2.5f - DeckThickness;
-            var root = new GameObject(window ? "ShipPart_WallWindow" : "ShipPart_Wall");
-            if (window)
-            {
-                const float sill = floor + 1.1f, lintel = sill + 0.8f, half = 0.25f;
-                Piece(root, "Below", PrimitiveType.Cube, new Vector3(x, (floor + sill) * 0.5f, 0f), new Vector3(thickness, sill - floor, 1f), wall, solid: true);
-                Piece(root, "Above", PrimitiveType.Cube, new Vector3(x, (lintel + top) * 0.5f, 0f), new Vector3(thickness, top - lintel, 1f), wall, solid: true);
-                foreach (float side in new[] { -1f, 1f })
-                {
-                    Piece(root, "Jamb", PrimitiveType.Cube, new Vector3(x, (sill + lintel) * 0.5f, side * (0.5f + half) * 0.5f),
-                        new Vector3(thickness, lintel - sill, 0.5f - half), wall, solid: true);
-                }
-            }
-            else
-            {
-                Piece(root, "Panel", PrimitiveType.Cube, new Vector3(x, (floor + top) * 0.5f, 0f), new Vector3(thickness, top - floor, 1f), wall, solid: true);
-            }
-
-            Piece(root, "Cap", PrimitiveType.Cube, new Vector3(0f, top + DeckThickness * 0.5f, 0f), new Vector3(1f, DeckThickness, 1f), deck, solid: true);
-            return Save(root);
-        }
-
-        /// <summary>
-        /// The bow's cells: a 9 x 6 x 4 box (keel to main deck, plus the layer its rails stand in, 4 cells ahead) and the
-        /// cells the bowsprit passes through.
-        /// </summary>
-        private static Vector3Int[] BowFootprint() =>
-            Box(9, 6, 1).SelectMany(c => Enumerable.Range(0, 4).Select(z => new Vector3Int(c.x, c.y, z)))
-                .Concat(new[] { new Vector3Int(0, 5, 4), new Vector3Int(0, 5, 5), new Vector3Int(0, 6, 6), new Vector3Int(0, 6, 7) })
-                .ToArray();
-
-        /// <summary>
-        /// The prow, in the origin cell's space (origin at the keel, one cell ahead of the hull): a solid that is the deck
-        /// outline at the top (9 m wide at the hull, narrowing to a point 4 m ahead) and a keel-wide triangle at the bottom.
-        /// Its top is deck (planks), its sides hull; a convex collider of the same mesh. Rails run along the four outer
-        /// edges of the top, and a bowsprit reaches up and forward from the point.
-        /// </summary>
-        private static GameObject BowPrefab(Material hull, Material deck)
-        {
-            const float back = -0.5f, top = 4.5f, bottom = -0.5f;
-            Vector3[] outline =
-            {
-                new(-4.5f, top, back), new(-3.3f, top, back + 2f), new(0f, top, back + 4f), new(3.3f, top, back + 2f), new(4.5f, top, back),
-            };
-            Vector3[] keel = { new(-1.5f, bottom, back), new(0f, bottom, back + 2f), new(1.5f, bottom, back) };
-
-            var mesh = BowMesh(outline, keel);
-            var root = new GameObject("ShipPart_Bow");
-            var body = new GameObject("Mesh");
-            body.transform.SetParent(root.transform, false);
-            body.AddComponent<MeshFilter>().sharedMesh = mesh;
-            body.AddComponent<MeshRenderer>().sharedMaterials = new[] { deck, hull };
-            body.AddComponent<MeshCollider>().sharedMesh = mesh;
-            body.GetComponent<MeshCollider>().convex = true;
-
-            // Rails along the outer edges (not the edge against the hull), set 0.05 m in from the edge.
-            var centre = outline.Aggregate(Vector3.zero, (sum, p) => sum + p) / outline.Length;
-            for (int i = 0; i < outline.Length - 1; i++)
-            {
-                var a = outline[i];
-                var b = outline[i + 1];
-                var inward = new Vector3(centre.x - (a.x + b.x) * 0.5f, 0f, centre.z - (a.z + b.z) * 0.5f).normalized * 0.05f;
-                var middle = (a + b) * 0.5f + inward;
-                var along = Quaternion.LookRotation(b - a, Vector3.up);
-                float length = (b - a).magnitude;
-                Piece(root, "TopRail", PrimitiveType.Cube, middle + Vector3.up * 1f, new Vector3(0.1f, 0.08f, length), hull, solid: false, along);
-                Piece(root, "MidRail", PrimitiveType.Cube, middle + Vector3.up * 0.5f, new Vector3(0.05f, 0.05f, length), hull, solid: false, along);
-                Piece(root, "Post", PrimitiveType.Cube, a + inward + Vector3.up * 0.5f, new Vector3(0.08f, 1f, 0.08f), hull, solid: false);
-                var block = new GameObject("RailCollider");
-                block.transform.SetParent(root.transform, false);
-                block.transform.localPosition = middle + Vector3.up * 0.55f;
-                block.transform.localRotation = along;
-                block.AddComponent<BoxCollider>().size = new Vector3(0.1f, 1.1f, length);
-            }
-
-            var last = outline[^1];
-            Piece(root, "Post", PrimitiveType.Cube, last + new Vector3(centre.x - last.x, 0f, centre.z - last.z).normalized * 0.05f + Vector3.up * 0.5f,
-                new Vector3(0.08f, 1f, 0.08f), hull, solid: false);
-
-            // The bowsprit: from the point, 4.5 m up and forward.
-            var foot = new Vector3(0f, top + 0.3f, back + 3.7f);
-            var reach = new Vector3(0f, 0.35f, 1f).normalized * 4.5f;
-            Piece(root, "Bowsprit", PrimitiveType.Cylinder, foot + reach * 0.5f, new Vector3(0.22f, reach.magnitude * 0.5f, 0.22f), hull, solid: false,
-                Quaternion.FromToRotation(Vector3.up, reach));
-            return Save(root);
-        }
-
-        /// <summary>
-        /// A flat-shaded solid from a convex top outline and a bottom keel outline (same depth at the back): the top as
-        /// submesh 0, every other face as submesh 1. Each face is wound to face away from the solid's middle. Saved under
-        /// the greybox meshes folder (kept in place when rebuilt, so references hold).
-        /// </summary>
-        private static Mesh BowMesh(Vector3[] outline, Vector3[] keel)
-        {
-            var middle = outline.Concat(keel).Aggregate(Vector3.zero, (sum, p) => sum + p) / (outline.Length + keel.Length);
-            var vertices = new List<Vector3>();
-            var topTriangles = new List<int>();
-            var sideTriangles = new List<int>();
-            void Face(List<int> into, Vector3 a, Vector3 b, Vector3 c)
-            {
-                // Unity's front face for (a, b, c) faces along Cross(b - a, c - a): turn it to face away from the middle.
-                var normal = Vector3.Cross(b - a, c - a);
-                if (Vector3.Dot(normal, (a + b + c) / 3f - middle) < 0f) (b, c) = (c, b);
-                into.Add(vertices.Count); vertices.Add(a);
-                into.Add(vertices.Count); vertices.Add(b);
-                into.Add(vertices.Count); vertices.Add(c);
-            }
-
-            for (int i = 1; i < outline.Length - 1; i++) Face(topTriangles, outline[0], outline[i], outline[i + 1]);
-            // outline: back-left, left, point, right, back-right; keel: back-left, point, back-right.
-            Face(sideTriangles, outline[0], outline[4], keel[2]);
-            Face(sideTriangles, outline[0], keel[2], keel[0]);
-            Face(sideTriangles, outline[0], outline[1], keel[0]);
-            Face(sideTriangles, outline[1], keel[1], keel[0]);
-            Face(sideTriangles, outline[1], outline[2], keel[1]);
-            Face(sideTriangles, outline[2], outline[3], keel[1]);
-            Face(sideTriangles, outline[3], keel[2], keel[1]);
-            Face(sideTriangles, outline[3], outline[4], keel[2]);
-            Face(sideTriangles, keel[0], keel[1], keel[2]);
-
-            var path = GreyboxMeshesFolder + "Bow.asset";
-            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
-            bool created = mesh == null;
-            mesh ??= new Mesh { name = "Bow" };
-            mesh.Clear();
-            mesh.SetVertices(vertices);
-            mesh.subMeshCount = 2;
-            mesh.SetTriangles(topTriangles, 0);
-            mesh.SetTriangles(sideTriangles, 1);
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            if (created)
-            {
-                EnsureFolder(path);
-                AssetDatabase.CreateAsset(mesh, path);
-            }
-
-            EditorUtility.SetDirty(mesh);
-            return mesh;
+            var serialized = new SerializedObject(part);
+            serialized.FindProperty(field).boolValue = true;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         /// <summary>A nacelle along Z in its cell and four blades in the cell layer behind it; only the nacelle is solid.</summary>
@@ -716,7 +283,8 @@ namespace TinCan.DevTools.Editor
             }
         }
 
-        private static ShipPartDefinition Part(string asset, string partId, string displayName, string category, bool isCore,
+        /// <summary>A part asset, written whole; <see cref="SetFlag"/> marks the core and the cairn afterwards.</summary>
+        private static ShipPartDefinition Part(string asset, string partId, string displayName, string category, ShipPartAttach attach,
             GameObject? visual, GameObject? networkedPrefab, Vector3 pivotOffset, ShipPartStats stats, params Vector3Int[] footprint) =>
             Asset<ShipPartDefinition>(PartsFolder + asset + ".asset", part =>
             {
@@ -724,7 +292,9 @@ namespace TinCan.DevTools.Editor
                 serialized.FindProperty("_partId").stringValue = partId;
                 serialized.FindProperty("_displayName").stringValue = displayName;
                 serialized.FindProperty("_category").stringValue = category;
-                serialized.FindProperty("_isCore").boolValue = isCore;
+                serialized.FindProperty("_attach").enumValueIndex = (int)attach;
+                serialized.FindProperty("_isCore").boolValue = false;
+                serialized.FindProperty("_isCairn").boolValue = false;
                 serialized.FindProperty("_visual").objectReferenceValue = visual;
                 serialized.FindProperty("_networkedPrefab").objectReferenceValue = networkedPrefab;
                 serialized.FindProperty("_pivotOffset").vector3Value = pivotOffset;
@@ -739,7 +309,7 @@ namespace TinCan.DevTools.Editor
                 serialized.ApplyModifiedPropertiesWithoutUndo();
             });
 
-        /// <summary>A deck tile in a mount colour, with a ShipSocket on its top face.</summary>
+        /// <summary>A plate lying on the floor in a mount colour, with a ShipSocket on top.</summary>
         private static GameObject MountPrefab(Material material)
         {
             var path = PrefabsFolder + "ShipPart_HullMount.prefab";
@@ -749,12 +319,12 @@ namespace TinCan.DevTools.Editor
                 var plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 plate.name = "Mesh";
                 plate.transform.SetParent(root.transform, false);
-                plate.transform.localPosition = new Vector3(0f, (ShipGrid.CellSize - DeckThickness) * 0.5f, 0f);
-                plate.transform.localScale = new Vector3(ShipGrid.CellSize, DeckThickness, ShipGrid.CellSize);
+                plate.transform.localPosition = new Vector3(0f, PlateThickness * 0.5f, 0f);
+                plate.transform.localScale = new Vector3(1f, PlateThickness, 1f);
                 plate.GetComponent<MeshRenderer>().sharedMaterial = material;
                 var socket = new GameObject("ShipSocket");
                 socket.transform.SetParent(root.transform, false);
-                socket.transform.localPosition = new Vector3(0f, 0.5f * ShipGrid.CellSize, 0f);
+                socket.transform.localPosition = new Vector3(0f, PlateThickness, 0f);
                 socket.AddComponent<ShipSocket>();
                 EnsureFolder(path);
                 return PrefabUtility.SaveAsPrefabAsset(root, path);

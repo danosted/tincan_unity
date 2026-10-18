@@ -32,7 +32,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void EveryFitting_SitsOnAMountPlate_AndIsOffered()
         {
-            var galleon = ShipDesignsAssetBuilder.GalleonDesign();
+            var galleon = ShipFrameDesigns.GalleonDesign();
             var offered = AssetDatabase.FindAssets("t:ShipFittingDefinition")
                 .Select(guid => AssetDatabase.LoadAssetAtPath<ShipFittingDefinition>(AssetDatabase.GUIDToAssetPath(guid)).FittingId)
                 .ToHashSet();

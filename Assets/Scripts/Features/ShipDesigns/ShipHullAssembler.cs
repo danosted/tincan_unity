@@ -7,30 +7,45 @@ using UnityEngine;
 namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
-    /// Builds one design under one root and keeps it in step: each apply removes the parts that went or changed and builds
-    /// the new ones, keyed by instance id, and rebuilds the frame meshes of the stories whose frame data changed
-    /// (<see cref="ShipFrameMeshProcessor"/>: planks and beams per story). Used for ships in play
-    /// (<see cref="ShipAssemblyUseCase"/>) and for the shipyard's preview, so what is built is what flies. A part builds
-    /// its visual; with <c>buildFunctionalParts</c> a part without one builds its networked prefab instead (the preview's
-    /// helm; the builder decides what to strip). Unknown parts are kept as placeholders that build nothing.
+    /// Builds one design under one root and keeps it in step: each apply removes the parts that went or moved (a part
+    /// moves with its frame element) and builds the new ones, keyed by instance id, and rebuilds the frame meshes of the
+    /// stories whose frame data changed (<see cref="ShipFrameMeshProcessor"/>: planks, beams, stair steps and ramps per
+    /// story). Used for ships in play (<see cref="ShipAssemblyUseCase"/>) and for the shipyard's preview, so what is built
+    /// is what flies. A part builds its visual; with <c>buildFunctionalParts</c> a part without one builds its networked
+    /// prefab instead (the preview's helm; the builder decides what to strip). Unknown parts, and parts their anchor does
+    /// not hold, are kept as placeholders that build nothing.
     /// </summary>
     public sealed class ShipHullAssembler
     {
         private sealed class BuiltStory
         {
-            public BuiltStory(ulong fingerprint, object? planks, object? beams)
+            public BuiltStory(ulong fingerprint, IReadOnlyList<object> meshes)
             {
                 Fingerprint = fingerprint;
-                Planks = planks;
-                Beams = beams;
+                Meshes = meshes;
             }
 
             public ulong Fingerprint { get; }
-            public object? Planks { get; }
-            public object? Beams { get; }
+            public IReadOnlyList<object> Meshes { get; }
         }
 
-        private readonly Dictionary<int, (ShipPartPlacement Placement, object? Handle)> _parts = new();
+        private readonly struct BuiltPart
+        {
+            public BuiltPart(ShipPartPlacement placement, Vector3 position, Quaternion rotation, object? handle)
+            {
+                Placement = placement;
+                Position = position;
+                Rotation = rotation;
+                Handle = handle;
+            }
+
+            public ShipPartPlacement Placement { get; }
+            public Vector3 Position { get; }
+            public Quaternion Rotation { get; }
+            public object? Handle { get; }
+        }
+
+        private readonly Dictionary<int, BuiltPart> _parts = new();
         private readonly Dictionary<int, BuiltStory> _stories = new();
         private readonly ShipFrameMeshProcessor _meshes = new();
         private readonly IShipPartCatalog _catalog;
@@ -53,8 +68,8 @@ namespace TinCan.Features.ShipDesigns
         /// <summary>Parts with something built for them.</summary>
         public int BuiltCount => _parts.Values.Count(p => p.Handle != null);
 
-        /// <summary>Frame meshes standing (a story's planks and its beams count one each).</summary>
-        public int BuiltFrameMeshes => _stories.Values.Sum(s => (s.Planks != null ? 1 : 0) + (s.Beams != null ? 1 : 0));
+        /// <summary>Frame meshes standing (each story's planks, beams, steps and ramps count one each when it has them).</summary>
+        public int BuiltFrameMeshes => _stories.Values.Sum(s => s.Meshes.Count);
 
         public int UnknownCount { get; private set; }
 
@@ -62,16 +77,31 @@ namespace TinCan.Features.ShipDesigns
         public IEnumerable<(ShipPartPlacement Placement, object Handle)> Built =>
             _parts.Values.Where(p => p.Handle != null).Select(p => (p.Placement, p.Handle!));
 
-        /// <summary>Brings the root in step with the design; returns the known parts added by this apply.</summary>
+        /// <summary>Brings the root in step with the design; returns the known, anchored parts added by this apply.</summary>
         public IReadOnlyList<(ShipPartPlacement Placement, ShipPartDefinition Part)> Apply(ShipDesign design, Transform root)
         {
+            var shape = ShipFrameShape.From(design.Frame);
+            var poses = new Dictionary<int, (ShipPartDefinition Part, Vector3 Position, Quaternion Rotation)>();
+            foreach (var placement in design.Parts)
+            {
+                if (_catalog.TryGet(placement.PartId, out var part) && ShipPartPose.TryGetPose(placement, part, shape, out var position, out var rotation))
+                {
+                    poses[placement.InstanceId] = (part, position, rotation);
+                }
+            }
+
             var wanted = design.Parts.ToDictionary(p => p.InstanceId);
             foreach (var instanceId in _parts.Keys.ToList())
             {
-                var (placement, handle) = _parts[instanceId];
-                if (wanted.TryGetValue(instanceId, out var now) && Same(placement, now)) continue;
+                var built = _parts[instanceId];
+                if (wanted.TryGetValue(instanceId, out var now) && now.PartId == built.Placement.PartId && poses.TryGetValue(instanceId, out var pose)
+                    && pose.Position == built.Position && pose.Rotation == built.Rotation)
+                {
+                    _parts[instanceId] = new BuiltPart(now, built.Position, built.Rotation, built.Handle);
+                    continue;
+                }
 
-                if (handle != null) _builder.Remove(handle);
+                if (built.Handle != null) _builder.Remove(built.Handle);
                 _parts.Remove(instanceId);
             }
 
@@ -79,23 +109,20 @@ namespace TinCan.Features.ShipDesigns
             foreach (var placement in design.Parts)
             {
                 if (_parts.ContainsKey(placement.InstanceId)) continue;
-                if (!_catalog.TryGet(placement.PartId, out var part))
+                if (!poses.TryGetValue(placement.InstanceId, out var pose))
                 {
-                    _parts.Add(placement.InstanceId, (placement, null));
+                    _parts.Add(placement.InstanceId, new BuiltPart(placement, default, Quaternion.identity, null));
                     continue;
                 }
 
-                var prefab = part.Visual != null ? part.Visual : _buildFunctionalParts ? part.NetworkedPrefab : null;
-                object? handle = prefab != null
-                    ? _builder.Build(root, prefab, ShipPartPose.LocalPosition(placement, part), ShipPartPose.LocalRotation(placement))
-                    : null;
-                _parts.Add(placement.InstanceId, (placement, handle));
-                added.Add((placement, part));
+                var prefab = pose.Part.Visual != null ? pose.Part.Visual : _buildFunctionalParts ? pose.Part.NetworkedPrefab : null;
+                object? handle = prefab != null ? _builder.Build(root, prefab, pose.Position, pose.Rotation) : null;
+                _parts.Add(placement.InstanceId, new BuiltPart(placement, pose.Position, pose.Rotation, handle));
+                added.Add((placement, pose.Part));
             }
 
             UnknownCount = design.Parts.Count(p => !_catalog.TryGet(p.PartId, out _));
 
-            var shape = ShipFrameShape.From(design.Frame);
             ApplyFrame(shape, root);
             if (TryGetBounds(design, _catalog, shape, _frameTuning, out var bounds)) _builder.FitShipVolume(root, bounds);
             return added;
@@ -103,9 +130,9 @@ namespace TinCan.Features.ShipDesigns
 
         public void Clear()
         {
-            foreach (var (_, handle) in _parts.Values)
+            foreach (var part in _parts.Values)
             {
-                if (handle != null) _builder.Remove(handle);
+                if (part.Handle != null) _builder.Remove(part.Handle);
             }
 
             _parts.Clear();
@@ -133,16 +160,23 @@ namespace TinCan.Features.ShipDesigns
                     RemoveStory(built);
                 }
 
-                object? planks = story.Planks.IsEmpty ? null : _builder.BuildMesh(root, $"Planks{story.Story}", story.Planks, _planks);
-                object? beams = story.Beams.IsEmpty ? null : _builder.BuildMesh(root, $"Beams{story.Story}", story.Beams, _beams);
-                _stories[story.Story] = new BuiltStory(story.Fingerprint, planks, beams);
+                var meshes = new List<object>();
+                void Add(string name, ShipFrameMesh mesh, Material? material, ShipFrameMeshUse use)
+                {
+                    if (!mesh.IsEmpty) meshes.Add(_builder.BuildMesh(root, $"{name}{story.Story}", mesh, material, use));
+                }
+
+                Add("Planks", story.Planks, _planks, ShipFrameMeshUse.Solid);
+                Add("Beams", story.Beams, _beams, ShipFrameMeshUse.Solid);
+                Add("Steps", story.Steps, _planks, ShipFrameMeshUse.Seen);
+                Add("Ramps", story.Ramps, null, ShipFrameMeshUse.Collider);
+                _stories[story.Story] = new BuiltStory(story.Fingerprint, meshes);
             }
         }
 
         private void RemoveStory(BuiltStory story)
         {
-            if (story.Planks != null) _builder.Remove(story.Planks);
-            if (story.Beams != null) _builder.Remove(story.Beams);
+            foreach (var mesh in story.Meshes) _builder.Remove(mesh);
         }
 
         /// <summary>The ship-local space a design's known parts and frame fill, or false for a design with neither.</summary>
@@ -152,7 +186,7 @@ namespace TinCan.Features.ShipDesigns
         /// <summary>The space the parts and the frame fill (the frame down to the underside of its planks).</summary>
         private static bool TryGetBounds(ShipDesign design, IShipPartCatalog catalog, ShipFrameShape shape, ShipFrameTuning tuning, out Bounds bounds)
         {
-            bool hasParts = ShipPartPose.TryGetBounds(design, catalog, out bounds);
+            bool hasParts = ShipPartPose.TryGetBounds(design, catalog, shape, out bounds);
             if (!shape.TryGetBounds(out var frame)) return hasParts;
 
             frame.Encapsulate(frame.min + Vector3.down * (tuning.PlankThickness + tuning.BeamWidth));
@@ -160,8 +194,5 @@ namespace TinCan.Features.ShipDesigns
             else bounds.Encapsulate(frame);
             return true;
         }
-
-        private static bool Same(ShipPartPlacement a, ShipPartPlacement b) =>
-            a.PartId == b.PartId && a.Cell == b.Cell && a.Orientation == b.Orientation;
     }
 }

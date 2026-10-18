@@ -6,7 +6,7 @@ using UnityEngine;
 namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
-    /// A frame in ship-local metres: each face's corners and triangles, each edge's segment. Built once from a frame and
+    /// A frame in ship-local metres: each face's corners and triangles, each edge's segment, each flight of stairs. Built once from a frame and
     /// shared by the validator, the stats and the mesh processor, so they all see the same triangles. References to
     /// missing nodes are skipped (the validator reports them).
     /// </summary>
@@ -66,6 +66,46 @@ namespace TinCan.Features.ShipDesigns
             public float Length => Vector3.Distance(From, To);
         }
 
+        /// <summary>
+        /// A flight of stairs in metres: its landing edge (<see cref="TopA"/> to <see cref="TopB"/>, on story
+        /// <see cref="Story"/>), the horizontal way down (<see cref="Down"/>, square to the edge), and how far it drops and
+        /// runs: down to the floor plane of the story below, at the frame's stair slope.
+        /// </summary>
+        public readonly struct StairShape
+        {
+            public StairShape(ShipFrameStair stair, int story, Vector3 topA, Vector3 topB, Vector3 down, float rise, float run)
+            {
+                Stair = stair;
+                Story = story;
+                TopA = topA;
+                TopB = topB;
+                Down = down;
+                Rise = rise;
+                Run = run;
+            }
+
+            public ShipFrameStair Stair { get; }
+
+            /// <summary>The landing's story; the flight stands in the story below it.</summary>
+            public int Story { get; }
+
+            public Vector3 TopA { get; }
+            public Vector3 TopB { get; }
+            public Vector3 Down { get; }
+            public float Rise { get; }
+            public float Run { get; }
+            public float Width => Vector3.Distance(TopA, TopB);
+
+            /// <summary>Where the flight meets the floor below, under each end of the landing edge.</summary>
+            public Vector3 FootA => TopA + Down * Run + Vector3.down * Rise;
+
+            public Vector3 FootB => TopB + Down * Run + Vector3.down * Rise;
+
+            /// <summary>A point on the flight: <paramref name="along"/> 0..1 from A to B, <paramref name="downward"/> 0..1 from the landing to the foot.</summary>
+            public Vector3 At(float along, float downward) =>
+                Vector3.Lerp(TopA, TopB, along) + Down * (Run * downward) + Vector3.down * (Rise * downward);
+        }
+
         private ShipFrameShape(ShipFrame frame, IReadOnlyList<FaceShape> faces, IReadOnlyList<EdgeShape> edges)
         {
             Frame = frame;
@@ -105,6 +145,33 @@ namespace TinCan.Features.ShipDesigns
             }
 
             return new ShipFrameShape(frame, faces, edges);
+        }
+
+
+        /// <summary>
+        /// The flights of stairs, at a slope in degrees. One whose edge is missing or not a floor edge above story 0 is
+        /// skipped (the validator reports it).
+        /// </summary>
+        public IEnumerable<StairShape> Stairs(float slopeDegrees)
+        {
+            float tan = Mathf.Tan(Mathf.Clamp(slopeDegrees, 1f, 89f) * Mathf.Deg2Rad);
+            foreach (var stair in Frame.Stairs)
+            {
+                if (!Frame.TryGetEdge(stair.Edge, out var edge) || !Frame.TryGetNode(edge.A, out var a) || !Frame.TryGetNode(edge.B, out var b)) continue;
+                if (a.Story != b.Story || a.Story == 0) continue;
+
+                var topA = Frame.Position(a);
+                var topB = Frame.Position(b);
+                var along = topB - topA;
+                along.y = 0f;
+                if (along.sqrMagnitude < 1e-6f) continue;
+                along.Normalize();
+                var down = new Vector3(-along.z, 0f, along.x) * stair.Dir;
+                float landing = (topA.y + topB.y) * 0.5f;
+                float rise = landing - ShipFrameUnits.ToMetres(Frame.StoryFloor(a.Story - 1));
+                if (rise <= 0f) continue;
+                yield return new StairShape(stair, a.Story, topA, topB, down, rise, rise / tan);
+            }
         }
 
         /// <summary>Plank area (m², in 3D) and beam length (m): what the frame weighs and holds.</summary>

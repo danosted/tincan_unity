@@ -24,13 +24,13 @@ namespace TinCan.Tests.EditMode
         }
 
         private FileShipDesignStore Store(int maxTextLength = 1_000_000) =>
-            new(_directory, new Dictionary<string, string> { ["Starter"] = _codec.Encode(Design((Helm, 0, 0, 0, 0))) }, _codec, maxTextLength);
+            new(_directory, new Dictionary<string, string> { ["Starter"] = _codec.Encode(Design((Helm, 0, 0, 0))) }, _codec, maxTextLength);
 
         [Test]
         public void ASavedDesign_LoadsBack_AndIsListed()
         {
             var store = Store();
-            var design = Design((Helm, 0, 0, 0, 0), (Block, 1, 0, 0, 0));
+            var design = Design((Helm, 0, 0, 0), (Block, 1, 0, 0));
 
             Assert.That(store.TrySave("My Ship", design, out var error), Is.True, error);
             var loaded = store.Load("My Ship");
@@ -45,8 +45,8 @@ namespace TinCan.Tests.EditMode
         public void SavingAgain_ReplacesTheFile_AndLeavesNoTemporaryFile()
         {
             var store = Store();
-            store.TrySave("A", Design((Helm, 0, 0, 0, 0)), out _);
-            store.TrySave("A", Design((Helm, 0, 0, 0, 0), (Block, 1, 0, 0, 0)), out _);
+            store.TrySave("A", Design((Helm, 0, 0, 0)), out _);
+            store.TrySave("A", Design((Helm, 0, 0, 0), (Block, 1, 0, 0)), out _);
 
             Assert.That(store.Load("A").Design!.Parts.Count, Is.EqualTo(2));
             Assert.That(Directory.GetFiles(_directory), Has.Length.EqualTo(1));
@@ -58,12 +58,12 @@ namespace TinCan.Tests.EditMode
             var store = Store();
             Assert.That(store.Load("Starter").Design!.Parts.Count, Is.EqualTo(1));
 
-            Assert.That(store.TrySave("Starter", Design((Helm, 0, 0, 0, 0), (Block, 1, 0, 0, 0)), out var error), Is.False);
+            Assert.That(store.TrySave("Starter", Design((Helm, 0, 0, 0), (Block, 1, 0, 0)), out var error), Is.False);
             Assert.That(error, Does.Contain("built-in"));
 
             // A file saved before names were reserved does not hide the built-in either.
             Directory.CreateDirectory(_directory);
-            File.WriteAllText(Path.Combine(_directory, "Starter.ship.json"), _codec.Encode(Design((Helm, 0, 0, 0, 0), (Block, 1, 0, 0, 0))));
+            File.WriteAllText(Path.Combine(_directory, "Starter.ship.json"), _codec.Encode(Design((Helm, 0, 0, 0), (Block, 1, 0, 0))));
             Assert.That(store.Load("Starter").Design!.Parts.Count, Is.EqualTo(1));
             Assert.That(store.List().Select(l => l.ToString()), Is.EqualTo(new[] { "Starter (built in)" }));
             Assert.That(store.TryDelete("Starter"), Is.False);
@@ -73,7 +73,7 @@ namespace TinCan.Tests.EditMode
         public void Delete_RemovesASavedDesign_ButNeverABuiltIn()
         {
             var store = Store();
-            store.TrySave("Gone", Design((Helm, 0, 0, 0, 0)), out _);
+            store.TrySave("Gone", Design((Helm, 0, 0, 0)), out _);
 
             Assert.That(store.TryDelete("Gone"), Is.True);
             Assert.That(store.Load("Gone").Succeeded, Is.False);

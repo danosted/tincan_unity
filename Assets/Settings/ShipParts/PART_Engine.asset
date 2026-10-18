@@ -15,15 +15,17 @@ MonoBehaviour:
   _partId: prop.engine
   _displayName: Engine
   _category: Drive
+  _attach: 0
   _footprint:
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: -1}
   _isCore: 0
+  _isCairn: 0
   _visual: {fileID: 1671375728465558731, guid: 5e3580c24b2e48946a5fb2db3e32cd3e, type: 3}
   _networkedPrefab: {fileID: 0}
   _pivotOffset: {x: 0, y: 0, z: 0}
   _stats:
     Mass: 40
     Lift: 0
-    Thrust: 400
+    Thrust: 200
     Hull: 40

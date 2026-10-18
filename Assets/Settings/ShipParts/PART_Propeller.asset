@@ -15,6 +15,7 @@ MonoBehaviour:
   _partId: prop.propeller
   _displayName: Propeller
   _category: Drive
+  _attach: 1
   _footprint:
   - {x: 0, y: 0, z: 0}
   - {x: -1, y: -1, z: -1}
@@ -27,9 +28,10 @@ MonoBehaviour:
   - {x: 1, y: 0, z: -1}
   - {x: 1, y: 1, z: -1}
   _isCore: 0
+  _isCairn: 0
   _visual: {fileID: 5973547444421937903, guid: a2193726c3b1a8048bcb27ae9f850431, type: 3}
   _networkedPrefab: {fileID: 0}
-  _pivotOffset: {x: 0, y: 0, z: 0}
+  _pivotOffset: {x: 0, y: 0.5, z: 0}
   _stats:
     Mass: 25
     Lift: 0

@@ -75,6 +75,8 @@ namespace TinCan.Tests.EditMode
             _controls.Fill = Action("Fill");
             _controls.Height = Action("Height");
             _controls.Extrude = Action("Extrude");
+            _controls.Railing = Action("Railing");
+            _controls.Stairs = Action("Stairs");
             _controls.Undo = Action("Undo");
             _controls.Redo = Action("Redo");
             _controls.LevelUp = Action("LevelUp");
@@ -89,7 +91,7 @@ namespace TinCan.Tests.EditMode
             _shipDesigns = new RecordingShipDesigns();
             _directory = Path.Combine(Path.GetTempPath(), "TinCanShipyard_" + System.Guid.NewGuid().ToString("N"));
             _store = new FileShipDesignStore(_directory,
-                new Dictionary<string, string> { ["Starter"] = _codec.Encode(Design((Helm, 0, 0, 0, 0), (Beam, -1, -1, 0, 0))) }, _codec, 100_000);
+                new Dictionary<string, string> { ["Starter"] = _codec.Encode(Design((Helm, 0, 0, 0), (Beam, 2, 0, 0))), ["Bare"] = _codec.Encode(ShipDesign.Empty("Bare")) }, _codec, 100_000);
             _shipyard = new ShipyardUseCase(_config, _controls, _input, new FakeInputBindings(), _switch, _stage, _parts.Catalog, _store, new ShipDesignEditProcessor(),
                 new ShipDesignValidator(), new ShipStatsProcessor(), _designs, _shipDesigns, _hud, _network, new FakeActorRegistry());
         }
@@ -122,8 +124,15 @@ namespace TinCan.Tests.EditMode
             _input.Triggered.Clear();
         }
 
-        /// <summary>The cursor over the empty build floor above this cell.</summary>
+        /// <summary>The cursor straight down onto (x, z) metres: the starter's floor there.</summary>
         private void PointAtFloor(int x, int z) => _stage.Ray = new ShipyardRay(new Vector3(x, 10f, z), Vector3.down);
+
+        /// <summary>The shipyard open on a design with no frame, for drawing one.</summary>
+        private void OpenBare()
+        {
+            _shipyard.Open();
+            _shipyard.Load("Bare");
+        }
 
         [Test]
         public void Open_ShowsTheDefaultDesign_AndOpensTheShipyardContext()
@@ -153,78 +162,73 @@ namespace TinCan.Tests.EditMode
         {
             _shipyard.Open();
             _shipyard.Select(Block);
-            PointAtFloor(1, 0);
+            PointAtFloor(-2, 0);
 
             _shipyard.Tick();
-            Assert.That(_stage.Ghost!.Value.Cell, Is.EqualTo(new ShipGridCell(1, 0, 0)), "on the beam, beside the helm");
+            Assert.That(_stage.Ghost!.Value.Position, Is.EqualTo(new Vector3(-2f, -0.5f, 0f)), "standing on the floor where the cursor is");
             Assert.That(_stage.Ghost!.Value.Valid, Is.True);
 
             Press(_controls.Place);
 
             Assert.That(_shipyard.Design!.Parts.Count, Is.EqualTo(3));
+            Assert.That(_shipyard.Design.Parts[^1].Anchor, Is.EqualTo(ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, -20, 0)));
             Assert.That(_stage.Shown, Is.SameAs(_shipyard.Design));
             Assert.That(_hud.All[ShipyardUseCase.HudTitle], Does.Contain("*"), "unsaved");
         }
 
         [Test]
-        public void ANearMiss_SnapsTheGhostOntoTheShip()
+        public void ASpotThatIsTaken_ShowsARedGhost_AndNothingIsPlaced()
         {
             _shipyard.Open();
             _shipyard.Select(Block);
-            PointAtFloor(2, 1);
-
-            _shipyard.Tick();
-            Assert.That(_stage.Ghost!.Value.Cell, Is.EqualTo(new ShipGridCell(1, 0, 0)));
-            Assert.That(_stage.Ghost!.Value.Valid, Is.True);
-
-            Press(_controls.Place);
-            Assert.That(_shipyard.Design!.Parts[^1].Cell, Is.EqualTo(new ShipGridCell(1, 0, 0)));
-        }
-
-        [Test]
-        public void FarFromTheShip_TheGhostIsRed_AndNothingIsPlaced()
-        {
-            _shipyard.Open();
-            _shipyard.Select(Block);
-            PointAtFloor(6, 6);
+            PointAtFloor(3, 0);
 
             Press(_controls.Place);
 
-            Assert.That(_stage.Ghost!.Value.Valid, Is.False);
+            Assert.That(_stage.Ghost!.Value.Valid, Is.False, "the beam is there");
             Assert.That(_shipyard.Design!.Parts.Count, Is.EqualTo(2));
-            Assert.That(_shipyard.Message, Does.Contain("built onto the ship"));
-            Assert.That(_shipyard.PlaceAt(new ShipGridCell(6, 0, 6)), Is.False, "never floating, through the API either");
+            Assert.That(_shipyard.Message, Does.Contain("in the way"));
         }
 
         [Test]
-        public void PageUpAndDown_ChangeTheLevelNewPartsGoOn()
+        public void OffTheFloor_NothingIsAimedAt_AndNothingIsPlaced()
         {
             _shipyard.Open();
             _shipyard.Select(Block);
+            PointAtFloor(30, 30);
 
-            Press(_controls.LevelDown);
-            Assert.That((_shipyard.Level, _stage.FloorY), Is.EqualTo((-1, ShipyardAimProcessor.FloorY(-1))));
-            Assert.That(_hud.All[ShipyardUseCase.HudPart], Does.Contain("level -1"));
-
-            PointAtFloor(2, 0);
             Press(_controls.Place);
-            Assert.That(_shipyard.Design!.Parts[^1].Cell, Is.EqualTo(new ShipGridCell(2, -1, 0)), "the beam's end, on its level");
 
-            Press(_controls.LevelUp);
-            Press(_controls.LevelUp);
-            Assert.That(_shipyard.Level, Is.EqualTo(1));
+            Assert.That(_stage.Ghost, Is.Null);
+            Assert.That(_shipyard.Design!.Parts.Count, Is.EqualTo(2));
+            Assert.That(_shipyard.Message, Does.Contain("plank floor"));
+            Assert.That(_shipyard.PlaceAt(ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, 300, 300)), Is.False, "through the API either");
+        }
+
+        [Test]
+        public void ANodePart_GoesOnTheNodeUnderTheCursor()
+        {
+            _shipyard.Open();
+            _shipyard.Select(Post);
+            // Node 1, the floor's corner at (-10, -0.5, -10).
+            PointAtFloor(-10, -10);
+
+            Press(_controls.Place);
+
+            Assert.That(_shipyard.Design!.Parts[^1].Anchor, Is.EqualTo(ShipPartAnchor.OnNode(1)));
+            Assert.That(_hud.All[ShipyardUseCase.HudPart], Does.Contain("on a node"));
         }
 
         [Test]
         public void DeleteMode_HighlightsThePartUnderTheCursor_AndAClickDeletesIt_UndoBringsItBack()
         {
             _shipyard.Open();
-            // The cursor on top of the beam (its cell (1,-1,0)).
-            _stage.Ray = new ShipyardRay(new Vector3(1f, 5f, 0f), Vector3.down, true, new Vector3(1f, -0.5f, 0f), Vector3.up);
+            // The cursor on top of the beam (x 2 to 4 m, its top at 0.5 m).
+            _stage.Ray = new ShipyardRay(new Vector3(3f, 5f, 0f), Vector3.down, true, new Vector3(3f, 0.5f, 0f), Vector3.up);
 
             Press(_controls.DeleteMode);
             Assert.That(_shipyard.DeleteMode, Is.True);
-            Assert.That(_stage.Highlighted!.PartId, Is.EqualTo(Beam));
+            Assert.That(_stage.Highlighted!.Value.Part.PartId, Is.EqualTo(Beam));
             Assert.That(_stage.Ghost, Is.Null, "no placing ghost in delete mode");
             Assert.That(_hud.All[ShipyardUseCase.HudPart], Does.Contain("DELETE MODE"));
 
@@ -238,7 +242,7 @@ namespace TinCan.Tests.EditMode
             Assert.That(_shipyard.Design!.Parts.Count, Is.EqualTo(1));
 
             Press(_controls.DeleteMode);
-            Assert.That((_shipyard.DeleteMode, _stage.Highlighted), Is.EqualTo((false, (ShipPartPlacement?)null)), "X again: back to building");
+            Assert.That((_shipyard.DeleteMode, _stage.Highlighted.HasValue), Is.EqualTo((false, false)), "X again: back to building");
         }
 
         [Test]
@@ -311,7 +315,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void FrameMode_ClickingFourCornersAndBack_DrawsAPlankedFace_UndoneInOneStep()
         {
-            _shipyard.Open();
+            OpenBare();
             Press(_controls.Mode);
             foreach (var corner in new[] { new Vector3(3f, 0f, -1f), new Vector3(3f, 0f, 1f), new Vector3(5f, 0f, 1f), new Vector3(5f, 0f, -1f) })
             {
@@ -331,9 +335,29 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void PartsMode_OnADrawnDeck_SetsAPartDownInHalfMetreSteps()
+        {
+            OpenBare();
+            Press(_controls.Mode);
+            foreach (var corner in new[] { new Vector3(1.5f, 0f, -1.5f), new Vector3(1.5f, 0f, 1.5f), new Vector3(4.5f, 0f, 1.5f), new Vector3(4.5f, 0f, -1.5f), new Vector3(1.5f, 0f, -1.5f) })
+            {
+                _shipyard.FrameClickAt(corner);
+            }
+
+            Press(_controls.Mode);
+            _shipyard.Select(Block);
+            Assert.That(_shipyard.PlaceDownAt(new Vector3(3.2f, 0f, 0.7f)), Is.True, _shipyard.Message);
+
+            var placed = _shipyard.Design!.Parts[^1];
+            Assert.That((placed.Anchor.X, placed.Anchor.Z), Is.EqualTo((30, 5)), "half-metre steps");
+            Assert.That(placed.Anchor.Element, Is.EqualTo(_shipyard.Design.Frame.Faces.Single().Id), "on the drawn face");
+            Assert.That(_shipyard.PlaceDownAt(new Vector3(3.4f, 0f, 0.9f)), Is.False, "the same spot is taken");
+        }
+
+        [Test]
         public void FrameMode_DraggingANodeMovesIt_AltDraggingRaisesIt_AndFillOpensAFace()
         {
-            _shipyard.Open();
+            OpenBare();
             Press(_controls.Mode);
             foreach (var corner in new[] { new Vector3(3f, 0f, -1f), new Vector3(3f, 0f, 1f), new Vector3(5f, 0f, 1f), new Vector3(5f, 0f, -1f), new Vector3(3f, 0f, -1f) })
             {
@@ -379,7 +403,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void FrameMode_ClickingANode_SelectsIt_WithoutMovingIt_EvenOffCentre()
         {
-            _shipyard.Open();
+            OpenBare();
             Press(_controls.Mode);
             _shipyard.FrameClickAt(new Vector3(3f, 0f, -1f));
             _shipyard.FrameClickAt(new Vector3(3f, 0f, 1f));
@@ -404,7 +428,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void FrameMode_ARightClickDeselects_ButLookingAroundDoesNot()
         {
-            _shipyard.Open();
+            OpenBare();
             Press(_controls.Mode);
             _shipyard.FrameClickAt(new Vector3(3f, 0f, -1f));
             int node = _shipyard.SelectedNode!.Value;
@@ -429,7 +453,7 @@ namespace TinCan.Tests.EditMode
         {
             _shipyard.Open();
             _shipyard.Select(Block);
-            _shipyard.PlaceAt(new ShipGridCell(2, -1, 0));
+            _shipyard.PlaceAt(ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, -20, 0));
             var built = ShipDesignHash.Compute(_shipyard.Design!.WithName("Sky Whale"));
 
             Assert.That(_shipyard.Save("Sky Whale"), Is.True, _shipyard.Message);
@@ -449,7 +473,7 @@ namespace TinCan.Tests.EditMode
 
             _shipyard.New();
 
-            Assert.That(_shipyard.Design!.Parts.Count, Is.EqualTo(26));
+            Assert.That(_shipyard.Design!.Parts.Count, Is.EqualTo(2), "the helm and the cairn (the test parts have no engine)");
             Assert.That(new ShipDesignValidator().Validate(_shipyard.Design, _parts.Catalog, ShipDesignLimits.Default).IsValid, Is.True);
         }
 
@@ -469,7 +493,7 @@ namespace TinCan.Tests.EditMode
         public void Launch_IsRefused_WhileTheDesignCannotFly()
         {
             _shipyard.Open();
-            _shipyard.RemoveAt(new ShipGridCell(0, 0, 0));
+            _shipyard.RemoveAt(new Vector3(0f, 0f, 0f));
 
             Assert.That(_shipyard.Launch(), Is.False);
 
@@ -490,7 +514,7 @@ namespace TinCan.Tests.EditMode
 
             Assert.That(_menus.Current!.MenuId, Is.EqualTo("Shipyard"));
             Assert.That(_menus.GetValue(ShipyardUseCase.NameField), Is.EqualTo("Test"));
-            Assert.That(_shipyard.Message, Is.EqualTo("Designs: Starter (built in)"));
+            Assert.That(_shipyard.Message, Is.EqualTo("Designs: Bare (built in), Starter (built in)"));
         }
     }
 }

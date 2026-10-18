@@ -252,7 +252,7 @@ namespace TinCan.Features.Shipyard
                     int p = loop[i], q = loop[(i + 1) % loop.Count];
                     if (!steps.Current.Frame.TryGetEdgeBetween(above[p], above[q], out _) && !steps.Apply(ShipFrameEdit.AddEdge(above[p], above[q]))) return false;
                     // A railing would end up under the new wall: it goes.
-                    if (steps.Current.Frame.TryGetEdgeBetween(p, q, out var under) && under.Railing) steps.TryApply(ShipFrameEdit.SetRailing(under.Id, false));
+                    if (steps.Current.Frame.TryGetEdgeBetween(p, q, out var under) && under.Railing) steps.TryApply(ShipFrameEdit.SetRailing(under.Id, ShipFrameRailing.None));
                     steps.TryApply(ShipFrameEdit.AddFace(new[] { p, q, above[q], above[p] }, ShipFrameFill.Open));
                 }
 
@@ -261,12 +261,12 @@ namespace TinCan.Features.Shipyard
             }, $"A story raised on {floor.Face}.");
         }
 
-        /// <summary>A railing on the floor edge p-q moves to the new edge beside it.</summary>
+        /// <summary>A railing (or gate) on the floor edge p-q moves to the new edge beside it.</summary>
         private static void MoveRailing(Steps steps, int p, int q, int newEdge)
         {
             if (!steps.Current.Frame.TryGetEdgeBetween(p, q, out var old) || !old.Railing) return;
-            steps.TryApply(ShipFrameEdit.SetRailing(old.Id, false));
-            steps.TryApply(ShipFrameEdit.SetRailing(newEdge, true));
+            steps.TryApply(ShipFrameEdit.SetRailing(old.Id, ShipFrameRailing.None));
+            steps.TryApply(ShipFrameEdit.SetRailing(newEdge, old.Rail));
         }
 
         private static Vector3 Centre(IEnumerable<Vector3> points)
@@ -292,6 +292,60 @@ namespace TinCan.Features.Shipyard
             var fill = face.Fill == ShipFrameFill.Planks ? ShipFrameFill.Open : ShipFrameFill.Planks;
             return Run(design, selected, limits, steps => steps.Apply(ShipFrameEdit.SetFaceFill(face.Id, fill)),
                 fill == ShipFrameFill.Planks ? "Face planked." : "Face opened.");
+        }
+
+        /// <summary>The floor edge under the cursor gets a railing, then a gate, then nothing again.</summary>
+        public ShipyardFrameToolResult CycleRailing(ShipDesign design, ShipyardFramePick pick, int? selected, ShipDesignLimits limits)
+        {
+            if (!TryFloorEdge(design.Frame, pick, out var edge)) return Unchanged(selected, "Point at a floor edge to rail it.");
+
+            var next = edge.Rail switch
+            {
+                ShipFrameRailing.None => ShipFrameRailing.Rail,
+                ShipFrameRailing.Rail => ShipFrameRailing.Gate,
+                _ => ShipFrameRailing.None,
+            };
+            return Run(design, selected, limits, steps => steps.Apply(ShipFrameEdit.SetRailing(edge.Id, next)),
+                next == ShipFrameRailing.None ? "Railing taken off." : $"A {next.ToString().ToLowerInvariant()} along edge #{edge.Id}.");
+        }
+
+        /// <summary>
+        /// Stairs on the floor edge under the cursor, in turn: hung from it down to the story below, on its open side (where
+        /// no plank floor of its own story lies: the hatch); turned to the other side; taken away.
+        /// </summary>
+        public ShipyardFrameToolResult CycleStairs(ShipDesign design, ShipyardFramePick pick, int? selected, ShipDesignLimits limits)
+        {
+            var frame = design.Frame;
+            if (!TryFloorEdge(frame, pick, out var edge)) return Unchanged(selected, "Point at a floor edge to hang stairs from it.");
+
+            int open = OpenSide(frame, edge);
+            var stair = frame.Stairs.FirstOrDefault(s => s.Edge == edge.Id);
+            if (stair.Id == 0) return Run(design, selected, limits, steps => steps.Apply(ShipFrameEdit.AddStair(edge.Id, open)), "Stairs down from here.");
+            return stair.Dir == open
+                ? Run(design, selected, limits, steps => steps.Apply(ShipFrameEdit.FlipStair(stair.Id)), "Stairs turned round.")
+                : Run(design, selected, limits, steps => steps.Apply(ShipFrameEdit.RemoveStair(stair.Id)), "Stairs taken away.");
+        }
+
+        private static bool TryFloorEdge(ShipFrame frame, ShipyardFramePick pick, out ShipFrameEdge edge)
+        {
+            edge = default;
+            if (pick.Kind != ShipyardFramePickKind.Edge || !frame.TryGetEdge(pick.Id, out edge)) return false;
+            return frame.TryGetNode(edge.A, out var a) && frame.TryGetNode(edge.B, out var b) && a.Story == b.Story;
+        }
+
+        /// <summary>The side of a floor edge (+1: left of A to B from above) with no plank floor of its story a metre out.</summary>
+        private static int OpenSide(ShipFrame frame, ShipFrameEdge edge)
+        {
+            frame.TryGetNode(edge.A, out var a);
+            var from = frame.Position(edge.A);
+            var to = frame.Position(edge.B);
+            var along = to - from;
+            along.y = 0f;
+            var left = new Vector3(-along.z, 0f, along.x).normalized;
+            var middle = (from + to) * 0.5f;
+            var floors = ShipFrameShape.From(frame).PlankFloors.Where(f => f.Story == a.Story).ToList();
+            bool Covered(Vector3 point) => floors.Any(f => f.EachTriangle().Any(t => ShipFrameGeometry.TryHeightAt(point.x, point.z, t.A, t.B, t.C, out _)));
+            return !Covered(middle + left) || Covered(middle - left) ? 1 : -1;
         }
 
         /// <summary>Raises (or lowers) the selected node by <paramref name="units"/> frame units.</summary>

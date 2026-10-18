@@ -15,6 +15,7 @@ MonoBehaviour:
   _partId: core.helm
   _displayName: Helm
   _category: Core
+  _attach: 0
   _footprint:
   - {x: -1, y: 0, z: -2}
   - {x: -1, y: 0, z: -1}
@@ -47,9 +48,10 @@ MonoBehaviour:
   - {x: 1, y: 1, z: 1}
   - {x: 1, y: 1, z: 2}
   _isCore: 1
+  _isCairn: 0
   _visual: {fileID: 0}
   _networkedPrefab: {fileID: 622306366217008599, guid: 571491ff7f4ce524fb8fa44b9268b367, type: 3}
-  _pivotOffset: {x: 0, y: -0.5, z: 0}
+  _pivotOffset: {x: 0, y: 0, z: 0}
   _stats:
     Mass: 30
     Lift: 0

@@ -14,13 +14,14 @@ namespace TinCan.Features.Shipyard
 {
     /// <summary>
     /// The shipyard, per frame while open: reads the Shipyard context, flies the camera (<see cref="ShipyardFlyProcessor"/>),
-    /// and builds in one of two modes. Parts mode places, removes and turns catalog parts on the working level; frame mode
-    /// draws the frame with the cursor (<see cref="ShipyardFramePickProcessor"/>, <see cref="ShipyardFrameToolProcessor"/>:
-    /// click to add, join and split; drag to move and merge; Fill planks a face; Level Up/Down raise a node). Every change
-    /// goes through the <see cref="ShipyardDocument"/> (undo, redo). The stage shows the preview, the ghost or the frame
-    /// overlay, and the panels (parts to pick, controls for the mode); the HUD shows the design's state. Save, load, new,
-    /// launch and exit come from the shipyard's menu. Plans: .docs/plans/modular-airship-builder.md (S3),
-    /// .docs/plans/ship-frames.md (S2).
+    /// and builds in one of two modes. Parts mode places, removes and turns catalog parts on the frame (a face part on a
+    /// plank floor, a node part on a node); frame mode draws the frame with the cursor
+    /// (<see cref="ShipyardFramePickProcessor"/>, <see cref="ShipyardFrameToolProcessor"/>: click to add, join and split;
+    /// drag to move and merge; Fill planks a face; Railing and Stairs dress a floor edge; Level Up/Down change the story).
+    /// Every change goes through the <see cref="ShipyardDocument"/> (undo, redo). The stage shows the preview, the ghost or
+    /// the frame overlay, and the panels (parts to pick, controls for the mode); the HUD shows the design's state. Save,
+    /// load, new, launch and exit come from the shipyard's menu. Plans: .docs/plans/modular-airship-builder.md (S3),
+    /// .docs/plans/ship-frames.md (S2), .docs/plans/frame-only-ships.md.
     /// </summary>
     public sealed class ShipyardUseCase : ITickable, IShipyard
     {
@@ -29,9 +30,10 @@ namespace TinCan.Features.Shipyard
         public const string HudFlight = "Flight";
         public const string HudMessage = "Shipyard says";
         public const string NameField = "name";
-        public const string DeckPartId = "hull.deck";
         public const string EnginePartId = "prop.engine";
-        public const string BalloonPartId = "lift.balloon";
+
+        /// <summary>The floor of a new design's first story (m, preview space): the helm stands on it at height 0.5 below the origin.</summary>
+        public const float FirstFloorY = -0.5f;
 
         private readonly ShipyardConfig _config;
         private readonly ShipyardInputContext _controls;
@@ -50,7 +52,6 @@ namespace TinCan.Features.Shipyard
         private readonly INetworkService _network;
         private readonly IActorRegistry _actors;
         private readonly ShipyardAimProcessor _aim = new();
-        private readonly ShipyardSnapProcessor _snap = new();
         private readonly ShipyardFlyProcessor _fly = new();
         private readonly ShipyardFramePickProcessor _pick = new();
         private readonly ShipyardFrameToolProcessor _tools = new();
@@ -59,6 +60,7 @@ namespace TinCan.Features.Shipyard
         private ShipDesign? _shown;
         private int _partIndex;
         private ShipyardAim _aimed;
+        private ShipFrameShape? _frameShape;
         private ShipyardFramePick _framePick;
         private bool _looking;
         private float _lookTravel;
@@ -107,8 +109,6 @@ namespace TinCan.Features.Shipyard
         public ShipPartDefinition? SelectedPart => _catalog.Parts.Count > 0 ? _catalog.Parts[_partIndex % _catalog.Parts.Count] : null;
         public byte Orientation { get; private set; }
 
-        /// <summary>The height level new parts go on (PgUp/PgDn). 0 is the helm's level; the starter's deck is -1.</summary>
-        public int Level { get; private set; }
         public bool DeleteMode { get; private set; }
         public int? SelectedNode { get; private set; }
 
@@ -172,12 +172,6 @@ namespace TinCan.Features.Shipyard
             Refresh();
         }
 
-        public void ChangeLevel(int delta)
-        {
-            Level = Mathf.Clamp(Level + delta, -_designs.Limits.MaxExtent, _designs.Limits.MaxExtent);
-            Refresh();
-        }
-
         public void ChangeStory(int delta)
         {
             int top = _document?.Design.Frame.StoryHeights.Count ?? 0;
@@ -200,30 +194,32 @@ namespace TinCan.Features.Shipyard
 
         public void Rotate() => Orientation = ShipPartOrientation.NextYaw(Orientation);
 
-        public bool PlaceAt(ShipGridCell cell)
+        public bool PlaceAt(ShipPartAnchor anchor)
         {
             var part = SelectedPart;
             if (_document == null || part == null) return false;
 
-            var taken = ShipPartFootprints.Occupancy(_document.Design, _catalog);
-            bool anything = taken.Count > 0 || _document.Design.Frame.Nodes.Count > 0;
-            if (anything && !ShipyardSnapProcessor.Attaches(taken, ShipFrameShape.From(_document.Design.Frame), ShipPartFootprints.CellsOf(cell, Orientation, part).ToList(), _designs.Frames))
-            {
-                Say($"{cell} does not touch the ship: parts are built onto it, never floating.");
-                Refresh();
-                return false;
-            }
-
-            var result = _document.Apply(ShipDesignEdit.Place(part.PartId, cell, Orientation));
+            var result = _document.Apply(ShipDesignEdit.Place(part.PartId, anchor, Orientation));
             if (!result.Applied) Say(result.Refusal!);
             Refresh();
             return result.Applied;
         }
 
-        public bool RemoveAt(ShipGridCell cell)
+        public bool PlaceDownAt(Vector3 point)
+        {
+            if (_document == null || SelectedPart == null) return false;
+            _aimed = AimAt(Downwards(point));
+            if (_aimed.IsValid) return PlaceAt(_aimed.Anchor);
+
+            Say(NowhereToPlace());
+            Refresh();
+            return false;
+        }
+
+        public bool RemoveAt(Vector3 point)
         {
             if (_document == null) return false;
-            if (!ShipPartFootprints.Occupancy(_document.Design, _catalog).TryGetValue(cell, out var instanceId)) return false;
+            if (!ShipPartFootprints.Occupancy(_document.Design, _catalog, FrameShape()).TryGetOwnerAt(point, out var instanceId)) return false;
 
             var result = _document.Apply(ShipDesignEdit.Remove(instanceId));
             Refresh();
@@ -234,11 +230,12 @@ namespace TinCan.Features.Shipyard
         {
             if (_document == null) return false;
             var pick = PickFrame(Downwards(point));
+            var before = SelectedNode;
             bool changed = Use(DeleteMode
                 ? _tools.Delete(_document.Design, pick, SelectedNode, _designs.Limits)
                 : _tools.Click(_document.Design, pick, SelectedNode, FrameSettings()));
             Refresh();
-            return changed;
+            return changed || SelectedNode != before;
         }
 
         public bool FrameExtrudeAt(Vector3 point)
@@ -253,6 +250,22 @@ namespace TinCan.Features.Shipyard
         {
             if (_document == null) return false;
             bool changed = Use(_tools.ToggleFill(_document.Design, PickFrame(Downwards(point)), SelectedNode, _designs.Limits));
+            Refresh();
+            return changed;
+        }
+
+        public bool FrameRailingAt(Vector3 point)
+        {
+            if (_document == null) return false;
+            bool changed = Use(_tools.CycleRailing(_document.Design, PickFrame(Downwards(point)), SelectedNode, _designs.Limits));
+            Refresh();
+            return changed;
+        }
+
+        public bool FrameStairsAt(Vector3 point)
+        {
+            if (_document == null) return false;
+            bool changed = Use(_tools.CycleStairs(_document.Design, PickFrame(Downwards(point)), SelectedNode, _designs.Limits));
             Refresh();
             return changed;
         }
@@ -326,7 +339,7 @@ namespace TinCan.Features.Shipyard
         {
             if (_document == null) return false;
 
-            var validation = _validator.Validate(_document.Design, _catalog, _designs.Limits, _designs.Frames);
+            var validation = _validator.Validate(_document.Design, _catalog, _designs.Limits, _designs.Frames, _designs.Flight);
             if (!validation.IsValid)
             {
                 Say($"It cannot fly yet: {validation.Problems.First(p => p.IsBlocking).Message}");
@@ -418,10 +431,7 @@ namespace TinCan.Features.Shipyard
         private void PartsTick(Vector2 point, bool free)
         {
             if (_input.WasPressedThisFrame(_controls.Rotate)) Rotate();
-            if (_input.WasPressedThisFrame(_controls.LevelUp)) ChangeLevel(1);
-            if (_input.WasPressedThisFrame(_controls.LevelDown)) ChangeLevel(-1);
-
-            _aimed = free ? _aim.Aim(_stage.CursorRay(point), Level) : ShipyardAim.None;
+            _aimed = free ? AimAt(_stage.CursorRay(point)) : ShipyardAim.None;
             if (free && _input.WasPressedThisFrame(_controls.Place)) Act();
         }
 
@@ -440,6 +450,8 @@ namespace TinCan.Features.Shipyard
             _framePick = free || _dragNode != null ? PickFrame(ray, _dragNode ?? 0) : default;
             if (free && _input.WasPressedThisFrame(_controls.Fill)) Use(_tools.ToggleFill(_document.Design, _framePick, SelectedNode, _designs.Limits));
             if (free && _input.WasPressedThisFrame(_controls.Extrude)) Use(_tools.Extrude(_document.Design, _framePick, SelectedNode, _config.ExtrudeLength, FrameSettings()));
+            if (free && _input.WasPressedThisFrame(_controls.Railing)) Use(_tools.CycleRailing(_document.Design, _framePick, SelectedNode, _designs.Limits));
+            if (free && _input.WasPressedThisFrame(_controls.Stairs)) Use(_tools.CycleStairs(_document.Design, _framePick, SelectedNode, _designs.Limits));
 
             if (_dragNode is { } dragged)
             {
@@ -524,17 +536,17 @@ namespace TinCan.Features.Shipyard
         /// <summary>A ray straight down onto a point, from well above the ship.</summary>
         private static ShipyardRay Downwards(Vector3 point) => new(new Vector3(point.x, point.y + 50f, point.z), Vector3.down);
 
-        /// <summary>The frame's working plane: the working story's floor, or the working level's floor before there is a frame.</summary>
+        /// <summary>The frame's working plane: the working story's floor, or a new design's first floor before there is a frame.</summary>
         private float FramePlaneY()
         {
             var frame = _document?.Design.Frame;
             return frame != null && frame.StoryHeights.Count > 0
                 ? ShipFrameUnits.ToMetres(frame.StoryFloor(Story))
-                : ShipyardAimProcessor.FloorY(Level);
+                : FirstFloorY;
         }
 
         private ShipyardFrameToolSettings FrameSettings() => new(Story, _config.FrameSnap,
-            ShipFrameUnits.FromMetres(ShipyardAimProcessor.FloorY(Level)), _config.StoryHeight, _designs.Limits);
+            ShipFrameUnits.FromMetres(FirstFloorY), _config.StoryHeight, _designs.Limits);
 
         private void Refresh()
         {
@@ -565,19 +577,25 @@ namespace TinCan.Features.Shipyard
         private void RefreshParts()
         {
             _stage.HideFrameMarks();
-            _stage.ShowLevel(ShipyardAimProcessor.FloorY(Level));
+            _stage.ShowLevel(FramePlaneY());
 
             var part = SelectedPart;
             if (DeleteMode)
             {
-                if (Hovered(out var hovered, out var hoveredPart)) _stage.ShowHighlight(hoveredPart, hovered);
-                else _stage.HideGhost();
+                if (Hovered(out var hovered, out var hoveredPart) && ShipPartPose.TryGetPose(hovered, hoveredPart, FrameShape(), out var at, out var turned))
+                {
+                    _stage.ShowHighlight(hoveredPart, at, turned);
+                }
+                else
+                {
+                    _stage.HideGhost();
+                }
             }
-            else if (part != null && _aimed.IsValid)
+            else if (part != null && _aimed.IsValid
+                     && ShipPartPose.TryGetPose(new ShipPartPlacement(0, part.PartId, _aimed.Anchor, Orientation), part, FrameShape(), out var position, out var rotation))
             {
-                bool attached = Target(out var cell);
-                bool fits = attached && _document!.Try(ShipDesignEdit.Place(part.PartId, cell, Orientation)).Applied;
-                _stage.ShowGhost(part, cell, Orientation, fits);
+                bool fits = _document!.Try(ShipDesignEdit.Place(part.PartId, _aimed.Anchor, Orientation)).Applied;
+                _stage.ShowGhost(part, position, rotation, fits);
             }
             else
             {
@@ -614,7 +632,7 @@ namespace TinCan.Features.Shipyard
             var part = SelectedPart;
             return part == null
                 ? "no parts loaded"
-                : $"{part.DisplayName}, turned {Orientation % 4 * 90} deg, level {Level}{(DeleteMode ? ", DELETE MODE" : string.Empty)}";
+                : $"{part.DisplayName} (on a {part.Attach.ToString().ToLowerInvariant()}), turned {Orientation * 90} deg{(DeleteMode ? ", DELETE MODE" : string.Empty)}";
         }
 
         private string FrameLine(ShipDesign design)
@@ -631,13 +649,12 @@ namespace TinCan.Features.Shipyard
         {
             if (DeleteMode)
             {
-                if (_aimed.PartCell is { } partCell) RemoveAt(partCell);
+                if (_aimed.PartPoint is { } partPoint) RemoveAt(partPoint);
                 return;
             }
 
-            if (!_aimed.IsValid) return;
-            if (Target(out var cell)) PlaceAt(cell);
-            else Say("Parts are built onto the ship: aim next to it, or change level with PgUp/PgDn.");
+            if (_aimed.IsValid) PlaceAt(_aimed.Anchor);
+            else Say(NowhereToPlace());
         }
 
         /// <summary>The part under the cursor, if any.</summary>
@@ -645,23 +662,30 @@ namespace TinCan.Features.Shipyard
         {
             placement = null!;
             part = null!;
-            if (_document == null || _aimed.PartCell is not { } cell) return false;
-            if (!ShipPartFootprints.Occupancy(_document.Design, _catalog).TryGetValue(cell, out var instanceId)) return false;
+            if (_document == null || _aimed.PartPoint is not { } point) return false;
+            if (!ShipPartFootprints.Occupancy(_document.Design, _catalog, FrameShape()).TryGetOwnerAt(point, out var instanceId)) return false;
             return _document.Design.TryGetPart(instanceId, out placement) && _catalog.TryGet(placement.PartId, out part);
         }
 
-        /// <summary>Where the selected part would go: the aimed cell, or the nearest spot that touches the ship.</summary>
-        private bool Target(out ShipGridCell cell)
+        /// <summary>Parts mode's aim: a plank floor or a node under the ray, by what the selected part hangs on.</summary>
+        private ShipyardAim AimAt(ShipyardRay ray) =>
+            _aim.Aim(ray, FrameShape(), SelectedPart?.Attach ?? ShipPartAttach.Face, _config.FrameSnap, _config.PickRadius);
+
+        private string NowhereToPlace() => SelectedPart?.Attach == ShipPartAttach.Node
+            ? "Aim at a frame node: this part sits on one."
+            : "Aim at a plank floor: this part stands on one (fill a face with F in frame mode).";
+
+        /// <summary>The shown design's frame shape, kept while the frame is the same object.</summary>
+        private ShipFrameShape FrameShape()
         {
-            var part = SelectedPart;
-            cell = _aimed.PlaceCell;
-            return _document != null && part != null && _aimed.IsValid
-                   && _snap.TrySnap(_document.Design, _catalog, part, Orientation, _aimed.PlaceCell, out cell, _designs.Frames);
+            var frame = _document!.Design.Frame;
+            if (_frameShape == null || !ReferenceEquals(_frameShape.Frame, frame)) _frameShape = ShipFrameShape.From(frame);
+            return _frameShape;
         }
 
         private string Problems(ShipDesign design)
         {
-            var validation = _validator.Validate(design, _catalog, _designs.Limits, _designs.Frames);
+            var validation = _validator.Validate(design, _catalog, _designs.Limits, _designs.Frames, _designs.Flight);
             var blocking = validation.Problems.Where(p => p.IsBlocking).ToList();
             return blocking.Count == 0 ? "ready to fly" : $"{blocking.Count} problem(s): {blocking[0].Message}";
         }
@@ -675,29 +699,27 @@ namespace TinCan.Features.Shipyard
             return result.Succeeded ? result.Design! : NewDesign();
         }
 
-        /// <summary>A helm midships on a 5 x 5 deck, with an engine and two balloons when those parts are loaded: a small ship that flies.</summary>
+        /// <summary>
+        /// A 6 x 10 m planked deck with the helm midships and, when they are loaded, a cairn forward and an engine aft: a small
+        /// ship that flies.
+        /// </summary>
         private ShipDesign NewDesign()
         {
-            var core = _catalog.Parts.FirstOrDefault(p => p.IsCore);
-            var floor = _catalog.TryGet(DeckPartId, out var deck) ? deck : _catalog.Parts.FirstOrDefault(p => !p.IsCore && p.Footprint.Count == 1);
+            int floor = ShipFrameUnits.FromMetres(FirstFloorY);
+            var nodes = new[] { new ShipFrameNode(1, 0, -30, 0, -50), new ShipFrameNode(2, 0, -30, 0, 50), new ShipFrameNode(3, 0, 30, 0, 50), new ShipFrameNode(4, 0, 30, 0, -50) };
+            var edges = new[] { new ShipFrameEdge(5, 1, 2), new ShipFrameEdge(6, 2, 3), new ShipFrameEdge(7, 3, 4), new ShipFrameEdge(8, 4, 1) };
+            var frame = new ShipFrame(floor, new[] { _config.StoryHeight }, nodes, edges, new[] { new ShipFrameFace(9, new[] { 1, 2, 3, 4 }, ShipFrameFill.Planks) });
+
             var parts = new List<ShipPartPlacement>();
-            if (floor != null)
+            void Add(ShipPartDefinition? part, int z)
             {
-                for (int x = -2; x <= 2; x++)
-                for (int z = -2; z <= 2; z++)
-                    parts.Add(new ShipPartPlacement(parts.Count + 1, floor.PartId, new ShipGridCell(x, -1, z), 0));
+                if (part != null) parts.Add(new ShipPartPlacement(10 + parts.Count, part.PartId, ShipPartAnchor.OnFace(9, 0, z), 0));
             }
 
-            if (core != null) parts.Add(new ShipPartPlacement(parts.Count + 1, core.PartId, new ShipGridCell(0, 0, 0), 0));
-            // An engine off the stern and a balloon either side, touching the deck: enough to fly.
-            if (_catalog.TryGet(EnginePartId, out _)) parts.Add(new ShipPartPlacement(parts.Count + 1, EnginePartId, new ShipGridCell(0, -1, -3), 0));
-            if (_catalog.TryGet(BalloonPartId, out _))
-            {
-                parts.Add(new ShipPartPlacement(parts.Count + 1, BalloonPartId, new ShipGridCell(-4, -1, 0), 0));
-                parts.Add(new ShipPartPlacement(parts.Count + 1, BalloonPartId, new ShipGridCell(4, -1, 0), 0));
-            }
-
-            return new ShipDesign("New ship", string.Empty, parts.Count + 1, parts);
+            Add(_catalog.Parts.FirstOrDefault(p => p.IsCore), 0);
+            Add(_catalog.Parts.FirstOrDefault(p => p.IsCairn), 35);
+            Add(_catalog.TryGet(EnginePartId, out var engine) ? engine : null, -40);
+            return new ShipDesign("New ship", string.Empty, 10 + parts.Count, parts, frame: frame);
         }
     }
 }

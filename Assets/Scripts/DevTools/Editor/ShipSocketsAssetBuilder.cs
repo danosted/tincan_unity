@@ -120,20 +120,25 @@ namespace TinCan.DevTools.Editor
         }
 
         /// <summary>
-        /// The Galleon's mount plates (Galleon.ship.json): cannons at the bow and the stern, the tool rack in the hold, the
-        /// leash winch (Respawn) on the starboard balcony, the chart table (Navigation) in the starboard forward hold. The
-        /// other two hold plates stay free for players. The socket ids are part instance ids in the committed design.
+        /// The Galleon's mount plates (Galleon.ship.json, <see cref="ShipFrameDesigns.GalleonMounts"/>): cannons at the bow and
+        /// the stern, the tool rack in the port forward hold, the leash winch (Respawn) on the starboard balcony, the chart
+        /// table (Navigation) in the starboard forward hold. The other plates stay free for players. The socket ids are
+        /// part instance ids in the committed design.
         /// </summary>
-        public static ShipFittingLoadout GalleonLoadout() => new(new[]
+        public static ShipFittingLoadout GalleonLoadout()
         {
-            new ShipFittingPlacement(new ShipSocketId(70, 0), ToolRackFittingId), // hold, port, forward (-3,-4,3)
-            new ShipFittingPlacement(new ShipSocketId(254, 0), CannonFittingId), // main deck, port bow (-3,-1,6)
-            new ShipFittingPlacement(new ShipSocketId(323, 0), CannonFittingId), // main deck, starboard bow (3,-1,6)
-            new ShipFittingPlacement(new ShipSocketId(386, 0), CannonFittingId), // quarterdeck, port stern (-3,2,-7)
-            new ShipFittingPlacement(new ShipSocketId(422, 0), CannonFittingId), // quarterdeck, starboard stern (3,2,-7)
-            new ShipFittingPlacement(new ShipSocketId(473, 0), LeashWinchFittingId), // the starboard balcony off the quarterdeck (5,2,-6)
-            new ShipFittingPlacement(new ShipSocketId(166, 0), ChartTableFittingId), // hold, starboard, forward (3,-4,3): the chart room
-        });
+            var mounts = ShipFrameDesigns.GalleonMounts();
+            return new ShipFittingLoadout(new[]
+            {
+                new ShipFittingPlacement(new ShipSocketId(mounts.HoldPortFore, 0), ToolRackFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.BowPort, 0), CannonFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.BowStarboard, 0), CannonFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.SternPort, 0), CannonFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.SternStarboard, 0), CannonFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.Balcony, 0), LeashWinchFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.HoldStarboardFore, 0), ChartTableFittingId),
+            });
+        }
 
         /// <summary>A variant of the modular ship (no geometry; the design builds it) whose preset names the Galleon.</summary>
         private static GameObject GalleonPrefab()

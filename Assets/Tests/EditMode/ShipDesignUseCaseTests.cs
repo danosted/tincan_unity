@@ -47,9 +47,9 @@ namespace TinCan.Tests.EditMode
             _events = new RecordingPublisher();
             _builtIns = new Dictionary<string, string>
             {
-                ["Starter"] = _codec.Encode(Design((Helm, 0, 0, 0, 0), (Block, 0, -1, 0, 0))),
-                ["Other"] = _codec.Encode(Design((Helm, 0, 0, 0, 0))),
-                ["Broken"] = _codec.Encode(Design((Block, 0, 0, 0, 0))),
+                ["Starter"] = _codec.Encode(Design((Helm, 0, 0, 0), (Block, 0, 3, 0))),
+                ["Other"] = _codec.Encode(Design((Helm, 0, 0, 0))),
+                ["Broken"] = _codec.Encode(Design((Block, 0, 0, 0))),
             };
         }
 
@@ -94,7 +94,7 @@ namespace TinCan.Tests.EditMode
         public void ASelectedDesign_WinsOverTheStore()
         {
             var designs = UseCase();
-            var chosen = Design((Helm, 0, 0, 0, 0), (Block, 1, 0, 0, 0), (Block, 2, 0, 0, 0));
+            var chosen = Design((Helm, 0, 0, 0), (Block, 1, 0, 0), (Block, 2, 0, 0));
 
             designs.Select(chosen);
             designs.Tick();
@@ -167,7 +167,7 @@ namespace TinCan.Tests.EditMode
 
             _state.ServerSetDesign(0, new byte[0]);
             var designs = UseCase();
-            var chosen = Design((Helm, 0, 0, 0, 0), (Block, 1, 0, 0, 0), (Block, 2, 0, 0, 0));
+            var chosen = Design((Helm, 0, 0, 0), (Block, 1, 0, 0), (Block, 2, 0, 0));
             designs.Select(chosen);
             designs.Tick();
             Assert.That(_state.DesignHash, Is.EqualTo(ShipDesignHash.Compute(chosen)));

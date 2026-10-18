@@ -11,8 +11,8 @@ namespace TinCan.Features.ShipDesigns
     {
         object Build(Transform ship, GameObject visual, Vector3 localPosition, Quaternion localRotation);
 
-        /// <summary>Builds a generated mesh (a frame story's planks or beams) under the ship, with a collider of the same shape.</summary>
-        object BuildMesh(Transform ship, string name, ShipFrameMesh mesh, Material? material);
+        /// <summary>Builds a generated mesh (a frame story's planks, beams, steps or ramps) under the ship: seen, collided with, or both.</summary>
+        object BuildMesh(Transform ship, string name, ShipFrameMesh mesh, Material? material, ShipFrameMeshUse use);
 
         void Remove(object handle);
 

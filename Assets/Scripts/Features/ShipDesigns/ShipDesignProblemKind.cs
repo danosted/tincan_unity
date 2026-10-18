@@ -9,7 +9,9 @@ namespace TinCan.Features.ShipDesigns
         InvalidInstanceId,
         InvalidOrientation,
         OutOfBounds,
+        /// <summary>Two parts' blocks overlap.</summary>
         Overlap,
+        /// <summary>A piece of frame, or a part on it, is not joined to the frame the core stands on.</summary>
         Disconnected,
         MissingCore,
         ExtraCore,
@@ -33,5 +35,11 @@ namespace TinCan.Features.ShipDesigns
         FloorTooSteep,
         /// <summary>Too many stories or frame elements.</summary>
         FrameTooLarge,
+        /// <summary>A part's anchor does not hold it: its element is missing or the wrong kind, or its point is off its plank floor.</summary>
+        UnanchoredPart,
+        /// <summary>A second cairn: a ship has one spirit.</summary>
+        ExtraCairn,
+        /// <summary>Stairs whose landing edge, foot or hatch do not work.</summary>
+        BadStairs,
     }
 }

@@ -20,7 +20,8 @@ namespace TinCan.Features.ShipDesigns
     /// <see cref="ShipFrameTuning.MaxFloorSlope"/> and do not overlap another plank floor on their story;</item>
     /// <item>headroom: where a plank floor lies over a plank floor of the story below, there is at least
     /// <see cref="ShipFrameTuning.MinHeadroom"/> between the lower floor's top and the upper floor's underside, checked
-    /// exactly where the gap is smallest (at corners and where sides cross, seen from above).</item>
+    /// exactly where the gap is smallest (at corners and where sides cross, seen from above);</item>
+    /// <item>stairs: from a floor edge above story 0, landing on a plank floor below, under an open hatch (.docs/plans/frame-only-ships.md).</item>
     /// </list>
     /// </summary>
     public static class ShipFrameValidator
@@ -47,6 +48,7 @@ namespace TinCan.Features.ShipDesigns
             CheckEdges(shape, tuning, problems);
             CheckFaces(shape, tuning, limits, problems);
             CheckHeadroom(shape, tuning, problems);
+            CheckStairs(shape, tuning, problems);
         }
 
         private static void CheckNodes(ShipFrame frame, ShipFrameTuning tuning, ShipDesignLimits limits, List<ShipDesignProblem> problems)
@@ -69,7 +71,7 @@ namespace TinCan.Features.ShipDesigns
 
                 if (!limits.Contains(node.X, frame.StoryFloor(node.Story) + node.Y, node.Z))
                 {
-                    problems.Add(new(ShipDesignProblemKind.OutOfBounds, node.Id, $"{node} is more than {limits.MaxExtent} cells from the origin."));
+                    problems.Add(new(ShipDesignProblemKind.OutOfBounds, node.Id, $"{node} is more than {limits.MaxExtent} m from the origin."));
                 }
 
                 if (Math.Abs(node.Y) > maxDrift)
@@ -219,6 +221,61 @@ namespace TinCan.Features.ShipDesigns
         /// gap is smallest at a corner of one inside the other, or where their sides cross: exactly those points are
         /// measured.
         /// </summary>
+        /// <summary>
+        /// Each flight hangs from a floor edge above story 0 (one flight per edge), its foot lands on a plank floor of the
+        /// story below (within <see cref="ShipFrameTuning.RestTolerance"/> at both corners and the middle), no plank floor
+        /// of the landing's story covers it (the hatch is open), and no railing (a gate is fine) closes off its landing.
+        /// </summary>
+        private static void CheckStairs(ShipFrameShape shape, ShipFrameTuning tuning, List<ShipDesignProblem> problems)
+        {
+            var frame = shape.Frame;
+            var built = shape.Stairs(tuning.StairSlope).ToDictionary(s => s.Stair.Id);
+            var seenEdges = new HashSet<int>();
+            foreach (var stair in frame.Stairs)
+            {
+                if (!seenEdges.Add(stair.Edge)) problems.Add(new(ShipDesignProblemKind.BadStairs, stair.Id, $"{stair}: its edge has a flight already."));
+                if (frame.TryGetEdge(stair.Edge, out var landing) && landing.Rail == ShipFrameRailing.Rail)
+                {
+                    problems.Add(new(ShipDesignProblemKind.BadStairs, stair.Id, $"{stair}: a railing along its landing edge closes it off (a gate does not)."));
+                }
+
+                if (!built.TryGetValue(stair.Id, out var flight))
+                {
+                    problems.Add(new(ShipDesignProblemKind.BadStairs, stair.Id, $"{stair} needs a floor edge above the lowest story to hang from."));
+                    continue;
+                }
+
+                var floorsBelow = shape.PlankFloors.Where(f => f.Story == flight.Story - 1).ToList();
+                foreach (float along in new[] { 0.05f, 0.5f, 0.95f })
+                {
+                    var foot = flight.At(along, 1f);
+                    if (floorsBelow.Any(f => TryHeight(f, foot.x, foot.z, out float height) && Mathf.Abs(height - foot.y) <= tuning.RestTolerance)) continue;
+                    problems.Add(new(ShipDesignProblemKind.BadStairs, stair.Id, $"{stair} lands on no plank floor at {foot}."));
+                    break;
+                }
+
+                var decks = shape.PlankFloors.Where(f => f.Story == flight.Story).ToList();
+                foreach (float downward in new[] { 0.25f, 0.5f, 0.75f })
+                {
+                    var over = flight.At(0.5f, downward);
+                    if (!decks.Any(f => TryHeight(f, over.x, over.z, out _))) continue;
+                    problems.Add(new(ShipDesignProblemKind.BadStairs, stair.Id, $"{stair}: the deck above covers the flight; open a hatch over it."));
+                    break;
+                }
+            }
+        }
+
+        private static bool TryHeight(ShipFrameShape.FaceShape face, float x, float z, out float height)
+        {
+            foreach (var (a, b, c) in face.EachTriangle())
+            {
+                if (ShipFrameGeometry.TryHeightAt(x, z, a, b, c, out height)) return true;
+            }
+
+            height = 0f;
+            return false;
+        }
+
         private static void CheckHeadroom(ShipFrameShape shape, ShipFrameTuning tuning, List<ShipDesignProblem> problems)
         {
             var floors = SimpleFloors(shape);

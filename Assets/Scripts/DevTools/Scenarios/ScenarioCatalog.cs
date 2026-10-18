@@ -651,12 +651,12 @@ namespace TinCan.DevTools.Scenarios
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
-                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .WaitUntil("ShipDesignBuilt", 20f, "5")
                     .Wait(1.5f, "settle after spawn")
                     .Do("PlaceSubjectAtHelm"))
                 .Act(s => s
-                    .WaitUntil("ShipDesignBuilt", 20f, "94")
-                    .WaitUntil("ShipTopSpeed", 10f, "14.14")
+                    .WaitUntil("ShipDesignBuilt", 20f, "4")
+                    .WaitUntil("ShipTopSpeed", 10f, "15.56")
                     .WaitUntil("SubjectOnShip", 45f)
                     .WaitUntil("SubjectAtHelm", 5f)
                     .Wait(0.5f, "teleport settles")
@@ -680,8 +680,8 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("ShipMoved", 20f, "3")
                     .WaitUntil("ShipTurned", 10f, "3")
                     .WaitUntil("HelmFree", 30f)
-                    .Expect("ShipTopSpeed", "14.14")
-                    .Expect("ShipDesignBuilt", "95"))
+                    .Expect("ShipTopSpeed", "15.56")
+                    .Expect("ShipDesignBuilt", "5"))
                 .Build(),
             builder =>
             {
@@ -693,31 +693,31 @@ namespace TinCan.DevTools.Scenarios
         public static readonly ScenarioEntry ShipyardRoundTrip = new(
             new Scenario.Builder("ShipyardRoundTrip")
                 .InScene(TestScenes.Shipyard)
-                .Describe("The host opens the shipyard on the starter, adds two blocks, saves, starts a new ship, loads the saved one back, launches it -> every peer rebuilds the ship in play from it.")
+                .Describe("The host opens the shipyard on the starter, sets two mount plates down on its deck, saves, starts a new ship, loads the saved one back, launches it -> every peer rebuilds the ship in play from it.")
                 .Timeout(90f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
-                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .WaitUntil("ShipDesignBuilt", 20f, "5")
                     .Do("ShipyardOpen")
-                    .Expect("ShipyardParts", "95")
-                    .Do("ShipyardPlace", "hull.block 3 0 0")
-                    .Do("ShipyardPlace", "hull.block -3 0 0")
-                    .Expect("ShipyardParts", "97")
+                    .Expect("ShipyardParts", "5")
+                    .Do("ShipyardPlaceDown", "hull.mount 2 -2")
+                    .Do("ShipyardPlaceDown", "hull.mount -2 -2")
+                    .Expect("ShipyardParts", "7")
                     .Wait(0.5f, "the preview renders")
                     .Checkpoint("shipyard")
                     .Wait(0.5f, "the screenshot is taken at the end of a frame")
                     .Do("ShipyardSave", "Scenario Ship")
                     .Do("ShipyardNew")
-                    .Expect("ShipyardParts", "29")
+                    .Expect("ShipyardParts", "3")
                     .Do("ShipyardLoad", "Scenario Ship")
-                    .Expect("ShipyardParts", "97")
+                    .Expect("ShipyardParts", "7")
                     .Do("ShipyardLaunch")
                     .Do("ShipyardForget", "Scenario Ship"))
                 .Act(s => s
-                    .WaitUntil("ShipDesignBuilt", 30f, "96")
+                    .WaitUntil("ShipDesignBuilt", 30f, "6")
                     .Checkpoint("rebuilt"))
                 .Assert(s => s
-                    .WaitUntil("ShipDesignBuilt", 30f, "97"))
+                    .WaitUntil("ShipDesignBuilt", 30f, "7"))
                 .Build(),
             builder =>
             {
@@ -732,11 +732,11 @@ namespace TinCan.DevTools.Scenarios
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
-                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .WaitUntil("ShipDesignBuilt", 20f, "5")
                     .Wait(1.5f, "settle after spawn")
                     .Do("PlaceSubjectAtSocket"))
                 .Act(s => s
-                    .WaitUntil("ShipDesignBuilt", 20f, "94")
+                    .WaitUntil("ShipDesignBuilt", 20f, "4")
                     .WaitUntil("SubjectOnShip", 45f)
                     .Wait(0.5f, "teleport settles")
                     .Do("FaceObject", "ShipSocketTarget")
@@ -759,8 +759,8 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        // The galleon has 476 parts (the starboard balcony added four on 2026-10-16); one of them (the helm) is spawned rather than built. Its starboard stairs rise aft
-        // from the main deck at cell (3, 0, 4) to the quarterdeck, whose walking surface is 2.5 m in ship space.
+        // The galleon has 14 parts; one of them (the helm) is spawned rather than built. Its starboard flight rises aft from the
+        // main deck at (3, 3.5) m to the quarterdeck's front at z -1.5 m, whose walking surface is 2.5 m in ship space.
         public static readonly ScenarioEntry ShipStairs = new(
             new Scenario.Builder("ShipStairs")
                 .InScene(TestScenes.Shipyard)
@@ -768,14 +768,14 @@ namespace TinCan.DevTools.Scenarios
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
-                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .WaitUntil("ShipDesignBuilt", 20f, "5")
                     .Wait(1.5f, "settle after spawn")
                     .Do("FlyDesign", "Galleon")
-                    .WaitUntil("ShipDesignBuilt", 30f, "475")
+                    .WaitUntil("ShipDesignBuilt", 30f, "14")
                     .Wait(1f, "the rebuilt ship settles")
-                    .Do("PlaceSubjectAtCell", "3,0,4,180"))
+                    .Do("PlaceSubjectAtCell", "3,0,4.5,180"))
                 .Act(s => s
-                    .WaitUntil("ShipDesignBuilt", 30f, "475")
+                    .WaitUntil("ShipDesignBuilt", 30f, "13")
                     .WaitUntil("SubjectOnShip", 45f)
                     .Wait(0.5f, "teleport settles")
                     .Do("FaceShipYaw", "180")
@@ -789,7 +789,7 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
-        // The galleon's built-in loadout (Settings/ShipSockets/Galleon.fittings.json): four cannons and the tool rack. The
+        // The galleon's built-in loadout (Settings/ShipSockets/Galleon.fittings.json): four cannons, the tool rack and more. The
         // tool rack comes from ShipDamage, which Test_Shipyard does not load, so here it is skipped and the cannons mount.
         public static readonly ScenarioEntry GalleonLoadout = new(
             new Scenario.Builder("GalleonLoadout")
@@ -798,11 +798,11 @@ namespace TinCan.DevTools.Scenarios
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
-                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .WaitUntil("ShipDesignBuilt", 20f, "5")
                     .Wait(1.5f, "settle after spawn")
                     .Do("FlyDesign", "Galleon"))
                 .Act(s => s
-                    .WaitUntil("ShipDesignBuilt", 30f, "475")
+                    .WaitUntil("ShipDesignBuilt", 30f, "13")
                     .WaitUntil("FittingsMounted", 15f, "4")
                     .Expect("SocketFitted", "weapon.cannon")
                     .Wait(0.5f, "the screenshot is taken at the end of a frame")
@@ -816,31 +816,31 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        // The frame galleon (Settings/ShipDesigns/FrameGalleon.ship.json, .docs/plans/ship-frames.md, S3): a hold (floor
-        // -3.5 m) under a main deck (-0.5 m), slanted planked walls between them, three stairs from the hold up through a
-        // railed hatch. 21 parts, one (the helm) spawned rather than built; two stories of planks and beams. The subject
-        // starts in the hold aft of the stairs, facing the bow.
+        // The galleon (Settings/ShipDesigns/Galleon.ship.json, .docs/plans/frame-only-ships.md): a hold (floor -3.5 m) under the
+        // main deck (-0.5 m), leaning planked walls between them, a flight of frame stairs from the hatch's aft edge (z 0.5 m)
+        // down to the hold floor (z 5.5 m). 14 parts, one (the helm) spawned rather than built. The subject starts in the hold
+        // forward of the stairs (z 7 m), facing aft, and walks up through the hatch.
         public static readonly ScenarioEntry FrameStories = new(
             new Scenario.Builder("FrameStories")
                 .InScene(TestScenes.Shipyard)
-                .Describe("The host gives the ship the built-in frame galleon -> every peer builds its two stories, walls and railings -> stand on the hold floor at the foot of the stairs -> walk forward -> up through the hatch onto the main deck, 3 m higher, still on the planks of the ship.")
+                .Describe("The host gives the ship the built-in galleon -> every peer builds its stories, walls, railings and stairs -> stand on the hold floor at the foot of the hatch stairs, facing aft -> walk forward -> up through the hatch onto the main deck, 3 m higher, still on the planks of the ship.")
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
-                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .WaitUntil("ShipDesignBuilt", 20f, "5")
                     .Wait(1.5f, "settle after spawn")
-                    .Do("FlyDesign", "FrameGalleon")
-                    .WaitUntil("ShipDesignBuilt", 30f, "20")
+                    .Do("FlyDesign", "Galleon")
+                    .WaitUntil("ShipDesignBuilt", 30f, "14")
                     .WaitUntil("ShipFrameBuilt", 10f, "4")
                     .Wait(1f, "the rebuilt ship settles")
-                    .Do("PlaceSubjectAtCell", "0,-3,-4,0"))
+                    .Do("PlaceSubjectAtCell", "0,-3,7,180,1"))
                 .Act(s => s
-                    .WaitUntil("ShipDesignBuilt", 30f, "20")
+                    .WaitUntil("ShipDesignBuilt", 30f, "13")
                     .WaitUntil("ShipFrameBuilt", 10f, "4")
                     .WaitUntil("SubjectOnShip", 45f)
                     .Wait(0.5f, "teleport settles")
                     .WaitUntil("SubjectStandsOn", 5f, "Planks0")
-                    .Do("FaceShipYaw", "0")
+                    .Do("FaceShipYaw", "180")
                     .Checkpoint("in-the-hold")
                     .Hold(4f, ScriptedAction.MoveForward)
                     .WaitUntil("SubjectFeetAbove", 5f, "-0.7")
@@ -853,36 +853,36 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
-        // The shipyard's frame tools (.docs/plans/ship-frames.md, S2): a 4 x 4 m planked square drawn beside the starter's
-        // starboard deck (its -X side on the deck's edge at x 2.5, so it joins the ship), saved, loaded, launched.
+        // The shipyard's frame tools (.docs/plans/ship-frames.md, S2): a planked deck drawn out from the starter's starboard side:
+        // its stern corner (node 2 at (2.5, -4.5) m), two new corners 4 m out, back to its waist corner (node 3 at (3, 2) m),
+        // closing a loop with the side between them. Saved, loaded, launched.
         public static readonly ScenarioEntry FrameRoundTrip = new(
             new Scenario.Builder("FrameRoundTrip")
                 .InScene(TestScenes.Shipyard)
-                .Describe("The host opens the shipyard on the starter, switches to frame mode, clicks four corners and back to the first -> a planked face beside the deck -> saves, starts a new ship, loads it back with its frame -> launches it -> every peer builds the frame deck.")
+                .Describe("The host opens the shipyard on the starter, switches to frame mode, clicks out from the deck's starboard side and back onto it -> a planked face beside the deck -> saves, starts a new ship, loads it back with its frame -> launches it -> every peer builds the frame deck.")
                 .Timeout(90f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
-                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .WaitUntil("ShipDesignBuilt", 20f, "5")
                     .Do("ShipyardOpen")
                     .Do("ShipyardMode", "Frame")
-                    .Do("ShipyardFrameClick", "2.5 -2")
-                    .Do("ShipyardFrameClick", "2.5 2")
+                    .Do("ShipyardFrameClick", "2.5 -4.5")
+                    .Do("ShipyardFrameClick", "6.5 -4.5")
                     .Do("ShipyardFrameClick", "6.5 2")
-                    .Do("ShipyardFrameClick", "6.5 -2")
-                    .Do("ShipyardFrameClick", "2.5 -2")
-                    .Expect("ShipyardFrame", "4 4 1")
+                    .Do("ShipyardFrameClick", "3 2")
+                    .Expect("ShipyardFrame", "9 10 2")
                     .Wait(0.5f, "the preview renders")
                     .Checkpoint("drawn")
                     .Wait(0.5f, "the screenshot is taken at the end of a frame")
                     .Do("ShipyardSave", "Frame Scenario Ship")
                     .Do("ShipyardNew")
-                    .Expect("ShipyardFrame", "0 0 0")
-                    .Do("ShipyardLoad", "Frame Scenario Ship")
                     .Expect("ShipyardFrame", "4 4 1")
+                    .Do("ShipyardLoad", "Frame Scenario Ship")
+                    .Expect("ShipyardFrame", "9 10 2")
                     .Do("ShipyardLaunch")
                     .Do("ShipyardForget", "Frame Scenario Ship"))
                 .Act(s => s
-                    .WaitUntil("ShipDesignBuilt", 30f, "94")
+                    .WaitUntil("ShipDesignBuilt", 30f, "4")
                     .WaitUntil("ShipFrameBuilt", 30f, "2")
                     .Checkpoint("rebuilt"))
                 .Assert(s => s
@@ -894,9 +894,53 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipyardScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        // The raft (Settings/ShipDesigns/Raft.ship.json, .docs/plans/ship-frames.md): a deck generated from a frame, 15 parts
+        // Parts on the frame (.docs/plans/ship-frames.md, S4; .docs/plans/frame-only-ships.md): FrameRoundTrip's deck beside
+        // the starter's, then a mount plate set down on it at (5, -1.5) m, hung on that face at frame units (50, -15). Saved,
+        // loaded, launched; every peer builds it there.
+        public static readonly ScenarioEntry FramePartPlace = new(
+            new Scenario.Builder("FramePartPlace")
+                .InScene(TestScenes.Shipyard)
+                .Describe("The host draws a planked square beside the starter's deck in frame mode -> in parts mode, sets a mount plate down on it -> saves, starts a new ship, loads it back -> launches it -> every peer builds the plate where it was set, on the frame deck.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("ShipDesignBuilt", 20f, "5")
+                    .Do("ShipyardOpen")
+                    .Do("ShipyardMode", "Frame")
+                    .Do("ShipyardFrameClick", "2.5 -4.5")
+                    .Do("ShipyardFrameClick", "6.5 -4.5")
+                    .Do("ShipyardFrameClick", "6.5 2")
+                    .Do("ShipyardFrameClick", "3 2")
+                    .Expect("ShipyardFrame", "9 10 2")
+                    .Do("ShipyardMode", "Parts")
+                    .Do("ShipyardPlaceDown", "hull.mount 5 -1.5")
+                    .Expect("ShipyardParts", "6")
+                    .Wait(0.5f, "the preview renders")
+                    .Checkpoint("placed")
+                    .Wait(0.5f, "the screenshot is taken at the end of a frame")
+                    .Do("ShipyardSave", "Frame Part Scenario Ship")
+                    .Do("ShipyardNew")
+                    .Do("ShipyardLoad", "Frame Part Scenario Ship")
+                    .Expect("ShipyardParts", "6")
+                    .Do("ShipyardLaunch")
+                    .Do("ShipyardForget", "Frame Part Scenario Ship"))
+                .Act(s => s
+                    .WaitUntil("ShipDesignBuilt", 30f, "5")
+                    .WaitUntil("ShipFrameBuilt", 30f, "2")
+                    .WaitUntil("ShipPartAt", 30f, "hull.mount 50 -15")
+                    .Checkpoint("rebuilt"))
+                .Assert(s => s
+                    .WaitUntil("ShipPartAt", 30f, "hull.mount 50 -15"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipyardScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        // The raft (Settings/ShipDesigns/Raft.ship.json, .docs/plans/ship-frames.md): a deck generated from a frame, 3 parts
         // (one, the helm, spawned rather than built) and one story's planks and beams. The subject starts on the starboard
-        // waist at cell (3, 0, 0), between the masts, and walks aft across the seam onto the stern planks.
+        // waist at (3, 0, 0) m and walks aft across the seam onto the stern planks.
         public static readonly ScenarioEntry FrameDeck = new(
             new Scenario.Builder("FrameDeck")
                 .InScene(TestScenes.Shipyard)
@@ -904,15 +948,15 @@ namespace TinCan.DevTools.Scenarios
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
-                    .WaitUntil("ShipDesignBuilt", 20f, "95")
+                    .WaitUntil("ShipDesignBuilt", 20f, "5")
                     .Wait(1.5f, "settle after spawn")
                     .Do("FlyDesign", "Raft")
-                    .WaitUntil("ShipDesignBuilt", 30f, "14")
+                    .WaitUntil("ShipDesignBuilt", 30f, "3")
                     .WaitUntil("ShipFrameBuilt", 10f, "2")
                     .Wait(1f, "the rebuilt ship settles")
                     .Do("PlaceSubjectAtCell", "3,0,0,180"))
                 .Act(s => s
-                    .WaitUntil("ShipDesignBuilt", 30f, "14")
+                    .WaitUntil("ShipDesignBuilt", 30f, "3")
                     .WaitUntil("ShipFrameBuilt", 10f, "2")
                     .WaitUntil("SubjectOnShip", 45f)
                     .Wait(0.5f, "teleport settles")
@@ -927,7 +971,7 @@ namespace TinCan.DevTools.Scenarios
                     .Checkpoint("walked-aft"))
                 .Assert(s => s
                     .WaitUntil("ShipFrameBuilt", 60f, "2")
-                    .Expect("ShipDesignBuilt", "14"))
+                    .Expect("ShipDesignBuilt", "3"))
                 .Build(),
             builder => builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
@@ -1335,6 +1379,7 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("SubjectAtChartTable", 45f)
                     .Wait(0.5f, "teleport settles")
                     .Do("FaceChartTable")
+                    .Checkpoint("at-the-table")
                     .WaitUntil("InteractTargetIs", 5f, "ChartTable")
                     .Hold(0.3f, ScriptedAction.Interact)
                     .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Chart")
@@ -1359,7 +1404,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<NavigationScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

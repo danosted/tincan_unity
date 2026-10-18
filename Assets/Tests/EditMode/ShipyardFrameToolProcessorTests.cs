@@ -193,5 +193,35 @@ namespace TinCan.Tests.EditMode
             Assert.That((deleted.Design!.Frame.TryGetNode(1, out _), deleted.Selected), Is.EqualTo((false, (int?)null)));
             Assert.That((nothing.Changed, nothing.Message), Is.EqualTo((false, "Select a node to raise or lower it.")));
         }
+
+        [Test]
+        public void TheRailingKey_CyclesARailing_AGate_AndNothing_OnAFloorEdge()
+        {
+            var design = ShipFrameTestDesigns.Deck();
+
+            var gate = _tools.CycleRailing(design, On(ShipyardFramePickKind.Edge, 6), null, ShipDesignLimits.Default);
+            var none = _tools.CycleRailing(gate.Design!, On(ShipyardFramePickKind.Edge, 6), null, ShipDesignLimits.Default);
+            var rail = _tools.CycleRailing(none.Design!, On(ShipyardFramePickKind.Edge, 6), null, ShipDesignLimits.Default);
+
+            Assert.That(gate.Design!.Frame.Edges.Single(e => e.Id == 6).Rail, Is.EqualTo(ShipFrameRailing.Gate), "the test deck's +Z edge starts railed");
+            Assert.That(none.Design!.Frame.Edges.Single(e => e.Id == 6).Rail, Is.EqualTo(ShipFrameRailing.None));
+            Assert.That(rail.Design!.Frame.Edges.Single(e => e.Id == 6).Rail, Is.EqualTo(ShipFrameRailing.Rail));
+            Assert.That(_tools.CycleRailing(design, On(ShipyardFramePickKind.Face, 9), null, ShipDesignLimits.Default).Changed, Is.False);
+        }
+
+        [Test]
+        public void TheStairsKey_HangsStairsOnTheOpenSide_ThenTurnsThem_ThenTakesThemAway()
+        {
+            var well = ShipFrameTestDesigns.FrameOnly(ShipFrameTestDesigns.StairWell().With(stairs: System.Array.Empty<ShipFrameStair>()));
+
+            var added = _tools.CycleStairs(well, On(ShipyardFramePickKind.Edge, 15), null, ShipDesignLimits.Default);
+            var turned = _tools.CycleStairs(added.Design!, On(ShipyardFramePickKind.Edge, 15), null, ShipDesignLimits.Default);
+            var gone = _tools.CycleStairs(turned.Design!, On(ShipyardFramePickKind.Edge, 15), null, ShipDesignLimits.Default);
+
+            Assert.That(added.Design!.Frame.Stairs.Single().Dir, Is.EqualTo(-1), "forward, away from the upper floor: the open side");
+            Assert.That(turned.Design!.Frame.Stairs.Single().Dir, Is.EqualTo(1));
+            Assert.That(gone.Design!.Frame.Stairs, Is.Empty);
+            Assert.That(_tools.CycleStairs(well, On(ShipyardFramePickKind.Edge, 17), null, ShipDesignLimits.Default).Changed, Is.False, "a post");
+        }
     }
 }

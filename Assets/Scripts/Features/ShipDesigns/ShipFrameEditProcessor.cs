@@ -17,6 +17,7 @@ namespace TinCan.Features.ShipDesigns
     /// <item>removing an edge removes the one face it bounds, or merges the two it divides into the one with the lower id;</item>
     /// <item>splitting an edge adds the new corner to the faces it bounds;</item>
     /// <item>splitting a face keeps the id on the larger half (seen from above); the other half is a new face with the same fill.</item>
+    /// <item>stairs hang from a floor edge above story 0, one flight per edge; they go when their edge goes.</item>
     /// </list>
     /// Every applied edit is undone by restoring the frame before it. Ids come from the design's shared counter and are
     /// never reused.
@@ -36,12 +37,15 @@ namespace TinCan.Features.ShipDesigns
                 ShipFrameEditKind.AddEdge => AddEdge(design, frame, edit.Id, edit.Other, limits),
                 ShipFrameEditKind.RemoveEdge => RemoveEdge(design, frame, edit.Id),
                 ShipFrameEditKind.SplitEdge => SplitEdge(design, frame, edit, limits),
-                ShipFrameEditKind.SetRailing => SetRailing(design, frame, edit.Id, edit.Railing),
+                ShipFrameEditKind.SetRailing => SetRailing(design, frame, edit.Id, edit.Rail),
                 ShipFrameEditKind.AddFace => AddFace(design, frame, edit.Nodes, edit.Fill, limits),
                 ShipFrameEditKind.SplitFace => SplitFace(design, frame, edit, limits),
                 ShipFrameEditKind.SetFaceFill => SetFaceFill(design, frame, edit.Id, edit.Fill),
                 ShipFrameEditKind.RemoveFace => RemoveFace(design, frame, edit.Id),
                 ShipFrameEditKind.Restore => Restore(design, edit.Frame),
+                ShipFrameEditKind.AddStair => AddStair(design, frame, edit.Id, edit.Other, limits),
+                ShipFrameEditKind.FlipStair => ChangeStair(design, frame, edit.Id, flip: true),
+                ShipFrameEditKind.RemoveStair => ChangeStair(design, frame, edit.Id, flip: false),
                 _ => ShipDesignEditResult.Refused(design, $"Unknown frame edit {edit.Kind}."),
             };
         }
@@ -107,7 +111,7 @@ namespace TinCan.Features.ShipDesigns
                 }
 
                 // The lower id stays (edges come in id order); a railing on either stays too.
-                if (moved.Railing && !edges[twin].Railing) edges[twin] = new ShipFrameEdge(edges[twin].Id, edges[twin].A, edges[twin].B, true);
+                if (moved.Railing && !edges[twin].Railing) edges[twin] = edges[twin].WithRail(moved.Rail);
             }
 
             var faces = new List<ShipFrameFace>();
@@ -168,18 +172,41 @@ namespace TinCan.Features.ShipDesigns
             int edgeId = nodeId + 1;
             var node = new ShipFrameNode(nodeId, a.Story, edit.X, edit.Y, edit.Z);
             var edges = frame.Edges.Select(e => e.Id == edge.Id ? e.Between(edge.A, nodeId) : e)
-                .Append(new ShipFrameEdge(edgeId, nodeId, edge.B, edge.Railing));
+                .Append(new ShipFrameEdge(edgeId, nodeId, edge.B, edge.Rail));
             var faces = frame.Faces.Select(f => f.HasSide(edge.A, edge.B) ? f.With(InsertBetween(f.Nodes, edge.A, edge.B, nodeId)) : f);
 
             return Done(design, frame.With(nodes: frame.Nodes.Append(node), edges: edges, faces: faces), edgeId + 1, nodeId);
         }
 
-        private static ShipDesignEditResult SetRailing(ShipDesign design, ShipFrame frame, int id, bool railing)
+        private static ShipDesignEditResult SetRailing(ShipDesign design, ShipFrame frame, int id, ShipFrameRailing rail)
         {
             if (!frame.TryGetEdge(id, out var edge)) return ShipDesignEditResult.Refused(design, $"There is no edge #{id}.");
 
-            var changed = new ShipFrameEdge(edge.Id, edge.A, edge.B, railing);
+            var changed = edge.WithRail(rail);
             return Done(design, frame.With(edges: frame.Edges.Select(e => e.Id == id ? changed : e)), design.NextPartInstanceId);
+        }
+
+        private static ShipDesignEditResult AddStair(ShipDesign design, ShipFrame frame, int edgeId, int dir, ShipDesignLimits limits)
+        {
+            if (!frame.TryGetEdge(edgeId, out var edge)) return ShipDesignEditResult.Refused(design, $"There is no edge #{edgeId}.");
+            frame.TryGetNode(edge.A, out var a);
+            frame.TryGetNode(edge.B, out var b);
+            if (a.Story != b.Story) return ShipDesignEditResult.Refused(design, "Stairs hang from a floor edge, not a post.");
+            if (a.Story == 0) return ShipDesignEditResult.Refused(design, "Stairs go down to the story below; there is none under story 0.");
+            if (frame.Stairs.Any(s => s.Edge == edgeId)) return ShipDesignEditResult.Refused(design, "That edge has stairs already.");
+            var refusal = Full(frame, 1, limits);
+            if (refusal != null) return ShipDesignEditResult.Refused(design, refusal);
+
+            int id = NextId(design);
+            return Done(design, frame.With(stairs: frame.Stairs.Append(new ShipFrameStair(id, edgeId, dir))), id + 1, id);
+        }
+
+        private static ShipDesignEditResult ChangeStair(ShipDesign design, ShipFrame frame, int id, bool flip)
+        {
+            if (!frame.TryGetStair(id, out var stair)) return ShipDesignEditResult.Refused(design, $"There are no stairs #{id}.");
+
+            var stairs = flip ? frame.Stairs.Select(s => s.Id == id ? stair.Flipped() : s) : frame.Stairs.Where(s => s.Id != id);
+            return Done(design, frame.With(stairs: stairs), design.NextPartInstanceId);
         }
 
         private static ShipDesignEditResult AddFace(ShipDesign design, ShipFrame frame, IReadOnlyList<int> loop, ShipFrameFill fill, ShipDesignLimits limits)
@@ -239,8 +266,12 @@ namespace TinCan.Features.ShipDesigns
             return Done(design, frame, Math.Max(design.NextPartInstanceId, frame.ElementCount == 0 ? 1 : frame.Ids.Max() + 1));
         }
 
-        private static ShipDesignEditResult Done(ShipDesign design, ShipFrame frame, int nextId, int added = 0) =>
-            ShipDesignEditResult.Done(design.WithFrame(frame, nextId), ShipDesignEdit.Frame(ShipFrameEdit.Restore(design.Frame)), added);
+        /// <summary>The edit applied: stairs whose landing edge went with it go too.</summary>
+        private static ShipDesignEditResult Done(ShipDesign design, ShipFrame frame, int nextId, int added = 0)
+        {
+            if (frame.Stairs.Any(s => !frame.TryGetEdge(s.Edge, out _))) frame = frame.With(stairs: frame.Stairs.Where(s => frame.TryGetEdge(s.Edge, out _)));
+            return ShipDesignEditResult.Done(design.WithFrame(frame, nextId), ShipDesignEdit.Frame(ShipFrameEdit.Restore(design.Frame)), added);
+        }
 
         private static int NextId(ShipDesign design) => Math.Max(design.NextPartInstanceId, design.IdFloor);
 
@@ -248,7 +279,7 @@ namespace TinCan.Features.ShipDesigns
             frame.ElementCount + adding > limits.MaxFrameElements ? $"The frame is full ({limits.MaxFrameElements} nodes, edges and faces)." : null;
 
         private static string? OutOfReach(ShipFrame frame, int story, int x, int y, int z, ShipDesignLimits limits) =>
-            limits.Contains(x, frame.StoryFloor(story) + y, z) ? null : $"({x}, {y}, {z}) is more than {limits.MaxExtent} cells from the origin.";
+            limits.Contains(x, frame.StoryFloor(story) + y, z) ? null : $"({x}, {y}, {z}) is more than {limits.MaxExtent} m from the origin.";
 
         private static string? FaceRefusal(ShipFrame frame, IReadOnlyList<int> loop, ShipDesignLimits limits)
         {

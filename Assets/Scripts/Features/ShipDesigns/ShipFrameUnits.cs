@@ -4,13 +4,13 @@ using UnityEngine;
 namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
-    /// Frame positions are whole numbers of 10 cm, so a frame is exact and the same on every peer (a game constant, like
-    /// the grid's cell size). Grid cell n is frame unit n × <see cref="PerCell"/>.
+    /// Frame positions are whole numbers of 10 cm, so a frame is exact and the same on every peer (a game constant: a
+    /// file with another unit would be a new format version).
     /// </summary>
     public static class ShipFrameUnits
     {
         public const float Size = 0.1f;
-        public const int PerCell = 10;
+        public const int PerMetre = 10;
 
         public static float ToMetres(int units) => units * Size;
 

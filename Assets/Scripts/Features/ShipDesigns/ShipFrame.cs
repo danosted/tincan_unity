@@ -8,20 +8,22 @@ namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// A ship's frame: stories stacked from <see cref="Base"/> up, nodes on them, edges (beams) between nodes and faces
-    /// (plank floors or open holes) bounded by edges. Plain data in frame units; immutable, kept in id order so it always
-    /// encodes to the same bytes. The hull is generated from it (<see cref="ShipFrameMeshProcessor"/>); catalog parts sit
-    /// on it. Plan: .docs/plans/ship-frames.md.
+    /// (plank floors or open holes) bounded by edges, and stairs hanging from floor edges. Plain data in frame units;
+    /// immutable, kept in id order so it always encodes to the same bytes. The hull is generated from it
+    /// (<see cref="ShipFrameMeshProcessor"/>); catalog parts hang on its faces and nodes. Plans: .docs/plans/ship-frames.md,
+    /// .docs/plans/frame-only-ships.md.
     /// </summary>
     public sealed class ShipFrame
     {
         public ShipFrame(int @base, IEnumerable<int> storyHeights, IEnumerable<ShipFrameNode> nodes, IEnumerable<ShipFrameEdge> edges,
-            IEnumerable<ShipFrameFace> faces)
+            IEnumerable<ShipFrameFace> faces, IEnumerable<ShipFrameStair>? stairs = null)
         {
             Base = @base;
             StoryHeights = storyHeights.ToList();
             Nodes = nodes.OrderBy(n => n.Id).ToList();
             Edges = edges.OrderBy(e => e.Id).ToList();
             Faces = faces.OrderBy(f => f.Id).ToList();
+            Stairs = (stairs ?? Array.Empty<ShipFrameStair>()).OrderBy(s => s.Id).ToList();
         }
 
         public static ShipFrame Empty { get; } = new(0, Array.Empty<int>(), Array.Empty<ShipFrameNode>(), Array.Empty<ShipFrameEdge>(),
@@ -36,13 +38,15 @@ namespace TinCan.Features.ShipDesigns
         public IReadOnlyList<ShipFrameNode> Nodes { get; }
         public IReadOnlyList<ShipFrameEdge> Edges { get; }
         public IReadOnlyList<ShipFrameFace> Faces { get; }
+        public IReadOnlyList<ShipFrameStair> Stairs { get; }
 
-        public bool IsEmpty => StoryHeights.Count == 0 && Nodes.Count == 0 && Edges.Count == 0 && Faces.Count == 0;
+        public bool IsEmpty => StoryHeights.Count == 0 && Nodes.Count == 0 && Edges.Count == 0 && Faces.Count == 0 && Stairs.Count == 0;
 
-        public int ElementCount => Nodes.Count + Edges.Count + Faces.Count;
+        public int ElementCount => Nodes.Count + Edges.Count + Faces.Count + Stairs.Count;
 
-        /// <summary>Every id the frame uses (nodes, edges, faces), in no particular order.</summary>
-        public IEnumerable<int> Ids => Nodes.Select(n => n.Id).Concat(Edges.Select(e => e.Id)).Concat(Faces.Select(f => f.Id));
+        /// <summary>Every id the frame uses (nodes, edges, faces, stairs), in no particular order.</summary>
+        public IEnumerable<int> Ids =>
+            Nodes.Select(n => n.Id).Concat(Edges.Select(e => e.Id)).Concat(Faces.Select(f => f.Id)).Concat(Stairs.Select(s => s.Id));
 
         /// <summary>The height of a story's floor plane in frame units.</summary>
         public int StoryFloor(int story)
@@ -73,6 +77,13 @@ namespace TinCan.Features.ShipDesigns
             return index >= 0;
         }
 
+        public bool TryGetStair(int id, out ShipFrameStair stair)
+        {
+            int index = IndexOf(Stairs, id, s => s.Id);
+            stair = index >= 0 ? Stairs[index] : default;
+            return index >= 0;
+        }
+
         /// <summary>The edge joining two nodes, if there is one.</summary>
         public bool TryGetEdgeBetween(int a, int b, out ShipFrameEdge edge)
         {
@@ -97,10 +108,11 @@ namespace TinCan.Features.ShipDesigns
         public Vector3 Position(int nodeId) => TryGetNode(nodeId, out var node) ? Position(node) : Vector3.zero;
 
         public ShipFrame With(IEnumerable<ShipFrameNode>? nodes = null, IEnumerable<ShipFrameEdge>? edges = null,
-            IEnumerable<ShipFrameFace>? faces = null, IEnumerable<int>? storyHeights = null) =>
-            new(Base, storyHeights ?? StoryHeights, nodes ?? Nodes, edges ?? Edges, faces ?? Faces);
+            IEnumerable<ShipFrameFace>? faces = null, IEnumerable<int>? storyHeights = null, IEnumerable<ShipFrameStair>? stairs = null) =>
+            new(Base, storyHeights ?? StoryHeights, nodes ?? Nodes, edges ?? Edges, faces ?? Faces, stairs ?? Stairs);
 
-        public override string ToString() => $"frame ({StoryHeights.Count} stories, {Nodes.Count} nodes, {Edges.Count} edges, {Faces.Count} faces)";
+        public override string ToString() =>
+            $"frame ({StoryHeights.Count} stories, {Nodes.Count} nodes, {Edges.Count} edges, {Faces.Count} faces{(Stairs.Count > 0 ? $", {Stairs.Count} stairs" : string.Empty)})";
 
         /// <summary>Binary search: the lists are sorted by id.</summary>
         private static int IndexOf<T>(IReadOnlyList<T> sorted, int id, Func<T, int> idOf)

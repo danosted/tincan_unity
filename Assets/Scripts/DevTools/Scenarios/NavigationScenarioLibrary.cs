@@ -119,7 +119,8 @@ namespace TinCan.DevTools.Scenarios
             var table = TableTransform();
             if (subject == null || body == null || table == null) return ScenarioCheck.Fail("no subject or no chart table");
 
-            Vector3 stand = ScenarioPlacement.OnGround(body, table.position - table.forward * StandBehindTable, table.up);
+            // Searched from 1 m up: a table in a hold has the deck above it within the usual 3 m.
+            Vector3 stand = ScenarioPlacement.OnGround(body, table.position - table.forward * StandBehindTable, table.up, 1f);
             _respawn.ResetCharacter(subject, stand, table.rotation);
             return ScenarioCheck.Pass($"subject placed {StandBehindTable} m behind the chart table");
         }

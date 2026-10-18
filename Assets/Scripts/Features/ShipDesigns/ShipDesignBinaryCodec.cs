@@ -4,20 +4,21 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using TinCan.Core.Ship.Parts;
 
 namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// The compact form the server sends to every peer: a part-id palette (each part type once), then per part its
-    /// instance id, palette index, cell (zig-zag varints) and orientation, about 6 bytes a part; then the frame (stories,
-    /// nodes, edges, faces; zig-zag varints, a few bytes each). Canonical: parts in
-    /// instance id order, palette in order of first use, so equal designs give equal bytes (<see cref="ShipDesignHash"/>).
+    /// instance id, palette index, anchor (kind, element, and a face point; zig-zag varints) and yaw, about 9 bytes a
+    /// part; then the frame (stories, nodes, edges with their railing, faces, stairs; zig-zag varints, a few bytes each). Canonical: parts in instance id
+    /// order, palette in order of first use, so equal designs give equal bytes (<see cref="ShipDesignHash"/>).
     /// It carries what building needs, not <see cref="ShipDesign.Extensions"/>: peers build ships, they never save the
     /// server's file. Both ends run the same build, so it has its own version byte instead of migrations.
     /// </summary>
     public static class ShipDesignBinaryCodec
     {
-        private const byte Version = 2;
+        private const byte Version = 4;
         private const int MaxStringBytes = 1024;
 
         public static byte[] Encode(ShipDesign design)
@@ -47,9 +48,14 @@ namespace TinCan.Features.ShipDesigns
             {
                 WriteVarInt(writer, ZigZag(part.InstanceId));
                 WriteVarInt(writer, (uint)paletteIndex[part.PartId]);
-                WriteVarInt(writer, ZigZag(part.Cell.X));
-                WriteVarInt(writer, ZigZag(part.Cell.Y));
-                WriteVarInt(writer, ZigZag(part.Cell.Z));
+                writer.Write((byte)part.Anchor.Kind);
+                WriteVarInt(writer, ZigZag(part.Anchor.Element));
+                if (part.Anchor.Kind == ShipPartAttach.Face)
+                {
+                    WriteVarInt(writer, ZigZag(part.Anchor.X));
+                    WriteVarInt(writer, ZigZag(part.Anchor.Z));
+                }
+
                 writer.Write(part.Orientation);
             }
 
@@ -85,8 +91,15 @@ namespace TinCan.Features.ShipDesigns
                     int instanceId = UnZigZag(ReadVarInt(reader));
                     uint index = ReadVarInt(reader);
                     if (index >= palette.Length) return ShipDesignDecodeResult.Failed($"Part {i} names part type {index}, which is not listed.");
-                    var cell = new ShipGridCell(UnZigZag(ReadVarInt(reader)), UnZigZag(ReadVarInt(reader)), UnZigZag(ReadVarInt(reader)));
-                    parts.Add(new ShipPartPlacement(instanceId, palette[index], cell, reader.ReadByte()));
+                    byte kind = reader.ReadByte();
+                    int element = UnZigZag(ReadVarInt(reader));
+                    var anchor = kind switch
+                    {
+                        (byte)ShipPartAttach.Face => ShipPartAnchor.OnFace(element, UnZigZag(ReadVarInt(reader)), UnZigZag(ReadVarInt(reader))),
+                        (byte)ShipPartAttach.Node => ShipPartAnchor.OnNode(element),
+                        _ => throw new FormatException($"Part {i} hangs on an unknown kind of element {kind}."),
+                    };
+                    parts.Add(new ShipPartPlacement(instanceId, palette[index], anchor, reader.ReadByte()));
                 }
 
                 var frameError = ReadFrame(reader, limits, out var frame);
@@ -123,7 +136,7 @@ namespace TinCan.Features.ShipDesigns
                 WriteVarInt(writer, ZigZag(edge.Id));
                 WriteVarInt(writer, ZigZag(edge.A));
                 WriteVarInt(writer, ZigZag(edge.B));
-                writer.Write(edge.Railing ? (byte)1 : (byte)0);
+                writer.Write((byte)edge.Rail);
             }
 
             WriteVarInt(writer, (uint)frame.Faces.Count);
@@ -133,6 +146,14 @@ namespace TinCan.Features.ShipDesigns
                 WriteVarInt(writer, (uint)face.Nodes.Count);
                 foreach (int node in face.Nodes) WriteVarInt(writer, ZigZag(node));
                 writer.Write((byte)face.Fill);
+            }
+
+            WriteVarInt(writer, (uint)frame.Stairs.Count);
+            foreach (var stair in frame.Stairs)
+            {
+                WriteVarInt(writer, ZigZag(stair.Id));
+                WriteVarInt(writer, ZigZag(stair.Edge));
+                writer.Write(stair.Dir > 0 ? (byte)1 : (byte)0);
             }
         }
 
@@ -160,8 +181,10 @@ namespace TinCan.Features.ShipDesigns
             var edges = new List<ShipFrameEdge>(edgeCount);
             for (int i = 0; i < edgeCount; i++)
             {
-                edges.Add(new ShipFrameEdge(UnZigZag(ReadVarInt(reader)), UnZigZag(ReadVarInt(reader)), UnZigZag(ReadVarInt(reader)),
-                    reader.ReadByte() != 0));
+                int id = UnZigZag(ReadVarInt(reader)), a = UnZigZag(ReadVarInt(reader)), b = UnZigZag(ReadVarInt(reader));
+                byte rail = reader.ReadByte();
+                if (rail > (byte)ShipFrameRailing.Gate) return $"Edge {i} has an unknown railing {rail}.";
+                edges.Add(new ShipFrameEdge(id, a, b, (ShipFrameRailing)rail));
             }
 
             int faceCount = checked((int)ReadVarInt(reader));
@@ -179,7 +202,12 @@ namespace TinCan.Features.ShipDesigns
                 faces.Add(new ShipFrameFace(id, loop, (ShipFrameFill)fill));
             }
 
-            frame = new ShipFrame(@base, stories, nodes, edges, faces);
+            int stairCount = checked((int)ReadVarInt(reader));
+            if ((budget -= stairCount) < 0) return $"The frame has more than {limits.MaxFrameElements} nodes, edges, faces and stairs.";
+            var stairs = new List<ShipFrameStair>(stairCount);
+            for (int i = 0; i < stairCount; i++) stairs.Add(new ShipFrameStair(UnZigZag(ReadVarInt(reader)), UnZigZag(ReadVarInt(reader)), reader.ReadByte() != 0 ? 1 : -1));
+
+            frame = new ShipFrame(@base, stories, nodes, edges, faces, stairs);
             return null;
         }
 

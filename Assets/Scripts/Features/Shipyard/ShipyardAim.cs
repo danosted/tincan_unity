@@ -1,37 +1,38 @@
 #nullable enable
 using TinCan.Features.ShipDesigns;
+using UnityEngine;
 
 namespace TinCan.Features.Shipyard
 {
-    /// <summary>Where the cursor points: the cell on the working level a new part would go in, and the part under it.</summary>
+    /// <summary>Where the cursor points in parts mode: the frame element a new part would hang on, and the part under it.</summary>
     public readonly struct ShipyardAim
     {
-        public ShipyardAim(ShipGridCell placeCell, ShipGridCell? partCell)
+        public ShipyardAim(ShipPartAnchor anchor, Vector3? partPoint)
         {
             IsValid = true;
-            PlaceCell = placeCell;
-            PartCell = partCell;
+            Anchor = anchor;
+            PartPoint = partPoint;
         }
 
-        private ShipyardAim(ShipGridCell? partCell)
+        private ShipyardAim(Vector3? partPoint)
         {
             IsValid = false;
-            PlaceCell = default;
-            PartCell = partCell;
+            Anchor = default;
+            PartPoint = partPoint;
         }
 
-        /// <summary>True when the cursor is over the working level's floor.</summary>
+        /// <summary>True when the cursor is over something the selected part can hang on.</summary>
         public bool IsValid { get; }
-        public ShipGridCell PlaceCell { get; }
 
-        /// <summary>The cell of the part under the cursor (what Remove takes), or null over empty space.</summary>
-        public ShipGridCell? PartCell { get; }
+        public ShipPartAnchor Anchor { get; }
+
+        /// <summary>A ship-space point just inside what the cursor hits (what Remove takes), or null over nothing.</summary>
+        public Vector3? PartPoint { get; }
 
         public static ShipyardAim None => default;
 
-        public static ShipyardAim Nowhere(ShipGridCell? partCell) => new(partCell);
+        public static ShipyardAim Nowhere(Vector3? partPoint) => new(partPoint);
 
-        public override string ToString() =>
-            $"{(IsValid ? $"place {PlaceCell}" : "place nowhere")}, on {PartCell?.ToString() ?? "nothing"}";
+        public override string ToString() => $"{(IsValid ? $"place {Anchor}" : "place nowhere")}, on {PartPoint?.ToString() ?? "nothing"}";
     }
 }

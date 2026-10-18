@@ -6,10 +6,10 @@ using UnityEngine;
 namespace TinCan.Core.Ship.Parts
 {
     /// <summary>
-    /// A part a ship can be built from: what it is called in a saved design, the grid cells it fills, and what is built
-    /// for it. Features contribute parts through <c>FeatureInstaller.IExtension&lt;ShipPartDefinition&gt;</c>, so a part
+    /// A part a ship can be built from: what it is called in a saved design, what frame element it hangs on, the space it
+    /// fills, and what is built for it. Features contribute parts through <c>FeatureInstaller.IExtension&lt;ShipPartDefinition&gt;</c>, so a part
     /// exists only where the feature that makes it work is loaded (the helm part comes from the Helm feature).
-    /// Plan: .docs/plans/modular-airship-builder.md.
+    /// Plans: .docs/plans/modular-airship-builder.md, .docs/plans/frame-only-ships.md.
     /// </summary>
     [CreateAssetMenu(fileName = "PART_New", menuName = "TinCan/Ship/Part Definition")]
     public class ShipPartDefinition : ScriptableObject
@@ -24,16 +24,21 @@ namespace TinCan.Core.Ship.Parts
         [SerializeField] private string _displayName = string.Empty;
         [Tooltip("Groups parts in the shipyard's list.")]
         [SerializeField] private string _category = "Hull";
-        [Tooltip("The cells the part fills, relative to its origin cell, before rotation. Empty means the origin cell alone.")]
+        [Tooltip("What the part hangs on: a plank floor (Face) or a frame node (Node).")]
+        [SerializeField] private ShipPartAttach _attach = ShipPartAttach.Face;
+        [Tooltip("The 1 m blocks the part fills, relative to its origin block (standing on its anchor point), before its yaw. "
+                 + "Empty means the origin block alone. Two parts' blocks may not overlap.")]
         [SerializeField] private List<Vector3Int> _footprint = new();
         [Tooltip("The ship's core part: every ship has exactly one, and every other part must connect to it.")]
         [SerializeField] private bool _isCore;
+        [Tooltip("Holds the ship's spirit: the ship's lift is the spirit's (ShipStatsTuning.SpiritLift). A design has one.")]
+        [SerializeField] private bool _isCairn;
         [Tooltip("Built on every peer as a plain child of the ship (meshes and colliders, no NetworkObject).")]
         [SerializeField] private GameObject? _visual;
         [Tooltip("Optional: a networked prefab the server spawns onto the ship at the part's pose (the helm).")]
         [SerializeField] private GameObject? _networkedPrefab;
-        [Tooltip("Where the prefabs' pivot sits relative to the origin cell's centre, in metres. A prefab with its pivot "
-                 + "at its base, standing on the floor of its cell, uses (0, -0.5, 0).")]
+        [Tooltip("Where the prefabs' pivot sits relative to the anchor point (on the floor, or at the node), in metres, "
+                 + "before the yaw. A prefab with its pivot at its base uses (0, 0, 0).")]
         [SerializeField] private Vector3 _pivotOffset;
         [Tooltip("Mass, lift, thrust and hull this part adds to the ship.")]
         [SerializeField] private ShipPartStats _stats;
@@ -43,8 +48,10 @@ namespace TinCan.Core.Ship.Parts
         public string PartId => _partId;
         public string DisplayName => string.IsNullOrEmpty(_displayName) ? name : _displayName;
         public string Category => _category;
+        public ShipPartAttach Attach => _attach;
         public IReadOnlyList<Vector3Int> Footprint => _footprint.Count > 0 ? _footprint : OriginOnly;
         public bool IsCore => _isCore;
+        public bool IsCairn => _isCairn;
         public GameObject? Visual => _visual;
         public GameObject? NetworkedPrefab => _networkedPrefab;
         public Vector3 PivotOffset => _pivotOffset;
@@ -64,7 +71,12 @@ namespace TinCan.Core.Ship.Parts
 
         /// <summary>Test and tooling seam, with the prefabs the part builds and what it adds to the ship.</summary>
         public static ShipPartDefinition Create(string partId, bool isCore, GameObject? visual, GameObject? networkedPrefab,
-            Vector3 pivotOffset, ShipPartStats stats, params Vector3Int[] footprint)
+            Vector3 pivotOffset, ShipPartStats stats, params Vector3Int[] footprint) =>
+            Create(partId, isCore, visual, networkedPrefab, pivotOffset, stats, ShipPartAttach.Face, false, footprint);
+
+        /// <summary>Test and tooling seam, with what the part hangs on and whether it is the cairn.</summary>
+        public static ShipPartDefinition Create(string partId, bool isCore, GameObject? visual, GameObject? networkedPrefab,
+            Vector3 pivotOffset, ShipPartStats stats, ShipPartAttach attach, bool isCairn, params Vector3Int[] footprint)
         {
             var part = CreateInstance<ShipPartDefinition>();
             part.name = partId;
@@ -74,6 +86,8 @@ namespace TinCan.Core.Ship.Parts
             part._networkedPrefab = networkedPrefab;
             part._pivotOffset = pivotOffset;
             part._stats = stats;
+            part._attach = attach;
+            part._isCairn = isCairn;
             part._footprint = new List<Vector3Int>(footprint);
             return part;
         }

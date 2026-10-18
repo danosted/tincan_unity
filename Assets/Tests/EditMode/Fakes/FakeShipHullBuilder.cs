@@ -24,16 +24,18 @@ namespace TinCan.Tests.EditMode.Fakes
 
         public sealed class BuiltMesh
         {
-            public BuiltMesh(string name, ShipFrameMesh mesh, Material? material)
+            public BuiltMesh(string name, ShipFrameMesh mesh, Material? material, ShipFrameMeshUse use)
             {
                 Name = name;
                 Mesh = mesh;
                 Material = material;
+                Use = use;
             }
 
             public string Name { get; }
             public ShipFrameMesh Mesh { get; }
             public Material? Material { get; }
+            public ShipFrameMeshUse Use { get; }
         }
 
         public List<Built> Standing { get; } = new();
@@ -51,9 +53,9 @@ namespace TinCan.Tests.EditMode.Fakes
             return built;
         }
 
-        public object BuildMesh(Transform ship, string name, ShipFrameMesh mesh, Material? material)
+        public object BuildMesh(Transform ship, string name, ShipFrameMesh mesh, Material? material, ShipFrameMeshUse use)
         {
-            var built = new BuiltMesh(name, mesh, material);
+            var built = new BuiltMesh(name, mesh, material, use);
             Meshes.Add(built);
             MeshBuilds++;
             return built;

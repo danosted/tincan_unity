@@ -17,8 +17,8 @@ namespace TinCan.Features.Shipyard
             return copy;
         }
 
-        public object BuildMesh(Transform ship, string name, ShipFrameMesh mesh, Material? material) =>
-            ShipFrameMeshObjects.Create(ship, name, mesh, material, collider: true);
+        public object BuildMesh(Transform ship, string name, ShipFrameMesh mesh, Material? material, ShipFrameMeshUse use) =>
+            ShipFrameMeshObjects.Create(ship, name, mesh, material, use);
 
         public void Remove(object handle)
         {

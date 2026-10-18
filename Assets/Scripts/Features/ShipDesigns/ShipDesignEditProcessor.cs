@@ -8,10 +8,11 @@ namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// Pure: applies one <see cref="ShipDesignEdit"/> to a design. A place or restore is refused when the part type is
-    /// unknown, the orientation invalid, a cell beyond the limits or already taken, or the design full; removing a part
-    /// that isn't there is refused too. Frame edits go to <see cref="ShipFrameEditProcessor"/>. Disconnecting parts is
-    /// allowed (the validator reports it), so a builder can rework a ship in any order. Instance ids are never reused, and
-    /// new parts skip the ids the frame uses.
+    /// unknown, the yaw invalid, the anchor does not hold it (a missing element, the wrong kind for the part, a point off
+    /// its plank floor), a block is beyond the limits or overlaps another part, or the design is full; removing a part that
+    /// isn't there is refused too. Frame edits go to <see cref="ShipFrameEditProcessor"/>; one that takes a part's element
+    /// away leaves the part unanchored (the validator reports it), so a builder can rework a ship in any order. Instance
+    /// ids are never reused, and new parts skip the ids the frame uses.
     /// </summary>
     public sealed class ShipDesignEditProcessor
     {
@@ -30,7 +31,7 @@ namespace TinCan.Features.ShipDesigns
         private static ShipDesignEditResult Place(ShipDesign design, ShipDesignEdit edit, IShipPartCatalog catalog, ShipDesignLimits limits)
         {
             int instanceId = Math.Max(design.NextPartInstanceId, design.IdFloor);
-            var placement = new ShipPartPlacement(instanceId, edit.PartId, edit.Cell, edit.Orientation);
+            var placement = new ShipPartPlacement(instanceId, edit.PartId, edit.Anchor, edit.Orientation);
             var refusal = RefusalToAdd(design, placement, catalog, limits);
             if (refusal != null) return ShipDesignEditResult.Refused(design, refusal);
 
@@ -69,16 +70,26 @@ namespace TinCan.Features.ShipDesigns
         {
             if (design.Parts.Count >= limits.MaxParts) return $"The design is full ({limits.MaxParts} parts).";
             if (!catalog.TryGet(placement.PartId, out var part)) return $"No loaded part is called \"{placement.PartId}\".";
-            if (!ShipPartOrientation.IsValid(placement.Orientation)) return $"There is no orientation {placement.Orientation}.";
+            if (!ShipPartOrientation.IsValid(placement.Orientation)) return $"There is no yaw {placement.Orientation} (0–3).";
+            if (part.Attach != placement.Anchor.Kind) return $"{part.DisplayName} goes on a {part.Attach.ToString().ToLowerInvariant()}, not {placement.Anchor}.";
 
-            var cells = ShipPartFootprints.CellsOf(placement, part).ToList();
-            var outside = cells.Where(c => !limits.Contains(c)).Select(c => (ShipGridCell?)c).FirstOrDefault();
-            if (outside != null) return $"{outside} is more than {limits.MaxExtent} cells from the origin.";
-
-            var taken = ShipPartFootprints.Occupancy(design, catalog);
-            foreach (var cell in cells)
+            var shape = ShipFrameShape.From(design.Frame);
+            if (!ShipPartPose.TryGetAnchorPoint(placement.Anchor, shape, out var point))
             {
-                if (taken.TryGetValue(cell, out var other)) return $"{cell} is taken by part #{other}.";
+                return placement.Anchor.Kind == ShipPartAttach.Node
+                    ? $"There is no node #{placement.Anchor.Element}."
+                    : $"Face #{placement.Anchor.Element} is not a plank floor at ({placement.Anchor.X}, {placement.Anchor.Z}).";
+            }
+
+            var taken = ShipPartFootprints.Occupancy(design, catalog, shape);
+            foreach (var block in ShipPartPose.Blocks(placement, part, point))
+            {
+                if (!limits.Contains(ShipFrameUnits.FromMetres(block.x), ShipFrameUnits.FromMetres(block.y), ShipFrameUnits.FromMetres(block.z)))
+                {
+                    return $"The part reaches more than {limits.MaxExtent} m from the origin.";
+                }
+
+                if (taken.TryGetOverlap(block, placement.InstanceId, out var other)) return $"Part #{other} is in the way.";
             }
 
             return null;

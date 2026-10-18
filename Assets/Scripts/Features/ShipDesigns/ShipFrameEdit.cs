@@ -13,7 +13,8 @@ namespace TinCan.Features.ShipDesigns
     public sealed class ShipFrameEdit
     {
         private ShipFrameEdit(ShipFrameEditKind kind, int id = 0, int other = 0, int story = 0, int x = 0, int y = 0, int z = 0,
-            IReadOnlyList<int>? nodes = null, ShipFrameFill fill = ShipFrameFill.Open, bool railing = false, ShipFrame? frame = null)
+            IReadOnlyList<int>? nodes = null, ShipFrameFill fill = ShipFrameFill.Open, ShipFrameRailing rail = ShipFrameRailing.None,
+            ShipFrame? frame = null)
         {
             Kind = kind;
             Id = id;
@@ -24,7 +25,7 @@ namespace TinCan.Features.ShipDesigns
             Z = z;
             Nodes = nodes ?? Array.Empty<int>();
             Fill = fill;
-            Railing = railing;
+            Rail = rail;
             Frame = frame;
         }
 
@@ -37,7 +38,7 @@ namespace TinCan.Features.ShipDesigns
         public int Z { get; }
         public IReadOnlyList<int> Nodes { get; }
         public ShipFrameFill Fill { get; }
-        public bool Railing { get; }
+        public ShipFrameRailing Rail { get; }
 
         /// <summary>The frame a <see cref="ShipFrameEditKind.Restore"/> puts back.</summary>
         public ShipFrame? Frame { get; }
@@ -58,7 +59,14 @@ namespace TinCan.Features.ShipDesigns
 
         public static ShipFrameEdit SplitEdge(int edge, int x, int y, int z) => new(ShipFrameEditKind.SplitEdge, edge, x: x, y: y, z: z);
 
-        public static ShipFrameEdit SetRailing(int edge, bool railing) => new(ShipFrameEditKind.SetRailing, edge, railing: railing);
+        public static ShipFrameEdit SetRailing(int edge, ShipFrameRailing rail) => new(ShipFrameEditKind.SetRailing, edge, rail: rail);
+
+        /// <summary>Stairs hanging from a floor edge, down into the story below, on the side <paramref name="dir"/> says (+1 or -1).</summary>
+        public static ShipFrameEdit AddStair(int edge, int dir) => new(ShipFrameEditKind.AddStair, edge, dir);
+
+        public static ShipFrameEdit FlipStair(int stair) => new(ShipFrameEditKind.FlipStair, stair);
+
+        public static ShipFrameEdit RemoveStair(int stair) => new(ShipFrameEditKind.RemoveStair, stair);
 
         public static ShipFrameEdit AddFace(IEnumerable<int> nodes, ShipFrameFill fill) => new(ShipFrameEditKind.AddFace, nodes: nodes.ToList(), fill: fill);
 
@@ -77,7 +85,8 @@ namespace TinCan.Features.ShipDesigns
             ShipFrameEditKind.MoveNode or ShipFrameEditKind.SplitEdge => $"{Kind} #{Id} to ({X}, {Y}, {Z})",
             ShipFrameEditKind.MergeNodes => $"Merge node #{Other} into #{Id}",
             ShipFrameEditKind.AddEdge => $"Add an edge {Id}-{Other}",
-            ShipFrameEditKind.SetRailing => $"Railing on edge #{Id}: {Railing}",
+            ShipFrameEditKind.SetRailing => $"Railing on edge #{Id}: {Rail}",
+            ShipFrameEditKind.AddStair => $"Add stairs from edge #{Id}, side {Other}",
             ShipFrameEditKind.AddFace => $"Add a face {string.Join("-", Nodes)} ({Fill})",
             ShipFrameEditKind.SplitFace => $"Split face #{Id} along {string.Join("-", Nodes)}",
             ShipFrameEditKind.SetFaceFill => $"Fill face #{Id} with {Fill}",

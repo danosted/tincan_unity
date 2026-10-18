@@ -5,8 +5,8 @@ using UnityEngine.Rendering;
 namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
-    /// Turns <see cref="ShipFrameMesh"/> data into a scene object (mesh, renderer and a mesh collider of the same shape)
-    /// and destroys built objects again, with the mesh when it was generated here. Ships are kinematic, so the non-convex
+    /// Turns <see cref="ShipFrameMesh"/> data into a scene object (mesh, a renderer and/or a mesh collider of the same
+    /// shape, by <see cref="ShipFrameMeshUse"/>) and destroys built objects again, with the mesh when it was generated here. Ships are kinematic, so the non-convex
     /// collider is allowed; players stand on it.
     /// </summary>
     public static class ShipFrameMeshObjects
@@ -14,7 +14,7 @@ namespace TinCan.Features.ShipDesigns
         /// <summary>Generated meshes are named with this prefix, so destroying can tell them from prefab meshes.</summary>
         private const string MeshPrefix = "ShipFrame:";
 
-        public static GameObject Create(Transform parent, string name, ShipFrameMesh data, Material? material, bool collider)
+        public static GameObject Create(Transform parent, string name, ShipFrameMesh data, Material? material, ShipFrameMeshUse use)
         {
             var mesh = new Mesh
             {
@@ -30,9 +30,13 @@ namespace TinCan.Features.ShipDesigns
             var instance = new GameObject(name);
             instance.transform.SetParent(parent, false);
             instance.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var renderer = instance.AddComponent<MeshRenderer>();
-            if (material != null) renderer.sharedMaterial = material;
-            if (collider) instance.AddComponent<MeshCollider>().sharedMesh = mesh;
+            if (use != ShipFrameMeshUse.Collider)
+            {
+                var renderer = instance.AddComponent<MeshRenderer>();
+                if (material != null) renderer.sharedMaterial = material;
+            }
+
+            if (use != ShipFrameMeshUse.Seen) instance.AddComponent<MeshCollider>().sharedMesh = mesh;
             return instance;
         }
 

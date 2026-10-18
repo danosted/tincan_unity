@@ -20,7 +20,8 @@ namespace TinCan.Features.ShipDesigns
             _targetVersion = targetVersion;
         }
 
-        public static ShipDesignMigrator Current { get; } = new(new IShipDesignMigration[] { new ShipDesignMigrationV1() });
+        public static ShipDesignMigrator Current { get; } =
+            new(new IShipDesignMigration[] { new ShipDesignMigrationV1(), new ShipDesignMigrationV2(), new ShipDesignMigrationV3() });
 
         /// <summary>Migrates the file from its version to the target, or says which step is missing.</summary>
         public bool TryMigrate(JObject file, int fromVersion, out string? error)

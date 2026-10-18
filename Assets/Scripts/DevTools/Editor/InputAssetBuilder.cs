@@ -85,10 +85,12 @@ namespace TinCan.DevTools.Editor
             ["Shipyard/Fill"] = ("Plank Face", "Frame mode: plank or open the face under the cursor.", true),
             ["Shipyard/Height"] = ("Node Height", "Frame mode: hold while dragging a node to raise or lower it.", true),
             ["Shipyard/Extrude"] = ("Extrude", "Frame mode: push the wall under the cursor out, grow an outer floor edge, or raise a story on a floor.", true),
+            ["Shipyard/Railing"] = ("Railing", "Frame mode: a railing, a gate or nothing along the floor edge under the cursor, in turn.", true),
+            ["Shipyard/Stairs"] = ("Stairs", "Frame mode: hang stairs from the floor edge under the cursor down to the story below; again turns them round, then takes them away.", true),
             ["Shipyard/Undo"] = ("Undo", "Undo the last change to the design.", true),
             ["Shipyard/Redo"] = ("Redo", "Redo the change just undone.", true),
-            ["Shipyard/LevelUp"] = ("Level Up", "Parts: build one level higher. Frame: work on the story above.", true),
-            ["Shipyard/LevelDown"] = ("Level Down", "Parts: build one level lower. Frame: work on the story below.", true),
+            ["Shipyard/LevelUp"] = ("Story Up", "Frame mode: work on the story above.", true),
+            ["Shipyard/LevelDown"] = ("Story Down", "Frame mode: work on the story below.", true),
         };
 
         [MenuItem("TinCan/Dev/Input/Build Assets")]
@@ -192,6 +194,8 @@ namespace TinCan.DevTools.Editor
                 c.Fill = Id("Shipyard/Fill");
                 c.Height = Id("Shipyard/Height");
                 c.Extrude = Id("Shipyard/Extrude");
+                c.Railing = Id("Shipyard/Railing");
+                c.Stairs = Id("Shipyard/Stairs");
                 c.Undo = Id("Shipyard/Undo");
                 c.Redo = Id("Shipyard/Redo");
                 c.LevelUp = Id("Shipyard/LevelUp");

@@ -17,8 +17,8 @@ namespace TinCan.Tests.EditMode.Fakes
         public ShipDesign? Shown { get; private set; }
         public int DesignsShown { get; private set; }
         public ShipyardRay Ray { get; set; } = new(new Vector3(0f, 10f, 0f), Vector3.up);
-        public (ShipPartDefinition Part, ShipGridCell Cell, byte Orientation, bool Valid)? Ghost { get; private set; }
-        public ShipPartPlacement? Highlighted { get; private set; }
+        public (ShipPartDefinition Part, Vector3 Position, Quaternion Rotation, bool Valid)? Ghost { get; private set; }
+        public (ShipPartDefinition Part, Vector3 Position)? Highlighted { get; private set; }
         public float FloorY { get; private set; }
         public ShipyardFrameMarks? Marks { get; private set; }
         public ShipyardCameraPose? CameraPose { get; private set; }
@@ -48,16 +48,16 @@ namespace TinCan.Tests.EditMode.Fakes
 
         public void ShowLevel(float floorY) => FloorY = floorY;
 
-        public void ShowGhost(ShipPartDefinition part, ShipGridCell cell, byte orientation, bool valid)
+        public void ShowGhost(ShipPartDefinition part, Vector3 position, Quaternion rotation, bool valid)
         {
             Highlighted = null;
-            Ghost = (part, cell, orientation, valid);
+            Ghost = (part, position, rotation, valid);
         }
 
-        public void ShowHighlight(ShipPartDefinition part, ShipPartPlacement placement)
+        public void ShowHighlight(ShipPartDefinition part, Vector3 position, Quaternion rotation)
         {
             Ghost = null;
-            Highlighted = placement;
+            Highlighted = (part, position);
         }
 
         public void HideGhost()

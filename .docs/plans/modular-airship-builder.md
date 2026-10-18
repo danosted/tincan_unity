@@ -1,4 +1,4 @@
-Status: Done (2026-10-04): S1–S4 built; "Later" is open
+Status: Done (2026-10-04): S1–S4 built; "Later" is open. The voxel grid it built on was retired on 2026-10-17 ([frame-only-ships.md](frame-only-ships.md)): ships are frames now.
 
 # Modular airship builder: build your own ship, save it, fly it
 

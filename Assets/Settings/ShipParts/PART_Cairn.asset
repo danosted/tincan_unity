@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7101ab5c4c49b644fb0c56241351311f, type: 3}
+  m_Name: PART_Cairn
+  m_EditorClassIdentifier: TinCan.Ship::TinCan.Core.Ship.Parts.ShipPartDefinition
+  _partId: spirit.cairn
+  _displayName: Cairn
+  _category: Spirit
+  _attach: 0
+  _footprint:
+  - {x: 0, y: 0, z: 0}
+  - {x: 0, y: 1, z: 0}
+  _isCore: 0
+  _isCairn: 1
+  _visual: {fileID: 8005118824555648629, guid: dc592b9f81ef3234295ec0103f6449a3, type: 3}
+  _networkedPrefab: {fileID: 0}
+  _pivotOffset: {x: 0, y: 0, z: 0}
+  _stats:
+    Mass: 40
+    Lift: 0
+    Thrust: 0
+    Hull: 40

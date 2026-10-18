@@ -42,15 +42,20 @@ namespace TinCan.Features.Shipyard
         public InputActionId? Height;
         [Tooltip("Frame mode: extrude what is under the cursor: push a wall out, grow a floor edge, raise a story on a floor.")]
         public InputActionId? Extrude;
+        [Tooltip("Frame mode: a railing, a gate or nothing along the floor edge under the cursor, in turn.")]
+        public InputActionId? Railing;
+        [Tooltip("Frame mode: stairs from the floor edge under the cursor down to the story below; again turns them round, then takes them away.")]
+        public InputActionId? Stairs;
         public InputActionId? Undo;
         public InputActionId? Redo;
-        [Tooltip("The working level up (parts mode) or the working story up (frame mode).")]
+        [Tooltip("Frame mode: the working story up.")]
         public InputActionId? LevelUp;
         public InputActionId? LevelDown;
 
         protected override IEnumerable<InputActionId?> Slots => new[]
         {
-            Point, Look, LookHold, Fly, Rise, Fast, Zoom, Place, DeleteMode, Rotate, Mode, Fill, Height, Extrude, Undo, Redo, LevelUp, LevelDown,
+            Point, Look, LookHold, Fly, Rise, Fast, Zoom, Place, DeleteMode, Rotate, Mode, Fill, Height, Extrude, Railing, Stairs, Undo, Redo, LevelUp,
+            LevelDown,
         };
     }
 }

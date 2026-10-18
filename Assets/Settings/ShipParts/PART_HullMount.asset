@@ -15,8 +15,10 @@ MonoBehaviour:
   _partId: hull.mount
   _displayName: Mount plate
   _category: Hull
+  _attach: 0
   _footprint: []
   _isCore: 0
+  _isCairn: 0
   _visual: {fileID: 1211372424779562308, guid: 0893908fe1117ed479cd34a3c6c4b038, type: 3}
   _networkedPrefab: {fileID: 0}
   _pivotOffset: {x: 0, y: 0, z: 0}

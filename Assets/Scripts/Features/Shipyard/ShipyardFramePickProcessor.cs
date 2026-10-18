@@ -94,7 +94,7 @@ namespace TinCan.Features.Shipyard
         }
 
         /// <summary>Möller-Trumbore, both sides.</summary>
-        private static bool Hits(Vector3 origin, Vector3 direction, Vector3 a, Vector3 b, Vector3 c, out float t)
+        internal static bool Hits(Vector3 origin, Vector3 direction, Vector3 a, Vector3 b, Vector3 c, out float t)
         {
             t = 0f;
             var ab = b - a;

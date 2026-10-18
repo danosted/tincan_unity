@@ -24,5 +24,10 @@ namespace TinCan.Features.ShipDesigns
         RemoveFace,
         /// <summary>Puts a whole frame back (undoing any other frame edit).</summary>
         Restore,
+        /// <summary>Hangs a flight of stairs from a floor edge, down into the story below.</summary>
+        AddStair,
+        /// <summary>Turns a flight to the other side of its edge.</summary>
+        FlipStair,
+        RemoveStair,
     }
 }

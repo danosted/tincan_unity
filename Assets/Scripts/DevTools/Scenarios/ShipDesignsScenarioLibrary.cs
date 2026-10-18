@@ -12,15 +12,17 @@ namespace TinCan.DevTools.Scenarios
 {
     /// <summary>
     /// Scenario steps for designed ships. Commands: FlyDesign gives every ship a stored design (server, as the shipyard's
-    /// Launch does); PlaceSubjectAtCell "x,y,z,yaw" stands the subject on whatever is under that ship cell, its body
-    /// turned yaw degrees from the bow (server); FaceShipYaw "yaw" turns the subject's camera the same way, level
+    /// Launch does); PlaceSubjectAtCell "x,y,z,yaw[,above]" stands the subject on whatever is under that ship-space point (metres) (searched
+    /// from 3 m above it, or the given metres, so a deck overhead is skipped), its body turned yaw degrees from the bow
+    /// (server); FaceShipYaw "yaw" turns the subject's camera the same way, level
     /// (subject peer). Probes: ShipDesignBuilt: this peer has built the ship from the design its state replicates, with
     /// at least the given number of parts standing. SubjectOnShip: the ground under the subject on this peer belongs to
     /// the ship (a built part or the helm). ShipTopSpeed: the ship's replicated top speed, set from the design's parts
     /// (S4). SubjectFeetAbove "y": the subject's feet are at least that high in ship space on this peer. ShipFrameBuilt "n":
     /// at least n generated frame meshes (planks and beams per story) stand for the ship on this peer. SubjectStandsOn
     /// "prefix": the ground under the subject is a part of the ship whose name starts with the prefix ("Planks" for a frame
-    /// floor). Plans: .docs/plans/modular-airship-builder.md, .docs/plans/airship-parts-pack.md, .docs/plans/ship-frames.md.
+    /// floor). ShipPartAt "partId x z": the ship's replicated design, built on this peer, has that part on a face at that point
+    /// (frame units). Plans: .docs/plans/modular-airship-builder.md, .docs/plans/airship-parts-pack.md, .docs/plans/ship-frames.md.
     /// </summary>
     public sealed class ShipDesignsScenarioLibrary : IScenarioLibrary
     {
@@ -59,6 +61,7 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("SubjectFeetAbove", CheckFeetAbove),
             new ScenarioProbe("ShipFrameBuilt", CheckFrameBuilt),
             new ScenarioProbe("SubjectStandsOn", CheckStandsOn),
+            new ScenarioProbe("ShipPartAt", CheckPartAt),
         };
 
         private ScenarioCheck CheckBuilt(string minimumParts)
@@ -110,6 +113,24 @@ namespace TinCan.DevTools.Scenarios
             return meshes >= int.Parse(minimumMeshes, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
+        private ScenarioCheck CheckPartAt(string argument)
+        {
+            var words = argument.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length != 3) return ScenarioCheck.Fail("expected \"partId x z\" (frame units on its face)");
+            int x = int.Parse(words[1], CultureInfo.InvariantCulture), z = int.Parse(words[2], CultureInfo.InvariantCulture);
+
+            var state = _actors.GetActors<IShipDesignState>().FirstOrDefault(s => s.Ship != null);
+            if (state == null || state.DesignHash == 0) return ScenarioCheck.Fail("no ship with a design");
+            if (!_assembly.TryGetBuilt(state.Ship!.Id, out var hash, out _) || hash != state.DesignHash) return ScenarioCheck.Fail("the replicated design is not built yet");
+
+            var decoded = ShipDesignBinaryCodec.Decode(state.DesignBytes, ShipDesignLimits.Default);
+            if (!decoded.Succeeded) return ScenarioCheck.Fail(decoded.Error ?? "the design does not decode");
+            var found = decoded.Design!.Parts.FirstOrDefault(p => p.PartId == words[0] && p.Anchor.X == x && p.Anchor.Z == z);
+            return found != null
+                ? ScenarioCheck.Pass($"built {found}")
+                : ScenarioCheck.Fail($"no {words[0]} at ({x}, {z}); there are: {string.Join(", ", decoded.Design.Parts.Where(p => p.PartId == words[0]).Select(p => p.Anchor))}");
+        }
+
         private ScenarioCheck CheckStandsOn(string namePrefix)
         {
             var body = _subject.Body;
@@ -146,20 +167,22 @@ namespace TinCan.DevTools.Scenarios
                 : ScenarioCheck.Fail("no ship to give it to");
         }
 
-        /// <summary>Server: "x,y,z,yaw". Stands the subject on the ground under that ship cell, through the respawn service.</summary>
+        /// <summary>Server: "x,y,z,yaw[,above]". Stands the subject on the ground under that ship-space point, through the respawn service.</summary>
         private ScenarioCheck PlaceAtCell(string argument)
         {
             if (!_network.IsServer) return ScenarioCheck.Fail("server-only command");
             var values = argument.Split(',').Select(v => float.Parse(v.Trim(), CultureInfo.InvariantCulture)).ToArray();
-            if (values.Length != 4) return ScenarioCheck.Fail($"'{argument}' is not x,y,z,yaw");
+            if (values.Length is not (4 or 5)) return ScenarioCheck.Fail($"'{argument}' is not x,y,z,yaw[,probe above]");
 
             var subject = _subject.Resolve();
             var body = subject?.Movement?.Transform;
             var ship = _actors.GetActors<IAirshipView>().FirstOrDefault();
             if (subject == null || body == null || ship == null) return ScenarioCheck.Fail("no subject or no ship");
 
-            var cell = new Vector3(values[0], values[1], values[2]) * ShipGrid.CellSize;
-            var stand = ScenarioPlacement.OnGround(body, ship.Transform.TransformPoint(cell), ship.Transform.up);
+            var point = new Vector3(values[0], values[1], values[2]);
+            var stand = values.Length == 5
+                ? ScenarioPlacement.OnGround(body, ship.Transform.TransformPoint(point), ship.Transform.up, values[4])
+                : ScenarioPlacement.OnGround(body, ship.Transform.TransformPoint(point), ship.Transform.up);
             _respawn.ResetCharacter(subject, stand, ship.Transform.rotation * Quaternion.Euler(0f, values[3], 0f));
             return ScenarioCheck.Pass($"subject placed at {ship.Transform.InverseTransformPoint(stand)} in ship space");
         }

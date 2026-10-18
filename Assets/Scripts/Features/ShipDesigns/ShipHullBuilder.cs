@@ -25,8 +25,8 @@ namespace TinCan.Features.ShipDesigns
             return instance;
         }
 
-        public object BuildMesh(Transform ship, string name, ShipFrameMesh mesh, Material? material) =>
-            ShipFrameMeshObjects.Create(Hull(ship), name, mesh, material, collider: true);
+        public object BuildMesh(Transform ship, string name, ShipFrameMesh mesh, Material? material, ShipFrameMeshUse use) =>
+            ShipFrameMeshObjects.Create(Hull(ship), name, mesh, material, use);
 
         public void Remove(object handle)
         {

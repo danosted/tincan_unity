@@ -6,7 +6,8 @@ namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// Frame rules and looks: how far nodes may drift and how steep a floor may be (the validator), how planks and beams
-    /// are built (the mesh processor), and what they weigh (the stats). Plan: .docs/plans/ship-frames.md.
+    /// are built (the mesh processor), and what they weigh (the stats). Plans: .docs/plans/ship-frames.md,
+    /// .docs/plans/frame-only-ships.md.
     /// </summary>
     [Serializable]
     public struct ShipFrameTuning
@@ -20,7 +21,7 @@ namespace TinCan.Features.ShipDesigns
         [Min(0.01f)] public float MinEdgeLength;
         [Tooltip("The smallest face, seen from above (m²).")]
         [Min(0.001f)] public float MinFaceArea;
-        [Tooltip("How close (m) a part's underside must be to a plank floor to rest on it.")]
+        [Tooltip("How close (m) the foot of a flight of stairs must be to a plank floor to land on it.")]
         [Min(0f)] public float RestTolerance;
         [Tooltip("The least room (m) between a plank floor and the underside of the floor above it.")]
         [Min(0f)] public float MinHeadroom;
@@ -34,6 +35,10 @@ namespace TinCan.Features.ShipDesigns
         [Min(0.1f)] public float TextureMetres;
         [Tooltip("How high a railing's top rail is above the floor (m).")]
         [Min(0.3f)] public float RailHeight;
+        [Tooltip("How steep stairs are (degrees): their run is their rise over its tangent. Keep it under the player's walkable slope.")]
+        [Range(15f, 45f)] public float StairSlope;
+        [Tooltip("The most a step rises (m); a flight has as many steps as its rise needs.")]
+        [Min(0.05f)] public float StepRise;
 
         [Header("Stats")]
         [Min(0f)] public float PlankMassPerSquareMetre;
@@ -54,6 +59,8 @@ namespace TinCan.Features.ShipDesigns
             BeamWidth = 0.2f,
             TextureMetres = 2f,
             RailHeight = 1f,
+            StairSlope = 31f,
+            StepRise = 0.2f,
             PlankMassPerSquareMetre = 3f,
             PlankHullPerSquareMetre = 5f,
             BeamMassPerMetre = 1f,

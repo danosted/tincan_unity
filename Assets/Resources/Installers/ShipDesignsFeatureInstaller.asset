@@ -14,19 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Features.ShipDesigns::TinCan.Features.ShipDesigns.ShipDesignsFeatureInstaller
   _config: {fileID: 11400000, guid: 18041291d90d9bb4a99d998e00e7cb46, type: 2}
   _parts:
-  - {fileID: 11400000, guid: 6bce5ef2fe888ac46b8458684c205783, type: 2}
-  - {fileID: 11400000, guid: 77e91c0ba9f8ff84ba08dc87d6e885b4, type: 2}
-  - {fileID: 11400000, guid: 40946c9f32866644d96e468a0b19e82c, type: 2}
+  - {fileID: 11400000, guid: a7c02d371c385f2488169d61ff29d63a, type: 2}
   - {fileID: 11400000, guid: 2e66971032f86ff48a616f7c8610f1ad, type: 2}
-  - {fileID: 11400000, guid: a7af6b36fa1cd224295f6a736b5b35ab, type: 2}
-  - {fileID: 11400000, guid: f9c02254c08449c49934e40065409a4b, type: 2}
-  - {fileID: 11400000, guid: 82594b2d77328d24bbdea466f1b946b7, type: 2}
-  - {fileID: 11400000, guid: 6afe8b76cb734d34b8a87986b5600f4e, type: 2}
-  - {fileID: 11400000, guid: e8ab8fb4c65532941823db05beb02d3d, type: 2}
-  - {fileID: 11400000, guid: 0e0d499f6b7f94f43b3d98ee9f4c5c1b, type: 2}
-  - {fileID: 11400000, guid: 8948d4fdcee5cee4593c219b1309a63a, type: 2}
-  - {fileID: 11400000, guid: 838d6d8cf55295d4c916d55c04112b32, type: 2}
-  - {fileID: 11400000, guid: 17a4a5d3c78bf524f9b93dbe1a144d03, type: 2}
-  - {fileID: 11400000, guid: a7c6c8c65ab5f6141b988fb49fb9d699, type: 2}
   - {fileID: 11400000, guid: f4d04a0b35f3c5541b3e6dc44fd41f1e, type: 2}
+  - {fileID: 11400000, guid: f9c02254c08449c49934e40065409a4b, type: 2}
+  - {fileID: 11400000, guid: 6afe8b76cb734d34b8a87986b5600f4e, type: 2}
   _stateFixture: {fileID: 11400000, guid: b49d87f299061b140bef706eb9114a4a, type: 2}

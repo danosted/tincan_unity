@@ -32,7 +32,6 @@ namespace TinCan.Features.Shipyard
             {
                 rows.Add(new(Keys(controls.Place), deleteMode ? "Delete the highlighted part" : "Place the selected part"));
                 rows.Add(new(Keys(controls.Rotate), "Turn the part"));
-                rows.Add(new(Keys(controls.LevelUp, controls.LevelDown), "Working level up / down"));
             }
             else
             {
@@ -40,6 +39,8 @@ namespace TinCan.Features.Shipyard
                 rows.Add(new($"{Keys(controls.Place)} (drag)", "Move a node; drop it on another to merge"));
                 rows.Add(new(Keys(controls.Fill), "Plank or open a face"));
                 rows.Add(new(Keys(controls.Extrude), "Extrude: push a wall out, grow a deck edge, raise a story on a floor"));
+                rows.Add(new(Keys(controls.Railing), "Railing, gate or none on an edge"));
+                rows.Add(new(Keys(controls.Stairs), "Stairs down from an edge; again to turn, then remove"));
                 rows.Add(new($"{Keys(controls.Height)} + {Keys(controls.Place)} (drag)", "Raise / lower a node"));
                 rows.Add(new(Keys(controls.LevelUp, controls.LevelDown), "Working story up / down"));
                 rows.Add(new($"{Keys(controls.LookHold)} (click)", "Deselect the node"));

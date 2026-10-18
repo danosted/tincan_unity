@@ -10,8 +10,12 @@ namespace TinCan.Tests.EditMode
     /// <summary><see cref="ShipDesignBinaryCodec"/> (the network form) and <see cref="ShipDesignHash"/>.</summary>
     public class ShipDesignBinaryCodecTests
     {
-        private static ShipDesign Sample() =>
-            Design((Helm, 0, 1, 0, 0), (Beam, -1, 0, 0, 0), (Block, -300, 7, 128, 23), (Block, 0, 0, -1, 3));
+        /// <summary>Face parts on the test floor (one far off it: the network form does not care), and a post on a node.</summary>
+        private static ShipDesign Sample()
+        {
+            var design = Design((Helm, 0, 0, 0), (Beam, -1, 0, 0), (Block, -300, 128, 3), (Block, 0, -1, 3));
+            return design.WithParts(design.Parts.Append(new ShipPartPlacement(14, Post, ShipPartAnchor.OnNode(2), 1)), 15);
+        }
 
         [Test]
         public void ADesign_RoundTrips()
@@ -49,6 +53,19 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void StairsAndGates_RoundTrip()
+        {
+            var well = ShipFrameTestDesigns.StairWell();
+            var design = ShipFrameTestDesigns.FrameOnly(well.With(edges: well.Edges.Select(e => e.Id == 13 ? e.WithRail(ShipFrameRailing.Gate) : e)));
+
+            var back = ShipDesignBinaryCodec.Decode(ShipDesignBinaryCodec.Encode(design), ShipDesignLimits.Default).Design!;
+
+            Assert.That(back.Frame.Stairs.Select(s => (s.Id, s.Edge, s.Dir)), Is.EqualTo(new[] { (21, 15, -1) }));
+            Assert.That(back.Frame.Edges.Single(e => e.Id == 13).Rail, Is.EqualTo(ShipFrameRailing.Gate));
+            Assert.That(ShipDesignHash.Compute(back), Is.EqualTo(ShipDesignHash.Compute(design)));
+        }
+
+        [Test]
         public void ABigFrame_IsCompact_AndTooBigAFrame_IsRefusedBeforeReadingIt()
         {
             // A 100 x 30 m deck outline of 260 nodes and edges and one face: a few bytes an element.
@@ -68,11 +85,11 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void ItIsCompact()
         {
-            var parts = Enumerable.Range(0, 500).Select(i => (Block, i % 20, i / 100, i / 20 % 5, (byte)0)).ToArray();
+            var parts = Enumerable.Range(0, 500).Select(i => (Block, i % 20, i / 20, (byte)0)).ToArray();
 
             int bytes = ShipDesignBinaryCodec.Encode(Design(parts)).Length;
 
-            Assert.That(bytes, Is.LessThan(500 * 8), $"{bytes} bytes for 500 parts");
+            Assert.That(bytes, Is.LessThan(500 * 10), $"{bytes} bytes for 500 parts");
         }
 
         [Test]
@@ -89,17 +106,17 @@ namespace TinCan.Tests.EditMode
         public void TooManyParts_AreRefusedBeforeReadingThem()
         {
             var limits = ShipDesignLimits.Default;
-            limits.MaxParts = 3; // three part types fit, four parts do not
+            limits.MaxParts = 4; // four part types fit, five parts do not
 
-            Assert.That(ShipDesignBinaryCodec.Decode(ShipDesignBinaryCodec.Encode(Sample()), limits).Error, Does.Contain("at most 3"));
+            Assert.That(ShipDesignBinaryCodec.Decode(ShipDesignBinaryCodec.Encode(Sample()), limits).Error, Does.Contain("at most 4"));
         }
 
         [Test]
         public void TheHash_IgnoresPartOrder_ButNotContent()
         {
             var design = Sample();
-            var reordered = new ShipDesign(design.Name, design.Author, design.NextPartInstanceId, design.Parts.Reverse());
-            var moved = Design((Helm, 0, 1, 0, 0), (Beam, -1, 0, 0, 0), (Block, -300, 7, 128, 23), (Block, 0, 0, -1, 2));
+            var reordered = new ShipDesign(design.Name, design.Author, design.NextPartInstanceId, design.Parts.Reverse(), frame: design.Frame);
+            var moved = Design((Helm, 0, 0, 0), (Beam, -1, 0, 0), (Block, -300, 128, 3), (Block, 0, -1, 2));
 
             Assert.That(ShipDesignHash.Compute(reordered), Is.EqualTo(ShipDesignHash.Compute(design)));
             Assert.That(ShipDesignHash.Compute(moved), Is.Not.EqualTo(ShipDesignHash.Compute(design)));
@@ -110,9 +127,11 @@ namespace TinCan.Tests.EditMode
         public void TheHash_IsPinned_SoItIsTheSameOnEveryPlatformAndBuild()
         {
             // If the network form changes on purpose, update this value; every peer must agree on it.
-            // Network version 2 (the frame, .docs/plans/ship-frames.md) moved it from d2a261783aea4373.
+            // Network version 2 (the frame, .docs/plans/ship-frames.md) moved it from d2a261783aea4373; version 3 (parts in
+            // frame units, S4) from ff8ce700480257d0; version 4 (parts hung on the frame, .docs/plans/frame-only-ships.md) from
+            // 0a586254dfacfe44.
             string hash = ShipDesignHash.ToText(ShipDesignHash.Compute(Sample()));
-            Assert.That(hash, Is.EqualTo("ff8ce700480257d0"), $"the hash is now {hash}");
+            Assert.That(hash, Is.EqualTo("557330f11623f375"), $"the hash is now {hash}");
             Assert.That(ShipDesignHash.ToText(0x0123456789abcdefUL), Is.EqualTo("0123456789abcdef"));
         }
     }

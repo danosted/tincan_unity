@@ -67,7 +67,7 @@ namespace TinCan.Features.Shipyard
             floor.name = "BuildFloor";
             Object.Destroy(floor.GetComponent<Collider>());
             floor.transform.SetParent(_root.transform, false);
-            floor.transform.localPosition = new Vector3(0f, ShipyardAimProcessor.FloorY(0) - 0.01f, 0f);
+            floor.transform.localPosition = new Vector3(0f, ShipyardUseCase.FirstFloorY - 0.01f, 0f);
             _floor = floor.transform;
             floor.transform.localScale = Vector3.one * (_config.FloorSize / 10f);
             if (_config.FloorMaterial != null) floor.GetComponent<MeshRenderer>().sharedMaterial = _config.FloorMaterial;
@@ -150,11 +150,11 @@ namespace TinCan.Features.Shipyard
             _floor.localPosition = new Vector3(0f, floorY - 0.01f, 0f);
         }
 
-        public void ShowGhost(ShipPartDefinition part, ShipGridCell cell, byte orientation, bool valid) =>
-            ShowCopy(part, cell, orientation, valid ? _config.GhostValid : _config.GhostBlocked, 1f);
+        public void ShowGhost(ShipPartDefinition part, Vector3 position, Quaternion rotation, bool valid) =>
+            ShowCopy(part, position, rotation, valid ? _config.GhostValid : _config.GhostBlocked, 1f);
 
-        public void ShowHighlight(ShipPartDefinition part, ShipPartPlacement placement) =>
-            ShowCopy(part, placement.Cell, placement.Orientation, _config.GhostBlocked, _config.HighlightScale);
+        public void ShowHighlight(ShipPartDefinition part, Vector3 position, Quaternion rotation) =>
+            ShowCopy(part, position, rotation, _config.GhostBlocked, _config.HighlightScale);
 
         public void HideGhost()
         {
@@ -327,8 +327,8 @@ namespace TinCan.Features.Shipyard
             renderer.SetPropertyBlock(_tint);
         }
 
-        /// <summary>The ghost: a see-through copy of the part at a cell, in a colour, a little bigger to show over a part.</summary>
-        private void ShowCopy(ShipPartDefinition part, ShipGridCell cell, byte orientation, Color colour, float scale)
+        /// <summary>The ghost: a see-through copy of the part at a pose, in a colour, a little bigger to show over a part.</summary>
+        private void ShowCopy(ShipPartDefinition part, Vector3 position, Quaternion rotation, Color colour, float scale)
         {
             if (_preview == null || _config.GhostMaterial == null) return;
 
@@ -349,8 +349,7 @@ namespace TinCan.Features.Shipyard
                 }
             }
 
-            var placement = new ShipPartPlacement(0, part.PartId, cell, orientation);
-            _ghost.transform.SetLocalPositionAndRotation(ShipPartPose.LocalPosition(placement, part), ShipPartPose.LocalRotation(placement));
+            _ghost.transform.SetLocalPositionAndRotation(position, rotation);
             _ghost.transform.localScale = Vector3.one * scale;
             _ghost.SetActive(true);
 

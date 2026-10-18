@@ -124,6 +124,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "FrameRoundTrip (Host + Client, Lag100)")]
         public static void FrameRoundTripDuo() => RunDuo("FrameRoundTrip", "Lag100");
 
+        [MenuItem(Root + "FramePartPlace (Host)")]
+        public static void FramePartPlaceSolo() => RunSolo("FramePartPlace");
+
+        [MenuItem(Root + "FramePartPlace (Host + Client, Lag100)")]
+        public static void FramePartPlaceDuo() => RunDuo("FramePartPlace", "Lag100");
+
         [MenuItem(Root + "FrameStories (Host)")]
         public static void FrameStoriesSolo() => RunSolo("FrameStories");
 

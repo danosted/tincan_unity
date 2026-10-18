@@ -1,4 +1,4 @@
-Status: Approved (2026-10-16); S1 done; S2 and S3 built, their play runs pending
+Status: Approved (2026-10-16); S1 to S4 done (play runs passed 2026-10-17); continued in frame-only-ships.md, which replaces S5 and S6 below
 
 # Ship frames: draw the hull, place the rest
 
@@ -196,7 +196,7 @@ authored as JSON.
   and walks aft across the seam between two plank faces. New probes `ShipFrameBuilt`, `SubjectStandsOn`.
 
 **Deferred, and why:**
-- *`pos` in place of `cell`* (decision 9) moves to S4 with format version 3, where parts first leave the grid. S1 only
+- *`pos` in place of `cell`* (decision 9) moves to S4 with format version 3, where parts leave the grid (done). S1 only
   renamed `nextId`, the part that matters once frame and parts share ids.
 - *Headroom* between stories comes with S3, when there is a second story to have headroom under.
 - *Unknown fields inside the frame* are not kept through a load and save (the design's top-level ones are). Revisit if a
@@ -221,7 +221,7 @@ same ship.
 - *The camera starts framing parts and frame together* (today it centres on the parts only, `ShipyardStage`).
 - WASD was never bound in the shipyard (checked 2026-10-16: not a regression; the context mutes movement below it).
 
-**Built (2026-10-16): the FrameRoundTrip play run is pending.**
+**Built (2026-10-16): FrameRoundTrip passes solo and host + client (2026-10-17).**
 - *Input* (`Context_Shipyard`): Look/LookHold (right button only) replace Orbit/OrbitHold; Fly (WASD), Rise (Q/E),
   Fast (Shift), Mode (Tab), Fill (F) are new; NextPart/PreviousPart are gone. Level Up/Down raise and lower the
   selected node in frame mode. `IInputBindings.DescribeAction` gives an action's keys for the controls panel.
@@ -247,8 +247,7 @@ Several stories, slanted posts, wall faces, railings, the frame stats term, and 
 stories. Built-in `FrameGalleon`: the Galleon's layout redone as a frame, to compare against the voxel Galleon.
 Scenario `FrameStories`: walk from the lower story up the stairs to a railed upper deck, on host and client.
 
-**Built (2026-10-16): EditMode 1165/1165; the FrameStories play run is pending (all play runs at the end of the work,
-developer's call).**
+**Built (2026-10-16): EditMode 1165/1165; FrameStories passes solo and host + client (2026-10-17, see S4).**
 - *Walls*: a face whose corners span two adjacent stories is a wall (`ShipFrameShape.FaceShape.IsWall`, belonging to
   the lower story), triangulated in its own plane (`ShipFrameGeometry.TriangulateInPlane`) and built as a slab centred
   on it. Floors stay "seen from above".
@@ -298,11 +297,41 @@ developer's call).**
 Parts snap onto faces anywhere (frame-unit positions in the shipyard), with connectivity and overlap checked across
 parts and frame.
 
+**Built (2026-10-17): EditMode 1184/1184; `verify -All` passes solo and host + client, FramePartPlace, FrameRoundTrip and
+FrameStories included. FrameStories first failed in its setup: the teleport searched for ground from 3 m above the hold
+and found the main deck, so `PlaceSubjectAtCell` takes an optional search height (1 m there).**
+- *Position*: `ShipPartPlacement.Pos` (`ShipPartPos`, whole frame units of 10 cm, the centre of the part's origin block)
+  replaces `Cell`. A grid cell is a position ten times it (`ShipPartPos.OfCell`), so voxel-built ships are unchanged;
+  constructors and `ShipDesignEdit.Place` still take a cell for those.
+- *Blocks*: a part's footprint cells are 1 m blocks centred anywhere (`ShipPartFootprints.BlocksOf`). `ShipPartBlocks`
+  holds a design's blocks, hashed by cell: blocks overlap when closer than a block on every axis, touch when a block
+  apart on one axis and closer on the others, and a point belongs to the block that holds it. On whole cells this is the
+  old grid exactly. The validator, the edit processor and the shipyard all use it.
+- *Frame rules*: a part may not pass through a plank floor (`ShipFrameContact.CutFloor`, new problem `PartInFloor`;
+  resting on it or hanging under it is fine). Joining to the frame is as before, per block.
+- *Format version 3*: `pos` in place of `cell` (`ShipDesignMigrationV2`: ten times the cell; `v2-golden.ship.json` is
+  the old-format sample now). Network version 3; the pinned hash moved to `0a586254dfacfe44`. The four committed designs
+  are rewritten as version 3.
+- *Shipyard*: in parts mode a plank floor the cursor meets before the working level takes the part: snapped to the
+  frame step (0.5 m) sideways, lifted to the highest point of the floor under its block so a sloped deck never cuts it
+  (`ShipyardAimProcessor`); near misses snap in the same steps (`ShipyardSnapProcessor`), and a spot the planks pass
+  through is refused. Elsewhere, whole cells on the working level as before. Remove takes the block a point just behind
+  the hit surface lies in.
+- *Scenario* `FramePartPlace` (Test_Shipyard): draw FrameRoundTrip's planked square beside the starter's deck, set a block
+  down on it at (4.5, 0.5) m, save, load, launch; every peer's built design has the block at frame units (45, 0, 5).
+  Commands and probes: `ShipyardPlaceDown "partId x z"`, `ShipPartAt "partId x y z"`.
+- *Not done*: walls do not stop parts yet (only floors); rotation is still in quarter turns.
+
 ### S5: freeform stations
+*Replaced (2026-10-17):* face parts ([frame-only-ships.md](frame-only-ships.md)) stand anywhere on a plank floor; free
+mounting of fittings on a floor is still to come, as a face part with a socket or as surface mounts.
+
 Surfaces, the loadout format v2, and mounting on a floor in the world. Scenario `SurfaceMount`: mount a cannon on an
 open stretch of deck on host and client; removing the face despawns it.
 
 ### S6: the big-ship pass
+*Still to do*, on frame-only ships.
+
 Build the target-size ship (decision 10) and measure it against `performance-budgets.md`: design bytes, frame time to
 assemble, draw calls, collider cost, memory. Then chunk large stories if needed, add LOD for distant ships if needed,
 and check the camera, the boarding pose and docking at sky islands at that scale.

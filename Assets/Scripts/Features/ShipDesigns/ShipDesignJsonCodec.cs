@@ -5,13 +5,15 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using TinCan.Core.Ship.Parts;
 
 namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// The design file format: JSON, one line per part (and per frame node, edge and face, <see cref="ShipFrameJson"/>) so
     /// files diff well. Written in canonical form (parts in instance id order, fixed field order, "\n" line ends), so a
-    /// design always produces the same text. A design without a frame writes no frame section.
+    /// design always produces the same text. A design without a frame writes no frame section. A part line names what it
+    /// hangs on: <c>"on":{"face":9,"x":10,"z":-5}</c> or <c>"on":{"node":3}</c>.
     /// Reading: the text must fit the limits; a file newer than <see cref="ShipDesignFormat.CurrentVersion"/> is refused,
     /// an older one migrated first. Fields this build does not know are kept as raw JSON and written back, at the top
     /// level and on each part, so a file from a later build survives a load and save. Plan:
@@ -27,7 +29,7 @@ namespace TinCan.Features.ShipDesigns
 
         private static readonly HashSet<string> PartFields = new()
         {
-            ShipDesignFormat.PartInstanceIdField, ShipDesignFormat.PartIdField, ShipDesignFormat.PartCellField,
+            ShipDesignFormat.PartInstanceIdField, ShipDesignFormat.PartIdField, ShipDesignFormat.PartAnchorField,
             ShipDesignFormat.PartOrientationField,
         };
 
@@ -157,9 +159,9 @@ namespace TinCan.Features.ShipDesigns
             string partId = ReadString(part, ShipDesignFormat.PartIdField, where)
                             ?? throw new FormatException($"{where} has no \"{ShipDesignFormat.PartIdField}\".");
 
-            if (part[ShipDesignFormat.PartCellField] is not JArray cell || cell.Count != 3)
+            if (part[ShipDesignFormat.PartAnchorField] is not JObject on)
             {
-                throw new FormatException($"{where}: \"{ShipDesignFormat.PartCellField}\" must be three whole numbers.");
+                throw new FormatException($"{where} has no \"{ShipDesignFormat.PartAnchorField}\": the face or node it hangs on.");
             }
 
             int orientation = part.ContainsKey(ShipDesignFormat.PartOrientationField)
@@ -167,9 +169,19 @@ namespace TinCan.Features.ShipDesigns
                 : 0;
             if (orientation is < 0 or > byte.MaxValue) throw new FormatException($"{where}: orientation {orientation} is out of range.");
 
-            return new ShipPartPlacement(instanceId, partId,
-                new ShipGridCell(ToInt(cell[0], where), ToInt(cell[1], where), ToInt(cell[2], where)),
-                (byte)orientation, Extensions(part, PartFields));
+            return new ShipPartPlacement(instanceId, partId, ReadAnchor(on, where), (byte)orientation, Extensions(part, PartFields));
+        }
+
+        private static ShipPartAnchor ReadAnchor(JObject on, string where)
+        {
+            if (on.ContainsKey(ShipDesignFormat.AnchorNodeField)) return ShipPartAnchor.OnNode(ReadInt(on, ShipDesignFormat.AnchorNodeField, where));
+            if (!on.ContainsKey(ShipDesignFormat.AnchorFaceField))
+            {
+                throw new FormatException($"{where}: \"{ShipDesignFormat.PartAnchorField}\" names neither a face nor a node.");
+            }
+
+            return ShipPartAnchor.OnFace(ReadInt(on, ShipDesignFormat.AnchorFaceField, where), ReadInt(on, ShipDesignFormat.AnchorXField, where),
+                ReadInt(on, ShipDesignFormat.AnchorZField, where));
         }
 
         private static void WritePart(JsonWriter writer, ShipPartPlacement part)
@@ -181,12 +193,24 @@ namespace TinCan.Features.ShipDesigns
             writer.WriteValue(part.InstanceId);
             writer.WritePropertyName(ShipDesignFormat.PartIdField);
             writer.WriteValue(part.PartId);
-            writer.WritePropertyName(ShipDesignFormat.PartCellField);
-            writer.WriteStartArray();
-            writer.WriteValue(part.Cell.X);
-            writer.WriteValue(part.Cell.Y);
-            writer.WriteValue(part.Cell.Z);
-            writer.WriteEndArray();
+            writer.WritePropertyName(ShipDesignFormat.PartAnchorField);
+            writer.WriteStartObject();
+            if (part.Anchor.Kind == ShipPartAttach.Node)
+            {
+                writer.WritePropertyName(ShipDesignFormat.AnchorNodeField);
+                writer.WriteValue(part.Anchor.Element);
+            }
+            else
+            {
+                writer.WritePropertyName(ShipDesignFormat.AnchorFaceField);
+                writer.WriteValue(part.Anchor.Element);
+                writer.WritePropertyName(ShipDesignFormat.AnchorXField);
+                writer.WriteValue(part.Anchor.X);
+                writer.WritePropertyName(ShipDesignFormat.AnchorZField);
+                writer.WriteValue(part.Anchor.Z);
+            }
+
+            writer.WriteEndObject();
             writer.WritePropertyName(ShipDesignFormat.PartOrientationField);
             writer.WriteValue(part.Orientation);
             WriteExtensions(writer, part.Extensions);

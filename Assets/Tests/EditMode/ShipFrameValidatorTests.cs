@@ -27,8 +27,10 @@ namespace TinCan.Tests.EditMode
         private static ShipDesign WithFrame(ShipDesign design, ShipFrame frame) =>
             design.WithFrame(frame, System.Math.Max(design.NextPartInstanceId, frame.Ids.DefaultIfEmpty(0).Max() + 1));
 
-        private static ShipDesign WithPart(ShipDesign design, int id, string part, int x, int y, int z) =>
-            design.WithParts(design.Parts.Append(new ShipPartPlacement(id, part, new ShipGridCell(x, y, z), 0)), System.Math.Max(design.NextPartInstanceId, id + 1));
+        /// <summary>A part on the test deck at (x, z) frame units.</summary>
+        private static ShipDesign WithPart(ShipDesign design, int id, string part, int x, int z) =>
+            design.WithParts(design.Parts.Append(new ShipPartPlacement(id, part, ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, x, z), 0)),
+                System.Math.Max(design.NextPartInstanceId, id + 1));
 
         [Test]
         public void TheHelmOnTheTestDeck_IsValid()
@@ -121,56 +123,49 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void PartsAndFrameElements_ShareOneIdSpace()
         {
-            var design = WithPart(ShipFrameTestDesigns.Deck(), 3, ShipDesignTestParts.Block, 5, 0, 5);
+            var design = WithPart(ShipFrameTestDesigns.Deck(), 3, ShipDesignTestParts.Block, 10, 10);
 
             Assert.That(Validate(design).Problems.Any(p => p.Kind == ShipDesignProblemKind.DuplicateInstanceId && p.InstanceId == 3), Is.True);
         }
 
         [Test]
-        public void AHelmNotStandingOnTheDeck_LeavesTheFrameDisconnected()
+        public void AHelmOffTheDeck_IsUnanchored_AndTheShipHasNoCore()
         {
             var design = ShipFrameTestDesigns.Deck();
-            var off = design.WithParts(new[] { new ShipPartPlacement(10, ShipDesignTestParts.Helm, new ShipGridCell(10, 0, 0), 0) }, design.NextPartInstanceId);
+            var off = design.WithParts(new[] { new ShipPartPlacement(10, ShipDesignTestParts.Helm, ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, 100, 0), 0) }, design.NextPartInstanceId);
 
             var validation = Validate(off);
 
-            Assert.That(validation.Problems.Single(p => p.Kind == ShipDesignProblemKind.Disconnected).InstanceId, Is.EqualTo(1), "one problem for the whole deck, named by its lowest node");
-        }
-
-        [Test]
-        public void PartsJoin_ThroughTheDeck_AndAPartFarFromItIsDisconnected()
-        {
-            // The helm stands on one side of the deck, a block on the other: they touch only through the planks.
-            var design = WithPart(ShipFrameTestDesigns.Deck(), 11, ShipDesignTestParts.Block, 1, 0, 1);
-            design = WithPart(design, 12, ShipDesignTestParts.Block, 1, 5, 1);
-
-            var validation = Validate(design);
-
-            Assert.That(validation.Problems.Where(p => p.Kind == ShipDesignProblemKind.Disconnected).Select(p => p.InstanceId), Is.EqualTo(new[] { 12 }));
-        }
-
-        [Test]
-        public void AFramePartTouchesABeam_EvenOffThePlanks()
-        {
-            // An open deck: nothing to stand on, but a block in the middle of the -X beam joins it.
-            var design = WithPart(ShipFrameTestDesigns.Deck(ShipFrameFill.Open), 11, ShipDesignTestParts.Block, -2, -1, 0);
-
-            var validation = Validate(design);
-
-            Assert.That(validation.Problems.Where(p => p.Kind == ShipDesignProblemKind.Disconnected).Select(p => p.InstanceId), Is.EqualTo(new[] { 11, 1 }),
-                "the helm stands on nothing; the block and the frame hang together, apart from the helm");
-            var joined = WithPart(design, 12, ShipDesignTestParts.Block, -1, -1, 0);
-            joined = WithPart(joined, 13, ShipDesignTestParts.Block, 0, -1, 0);
-            Assert.That(Validate(joined).Has(ShipDesignProblemKind.Disconnected), Is.False, "blocks under the helm reach the beam");
+            Assert.That(validation.Has(ShipDesignProblemKind.UnanchoredPart) && validation.Has(ShipDesignProblemKind.MissingCore), Is.True, validation.ToString());
         }
 
         [Test]
         public void TheFrameWeighs()
         {
             var frame = ShipFrameTestDesigns.DeckFrame();
-            var huge = frame.With(nodes: frame.Nodes.Select(n => n.MovedTo(n.X * 10, 0, n.Z * 10)));
+            var huge = frame.With(nodes: frame.Nodes.Select(n => n.MovedTo(n.X * 20, 0, n.Z * 20)));
 
-            Assert.That(Validate(WithFrame(ShipFrameTestDesigns.Deck(), huge)).Has(ShipDesignProblemKind.TooHeavy), Is.True, "40 x 40 m of planks outweighs the helm's lift");
+            Assert.That(Validate(WithFrame(ShipFrameTestDesigns.Deck(), huge)).Has(ShipDesignProblemKind.TooHeavy), Is.True, "80 x 80 m of planks outweighs the helm's lift");
+        }
+
+        [Test]
+        public void AFlight_FromAnUpperFloorsEdge_DownToTheFloorBelow_IsGood()
+        {
+            var validation = Validate(ShipFrameTestDesigns.FrameOnly(ShipFrameTestDesigns.StairWell()));
+
+            Assert.That(validation.Problems.Where(p => p.Kind == ShipDesignProblemKind.BadStairs), Is.Empty, validation.ToString());
+        }
+
+        [Test]
+        public void AFlight_IsBad_UnderADeck_OverNothing_BehindARailing_OrFromTheLowestStory()
+        {
+            var well = ShipFrameTestDesigns.StairWell();
+            bool Bad(ShipFrame frame) => Validate(ShipFrameTestDesigns.FrameOnly(frame)).Has(ShipDesignProblemKind.BadStairs);
+
+            Assert.That(Bad(well.With(stairs: new[] { well.Stairs[0].Flipped() })), Is.True, "turned aft: under the upper floor, and off the end of the lower");
+            Assert.That(Bad(well.With(edges: well.Edges.Select(e => e.Id == 15 ? e.WithRail(ShipFrameRailing.Rail) : e))), Is.True, "a railing closes it off");
+            Assert.That(Bad(well.With(edges: well.Edges.Select(e => e.Id == 15 ? e.WithRail(ShipFrameRailing.Gate) : e))), Is.False, "a gate does not");
+            Assert.That(Bad(well.With(stairs: new[] { new ShipFrameStair(21, 9, 1) })), Is.True, "edge 9 is on story 0: nothing below");
         }
     }
 }

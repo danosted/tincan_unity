@@ -6,7 +6,7 @@ namespace TinCan.Features.ShipDesigns
 {
     /// <summary>
     /// A ship design: the one model the shipyard edits, files store, the network carries and the game builds a ship from.
-    /// Catalog parts on the grid, and a <see cref="Frame"/> (stories, nodes, beams, plank faces) the hull is generated
+    /// Catalog parts hung on a <see cref="Frame"/> (stories, nodes, beams, plank faces, stairs) the hull is generated
     /// from. Immutable; edits make a new design (<see cref="ShipDesignEditProcessor"/>). Parts are kept in
     /// <see cref="ShipPartPlacement.InstanceId"/> order, so a design always encodes to the same bytes.
     /// Plans: .docs/plans/modular-airship-builder.md, .docs/plans/ship-frames.md.

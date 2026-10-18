@@ -19,15 +19,15 @@ namespace TinCan.Tests.EditMode
         public void TearDown() => _parts.Dispose();
 
         private ShipyardDocument Document() =>
-            new(Design((Helm, 0, 0, 0, 0)), new ShipDesignEditProcessor(), _parts.Catalog, ShipDesignLimits.Default);
+            new(Design((Helm, 0, 0, 0)), new ShipDesignEditProcessor(), _parts.Catalog, ShipDesignLimits.Default);
 
         [Test]
         public void UndoAndRedo_WalkTheHistory()
         {
             var document = Document();
             var start = Parts(document.Design);
-            document.Apply(ShipDesignEdit.Place(Block, new ShipGridCell(1, 0, 0), 0));
-            document.Apply(ShipDesignEdit.Place(Block, new ShipGridCell(2, 0, 0), 0));
+            document.Apply(ShipDesignEdit.Place(Block, ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, 10, 0), 0));
+            document.Apply(ShipDesignEdit.Place(Block, ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, 20, 0), 0));
             var end = Parts(document.Design);
 
             Assert.That(document.Undo() && document.Undo(), Is.True);
@@ -45,10 +45,10 @@ namespace TinCan.Tests.EditMode
         public void ANewEdit_ClearsRedo()
         {
             var document = Document();
-            document.Apply(ShipDesignEdit.Place(Block, new ShipGridCell(1, 0, 0), 0));
+            document.Apply(ShipDesignEdit.Place(Block, ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, 10, 0), 0));
             document.Undo();
 
-            document.Apply(ShipDesignEdit.Place(Block, new ShipGridCell(-1, 0, 0), 0));
+            document.Apply(ShipDesignEdit.Place(Block, ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, -10, 0), 0));
 
             Assert.That(document.RedoCount, Is.Zero);
         }
@@ -59,8 +59,8 @@ namespace TinCan.Tests.EditMode
             var document = Document();
             var before = document.Design;
 
-            Assert.That(document.Try(ShipDesignEdit.Place(Block, new ShipGridCell(1, 0, 0), 0)).Applied, Is.True);
-            Assert.That(document.Apply(ShipDesignEdit.Place(Block, new ShipGridCell(0, 1, 0), 0)).Applied, Is.False, "the helm's top cell");
+            Assert.That(document.Try(ShipDesignEdit.Place(Block, ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, 10, 0), 0)).Applied, Is.True);
+            Assert.That(document.Apply(ShipDesignEdit.Place(Block, ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, 0, 0), 0)).Applied, Is.False, "the helm's top cell");
 
             Assert.That(document.Design, Is.SameAs(before));
             Assert.That((document.UndoCount, document.IsDirty), Is.EqualTo((0, false)));
@@ -70,7 +70,7 @@ namespace TinCan.Tests.EditMode
         public void EditsAndRenames_MakeItDirty_SavingAndOpeningClearIt()
         {
             var document = Document();
-            document.Apply(ShipDesignEdit.Place(Block, new ShipGridCell(1, 0, 0), 0));
+            document.Apply(ShipDesignEdit.Place(Block, ShipPartAnchor.OnFace(ShipFrameTestDesigns.FloorFace, 10, 0), 0));
             Assert.That(document.IsDirty, Is.True);
 
             document.MarkSaved();
@@ -79,7 +79,7 @@ namespace TinCan.Tests.EditMode
             document.Rename("Other");
             Assert.That((document.Design.Name, document.IsDirty), Is.EqualTo(("Other", true)));
 
-            document.Open(Design((Helm, 0, 0, 0, 0)));
+            document.Open(Design((Helm, 0, 0, 0)));
             Assert.That((document.IsDirty, document.UndoCount), Is.EqualTo((false, 0)));
         }
     }

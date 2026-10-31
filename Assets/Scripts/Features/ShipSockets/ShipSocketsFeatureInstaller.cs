@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TinCan.Core.Domain.Features;
 using TinCan.Core.Interaction;
 using TinCan.Core.Ship.Fixtures;
+using TinCan.Core.Ship.Sockets;
 using TinCan.Core.UI;
 using UnityEngine;
 using VContainer;
@@ -44,6 +45,7 @@ namespace TinCan.Features.ShipSockets
             builder.Register<ShipFittingMenuUseCase>(Lifetime.Singleton).As<ITickable>();
             builder.Register<MountFittingMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
             builder.Register<ShipSocketsFixtureFilter>(Lifetime.Singleton).As<IShipFixtureFilter>();
+            builder.Register<MountedFittingsQuery>(Lifetime.Singleton).As<IMountedFittings>();
         }
 
         public override IEnumerable<GameObject> NetworkedPrefabs

@@ -19,7 +19,7 @@ namespace TinCan.Features.Navigation
     /// <item>the ship, the route ahead as pins on stems joined by a line (the active leg brighter), each pin raised by its
     /// height above the ship;</item>
     /// <item>the points of interest the crew can see (faraway ones at the rim);</item>
-    /// <item>obstacles as columns spanning the altitude they block (rock or hazard);</item>
+    /// <item>obstacles spanning the altitude they block: rock and hazard zones as columns, gas pockets as balls;</item>
     /// <item>at the local navigator's table, their cursor, zoom, pick and the route as they are editing it.</item>
     /// </list>
     /// Built from replicated and seeded state only; crewmates see the same chart from the deck.
@@ -51,8 +51,8 @@ namespace TinCan.Features.Navigation
         }
 
         /// <summary>How many marks of each kind the chart at this table shows now (scenarios read it).</summary>
-        public (int Waypoints, int Points, int Rocks, int Hazards) Counts(IChartTable table) =>
-            _marks.TryGetValue(table, out var marks) ? (marks.Waypoints, marks.Points, marks.Rocks, marks.Hazards) : default;
+        public (int Waypoints, int Points, int Rocks, int Hazards, int Gas) Counts(IChartTable table) =>
+            _marks.TryGetValue(table, out var marks) ? (marks.Waypoints, marks.Points, marks.Rocks, marks.Hazards, marks.Gas) : default;
 
         public void Tick()
         {
@@ -145,6 +145,9 @@ namespace TinCan.Features.Navigation
         {
             private const float StemWidth = 0.006f;
 
+            // A pocket is tens of metres on a chart kilometres wide: never draw one smaller than this (table metres).
+            private const float MinGasMark = 0.018f;
+
             private readonly Transform _root;
             private readonly Pool _ships;
             private readonly Pool _pins;
@@ -152,6 +155,7 @@ namespace TinCan.Features.Navigation
             private readonly Pool _points;
             private readonly Pool _rocks;
             private readonly Pool _hazards;
+            private readonly Pool _gas;
             private readonly Pool _cursor;
             private readonly LineRenderer _route;
             private readonly LineRenderer _activeLeg;
@@ -166,6 +170,7 @@ namespace TinCan.Features.Navigation
                 _points = new Pool(_root, PrimitiveType.Cube, config.PoiMaterial);
                 _rocks = new Pool(_root, PrimitiveType.Cylinder, config.RockMaterial);
                 _hazards = new Pool(_root, PrimitiveType.Cylinder, config.HazardMaterial);
+                _gas = new Pool(_root, PrimitiveType.Sphere, config.GasMaterial);
                 _cursor = new Pool(_root, PrimitiveType.Cylinder, config.CursorMaterial);
                 _route = Line("Route", config.RouteMaterial, 0.008f);
                 _activeLeg = Line("ActiveLeg", config.ActiveLegMaterial, 0.016f);
@@ -175,6 +180,7 @@ namespace TinCan.Features.Navigation
             public int Points => _points.Used;
             public int Rocks => _rocks.Used;
             public int Hazards => _hazards.Used;
+            public int Gas => _gas.Used;
 
             public void Begin()
             {
@@ -184,6 +190,7 @@ namespace TinCan.Features.Navigation
                 _points.Begin();
                 _rocks.Begin();
                 _hazards.Begin();
+                _gas.Begin();
                 _cursor.Begin();
             }
 
@@ -195,6 +202,7 @@ namespace TinCan.Features.Navigation
                 _points.End();
                 _rocks.End();
                 _hazards.End();
+                _gas.End();
                 _cursor.End();
             }
 
@@ -215,8 +223,20 @@ namespace TinCan.Features.Navigation
 
             public void Obstacle(Vector3 center, float radius, float height, ChartObstacleKind kind)
             {
-                var pool = kind == ChartObstacleKind.Hazard ? _hazards : _rocks;
-                pool.Next(center, Quaternion.identity, new Vector3(radius * 2f, height * 0.5f, radius * 2f));
+                // A cylinder primitive is 2 units tall, a sphere 1: both span the obstacle's band of altitude.
+                switch (kind)
+                {
+                    case ChartObstacleKind.Gas:
+                        float width = Mathf.Max(radius * 2f, MinGasMark);
+                        _gas.Next(center, Quaternion.identity, new Vector3(width, Mathf.Max(height, MinGasMark), width));
+                        break;
+                    case ChartObstacleKind.Hazard:
+                        _hazards.Next(center, Quaternion.identity, new Vector3(radius * 2f, height * 0.5f, radius * 2f));
+                        break;
+                    default:
+                        _rocks.Next(center, Quaternion.identity, new Vector3(radius * 2f, height * 0.5f, radius * 2f));
+                        break;
+                }
             }
 
             public void Cursor(Vector3 at)

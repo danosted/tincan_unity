@@ -5,6 +5,9 @@
         "TinCan.Core.Domain",
         "TinCan.Gas",
         "TinCan.Ship",
+        "TinCan.Features.DesignedEvents",
+        "TinCan.Features.Airship.Damage",
+        "Unity.Netcode.Runtime",
         "VContainer"
     ],
     "includePlatforms": [],

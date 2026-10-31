@@ -21,6 +21,7 @@
         "TinCan.Features.Airship.Fuel.Minigame",
         "TinCan.Features.Airship.PhysicalParts",
         "TinCan.Features.DesignedEvents",
+        "TinCan.Features.GasChallenge",
         "TinCan.Features.Voyage",
         "TinCan.Features.SkyIslands",
         "TinCan.Features.ShipDesigns",

@@ -13,7 +13,7 @@ namespace TinCan.Tests.EditMode
         public void Announce_SetsTheHudEventLine()
         {
             var hud = new FakeHudValues();
-            Assert.That(new AnnounceActionHandler(hud).Execute(new Announce("hello")), Is.True);
+            Assert.That(new AnnounceActionHandler(new EventStateWriter(new FakeActorRegistry(), hud)).Execute(new Announce("hello")), Is.True);
             Assert.That(hud.All[AnnounceActionHandler.HudKey], Is.EqualTo("hello"));
         }
 

@@ -1,23 +1,21 @@
 #nullable enable
-using TinCan.Core.Domain.Hud;
-
 namespace TinCan.Features.DesignedEvents
 {
     /// <summary>
-    /// Shows an <see cref="Announce"/> on the HUD. POC: the HUD is local, so only the host sees it; replicating the
-    /// event state to clients is the next step (designed-events.md, "Replicated state").
+    /// Runs an <see cref="Announce"/>: the line goes into the replicated event state, which every peer's
+    /// <see cref="EventHudPresenter"/> shows (<see cref="EventStateWriter"/>).
     /// </summary>
     public sealed class AnnounceActionHandler : EventActionHandler<Announce>
     {
-        public const string HudKey = "Event";
+        public const string HudKey = EventHudPresenter.HudKey;
 
-        private readonly IHudValues _hud;
+        private readonly EventStateWriter _state;
 
-        public AnnounceActionHandler(IHudValues hud) => _hud = hud;
+        public AnnounceActionHandler(EventStateWriter state) => _state = state;
 
         protected override bool Execute(Announce action)
         {
-            _hud.Set(HudKey, action.Text);
+            _state.Announce(action.Text);
             return true;
         }
     }

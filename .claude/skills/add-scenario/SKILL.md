@@ -15,7 +15,7 @@ The canonical description is `.docs/NETWORK_TEST_HARNESS.md` ("Anatomy", "Adding
      - a profile that includes `Profile_Test_Core`;
      - a `TestScenes` constant;
      - a row in `DevTools/Editor/TestRangeSceneBuilder.Areas`.
-     Then run **TinCan > Dev > Test Range > Rebuild Scenes** (`unity cmd menu --path "TinCan/Dev/Test Range/Rebuild Scenes"`).
+     Then run **TinCan > Dev > Test Range > Rebuild Scenes** (`unity cmd editor invoke_menu --path "TinCan/Dev/Test Range/Rebuild Scenes"`).
    - Never edit a test scene by hand.
 2. **Design the three lanes** before writing code:
    - Arrange (server) sets the world up.

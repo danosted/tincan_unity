@@ -30,14 +30,14 @@ The canonical description is `.docs/NETWORK_TEST_HARNESS.md` ("Scenarios" and "T
 4. **Read the exit code:** 0 means every tier passed, 1 means a tier failed, and 2 means the Editor was blocked (a
    modal or a wedged pipeline). An exit of 2 says nothing about the code.
 5. **Triage a failure by tier:**
-   - **Compile:** fix the errors and rerun `.\.tools\verify.ps1 -UpTo Compile`. Do not call `unity cmd recompile` to
+   - **Compile:** fix the errors and rerun `.\.tools\verify.ps1 -UpTo Compile`. Do not call `unity cmd script recompile` to
      check: when nothing changed it answers "up to date" and forgets the errors.
    - **Tests:** read the failing test's message and fix the code, not the test, unless the test is wrong.
    - **Solo/Duo:**
      - Open `Logs/feature-telemetry/<Name>/latest-summary.json` first, then the failing peer's `latest-<role>.json`.
      - The `timeline` interleaves steps with domain events, warnings and errors.
      - Look at the checkpoint PNGs listed in the output.
-     - For errors not in the report, run `unity cmd console --level error --tail 20` (add `--project-path` with the
+     - For errors not in the report, run `unity cmd console get --level error --tail 20` (add `--project-path` with the
        clone path for the client).
    - Match the symptom against the troubleshooting table in `.docs/NETWORK_TEST_HARNESS.md` before digging further.
 6. **Report** the tier lines, each tier's pass or fail with its timing, and what a human still has to playtest. Do not

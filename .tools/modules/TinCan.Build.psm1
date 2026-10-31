@@ -18,9 +18,9 @@ function Invoke-PlayerBuild([string]$name, [string]$menu, [string]$method, [stri
     $resultFile = Join-Path $outputDir "build-result.txt"
     if (Test-Path $resultFile) { Remove-Item $resultFile }
 
-    $status = & unity cmd editor_status --result-only --timeout 15 2>$null | Out-String
+    $status = & unity cmd editor status --result-only --timeout 15 2>$null | Out-String
     if ($status -match '"status"\s*:\s*"ready"') {
-        # editor_status can answer from a cached heartbeat while the main thread is blocked (2026-10-03: a Windows
+        # editor status can answer from a cached heartbeat while the main thread is blocked (2026-10-03: a Windows
         # UAC / firewall prompt; the build never started). Probe the main thread and stop with the likely cause instead
         # of polling for the timeout.
         if (-not (Test-EditorAlive)) {
@@ -30,7 +30,7 @@ function Invoke-PlayerBuild([string]$name, [string]$menu, [string]$method, [stri
             return $false
         }
         Write-Host "[Build ] $name in the open Editor ($menu)"
-        & unity cmd menu --path $menu --result-only --timeout 60 | Out-Null
+        & unity cmd editor invoke_menu --path $menu --result-only --timeout 60 | Out-Null
     }
     else {
         $version = (Get-Content (Join-Path $ProjectRoot ".unity-version") -Raw).Trim()

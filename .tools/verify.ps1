@@ -6,7 +6,7 @@ One-command feedback loop for a feature: compile, EditMode tests, then live scen
 Tiers, cheapest first (see .docs/NETWORK_TEST_HARNESS.md, "Scenarios"):
   Compile  AssetDatabase.Refresh (imports edits made outside the Editor, compiles if scripts changed), then fail on
            any compiler error (including scripts that were already broken before the run).
-  Tests    unity cmd run_tests --mode EditMode (optionally filtered).
+  Tests    unity cmd test run --mode EditMode (optionally filtered).
   Solo     TinCan/Dev/Scenarios/<Scenario> (Host): the host plays every phase against its own player.
   Duo      TinCan/Dev/Scenarios/<Scenario> (Host + Client, Lag100): arrange/assert on the host, act on a lagged client.
 

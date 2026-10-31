@@ -279,7 +279,7 @@ function Get-PerfTrend([string]$Scenario, [string]$Path) {
     return $rows
 }
 
-# C# for `unity cmd eval`: loads a capture made with -perfprofile (it records allocation call stacks) into the Editor's
+# C# for `unity cmd script eval`: loads a capture made with -perfprofile (it records allocation call stacks) into the Editor's
 # Profiler and sums every GC.Alloc sample by the innermost TinCan frame of its call stack (the innermost frame overall
 # after "<="), bytes and allocations per frame, top $Top. Main thread only.
 function Get-GcAttributionCode([string]$RawPath, [int]$Top = 30) {

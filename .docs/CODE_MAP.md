@@ -297,7 +297,7 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
   `CloudSubmersionFeatureInstaller` for the cloud view it resolves from the scene. Assets loaded in an Editor script
   before `EditorSceneManager.NewScene` are unloaded by it; load them after.
 
-- **`unity cmd capture_scene_view` does not show gizmos or `Debug.DrawLine`**, and a background Editor's Scene view camera
+- **`unity cmd capture scene_view` does not show gizmos or `Debug.DrawLine`**, and a background Editor's Scene view camera
   does not follow `SceneView.LookAt` until it repaints: the capture then renders from the old camera pose (often the
   origin). Set `sceneView.camera.transform` yourself before capturing, and check debug lines in the live Scene view.
   The capture also saves relative to `Assets/`; move the file out so it does not become an asset.
@@ -350,7 +350,7 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
   it owns the PC's port) stops the scenario host from binding; `verify.ps1` checks the port first and says so. Stop it with
   `podman stop tincan-server` before `verify.ps1 -Scenario`/`-All` (2026-10-03).
 - **A Windows prompt stalls unattended runs.** A UAC or firewall prompt waiting on the desktop blocks the Editor's main
-  thread: builds never start and pipeline evals time out, while `unity cmd editor_status` still answers "ready" from a
+  thread: builds never start and pipeline evals time out, while `unity cmd editor status` still answers "ready" from a
   cached heartbeat. `build.ps1` probes the main thread and says so; answer the prompt (2026-10-03). The firewall prompt
   for the game builds is prevented by `.\.tools\setup.ps1 -Only Firewall` (a guided one-time step).
 - **Player builds work**: **TinCan > Build > Windows Client** (`Builds/Win64/`) and **TinCan > Build > Linux Server**
@@ -386,7 +386,7 @@ Coverage is in `Assets/Tests/EditMode/FlyingCanUseCaseTests.cs`, `FlyingCanProce
   `Fakes/FakeShipDamage.cs` do. Unity then binds the file to the plain class and ignores the behaviour.
 - **Running EditMode tests with a modified scene open** makes the test runner show a modal "Scene(s) Have Been
   Modified" dialog. It blocks the Editor, and every `unity cmd` call times out until someone answers it. Save
-  (or discard) the scene before `unity cmd run_tests`. `.tools/verify.ps1` checks for dirty scenes and for this
+  (or discard) the scene before `unity cmd test run`. `.tools/verify.ps1` checks for dirty scenes and for this
   dialog before running.
 - **Edit-mode code must not mark things dirty on enable.** The scene used to turn dirty after every Play session
   because `CloudAtmosphereDirector` (`[ExecuteAlways]`) called `EditorUtility.SetDirty` on the sun light from

@@ -19,7 +19,7 @@ namespace TinCan.DevTools.Editor
     /// profiler counters and the network simulator the perf runs read are compiled in (.docs/plans/performance-budgets.md).</item>
     /// </list>
     /// The menus build at once, on the main thread, and write the outcome to the build folder's <c>build-result.txt</c>
-    /// for <c>.tools/build.ps1</c> to poll (a <c>unity cmd menu</c> call times out meanwhile; the script ignores that).
+    /// for <c>.tools/build.ps1</c> to poll (a <c>unity cmd editor invoke_menu</c> call times out meanwhile; the script ignores that).
     /// A build that never starts usually means the Editor's main thread is blocked, for example by a Windows UAC or
     /// firewall prompt waiting for an answer (2026-10-03). The <c>*FromCommandLine</c> methods
     /// are the <c>-executeMethod</c> entries for a batch-mode Editor. Plan: .docs/plans/dedicated-server-container.md.

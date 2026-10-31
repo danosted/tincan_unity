@@ -27,7 +27,7 @@ function Get-ClonePaths {
 # for it to show in `unity status` and answer, and return the clone paths. The first launch of a clone takes minutes.
 function Start-PlayerTwo([int]$TimeoutSeconds = 300) {
     Write-Tier "Editor" "note" "no Player 2 running; launching it (TinCan > Dev > Net Harness > Launch Player 2)"
-    Invoke-Unity @("menu", "--path", "TinCan/Dev/Net Harness/Launch Player 2") 30 | Out-Null
+    Invoke-Unity @("editor", "invoke_menu", "--path", "TinCan/Dev/Net Harness/Launch Player 2") 30 | Out-Null
 
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $deadline) {
@@ -36,7 +36,7 @@ function Start-PlayerTwo([int]$TimeoutSeconds = 300) {
         $clones = @(Get-ClonePaths)
         if ($clones.Count -eq 0) { continue }
 
-        $ready = @($clones | Where-Object { $null -ne (Invoke-Unity @("editor_status", "--project-path", $_) 15).playMode })
+        $ready = @($clones | Where-Object { $null -ne (Invoke-Unity @("editor", "status", "--project-path", $_) 15).playMode })
         if ($ready.Count -eq $clones.Count) {
             Write-Tier "Editor" "note" "Player 2 is up"
             return $clones
@@ -47,7 +47,7 @@ function Start-PlayerTwo([int]$TimeoutSeconds = 300) {
 }
 
 function Sync-CloneScenes {
-    $main = Invoke-Unity @("list_open_scenes") 20
+    $main = Invoke-Unity @("scene", "list_open") 20
     $mainScene = @($main.scenes | Where-Object { $_.isActive })[0].path
     if (-not $mainScene) { return }
 
@@ -58,17 +58,17 @@ function Sync-CloneScenes {
         $name = Split-Path $clone -Leaf
         # Right after a host + client run the clone is still leaving Play mode, and refuses to open a scene until it has.
         $deadline = (Get-Date).AddSeconds(30)
-        while ((Invoke-Unity @("editor_status", "--project-path", $clone) 15).playMode -notin @($null, "stopped")) {
+        while ((Invoke-Unity @("editor", "status", "--project-path", $clone) 15).playMode -notin @($null, "stopped")) {
             if ((Get-Date) -gt $deadline) { Stop-Unusable "clone $name is still in Play mode after 30 s" }
             Start-Sleep -Milliseconds 500
         }
 
-        $scenes = Invoke-Unity @("list_open_scenes", "--project-path", $clone) 20
+        $scenes = Invoke-Unity @("scene", "list_open", "--project-path", $clone) 20
         $active = @($scenes.scenes | Where-Object { $_.isActive })[0].path
-        Invoke-Unity @("open_scene", "--project-path", $clone, "--path", $mainScene) 60 | Out-Null
+        Invoke-Unity @("scene", "open", "--project-path", $clone, "--path", $mainScene) 60 | Out-Null
 
         # A client in another scene never joins; the run then only shows "no subject player". Confirm, don't assume.
-        $now = @((Invoke-Unity @("list_open_scenes", "--project-path", $clone) 20).scenes | Where-Object { $_.isActive })[0].path
+        $now = @((Invoke-Unity @("scene", "list_open", "--project-path", $clone) 20).scenes | Where-Object { $_.isActive })[0].path
         if ($now -ne $mainScene) { Stop-Unusable "clone $name did not open $mainScene (still has '$now')" }
         if ($active -ne $mainScene) { Write-Tier "Editor" "note" "clone $name had '$active' open; opened $mainScene" }
     }
@@ -82,11 +82,11 @@ function Confirm-NetworkPrefabsMatch {
     if ($script:PrefabsChecked) { return }
     $script:PrefabsChecked = $true
     $code = 'var sb = new System.Text.StringBuilder(); foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:Prefab", new[] { "Assets" })) { var path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid); var go = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path); var no = go != null ? go.GetComponent<Unity.Netcode.NetworkObject>() : null; if (no != null) sb.Append(path).Append("=").Append(no.PrefabIdHash).Append(";"); } return sb.ToString();'
-    $hostPrefabs = (Invoke-Unity @("eval", "--code", $code) 60).result
+    $hostPrefabs = (Invoke-Unity @("script", "eval", "--code", $code) 60).result
     if (-not $hostPrefabs) { return }
 
     foreach ($clone in Get-ClonePaths) {
-        $clonePrefabs = (Invoke-Unity @("eval", "--project-path", $clone, "--code", $code) 60).result
+        $clonePrefabs = (Invoke-Unity @("script", "eval", "--project-path", $clone, "--code", $code) 60).result
         if (-not $clonePrefabs -or $clonePrefabs -eq $hostPrefabs) { continue }
 
         $hostSet = $hostPrefabs -split ";" | Where-Object { $_ }

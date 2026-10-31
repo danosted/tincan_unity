@@ -196,7 +196,7 @@ try {
             if (-not (Test-Path $raw)) { throw "no server.raw in that run; make one with: perf.ps1 run CrewLoad -ProfileFrames 150" }
             Enter-EditorLock -Purpose "perf analyze-gc"
             if (-not (Test-EditorAlive)) { Stop-Unusable "the Editor does not answer; analyze-gc loads the capture in the open Editor" }
-            $result = Invoke-Unity @("eval", "--code", (Get-GcAttributionCode $raw)) 900
+            $result = Invoke-Unity @("script", "eval", "--code", (Get-GcAttributionCode $raw)) 900
             if ($result.result) { Write-Host $result.result } else { throw "analysis failed: $($result | ConvertTo-Json -Depth 5 -Compress)" }
         }
         "list" { Get-PerfRuns | Select-Object Id, Verdict | Format-Table -AutoSize | Out-String | Write-Host }

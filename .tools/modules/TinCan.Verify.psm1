@@ -13,7 +13,7 @@ $ProjectRoot = Get-ProjectRoot
 # tree passes in seconds. Errors come from the Editor's compile state, so scripts broken in an earlier run still fail.
 function Invoke-Compile {
     $clock = [Diagnostics.Stopwatch]::StartNew()
-    Invoke-Unity @("eval", "--code", 'UnityEditor.AssetDatabase.Refresh(); return "ok";') 120 | Out-Null
+    Invoke-Unity @("script", "eval", "--code", 'UnityEditor.AssetDatabase.Refresh(); return "ok";') 120 | Out-Null
 
     # A compile triggered by the refresh starts on a later Editor update, and while it runs (and during the domain
     # reload) the pipeline may not answer. Wait for two quiet readings in a row; an unanswered status counts as busy.
@@ -21,7 +21,7 @@ function Invoke-Compile {
     $quiet = 0
     while ($quiet -lt 2 -and (Get-Date) -lt $deadline) {
         Start-Sleep -Seconds 3
-        $status = Invoke-Unity @("editor_status") 15
+        $status = Invoke-Unity @("editor", "status") 15
         $busy = -not $status.status -or $status.compiling -or $status.domainReloadInProgress
         $quiet = if ($busy) { 0 } else { $quiet + 1 }
     }
@@ -31,12 +31,12 @@ function Invoke-Compile {
     $result = $null
     for ($try = 0; $try -lt 5 -and $result -notin @("ok", "failed"); $try++) {
         if ($try -gt 0) { Start-Sleep -Seconds 3 }
-        $result = (Invoke-Unity @("eval", "--code", 'return UnityEditor.EditorUtility.scriptCompilationFailed ? "failed" : "ok";') 30).result
+        $result = (Invoke-Unity @("script", "eval", "--code", 'return UnityEditor.EditorUtility.scriptCompilationFailed ? "failed" : "ok";') 30).result
     }
     if ($result -eq "ok") {
         # Unity only rewrites the IDE's .csproj/.slnx files when the IDE asks. After an asmdef is added, the stale
         # projects list a file in two assemblies and the IDE reports "type exists in both". Keep them in step.
-        Invoke-Unity @("eval", "--code", 'Unity.CodeEditor.CodeEditor.CurrentEditor.SyncAll(); return "ok";') 60 | Out-Null
+        Invoke-Unity @("script", "eval", "--code", 'Unity.CodeEditor.CodeEditor.CurrentEditor.SyncAll(); return "ok";') 60 | Out-Null
         Write-Tier "Compile" "PASS" "$([int]$clock.Elapsed.TotalSeconds) s"
         return $true
     }
@@ -44,9 +44,9 @@ function Invoke-Compile {
 
     # Messages: the last compilation's result, else the Console. Never call recompile here: it answers "up to date"
     # and forgets the errors.
-    $errors = @((Invoke-Unity @("recompile_status") 15).errors | Where-Object { $_ })
+    $errors = @((Invoke-Unity @("script", "recompile_status") 15).errors | Where-Object { $_ })
     if ($errors.Count -eq 0) {
-        $console = Invoke-Unity @("console", "--level", "error") 30
+        $console = Invoke-Unity @("console", "get", "--level", "error") 30
         $errors = @($console.entries | ForEach-Object { $_.message } | Where-Object { $_ -match "error CS\d+" } | Select-Object -Unique)
     }
     Write-Tier "Compile" "FAIL" $(if ($errors.Count -gt 0) { "$($errors.Count) error(s)" } else { "compilation failed; see the Unity Console" })
@@ -56,13 +56,13 @@ function Invoke-Compile {
 
 function Invoke-Tests([string]$TestFilter, [switch]$SaveDirtyScenes) {
     Confirm-ScenesClean -SaveDirtyScenes:$SaveDirtyScenes
-    $arguments = @("run_tests", "--mode", "EditMode")
+    $arguments = @("test", "run", "--mode", "EditMode")
     if ($TestFilter) { $arguments += @("--filter", $TestFilter) }
     $result = Invoke-Unity $arguments 600
     if (-not $result.Summary) {
         $modal = Get-UnityModal
         if ($modal) { Stop-Unusable $modal }
-        Stop-Unusable "run_tests returned no summary: $($result | ConvertTo-Json -Depth 5 -Compress)"
+        Stop-Unusable "test run returned no summary: $($result | ConvertTo-Json -Depth 5 -Compress)"
     }
 
     $summary = $result.Summary
@@ -82,7 +82,7 @@ function Invoke-Tests([string]$TestFilter, [switch]$SaveDirtyScenes) {
 
 # Every scenario in ScenarioCatalog, grouped by test-range scene: each scene switch costs 15-20 s.
 function Get-CatalogScenarioNames {
-    $names = (Invoke-Unity @("eval", "--code", 'return string.Join(",", System.Linq.Enumerable.Select(System.Linq.Enumerable.OrderBy(TinCan.DevTools.Scenarios.ScenarioCatalog.Entries, e => e.Scenario.ScenePath ?? ""), e => e.Scenario.Name));') 30).result
+    $names = (Invoke-Unity @("script", "eval", "--code", 'return string.Join(",", System.Linq.Enumerable.Select(System.Linq.Enumerable.OrderBy(TinCan.DevTools.Scenarios.ScenarioCatalog.Entries, e => e.Scenario.ScenePath ?? ""), e => e.Scenario.Name));') 30).result
     if (-not $names) { Stop-Unusable "could not read ScenarioCatalog.Names" }
     return @($names -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 }
@@ -107,9 +107,9 @@ function Invoke-Scenario([string]$Scenario, [string]$mode, [int]$TimeoutSeconds 
     Open-ScenarioScene $Scenario
     Set-PlayUnfocused
     if ($mode -eq "Duo") { Sync-CloneScenes; Confirm-NetworkPrefabsMatch; foreach ($clone in Get-ClonePaths) { Set-PlayUnfocused $clone } }
-    $status = Invoke-Unity @("editor_status") 15
+    $status = Invoke-Unity @("editor", "status") 15
     if ($status.playMode -and $status.playMode -ne "stopped") {
-        Invoke-Unity @("editor_stop") 30 | Out-Null
+        Invoke-Unity @("editor.playmode", "stop") 30 | Out-Null
         Start-Sleep -Seconds 3
     }
 
@@ -125,7 +125,7 @@ function Invoke-Scenario([string]$Scenario, [string]$mode, [int]$TimeoutSeconds 
     $started = (Get-Date).ToUniversalTime()
     $clock = [Diagnostics.Stopwatch]::StartNew()
 
-    $trigger = Invoke-Unity @("menu", "--path", $menu) 30
+    $trigger = Invoke-Unity @("editor", "invoke_menu", "--path", $menu) 30
     if ($trigger.raw -and $trigger.raw -match "error|not found") { Stop-Unusable "menu '$menu' failed: $($trigger.raw)" }
 
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
@@ -137,8 +137,8 @@ function Invoke-Scenario([string]$Scenario, [string]$mode, [int]$TimeoutSeconds 
     }
 
     if (-not ((Test-Path $summaryPath) -and (Get-Item $summaryPath).LastWriteTimeUtc -gt $started)) {
-        Write-Tier $mode "FAIL" "no summary within $TimeoutSeconds s (did the scenario start? check: unity cmd console --level error)"
-        Invoke-Unity @("editor_stop") 30 | Out-Null
+        Write-Tier $mode "FAIL" "no summary within $TimeoutSeconds s (did the scenario start? check: unity cmd console get --level error)"
+        Invoke-Unity @("editor.playmode", "stop") 30 | Out-Null
         return $false
     }
 

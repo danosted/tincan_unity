@@ -7,16 +7,19 @@ using UnityEngine;
 namespace TinCan.Features.Airship.Fuel
 {
     /// <summary>
-    /// Infrastructure Layer: the jerry-can crate at the bow. Server-written count, replicated to everyone;
+    /// Infrastructure Layer: the crystal rack (jerry-can crate). Server-written count, replicated to everyone;
     /// child objects named "Can_*" are shown while their index is below the count. Interacting routes to
-    /// TakeJerryCanInteractionHandler via IA_TakeJerryCan. Lives under the FuelSystem fixture so it can read the
-    /// initial supply from the tank's FuelConfig.
+    /// TakeJerryCanInteractionHandler via IA_TakeJerryCan. Lives under the FuelSystem fixture or the fuel.crystal_rack
+    /// fitting; it reads the initial supply and the can item from its own FuelConfig, because a fitting is spawned
+    /// before it is parented to the ship.
     /// </summary>
     public class JerryCanSupplyNetworkMediator : NetworkBehaviour, IInteractionTarget, IJerryCanSupply
     {
         private const string CanVisualPrefix = "Can_";
 
         [SerializeField] private InteractionDefinition? _interactionDefinition;
+        [Tooltip("The fuel tunables: the initial supply and the can item.")]
+        [SerializeField] private FuelConfig? _config;
 
         private readonly NetworkVariable<int> _count = new(
             0,
@@ -27,7 +30,7 @@ namespace TinCan.Features.Airship.Fuel
 
         public InteractionDefinition Definition => _interactionDefinition!;
         public int Count => _count.Value;
-        public TinCan.Core.Items.ItemDefinition? Item => GetComponentInParent<IFuelTank>()?.Config?.JerryCanItem;
+        public TinCan.Core.Items.ItemDefinition? Item => _config != null ? _config.JerryCanItem : null;
 
         private void Awake()
         {
@@ -41,11 +44,7 @@ namespace TinCan.Features.Airship.Fuel
         {
             base.OnNetworkSpawn();
 
-            if (IsServer)
-            {
-                var config = GetComponentInParent<IFuelTank>()?.Config;
-                if (config != null) _count.Value = Mathf.Max(0, config.InitialSupply);
-            }
+            if (IsServer && _config != null) _count.Value = Mathf.Max(0, _config.InitialSupply);
 
             _count.OnValueChanged += HandleCountChanged;
             ApplyVisuals(Count);

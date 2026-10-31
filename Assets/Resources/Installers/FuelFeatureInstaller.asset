@@ -12,6 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50bbc861a973b9246861acc3337d638d, type: 3}
   m_Name: FuelFeatureInstaller
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Airship.Fuel.FuelFeatureInstaller
+  _tankStateFixture: {fileID: 11400000, guid: b65d6f6890791524c9d05492f6a17c8e, type: 2}
   _fuelSystemFixture: {fileID: 11400000, guid: 5f911f3a13b0ecb438490b4d3d0936ac, type: 2}
   _items:
   - {fileID: 11400000, guid: e7e80d4df040f794b8e4629467b40e24, type: 2}
+  _fittings:
+  - {fileID: 11400000, guid: 280541fed8af693499f040e1ed2a98d6, type: 2}
+  - {fileID: 11400000, guid: 8cc5ae84c72e66348a6f72fcb16a3d2c, type: 2}

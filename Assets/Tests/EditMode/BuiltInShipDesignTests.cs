@@ -108,6 +108,17 @@ namespace TinCan.Tests.EditMode
             Assert.That(At(mounts.BowPort).y, Is.EqualTo(-0.5f).Within(1e-4f));
             Assert.That(At(mounts.SternStarboard).y, Is.EqualTo(2.5f).Within(1e-4f));
             Assert.That(At(mounts.Balcony).x, Is.GreaterThan(4.5f), "the balcony is outboard of the hull");
+            Assert.That(At(mounts.QuarterdeckPortAft).y, Is.EqualTo(2.5f).Within(1e-4f), "the net rack's pole stands under open sky");
+
+            // A cannon's seat is 1.8 m behind it (CannonAssetBuilder); the quarterdeck's stern rail is at z -8.5 m.
+            foreach (int stern in new[] { mounts.SternPort, mounts.SternStarboard })
+            {
+                Assert.That(At(stern).z - 1.8f, Is.GreaterThan(-8.5f + 0.5f), "a stern cannon's seat stands on the quarterdeck");
+            }
+
+            // The wide fuel fittings in the aft hold clear its walls (7 m wide at the floor).
+            Assert.That(Mathf.Abs(At(mounts.HoldPortAft).x), Is.LessThanOrEqualTo(2.5f));
+            Assert.That(Mathf.Abs(At(mounts.HoldStarboardAft).x), Is.LessThanOrEqualTo(2.5f));
         }
 
         [Test]

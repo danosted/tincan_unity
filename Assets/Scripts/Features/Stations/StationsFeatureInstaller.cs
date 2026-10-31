@@ -18,6 +18,7 @@ namespace TinCan.Features.Stations
     {
         public override void Install(IContainerBuilder builder)
         {
+            builder.Register<PhysicsStationSeatCheck>(Lifetime.Singleton).As<IStationSeatCheck>();
             builder.Register<StationOccupancyUseCase>(Lifetime.Singleton).As<IStationOccupancy>().As<IInteractOverride>().As<ISimulationTickable>();
             builder.Register<OccupyStationInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
             builder.Register<StationViewPresenter>(Lifetime.Singleton).As<ITickable>().As<ILocalViewOverride>();

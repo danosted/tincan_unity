@@ -57,8 +57,8 @@ namespace TinCan.DevTools.Scenarios
 
         public IEnumerable<ScenarioCommand> Commands => new[]
         {
-            new ScenarioCommand("PlaceSubjectAtCannon", _ => PlaceAtCannon()),
-            new ScenarioCommand("FaceCannon", _ => FaceCannon()),
+            new ScenarioCommand("PlaceSubjectAtCannon", PlaceAtCannon),
+            new ScenarioCommand("FaceCannon", FaceCannon),
             new ScenarioCommand("HazardField", SetField),
             new ScenarioCommand("AimCannon", Aim),
             new ScenarioCommand("RecordSubjectFacing", _ => RecordFacing()),
@@ -68,9 +68,9 @@ namespace TinCan.DevTools.Scenarios
 
         public IEnumerable<ScenarioProbe> Probes => new[]
         {
-            new ScenarioProbe("SubjectAtCannon", _ => CheckAtCannon()),
-            new ScenarioProbe("CannonManned", _ => CheckManned(expected: true)),
-            new ScenarioProbe("CannonFree", _ => CheckManned(expected: false)),
+            new ScenarioProbe("SubjectAtCannon", CheckAtCannon),
+            new ScenarioProbe("CannonManned", which => CheckManned(expected: true, which)),
+            new ScenarioProbe("CannonFree", which => CheckManned(expected: false, which)),
             new ScenarioProbe("HazardsVisible", CheckVisible),
             new ScenarioProbe("HazardsDestroyed", CheckDestroyed),
             new ScenarioProbe("BallsShown", CheckBalls),
@@ -80,13 +80,13 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("SubjectFacingHeld", _ => CheckFacingHeld())
         };
 
-        /// <summary>Server: stands the subject behind the cannon on the deck, through the respawn service (the owner snaps).</summary>
-        private ScenarioCheck PlaceAtCannon()
+        /// <summary>Server: stands the subject behind the cannon ("aft": the aftmost) on the deck, through the respawn service (the owner snaps).</summary>
+        private ScenarioCheck PlaceAtCannon(string which)
         {
             if (!_network.IsServer) return ScenarioCheck.Fail("server-only command");
             var subject = _subject.Resolve();
             var body = subject?.Movement?.Transform;
-            var cannon = Cannon()?.Base;
+            var cannon = Cannon(which)?.Base;
             if (subject == null || body == null || cannon == null) return ScenarioCheck.Fail("no subject or no cannon");
 
             Vector3 stand = ScenarioPlacement.OnGround(body, cannon.position - cannon.forward * StandBehind, cannon.up);
@@ -95,11 +95,11 @@ namespace TinCan.DevTools.Scenarios
         }
 
         /// <summary>Subject peer: turns the subject's camera toward the scenario's cannon (FaceObject would take the first by name).</summary>
-        private ScenarioCheck FaceCannon()
+        private ScenarioCheck FaceCannon(string which)
         {
             var subject = _subject.Resolve();
             var body = subject?.Movement?.Transform;
-            var cannon = Cannon()?.Base;
+            var cannon = Cannon(which)?.Base;
             if (subject?.Look == null || body == null || cannon == null) return ScenarioCheck.Fail("no subject look view, or no cannon");
             if (((IPossessable)subject).OwnerId != _network.LocalClientId) return ScenarioCheck.Fail("subject-peer command: only the owner can turn its camera");
 
@@ -108,10 +108,10 @@ namespace TinCan.DevTools.Scenarios
         }
 
         /// <summary>The subject stands behind the cannon on this peer, within reach (a lagged client sees its ship a little behind).</summary>
-        private ScenarioCheck CheckAtCannon()
+        private ScenarioCheck CheckAtCannon(string which)
         {
             var body = _subject.Body;
-            var cannon = Cannon()?.Base;
+            var cannon = Cannon(which)?.Base;
             if (body == null || cannon == null) return ScenarioCheck.Fail("no subject or no cannon");
 
             float distance = Vector3.ProjectOnPlane(body.position - cannon.position, cannon.up).magnitude;
@@ -225,10 +225,10 @@ namespace TinCan.DevTools.Scenarios
             return health.Health < Parse(value) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
-        private ScenarioCheck CheckManned(bool expected)
+        private ScenarioCheck CheckManned(bool expected, string which)
         {
             var subject = _subject.Resolve();
-            if (Cannon() is not IStation station) return ScenarioCheck.Fail("no cannon");
+            if (Cannon(which) is not IStation station) return ScenarioCheck.Fail("no cannon");
             ulong? owner = subject != null ? ((IPossessable)subject).OwnerId : null;
 
             bool manned = station.OccupantClientId != null && station.OccupantClientId == owner;
@@ -258,11 +258,18 @@ namespace TinCan.DevTools.Scenarios
         }
 
         // The ship carries a cannon on each side; scenarios use the starboard one. Picked by where it sits on the ship, so
-        // every peer names the same cannon whatever order they spawned in.
-        private ICannon? Cannon() => _actors.GetActors<ICannon>()
-            .Where(cannon => cannon.Base != null)
-            .OrderByDescending(cannon => cannon.ShipRoot != null ? cannon.ShipRoot.InverseTransformPoint(cannon.Base!.position).x : cannon.Base!.position.x)
-            .FirstOrDefault();
+        // every peer names the same cannon whatever order they spawned in. "aft" picks the aftmost (then starboard) one,
+        // for ships with cannons fore and aft (the Galleon).
+        private ICannon? Cannon(string which = "")
+        {
+            var cannons = _actors.GetActors<ICannon>().Where(cannon => cannon.Base != null);
+            return which == "aft"
+                ? cannons.OrderBy(cannon => ShipLocal(cannon).z).ThenByDescending(cannon => ShipLocal(cannon).x).FirstOrDefault()
+                : cannons.OrderByDescending(cannon => ShipLocal(cannon).x).FirstOrDefault();
+        }
+
+        private static Vector3 ShipLocal(ICannon cannon) =>
+            cannon.ShipRoot != null ? cannon.ShipRoot.InverseTransformPoint(cannon.Base!.position) : cannon.Base!.position;
 
         private static float Parse(string value) => float.Parse(value, CultureInfo.InvariantCulture);
     }

@@ -76,6 +76,20 @@ Small and independent, so it goes first; its scenario lands with M1's scene.
   (cheesed_scene mention), `.docs/README.md`.
 
 ### M2. Fuel through the sockets
+**Built (2026-10-31)**, with these changes to the plan below, found by measuring the parts:
+- **Layout.** The receiver (2.2 m) and the crystal rack (3.6 m) would cut into the hold's leaning walls on the ±3 m
+  plates, so the aft hold plates (105, 106) moved 0.5 m inboard and turn to face inboard. The net rack's 5.2 m pole
+  would pierce the quarterdeck from the cabin floor, so it goes on a new plate, 117, on the quarterdeck's port stern
+  corner (under open sky). The cabin floor plate (114) stays free. Existing placement ids are unchanged.
+- **The crystal rack reads `FuelConfig` itself** (`JerryCanSupplyNetworkMediator._config`): a fitting is spawned before
+  it is parented, so it cannot read the tank's config in `OnNetworkSpawn`.
+- **Lookups:** `FuelTankLocator.FindFor(part)` (the tank of the ship the part is on) serves the fill port, the gauge
+  and the receiver's status view.
+- Assets come from **TinCan > Dev > Fuel > Build Fittings** (`DevTools/Editor/FuelAssetBuilder.cs`). Tests:
+  `FuelFittingTests`, `GalleonLoadoutTests`, `BuiltInShipDesignTests`. Scenario: `GalleonFuelLoop` (cheesed_scene,
+  as `scene_main` does not exist yet).
+- Alongside, the stern cannon plates (111, 112) moved 3 m forward (a cannon's seat hung past the stern rail), and
+  stations seat a player only where `IStationSeatCheck` finds a floor and room (scenario `GalleonSternCannon`).
 - **The tank is ship state.** It moves out of `FuelSystem.prefab` into a new pose-less `FuelTankState` fixture
   (`Prefabs/Airship/Parts/FuelTankState`, `Settings/Fixtures/FuelTankStateFixture`), spawned on every ship like
   `VoyageState`. So every ship drains and stalls, with or without fittings.

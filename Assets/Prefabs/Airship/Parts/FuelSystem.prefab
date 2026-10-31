@@ -115,6 +115,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Airship.Fuel.JerryCanSupplyNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
   _interactionDefinition: {fileID: 11400000, guid: 9ee5ac6d643f6884e92812c264857aca, type: 2}
+  _config: {fileID: 11400000, guid: 66df888f2fbb5d641b97c93caa703952, type: 2}
 --- !u!1 &3264164297145169738
 GameObject:
   m_ObjectHideFlags: 0
@@ -388,7 +389,6 @@ GameObject:
   m_Component:
   - component: {fileID: 7283159652351264036}
   - component: {fileID: 7635036115663642224}
-  - component: {fileID: 2667137858786326226}
   - component: {fileID: 7265025246091500193}
   m_Layer: 0
   m_Name: FuelSystem
@@ -440,21 +440,6 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &2667137858786326226
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7885543958958279758}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a98e420e8665b5648bce3f2346df4f24, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Airship.Fuel.FuelTankNetworkMediator
-  ShowTopMostFoldoutHeaderGroup: 1
-  _fuelAttribute: {fileID: 11400000, guid: 85d9565941f915b46a18fdcb928ad2e8, type: 2}
-  _config: {fileID: 11400000, guid: 66df888f2fbb5d641b97c93caa703952, type: 2}
 --- !u!114 &7265025246091500193
 MonoBehaviour:
   m_ObjectHideFlags: 0

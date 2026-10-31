@@ -19,13 +19,13 @@ dialog), not that the code failed. Give every feature slice a scenario that runs
 `add-scenario` skills (`.claude/skills/`, `.github/prompts/`) are the procedures. The individual commands:
 
 ```bash
-unity cmd recompile && unity cmd recompile_status
+unity cmd script recompile && unity cmd script recompile_status
 ```
 ```bash
-unity cmd run_tests --mode EditMode
+unity cmd test run --mode EditMode
 ```
 ```bash
-unity cmd console --level error
+unity cmd console get --level error
 ```
 
 ## 1. Tune a number
@@ -234,7 +234,7 @@ attributes; do not add a second GAS tick without moving ownership out of the glo
 
 **Verify:**
 ```bash
-unity cmd run_tests --mode EditMode
+unity cmd test run --mode EditMode
 ```
 
 **Trap:** the tests see only the assemblies listed in `TinCan.Tests.EditMode.asmdef`. A test that can't find your
@@ -265,13 +265,13 @@ connect under ~100 ms simulated round trip, the bots play fixed routes, and each
 
 **Editor-side checks from the shell:**
 ```bash
-unity cmd editor_play
+unity cmd editor.playmode start
 ```
 ```bash
-unity cmd capture_game_view --source screen
+unity cmd capture game_view --source screen
 ```
 ```bash
-unity cmd editor_stop
+unity cmd editor.playmode stop
 ```
 
 ## 9. Review what the AI just did

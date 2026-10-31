@@ -65,7 +65,7 @@ extra package is needed.
 from the shell:
 
 ```bash
-unity cmd menu --path "TinCan/Dev/Net Harness/Run Host + Client (Lag100)"
+unity cmd editor invoke_menu --path "TinCan/Dev/Net Harness/Run Host + Client (Lag100)"
 ```
 
 The menu does four things:
@@ -89,7 +89,7 @@ Both peers connect on their own and the bots start. After about a minute each pe
 Console also gets a `[NetTelemetry]` line every 10 s and a one-line JSON report at the end. Then:
 
 ```bash
-unity cmd editor_stop
+unity cmd editor.playmode stop
 ```
 
 **F3** toggles the live overlay in each game view.
@@ -142,8 +142,8 @@ lists every result. Run `-All` before committing a change that touches shared co
 
 | Tier | What runs | Typical time | Catches |
 |---|---|---|---|
-| Compile | `AssetDatabase.Refresh`, then the Editor's compile state; errors from `recompile_status` | ~10 s unchanged | build breaks, including scripts broken before the run |
-| Tests | `unity cmd run_tests --mode EditMode` (optional `-TestFilter`) | ~10 s | processor, use case and handler logic |
+| Compile | `AssetDatabase.Refresh`, then the Editor's compile state; errors from `script recompile_status` | ~10 s unchanged | build breaks, including scripts broken before the run |
+| Tests | `unity cmd test run --mode EditMode` (optional `-TestFilter`) | ~10 s | processor, use case and handler logic |
 | Solo | menu **TinCan > Dev > Scenarios > *X* (Host)** | ~15 s | wiring, installers, assets, server flow |
 | Duo | menu **TinCan > Dev > Scenarios > *X* (Host + Client, Lag100)** | ~40 s | replication, prediction, what the remote player sees |
 

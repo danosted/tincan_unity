@@ -15,13 +15,13 @@ function Invoke-Unity {
     try { return $output | ConvertFrom-Json -Depth 20 } catch { return [pscustomobject]@{ raw = $output } }
 }
 
-# editor_status can answer from a cached heartbeat while the main thread is stalled; an eval has to run on it.
+# editor status can answer from a cached heartbeat while the main thread is stalled; an eval has to run on it.
 function Test-EditorAlive([int]$Timeout = 20) {
-    return (Invoke-Unity @("eval", "--code", 'return "alive";') $Timeout).result -eq "alive"
+    return (Invoke-Unity @("script", "eval", "--code", 'return "alive";') $Timeout).result -eq "alive"
 }
 
 function Test-EditorReady {
-    $status = Invoke-Unity @("editor_status") 15
+    $status = Invoke-Unity @("editor", "status") 15
     return $status.status -eq "ready" -and -not $status.compiling
 }
 
@@ -79,7 +79,7 @@ function Restore-Editor([switch]$RestartEditor) {
     $modal = Wait-EditorReady 20
     if (-not $modal) { return $null }
     if ($modal -like "modal*") { return $modal }
-    $status = Invoke-Unity @("editor_status") 15
+    $status = Invoke-Unity @("editor", "status") 15
     if ($status.playMode -and $status.playMode -ne "stopped") {
         return "the Editor is in Play mode ($($status.playMode)). Stop it, then rerun."
     }
@@ -131,7 +131,7 @@ public static System.Collections.Generic.List<string> Titles(uint pid) {
 }
 
 function Confirm-ScenesClean([switch]$SaveDirtyScenes) {
-    $scenes = Invoke-Unity @("list_open_scenes") 20
+    $scenes = Invoke-Unity @("scene", "list_open") 20
     $dirty = @($scenes.scenes | Where-Object { $_.isDirty })
     if ($dirty.Count -eq 0) { return }
 
@@ -139,7 +139,7 @@ function Confirm-ScenesClean([switch]$SaveDirtyScenes) {
     if (-not $SaveDirtyScenes) {
         Stop-Unusable "open scene(s) marked modified: $names. Unity would block on a save dialog. Save them, or rerun with -SaveDirtyScenes."
     }
-    Invoke-Unity @("save_all") 60 | Out-Null
+    Invoke-Unity @("editor", "save_all") 60 | Out-Null
     Write-Tier "Editor" "note" "saved modified scene(s): $names (check git diff)"
 }
 
@@ -148,21 +148,21 @@ function Confirm-ScenesClean([switch]$SaveDirtyScenes) {
 # open first is reopened by Restore-StartScene when the script finishes.
 function Open-ScenarioScene([string]$name) {
     $code = 'return TinCan.DevTools.Scenarios.ScenarioCatalog.TryGet("{0}", out var e) ? (e.Scenario.ScenePath ?? "") : "?";' -f $name
-    $path = (Invoke-Unity @("eval", "--code", $code) 30).result
+    $path = (Invoke-Unity @("script", "eval", "--code", $code) 30).result
     if ($path -eq "?") { Stop-Unusable "unknown scenario '$name' (see DevTools/Scenarios/ScenarioCatalog.cs)" }
     if (-not $path) { return }
 
-    $open = Invoke-Unity @("list_open_scenes") 20
+    $open = Invoke-Unity @("scene", "list_open") 20
     $active = @($open.scenes | Where-Object { $_.isActive })[0].path
     if ($active -eq $path) { return }
     if (-not $script:ReturnScene) { $script:ReturnScene = $active }
-    Invoke-Unity @("open_scene", "--path", $path) 60 | Out-Null
+    Invoke-Unity @("scene", "open", "--path", $path) 60 | Out-Null
     Write-Tier "Editor" "note" "opened $path for $name"
 }
 
 function Restore-StartScene([switch]$KeepScene) {
     if ($KeepScene -or -not $script:ReturnScene) { return }
-    Invoke-Unity @("open_scene", "--path", $script:ReturnScene) 60 | Out-Null
+    Invoke-Unity @("scene", "open", "--path", $script:ReturnScene) 60 | Out-Null
     Write-Tier "Editor" "note" "reopened $script:ReturnScene"
 }
 
@@ -175,7 +175,7 @@ function Set-PlayUnfocused([string]$ProjectPath = "") {
             'if (p == null) return "unsupported"; var changed = 0; ' +
             'foreach (var v in UnityEngine.Resources.FindObjectsOfTypeAll(t)) { if (p.GetValue(v).ToString() != "PlayUnfocused") { p.SetValue(v, System.Enum.Parse(p.PropertyType, "PlayUnfocused")); changed++; } } ' +
             'return changed.ToString();'
-    $arguments = @("eval", "--code", $code)
+    $arguments = @("script", "eval", "--code", $code)
     if ($ProjectPath) { $arguments += @("--project-path", $ProjectPath) }
     $result = (Invoke-Unity $arguments 20).result
     $where = if ($ProjectPath) { "clone $(Split-Path $ProjectPath -Leaf)" } else { "Editor" }

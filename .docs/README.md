@@ -63,19 +63,19 @@ All from the repo root with the Editor open. `unity status` must report `ready` 
 unity status
 ```
 ```bash
-unity cmd recompile && unity cmd recompile_status
+unity cmd script recompile && unity cmd script recompile_status
 ```
 ```bash
-unity cmd run_tests --mode EditMode
+unity cmd test run --mode EditMode
 ```
 ```bash
-unity cmd console --level error
+unity cmd console get --level error
 ```
 ```bash
-unity cmd editor_play
+unity cmd editor.playmode start
 ```
 ```bash
-unity cmd editor_stop
+unity cmd editor.playmode stop
 ```
 
 There is no CI. Running the EditMode tests and checking the console for errors before a PR is on you.

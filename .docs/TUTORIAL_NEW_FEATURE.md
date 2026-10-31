@@ -46,7 +46,7 @@ Steps 1 to 16 are C# only and can be done without the Editor open. Steps 17 to 2
 Recompile after every few files:
 
 ```bash
-unity cmd recompile && unity cmd recompile_status
+unity cmd script recompile && unity cmd script recompile_status
 ```
 
 ### 1. Create the folder
@@ -88,7 +88,7 @@ nothing; full throttle fills rate times dt; clamp holds at capacity.
 
 **Checkpoint:**
 ```bash
-unity cmd run_tests --mode EditMode
+unity cmd test run --mode EditMode
 ```
 
 ### 6. Events
@@ -242,7 +242,7 @@ drive from the helm and the number rises; walk to the valve, E, number drops and
 in the console. Then Multiplayer Play Mode, one virtual player, Join `127.0.0.1`: same numbers on both peers.
 
 ```bash
-unity cmd console --level error
+unity cmd console get --level error
 ```
 must be empty.
 

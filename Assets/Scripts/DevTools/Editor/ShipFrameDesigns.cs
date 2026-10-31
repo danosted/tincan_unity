@@ -56,7 +56,7 @@ namespace TinCan.DevTools.Editor
         public readonly struct GalleonMountIds
         {
             public GalleonMountIds(int holdPortAft, int holdStarboardAft, int holdPortFore, int holdStarboardFore, int bowPort, int bowStarboard,
-                int sternPort, int sternStarboard, int balcony)
+                int sternPort, int sternStarboard, int balcony, int quarterdeckPortAft)
             {
                 HoldPortAft = holdPortAft;
                 HoldStarboardAft = holdStarboardAft;
@@ -67,6 +67,7 @@ namespace TinCan.DevTools.Editor
                 SternPort = sternPort;
                 SternStarboard = sternStarboard;
                 Balcony = balcony;
+                QuarterdeckPortAft = quarterdeckPortAft;
             }
 
             public int HoldPortAft { get; }
@@ -78,6 +79,7 @@ namespace TinCan.DevTools.Editor
             public int SternPort { get; }
             public int SternStarboard { get; }
             public int Balcony { get; }
+            public int QuarterdeckPortAft { get; }
         }
 
         private static ShipDesign Galleon(out GalleonMountIds mounts)
@@ -139,19 +141,26 @@ namespace TinCan.DevTools.Editor
 
             b.OnFace(ShipDesignsAssetBuilder.CoreHelm, quarterdeck, 0, -50);
             b.OnFace(ShipDesignsAssetBuilder.Cairn, holdFloor, 0, -40);
-            mounts = new GalleonMountIds(
-                b.OnFace(ShipDesignsAssetBuilder.HullMount, holdFloor, -30, -50),
-                b.OnFace(ShipDesignsAssetBuilder.HullMount, holdFloor, 30, -50),
-                b.OnFace(ShipDesignsAssetBuilder.HullMount, holdFloor, -30, 30),
-                b.OnFace(ShipDesignsAssetBuilder.HullMount, holdFloor, 30, 30),
-                b.OnFace(ShipDesignsAssetBuilder.HullMount, bow, -30, 65),
-                b.OnFace(ShipDesignsAssetBuilder.HullMount, bow, 30, 65),
-                b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, -30, -75),
-                b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, 30, -75),
-                b.OnFace(ShipDesignsAssetBuilder.HullMount, balcony, 50, -60, 1));
+            // The aft hold plates sit 1 m inboard of the walls and face inboard (quarter turns 1 and 3), so the wide fuel
+            // fittings clear the leaning walls. The stern plates sit 4 m inside the stern rail: a cannon's seat is 1.8 m
+            // behind it, and nearer the stern it hung past the rail.
+            int holdPortAft = b.OnFace(ShipDesignsAssetBuilder.HullMount, holdFloor, -25, -50, 1);
+            int holdStarboardAft = b.OnFace(ShipDesignsAssetBuilder.HullMount, holdFloor, 25, -50, 3);
+            int holdPortFore = b.OnFace(ShipDesignsAssetBuilder.HullMount, holdFloor, -30, 30);
+            int holdStarboardFore = b.OnFace(ShipDesignsAssetBuilder.HullMount, holdFloor, 30, 30);
+            int bowPort = b.OnFace(ShipDesignsAssetBuilder.HullMount, bow, -30, 65);
+            int bowStarboard = b.OnFace(ShipDesignsAssetBuilder.HullMount, bow, 30, 65);
+            int sternPort = b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, -30, -45);
+            int sternStarboard = b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, 30, -45);
+            int balconyMount = b.OnFace(ShipDesignsAssetBuilder.HullMount, balcony, 50, -60, 1);
             b.OnFace(ShipDesignsAssetBuilder.HullMount, cabinFloor, -30, -60);
             b.OnNode(ShipDesignsAssetBuilder.Propeller, hold[0]);
             b.OnNode(ShipDesignsAssetBuilder.Propeller, hold[1]);
+            // Added after the rest, so every earlier placement keeps its id: the quarterdeck's port stern corner, under
+            // open sky (the net rack's 5 m pole would pierce the quarterdeck from the cabin floor).
+            int quarterdeckPortAft = b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, -30, -75);
+            mounts = new GalleonMountIds(holdPortAft, holdStarboardAft, holdPortFore, holdStarboardFore, bowPort, bowStarboard,
+                sternPort, sternStarboard, balconyMount, quarterdeckPortAft);
             return b.Build(GalleonName);
         }
 

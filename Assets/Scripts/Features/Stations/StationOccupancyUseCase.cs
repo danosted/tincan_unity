@@ -40,7 +40,8 @@ namespace TinCan.Features.Stations
     /// Application Layer, server only. Occupying a station: the player is placed on its seat, its occupy ability runs on
     /// them (the active effect locks walking and carries State.Occupying.*; the ability's cancel and block lists stop
     /// other abilities), its granted abilities are added, and the station records the occupant. Leaving undoes exactly
-    /// that. Pressing Interact while occupying leaves (<see cref="IInteractOverride"/>), so leaving is an input bit on the
+    /// that. The player is put on the seat only when <see cref="IStationSeatCheck"/> finds a floor and room there;
+    /// otherwise they occupy the station where they stand. Pressing Interact while occupying leaves (<see cref="IInteractOverride"/>), so leaving is an input bit on the
     /// same tick as everything else. Every tick it also releases a station whose occupant or station has gone.
     /// Grants are server-only: the occupant's client does not predict the station's abilities (S3 polish).
     /// </summary>
@@ -61,6 +62,7 @@ namespace TinCan.Features.Stations
         private readonly IActorRegistry _actors;
         private readonly AbilitySystemUseCase _abilities;
         private readonly IHumanoidRespawnService _respawn;
+        private readonly IStationSeatCheck _seats;
         private readonly IEventPublisher _events;
         private readonly Dictionary<Guid, Occupancy> _byPlayer = new();
 
@@ -69,12 +71,14 @@ namespace TinCan.Features.Stations
             IActorRegistry actors,
             AbilitySystemUseCase abilities,
             IHumanoidRespawnService respawn,
+            IStationSeatCheck seats,
             IEventPublisher events)
         {
             _network = network;
             _actors = actors;
             _abilities = abilities;
             _respawn = respawn;
+            _seats = seats;
             _events = events;
         }
 
@@ -105,7 +109,9 @@ namespace TinCan.Features.Stations
             }
 
             _byPlayer[player.Id] = occupancy;
-            if (station.Seat != null) _respawn.ResetCharacter(player, station.Seat.position, station.Seat.rotation);
+            var seat = station.Seat;
+            if (seat != null && _seats.CanSeat(player, station, seat)) _respawn.ResetCharacter(player, seat.position, seat.rotation);
+            else if (seat != null) _events.LogInfo(LogSource, $"{Name(station)}'s seat has no floor or no room; player {player.Id} stays where they stand.");
             station.ServerSetOccupant(player);
 
             _events.Publish(new StationOccupancyChangedEvent(player.Id, Name(station), occupied: true));

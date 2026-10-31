@@ -21,6 +21,7 @@ namespace TinCan.Features.Airship.Fuel
         private readonly List<Renderer> _runes = new();
         private readonly List<GameObject> _heartWinds = new();
         private MaterialPropertyBlock? _properties;
+        private IFuelTank? _tank;
         private bool? _lastWarning;
         private bool? _lastPowered;
 
@@ -50,11 +51,12 @@ namespace TinCan.Features.Airship.Fuel
 
         private void Update() => RefreshVisuals();
 
-        /// <summary>Read the current tank on every refresh, including after fixture reparenting.</summary>
+        /// <summary>Reads the ship's tank (looked up again once it is gone, so a receiver parented late finds it).</summary>
         public void RefreshVisuals()
         {
             if (_properties == null) CacheVisuals();
-            var tank = GetComponentInParent<IFuelTank>(true);
+            if (!FuelTankLocator.IsAlive(_tank)) _tank = FuelTankLocator.FindFor(this);
+            var tank = _tank;
             if (tank == null) return;
 
             bool powered = tank.Level > 0f && tank.Capacity > 0f;

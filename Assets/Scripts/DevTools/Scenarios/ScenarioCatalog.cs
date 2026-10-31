@@ -759,7 +759,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        // The galleon has 14 parts; one of them (the helm) is spawned rather than built. Its starboard flight rises aft from the
+        // The galleon has 15 parts; one of them (the helm) is spawned rather than built. Its starboard flight rises aft from the
         // main deck at (3, 3.5) m to the quarterdeck's front at z -1.5 m, whose walking surface is 2.5 m in ship space.
         public static readonly ScenarioEntry ShipStairs = new(
             new Scenario.Builder("ShipStairs")
@@ -818,7 +818,7 @@ namespace TinCan.DevTools.Scenarios
 
         // The galleon (Settings/ShipDesigns/Galleon.ship.json, .docs/plans/frame-only-ships.md): a hold (floor -3.5 m) under the
         // main deck (-0.5 m), leaning planked walls between them, a flight of frame stairs from the hatch's aft edge (z 0.5 m)
-        // down to the hold floor (z 5.5 m). 14 parts, one (the helm) spawned rather than built. The subject starts in the hold
+        // down to the hold floor (z 5.5 m). 15 parts, one (the helm) spawned rather than built. The subject starts in the hold
         // forward of the stairs (z 7 m), facing aft, and walks up through the hatch.
         public static readonly ScenarioEntry FrameStories = new(
             new Scenario.Builder("FrameStories")
@@ -1448,7 +1448,108 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<NavigationScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent };
+        /// <summary>
+        /// The Galleon's fuel loop (plan: main-game-state.md, M2): its loadout mounts the receiver (port) and the crystal
+        /// rack (starboard) in the aft hold and the net rack on the quarterdeck. The tank, now ship state, is drained a
+        /// little; the subject pours a crystal into the receiver and the level rises; then, with the net, catches a can,
+        /// which lands in the crystal rack. The receiver stands at ship (-2.5, -3.5, -5) facing inboard.
+        /// </summary>
+        public static readonly ScenarioEntry GalleonFuelLoop = new(
+            new Scenario.Builder("GalleonFuelLoop")
+                .InScene("Assets/Scenes/cheesed_scene.unity")
+                .Describe("On the Galleon: fuel fittings mounted -> pour a crystal into the receiver, the tank rises -> catch a can with the net, the crystal rack grows.")
+                .Timeout(150f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn; the design builds")
+                    .WaitUntil("SocketFitted", 15f, "fuel.receiver")
+                    .WaitUntil("SocketFitted", 5f, "fuel.crystal_rack")
+                    .WaitUntil("SocketFitted", 5f, "fuel.net_rack")
+                    .Do("DrainTank", "30")
+                    .Do("RecordTankLevel")
+                    .Do("RecordJerryCanSupply")
+                    .Do("EquipSubject", "ITEM_JerryCan")
+                    .Do("PlaceSubjectAtShipLocal", "-0.9,-2.45,-5.5"))
+                .Act(s => s
+                    .WaitUntil("SubjectHolds", 10f, "ITEM_JerryCan")
+                    .WaitUntil("SubjectNearShipLocal", 30f, "-0.9,-2.45,-5.5,0.8")
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceObject", "MotorFillPort")
+                    .WaitUntil("InteractTargetIs", 5f, "MotorFillPort")
+                    .Checkpoint("at-the-receiver")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    // The server hands over the net only once the tank has risen, so holding it proves the pour (an
+                    // empty-handed check in between can miss: the net may arrive on the same tick).
+                    .WaitUntil("SubjectHolds", 20f, "ITEM_CatchingNet")
+                    .Checkpoint("poured-holding-net")
+                    .WaitUntil("CanInNetReach", 10f)
+                    .Checkpoint("can-in-reach")
+                    .Hold(0.3f, ScriptedAction.Primary)
+                    .WaitUntil("NoCanInNetReach", 5f)
+                    .Checkpoint("caught"))
+                .Assert(s => s
+                    .WaitUntil("TankLevelRose", 40f)
+                    .Do("GiveSubjectNet")
+                    .Wait(0.5f, "the net replicates")
+                    .Do("SpawnCanAtSubjectNet")
+                    .WaitUntil("JerryCanSupplyIncreased", 20f))
+                .Build(),
+            builder =>
+            {
+                builder.Register<FuelScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<NetCatchScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>
+        /// The Galleon's aft cannons (the starboard one at ship (3, 2.5, -4.5), its seat 1.8 m behind at z -6.3, 2.2 m inside
+        /// the stern rail): manning one puts the subject on its seat on the quarterdeck, not overboard. Before the plates
+        /// moved forward the seat hung past the stern rail; the seat check now also refuses such a seat.
+        /// </summary>
+        public static readonly ScenarioEntry GalleonSternCannon = new(
+            new Scenario.Builder("GalleonSternCannon")
+                .InScene("Assets/Scenes/cheesed_scene.unity")
+                .Describe("On the Galleon: stand behind the aft starboard cannon -> man it -> seated on the quarterdeck, still aboard -> leave.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn; the design builds")
+                    .WaitUntil("SocketFitted", 15f, "weapon.cannon")
+                    .Do("HazardField", "off")
+                    .Do("PlaceSubjectAtCannon", "aft"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtCannon", 45f, "aft")
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceCannon", "aft")
+                    .WaitUntil("InteractTargetIs", 5f, "CannonStation")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Cannon")
+                    .WaitUntil("CannonManned", 5f, "aft")
+                    .Wait(1f, "the seated body settles")
+                    .Expect("SubjectNearShipLocal", "3,3.55,-6.3,0.6")
+                    .Expect("SubjectOnShip")
+                    .Checkpoint("seated-aft")
+                    .Hold(0.3f, ScriptedAction.GunnerLeave)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Cannon"))
+                .Assert(s => s
+                    .WaitUntil("CannonManned", 60f, "aft")
+                    .Wait(0.5f, "the seat teleport lands")
+                    .Expect("SubjectNearShipLocal", "3,3.55,-6.3,0.6")
+                    .WaitUntil("CannonFree", 30f, "aft")
+                    .Expect("SubjectOnShip"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<CannonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

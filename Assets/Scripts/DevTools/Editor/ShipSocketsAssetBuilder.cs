@@ -38,6 +38,9 @@ namespace TinCan.DevTools.Editor
         public const string ToolRackFittingId = "storage.tool_rack";
         public const string LeashWinchFittingId = "rescue.leash_winch";
         public const string ChartTableFittingId = "navigation.chart_table";
+        public const string FuelReceiverFittingId = "fuel.receiver";
+        public const string CrystalRackFittingId = "fuel.crystal_rack";
+        public const string NetRackFittingId = "fuel.net_rack";
 
         public const string GalleonDesignKey = "Galleon";
         public const string GalleonLoadoutPath = "Assets/Settings/ShipSockets/Galleon.fittings.json";
@@ -89,7 +92,7 @@ namespace TinCan.DevTools.Editor
         }
 
         /// <summary>
-        /// TinCan > Dev > Ship Sockets > Build Galleon Airship: the Galleon's built-in loadout (four cannons, the tool rack),
+        /// TinCan > Dev > Ship Sockets > Build Galleon Airship: the Galleon's built-in loadout (four cannons, the fuel fittings and more),
         /// Galleon_Prefab (the modular ship with a preset: it flies the Galleon, and the fixed-pose fixtures made for the
         /// old hull stay off it), Profile_Galleon (the sandbox's features plus ship designs and sockets), and both wired into
         /// cheesed_scene's scope. Airship_Prefab is untouched. Run Build Assets first. Plan:
@@ -122,14 +125,18 @@ namespace TinCan.DevTools.Editor
         /// <summary>
         /// The Galleon's mount plates (Galleon.ship.json, <see cref="ShipFrameDesigns.GalleonMounts"/>): cannons at the bow and
         /// the stern, the tool rack in the port forward hold, the leash winch (Respawn) on the starboard balcony, the chart
-        /// table (Navigation) in the starboard forward hold. The other plates stay free for players. The socket ids are
-        /// part instance ids in the committed design.
+        /// table (Navigation) in the starboard forward hold; the fuel receiver and the crystal rack (Fuel) in the aft hold,
+        /// port and starboard, and the net rack (the flying-can minigame) on the quarterdeck's port stern corner. The cabin
+        /// floor's plate stays free for players. The socket ids are part instance ids in the committed design.
         /// </summary>
         public static ShipFittingLoadout GalleonLoadout()
         {
             var mounts = ShipFrameDesigns.GalleonMounts();
             return new ShipFittingLoadout(new[]
             {
+                new ShipFittingPlacement(new ShipSocketId(mounts.HoldPortAft, 0), FuelReceiverFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.HoldStarboardAft, 0), CrystalRackFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.QuarterdeckPortAft, 0), NetRackFittingId),
                 new ShipFittingPlacement(new ShipSocketId(mounts.HoldPortFore, 0), ToolRackFittingId),
                 new ShipFittingPlacement(new ShipSocketId(mounts.BowPort, 0), CannonFittingId),
                 new ShipFittingPlacement(new ShipSocketId(mounts.BowStarboard, 0), CannonFittingId),

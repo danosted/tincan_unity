@@ -7,8 +7,8 @@ namespace TinCan.Features.Airship.Fuel
 {
     /// <summary>
     /// Presentation/Infrastructure Layer: the motor's filler cap. Interacting with it routes to
-    /// PourFuelInteractionHandler via its InteractionDefinition (IA_PourFuel). Sits under the FuelSystem
-    /// fixture so it can find the tank on a parent.
+    /// PourFuelInteractionHandler via its InteractionDefinition (IA_PourFuel). Sits under the FuelSystem fixture or the
+    /// fuel.receiver fitting, and finds the tank on the ship it is parented to.
     /// </summary>
     public class MotorFillPortNetworkMediator : NetworkBehaviour, IInteractionTarget, IFuelFillPort
     {
@@ -22,7 +22,7 @@ namespace TinCan.Features.Airship.Fuel
         {
             get
             {
-                if (!FuelTankLocator.IsAlive(_tank)) _tank = GetComponentInParent<IFuelTank>();
+                if (!FuelTankLocator.IsAlive(_tank)) _tank = FuelTankLocator.FindFor(this);
                 return _tank;
             }
         }

@@ -84,8 +84,7 @@ namespace TinCan.Features.Airship.Fuel
         {
             if (FuelTankLocator.IsAlive(_tank)) return _tank;
 
-            var airship = GetComponentInParent<IAirshipView>();
-            _tank = airship != null ? FuelTankLocator.Find(airship) : GetComponentInParent<IFuelTank>();
+            _tank = FuelTankLocator.FindFor(this);
             return _tank;
         }
     }

@@ -5,11 +5,19 @@ using TinCan.Core.Ship;
 namespace TinCan.Features.Airship.Fuel
 {
     /// <summary>
-    /// Finds the fuel tank fixture under an airship (the tank is a child NetworkBehaviour of the ship prefab).
+    /// Finds the fuel tank under an airship: the tank is ship state (the pose-less FuelTankState fixture), and the
+    /// receiver, the crystal rack and the gauge are separate fixtures or socket fittings parented to the same ship.
     /// </summary>
     public static class FuelTankLocator
     {
         public static IFuelTank? Find(IAirshipView airship) => FindFixture<IFuelTank>(airship);
+
+        /// <summary>The tank of the ship <paramref name="part"/> is on; off a ship, a tank above it (tests, loose prefabs).</summary>
+        public static IFuelTank? FindFor(Component part)
+        {
+            var airship = part.GetComponentInParent<IAirshipView>(true);
+            return airship != null ? Find(airship) : part.GetComponentInParent<IFuelTank>(true);
+        }
 
         /// <summary>Finds any fixture interface under the airship (fuel tank, jerry-can supply, gauge...).</summary>
         public static T? FindFixture<T>(IAirshipView airship) where T : class

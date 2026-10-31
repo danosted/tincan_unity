@@ -50,11 +50,18 @@ namespace TinCan.Tests.EditMode
             }
         }
 
+        private sealed class FakeSeatCheck : IStationSeatCheck
+        {
+            public bool Safe { get; set; } = true;
+            public bool CanSeat(IHumanoidCharacterView player, IStation station, Transform seat) => Safe;
+        }
+
         private readonly List<Object> _assets = new();
         private readonly List<FakeHumanoidMovementView> _bodies = new();
         private FakeActorRegistry _actors = null!;
         private AbilitySystemUseCase _abilities = null!;
         private FakeRespawn _respawn = null!;
+        private FakeSeatCheck _seats = null!;
         private StationOccupancyUseCase _occupancy = null!;
         private FakeStation _station = null!;
         private AbilityDefinition _occupy = null!;
@@ -66,7 +73,8 @@ namespace TinCan.Tests.EditMode
             _actors = new FakeActorRegistry();
             _abilities = new AbilitySystemUseCase(new FakeAbilityRegistry(), _actors, new FakeTimeService(), new FakeEventPublisher());
             _respawn = new FakeRespawn();
-            _occupancy = new StationOccupancyUseCase(new FakeNetworkService(), _actors, _abilities, _respawn, new FakeEventPublisher());
+            _seats = new FakeSeatCheck();
+            _occupancy = new StationOccupancyUseCase(new FakeNetworkService(), _actors, _abilities, _respawn, _seats, new FakeEventPublisher());
             _occupy = Ability("GA_OccupyCannon");
             _fire = Ability("GA_FireCannon");
             _station = new FakeStation { OccupyAbility = _occupy };
@@ -98,6 +106,21 @@ namespace TinCan.Tests.EditMode
             Assert.That(_station.Occupant, Is.SameAs(player));
             Assert.That(_occupancy.StationOf(player.Id), Is.SameAs(_station));
             Assert.That(_occupancy.OccupantOf(_station), Is.SameAs(player));
+        }
+
+        [Test]
+        public void Occupy_WithAnUnsafeSeat_OccupiesWhereThePlayerStands()
+        {
+            var player = Player();
+            var standing = new Vector3(-2f, 1f, 0f);
+            player.Movement.SetPose(standing, Quaternion.identity);
+            _seats.Safe = false;
+
+            Assert.That(_occupancy.TryOccupy(player, _station), Is.True);
+
+            Assert.That(_respawn.Resets, Is.Empty, "a seat past the rail must not teleport the player overboard");
+            Assert.That(Vector3.Distance(player.Movement.Transform.position, standing), Is.LessThan(1e-4f));
+            Assert.That(_station.Occupant, Is.SameAs(player));
         }
 
         [Test]

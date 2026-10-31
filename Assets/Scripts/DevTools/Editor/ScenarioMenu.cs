@@ -202,6 +202,18 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "GasSquallEvent (Host + Client, Lag100)")]
         public static void GasSquallEventDuo() => RunDuo("GasSquallEvent", "Lag100");
 
+        [MenuItem(Root + "GalleonFuelLoop (Host)")]
+        public static void GalleonFuelLoopSolo() => RunSolo("GalleonFuelLoop");
+
+        [MenuItem(Root + "GalleonFuelLoop (Host + Client, Lag100)")]
+        public static void GalleonFuelLoopDuo() => RunDuo("GalleonFuelLoop", "Lag100");
+
+        [MenuItem(Root + "GalleonSternCannon (Host)")]
+        public static void GalleonSternCannonSolo() => RunSolo("GalleonSternCannon");
+
+        [MenuItem(Root + "GalleonSternCannon (Host + Client, Lag100)")]
+        public static void GalleonSternCannonDuo() => RunDuo("GalleonSternCannon", "Lag100");
+
         [MenuItem(Root + "IslandsPerVoyage (Host)")]
         public static void IslandsPerVoyageSolo() => RunSolo("IslandsPerVoyage");
 

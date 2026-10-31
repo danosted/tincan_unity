@@ -59,6 +59,7 @@ namespace TinCan.Features.Navigation
         public Material? PoiMaterial;
         public Material? RockMaterial;
         public Material? HazardMaterial;
+        public Material? GasMaterial;
         public Material? CursorMaterial;
     }
 }

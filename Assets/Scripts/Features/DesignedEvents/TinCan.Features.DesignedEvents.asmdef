@@ -4,6 +4,8 @@
     "references": [
         "TinCan.Core.Domain",
         "TinCan.Gas",
+        "Unity.Collections",
+        "Unity.Netcode.Runtime",
         "VContainer"
     ],
     "includePlatforms": [],

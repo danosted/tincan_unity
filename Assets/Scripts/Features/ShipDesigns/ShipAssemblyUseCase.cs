@@ -19,7 +19,7 @@ namespace TinCan.Features.ShipDesigns
     /// those the new design no longer has, or has moved, turned or swapped, are despawned and the new ones spawned.
     /// Unknown parts are skipped.
     /// </summary>
-    public sealed class ShipAssemblyUseCase : ITickable, IDisposable, IShipAssembly, IShipSockets
+    public sealed class ShipAssemblyUseCase : ITickable, IDisposable, IShipAssembly, IShipSockets, IShipHullSurfaces
     {
         private const string LogSource = "ShipAssembly";
 
@@ -49,7 +49,9 @@ namespace TinCan.Features.ShipDesigns
         private readonly Dictionary<Guid, BuiltShip> _built = new();
         private readonly List<IShipDesignState> _states = new();
         private readonly Dictionary<Guid, List<ShipSocketInfo>> _sockets = new();
+        private readonly Dictionary<Guid, IReadOnlyList<ShipHullSurface>> _surfaces = new();
         private static readonly IReadOnlyList<ShipSocketInfo> NoSockets = Array.Empty<ShipSocketInfo>();
+        private static readonly IReadOnlyList<ShipHullSurface> NoSurfaces = Array.Empty<ShipHullSurface>();
 
         public ShipAssemblyUseCase(IActorRegistry actors, INetworkService network, IShipPartCatalog catalog, ShipDesignsConfig config,
             IShipHullBuilder builder, IModuleSpawningService spawning, IEventPublisher events)
@@ -66,6 +68,8 @@ namespace TinCan.Features.ShipDesigns
         public int Version { get; private set; }
 
         public IReadOnlyList<ShipSocketInfo> SocketsOf(Guid shipId) => _sockets.TryGetValue(shipId, out var sockets) ? sockets : NoSockets;
+
+        public IReadOnlyList<ShipHullSurface> SurfacesOf(Guid shipId) => _surfaces.TryGetValue(shipId, out var surfaces) ? surfaces : NoSurfaces;
 
         public bool TryGetBuilt(Guid shipId, out ulong hash, out int builtParts)
         {
@@ -124,6 +128,7 @@ namespace TinCan.Features.ShipDesigns
             built.Hull.Apply(design, shipTransform);
             if (_network.IsServer) SpawnFunctionalParts(built, design);
 
+            _surfaces[built.Ship.Id] = ShipHullSurfaceProcessor.Surfaces(ShipFrameShape.From(design.Frame));
             CollectSockets(built);
 
             int unknown = built.Hull.UnknownCount;
@@ -192,7 +197,7 @@ namespace TinCan.Features.ShipDesigns
 
                 _built[id].Hull.Clear();
                 _built.Remove(id);
-                if (_sockets.Remove(id)) Version++;
+                if (_sockets.Remove(id) | _surfaces.Remove(id)) Version++;
             }
         }
     }

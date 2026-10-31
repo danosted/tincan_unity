@@ -1,12 +1,18 @@
 #nullable enable
+using System;
 using TinCan.Core.Gas;
 using UnityEngine;
 
 namespace TinCan.Features.GasChallenge
 {
+    /// <summary>
+    /// A gas pocket: a sphere that detonates the first time a ship touches it (<see cref="GasChallengeUseCase"/>). Placed by
+    /// hand in a scene (server-local), or spawned networked by a gas field, where <see cref="GasPocketNetworkMediator"/>
+    /// carries the detonation to every peer.
+    /// </summary>
     public class GasPocketVolume : MonoBehaviour
     {
-        private const string VisualChildName = "GasPocketVisuals";
+        public const string VisualChildName = "GasPocketVisuals";
 
         [SerializeField] private float _radius = 3f;
         [SerializeField] private GameplayEffectDefinition? _explosionEffect;
@@ -19,7 +25,15 @@ namespace TinCan.Features.GasChallenge
         public bool HasDetonated { get; private set; }
         public SphereCollider TriggerCollider => _triggerCollider;
 
-        public void MarkDetonated() => HasDetonated = true;
+        /// <summary>Raised once, when the pocket detonates (the networked pocket replicates it).</summary>
+        public event Action<GasPocketVolume>? Detonated;
+
+        public void MarkDetonated()
+        {
+            if (HasDetonated) return;
+            HasDetonated = true;
+            Detonated?.Invoke(this);
+        }
 
         private void Reset()
         {

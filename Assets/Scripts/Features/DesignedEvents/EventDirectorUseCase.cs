@@ -13,8 +13,9 @@ namespace TinCan.Features.DesignedEvents
     /// its actions), asks <see cref="EventRunProcessor"/> each tick whether to stay, move on or finish, then runs the
     /// success or failure actions. With <see cref="AutoStart"/> it starts the catalog's events in rotation, with a
     /// quiet gap between them. Time is in simulation ticks, converted from the authored seconds when a phase starts.
-    /// In a play session (a voyage) the rotation runs only while the session is underway. POC: state is server-local
-    /// (no replication yet).
+    /// In a play session (a voyage) the rotation runs only while the session is underway, and it skips an event another
+    /// loaded event <see cref="EventDefinition.Supersedes"/>. The running event, its phase and its outcome go into the
+    /// replicated state through <see cref="EventStateWriter"/>.
     /// </summary>
     public sealed class EventDirectorUseCase : ISimulationTickable, IEventDirector, ISessionParticipant
     {
@@ -29,6 +30,8 @@ namespace TinCan.Features.DesignedEvents
         private readonly EventRunProcessor _processor;
         private readonly EventDirectorSettings _settings;
         private readonly IReadOnlyList<EventDefinition> _catalog;
+        private readonly EventStateWriter _state;
+        private readonly HashSet<int> _superseded;
 
         private int _phaseIndex;
         private int _phaseStartTick;
@@ -38,7 +41,7 @@ namespace TinCan.Features.DesignedEvents
 
         public EventDirectorUseCase(INetworkService network, ITimeService time, IEventPublisher events,
             EventHandlerRegistry handlers, EventRunProcessor processor, EventDirectorSettings settings,
-            IReadOnlyList<EventDefinition> catalog)
+            IReadOnlyList<EventDefinition> catalog, EventStateWriter state)
         {
             _network = network;
             _time = time;
@@ -47,6 +50,8 @@ namespace TinCan.Features.DesignedEvents
             _processor = processor;
             _settings = settings;
             _catalog = catalog;
+            _state = state;
+            _superseded = new HashSet<int>(catalog.SelectMany(definition => definition.Supersedes));
             AutoStart = settings.AutoStart;
         }
 
@@ -128,11 +133,12 @@ namespace TinCan.Features.DesignedEvents
             if (_nextAutoStartTick < 0) _nextAutoStartTick = now + GameplayTicks.FromSeconds(_settings.FirstEventDelay, _time.TickRate);
             if (now < _nextAutoStartTick) return;
 
-            // One attempt per catalog entry; skip events this profile cannot run.
+            // One attempt per catalog entry; skip events this profile cannot run, and events another loaded one replaces.
             string reason = string.Empty;
             for (int i = 0; i < _catalog.Count; i++)
             {
                 var candidate = _catalog[_rotation++ % _catalog.Count];
+                if (_superseded.Contains(candidate.Id)) continue;
                 if (TryStart(candidate.Id, out reason)) return;
             }
 
@@ -147,6 +153,7 @@ namespace TinCan.Features.DesignedEvents
             var phase = Active!.Phases[index];
             _phaseTicks = GameplayTicks.FromSeconds(phase.Seconds, _time.TickRate);
             _events.LogInfo(LogSource, $"{Active} phase '{phase.Name}' ({phase.Seconds:0.#} s).");
+            _state.Running(Active.Id, index);
             Run(phase.EnterActions);
         }
 
@@ -157,6 +164,7 @@ namespace TinCan.Features.DesignedEvents
             _phaseIndex = 0;
             LastFinished = finished;
             LastOutcome = outcome;
+            _state.Finished(finished.Id, outcome);
             _events.LogInfo(LogSource, $"{finished} {outcome.ToString().ToLowerInvariant()}.");
             Run(outcome == EventOutcome.Succeeded ? finished.SuccessActions : finished.FailureActions);
             _nextAutoStartTick = now + GameplayTicks.FromSeconds(_settings.QuietGap, _time.TickRate);
@@ -168,6 +176,7 @@ namespace TinCan.Features.DesignedEvents
             _events.LogInfo(LogSource, $"{Active} dropped (the session changed).");
             Active = null;
             _phaseIndex = 0;
+            _state.Dropped();
         }
 
         private void Run(IEnumerable<IEventAction> actions)

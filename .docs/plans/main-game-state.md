@@ -101,6 +101,7 @@ Small and independent, so it goes first; its scenario lands with M1's scene.
   airship.
 
 ### M3. Damage points on designed ships (hull stress on the Galleon)
+**Built (2026-10-31) by `gas-squall-event.md` (G2),** with a point beside every mounted fitting as well.
 - **Where the points come from: the frame.** A built designed ship offers its hull surfaces through a core contract
   `Core/Ship/IShipHullSurfaces` (ship-local plank floors and hull walls, with normal and story), implemented by
   `ShipAssemblyUseCase` next to `IShipSockets`. Ship damage doesn't reference ShipDesigns, so `Profile_Test_ShipDamage`
@@ -121,6 +122,7 @@ Small and independent, so it goes first; its scenario lands with M1's scene.
   `ShipDamageLateJoin` stay green.
 
 ### M4. Event state every peer sees (minimal E1b)
+**Built (2026-10-31) by `gas-squall-event.md` (G1).**
 - `EventStateNetworkMediator` on a pose-less `EventState` ship fixture (listed by `EventsFeatureInstaller`, the same
   pattern as `VoyageState`): it replicates the event id, the phase index, the current announcement and the last outcome.
   The director writes it on the server.
@@ -132,6 +134,8 @@ Small and independent, so it goes first; its scenario lands with M1's scene.
   probe for the announcement.
 
 ### M5. Gas pockets as a designed event
+**Superseded (2026-10-31) by `gas-squall-event.md`,** which also takes over M3 and M4: gas becomes a phase of one
+combined event, the blast breaks fittings, and pockets go on the chart. The text below is the original sketch.
 - **Networked pockets.** `Prefabs/Hazards/GasPocket` becomes networked: NetworkObject, `EntityNetworkMediator`, and a new
   `GasPocketNetworkMediator` that replicates `Detonated`, plays the burst cue `Cue.Gas.Detonate` (a `GCN_Gas_Detonate`
   notify listed on the installer) and hides the visual. `GasPocketVolume` and `GasChallengeUseCase` stay as they are,

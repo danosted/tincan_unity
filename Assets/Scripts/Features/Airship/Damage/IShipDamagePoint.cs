@@ -4,6 +4,7 @@ using System.Linq;
 using TinCan.Core.Domain.Abilities;
 using UnityEngine;
 using TinCan.Core.Ship;
+using TinCan.Core.Ship.Sockets;
 
 namespace TinCan.Features.Airship.Damage
 {
@@ -16,16 +17,22 @@ namespace TinCan.Features.Airship.Damage
     /// </summary>
     public interface IShipDamagePoint
     {
-        /// <summary>Stable within the fixture (sibling order), so scenarios and logs can name a point.</summary>
+        /// <summary>
+        /// Stable on the ship, so scenarios and logs can name a point: sibling order in a damage-sockets fixture, or the index
+        /// <see cref="ShipDamagePointSpawnUseCase"/> assigns on a designed ship (hull spots first, then fittings).
+        /// </summary>
         int Index { get; }
 
         Transform? Transform { get; }
 
         /// <summary>The point's ability controller: the target for break, restore and repair effects.</summary>
         IAbilityControllerBase? Controller { get; }
+
+        /// <summary>The socket of the fitting this point sits beside; null for a spot on the hull.</summary>
+        ShipSocketId? Socket { get; }
     }
 
-    /// <summary>Finds the damage points under an airship (the damage-sockets fixture), in index order.</summary>
+    /// <summary>Finds the damage points under an airship (the damage-sockets fixture or the spawned points), in index order.</summary>
     public static class ShipDamageLocator
     {
         public static IReadOnlyList<IShipDamagePoint> FindPoints(IAirshipView airship)

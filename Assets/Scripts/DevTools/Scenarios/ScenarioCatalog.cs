@@ -1404,7 +1404,51 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<NavigationScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable };
+        /// <summary>
+        /// The gas squall on the Galleon (plan: gas-squall-event.md): the server starts the event; its field of networked
+        /// pockets shows on both peers and on the chart table; one pocket is put on the ship, the real touch rule sets it
+        /// off, and the blast breaks points beside the fittings, which the subject sees. The rest of the field is dispersed,
+        /// the breaks are repaired, and the event succeeds.
+        /// </summary>
+        public static readonly ScenarioEntry GasSquallEvent = new(
+            new Scenario.Builder("GasSquallEvent")
+                .InScene("Assets/Scenes/cheesed_scene.unity")
+                .Describe("On the Galleon: GasSquall -> pockets on both peers and the chart -> one goes off on the ship -> fittings break -> repaired -> succeeds.")
+                .Timeout(150f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(3f, "settle after spawn; the design builds, its damage points spawn")
+                    .Do("StartEvent", "2")
+                    .Expect("EventPhase", "Warn")
+                    .WaitUntil("GasPocketsLive", 5f, "3")
+                    .WaitUntil("EventPhase", 8f, "Field")
+                    .Do("MoveGasPocketOntoShip")
+                    .WaitUntil("GasPocketsDetonated", 5f, "1")
+                    .WaitUntil("BrokenFittingPoints", 3f, "1"))
+                .Act(s => s
+                    .WaitUntil("EventAnnounced", 10f, "Gas ahead")
+                    .WaitUntil("GasPocketsLive", 10f, "2")
+                    .WaitUntil("ChartShowsGas", 10f, "1")
+                    .WaitUntil("GasPocketsDetonated", 10f, "1")
+                    .WaitUntil("BrokenFittingPoints", 10f, "1")
+                    .Checkpoint("gas-broke-fittings"))
+                .Assert(s => s
+                    .Wait(1f, "subject saw the breaks")
+                    .Do("DisperseGasField")
+                    .WaitUntil("EventPhase", 5f, "Repair")
+                    .Do("RestoreAllPoints")
+                    .WaitUntil("EventOutcome", 5f, "Succeeded")
+                    .WaitUntil("GasPocketsLive", 5f, "0")
+                    .Expect("EventAnnounced", "the ship holds"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<DesignedEventsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<GasChallengeScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<NavigationScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

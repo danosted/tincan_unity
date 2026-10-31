@@ -16,3 +16,4 @@ MonoBehaviour:
     AutoStart: 1
     FirstEventDelay: 30
     QuietGap: 60
+  _stateFixture: {fileID: 11400000, guid: b646ca6921efe8740a8651cd2d44d2b4, type: 2}

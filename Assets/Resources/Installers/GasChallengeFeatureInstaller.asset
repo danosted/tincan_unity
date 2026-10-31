@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c39eb82be640d4e49b72a0077b791ab7, type: 3}
   m_Name: GasChallengeFeatureInstaller
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.GasChallenge.GasChallengeFeatureInstaller
+  _config: {fileID: 11400000, guid: 0fee26939748e9a459b269ea1686bf9e, type: 2}

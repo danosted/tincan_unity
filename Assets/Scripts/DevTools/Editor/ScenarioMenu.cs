@@ -196,6 +196,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "GalleonChartTable (Host + Client, Lag100)")]
         public static void GalleonChartTableDuo() => RunDuo("GalleonChartTable", "Lag100");
 
+        [MenuItem(Root + "GasSquallEvent (Host)")]
+        public static void GasSquallEventSolo() => RunSolo("GasSquallEvent");
+
+        [MenuItem(Root + "GasSquallEvent (Host + Client, Lag100)")]
+        public static void GasSquallEventDuo() => RunDuo("GasSquallEvent", "Lag100");
+
         [MenuItem(Root + "IslandsPerVoyage (Host)")]
         public static void IslandsPerVoyageSolo() => RunSolo("IslandsPerVoyage");
 

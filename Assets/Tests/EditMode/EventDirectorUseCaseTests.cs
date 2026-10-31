@@ -28,6 +28,7 @@ namespace TinCan.Tests.EditMode
         private FakeSessionNetworkService _network = null!;
         private FakeTimeService _time = null!;
         private FakeHudValues _hud = null!;
+        private FakeActorRegistry _actors = null!;
         private FakeShipBreakage _breakage = null!;
         private EventDirectorSettings _settings = null!;
 
@@ -37,15 +38,16 @@ namespace TinCan.Tests.EditMode
             _network = new FakeSessionNetworkService { IsServer = true, IsClient = true };
             _time = new FakeTimeService { TickRate = TickRate, Tick = 0 };
             _hud = new FakeHudValues();
+            _actors = new FakeActorRegistry();
             _breakage = new FakeShipBreakage();
             _settings = new EventDirectorSettings { AutoStart = false, FirstEventDelay = 2f, QuietGap = 3f };
         }
 
         private EventDirectorUseCase Director(params EventDefinition[] catalog) => new(_network, _time, new RecordingPublisher(),
             new EventHandlerRegistry(
-                new IEventActionHandler[] { new AnnounceActionHandler(_hud), new BreakShipPartActionHandler(_breakage) },
+                new IEventActionHandler[] { new AnnounceActionHandler(new EventStateWriter(_actors, _hud)), new BreakShipPartActionHandler(_breakage) },
                 new IEventConditionHandler[] { new BrokenPartsAtMostConditionHandler(_breakage) }),
-            new EventRunProcessor(), _settings, catalog);
+            new EventRunProcessor(), _settings, catalog, new EventStateWriter(_actors, _hud));
 
         private void RunTicks(EventDirectorUseCase director, int ticks)
         {
@@ -129,7 +131,7 @@ namespace TinCan.Tests.EditMode
 
             var bare = new EventDirectorUseCase(_network, _time, new RecordingPublisher(),
                 new EventHandlerRegistry(new IEventActionHandler[0], new IEventConditionHandler[0]),
-                new EventRunProcessor(), _settings, new[] { Stress });
+                new EventRunProcessor(), _settings, new[] { Stress }, new EventStateWriter(_actors, _hud));
             Assert.That(bare.TryStart(1, out reason), Is.False);
             Assert.That(reason, Does.Contain("Announce").And.Contain("BrokenPartsAtMost"));
         }
@@ -195,6 +197,68 @@ namespace TinCan.Tests.EditMode
             Assert.That(director.Active, Is.Null, "the first event waits its delay again");
             RunTicks(director, 1);
             Assert.That(director.Active, Is.SameAs(Stress));
+        }
+
+        [Test]
+        public void WithEventState_TheDirectorWritesEventPhaseAnnouncementAndOutcome_NotTheLocalHud()
+        {
+            var state = new FakeEventState();
+            _actors.Register(state);
+            var director = Director(Stress);
+
+            director.TryStart(1, out _);
+            Assert.That((state.EventId, state.PhaseIndex, state.Announcement), Is.EqualTo((1, 0, "warn")));
+            Assert.That(_hud.All.ContainsKey(AnnounceActionHandler.HudKey), Is.False, "every peer's presenter shows it");
+
+            RunTicks(director, TickRate);
+            Assert.That(state.PhaseIndex, Is.EqualTo(1));
+
+            _breakage.TryRestore(0);
+            _breakage.TryRestore(2);
+            RunTicks(director, 1);
+            Assert.That((state.EventId, state.LastEventId, state.LastOutcome, state.Announcement),
+                Is.EqualTo((0, 1, EventOutcome.Succeeded, "won")));
+        }
+
+        [Test]
+        public void DroppingAnEvent_ClearsTheStateAndTheAnnouncement()
+        {
+            var state = new FakeEventState();
+            _actors.Register(state);
+            var director = Director(Stress);
+            director.TryStart(1, out _);
+
+            director.SetSessionActive(false);
+            Assert.That((state.EventId, state.Announcement), Is.EqualTo((0, string.Empty)));
+        }
+
+        [Test]
+        public void AutoStart_SkipsAnEventAnotherLoadedEventSupersedes_ButItStillStartsById()
+        {
+            var richer = new EventDefinition.Builder(2, "Richer")
+                .Supersedes(1)
+                .Phase("Only", p => p.OnEnter(new Announce("richer")).Duration(1f))
+                .Build();
+            _settings.AutoStart = true;
+            var director = Director(Stress, richer);
+
+            RunTicks(director, 2 * TickRate + 1);
+            Assert.That(director.Active, Is.SameAs(richer));
+
+            RunTicks(director, TickRate + 3 * TickRate + 1);
+            Assert.That(director.Active, Is.SameAs(richer), "the rotation never picks the superseded event");
+
+            director.SetSessionActive(false);
+            Assert.That(director.TryStart(1, out _), Is.True);
+        }
+
+        [Test]
+        public void Supersedes_ItselfIsRejected()
+        {
+            var builder = new EventDefinition.Builder(3, "Loop")
+                .Supersedes(3)
+                .Phase("Only", p => p.Duration(1f));
+            Assert.That(() => builder.Build(), Throws.InvalidOperationException.With.Message.Contains("supersede itself"));
         }
     }
 }

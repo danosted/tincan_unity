@@ -3,6 +3,7 @@ using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Core.Domain.Targeting;
 using TinCan.Core.Gas;
+using TinCan.Core.Ship.Sockets;
 using TinCan.Features.Airship.Damage;
 using UnityEngine;
 
@@ -39,17 +40,21 @@ namespace TinCan.Tests.EditMode.Fakes
             point.Controller.TryGetHealth(out var health) ? health.HealthPercentage : -1f;
     }
 
-    public class FakeShipDamagePoint : MonoBehaviour, IShipDamagePoint, ITargetable
+    public class FakeShipDamagePoint : MonoBehaviour, IShipDamagePoint, IDesignedDamagePoint, ITargetable
     {
         private readonly FakeAbilityController _controller = new();
         private HealthAttributeSet _health = null!;
 
-        public int Index => transform.GetSiblingIndex();
+        public int? AssignedIndex { get; private set; }
+        public int Index => AssignedIndex ?? transform.GetSiblingIndex();
+        public ShipSocketId? Socket { get; private set; }
         public Transform? Transform => transform;
         public IAbilityControllerBase? Controller => _controller;
         public Vector3 AimPoint => transform.position;
         public bool IsTargetable => true;
         public FakeAbilityController FakeController => _controller;
+
+        public void ServerAssign(int index, ShipSocketId? socket) => (AssignedIndex, Socket) = (index, socket);
 
         public void Init(HealthAttribute health, MaxHealthAttribute maxHealth)
         {

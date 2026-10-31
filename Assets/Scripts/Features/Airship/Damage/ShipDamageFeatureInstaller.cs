@@ -13,8 +13,10 @@ using VContainer.Unity;
 namespace TinCan.Features.Airship.Damage
 {
     /// <summary>
-    /// Ship damage: breakable spots on the deck (the ShipDamageSockets fixture), random breakage, the hull-breach
-    /// effect on the ship (fuel leak), a HUD line, and the ship's health as a HUD meter. Switch it on or off by listing it in a scene's feature profile.
+    /// Ship damage: breakable spots on the deck (the ShipDamageSockets fixture on the old airship; on a ship built from a
+    /// design, points on its floors and beside every mounted fitting, <see cref="ShipDamagePointSpawnUseCase"/>), random
+    /// breakage, the hull-breach effect on the ship (fuel leak), a HUD line, and the ship's health as a HUD meter. Switch
+    /// it on or off by listing it in a scene's feature profile.
     /// Players repair with the repair tool from the tool rack fixture: holding it grants GA_RepairShip, and
     /// <see cref="ShipRepairUseCase"/> applies the repair effect to the broken part they face. Presentation comes as
     /// gameplay cues: the notifies listed here, and the marker's ToggleObjectCueHandler in the sockets prefab (both need
@@ -50,6 +52,8 @@ namespace TinCan.Features.Airship.Damage
             builder.Register<ShipBreakageProcessor>(Lifetime.Transient);
             builder.Register<ShipBreakageUseCase>(Lifetime.Singleton).AsSelf().As<IShipBreakage>().As<ISimulationTickable>().As<ISessionParticipant>();
             builder.Register<ShipRepairUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
+            builder.Register<ShipDamageSpotProcessor>(Lifetime.Transient);
+            builder.Register<ShipDamagePointSpawnUseCase>(Lifetime.Singleton).As<ITickable>();
             builder.Register<ShipDamageHudPresenter>(Lifetime.Singleton).As<ITickable>();
             builder.Register<RepairAimHighlightPresenter>(Lifetime.Singleton).As<ITickable>();
             builder.Register<ShipHealthHudPresenter>(Lifetime.Singleton).As<ITickable>();
@@ -65,6 +69,7 @@ namespace TinCan.Features.Airship.Damage
             {
                 if (_socketsFixture != null && _socketsFixture.Prefab != null) yield return _socketsFixture.Prefab;
                 if (_toolRackFixture != null && _toolRackFixture.Prefab != null) yield return _toolRackFixture.Prefab;
+                if (_config != null && _config.DesignedShipPointPrefab != null) yield return _config.DesignedShipPointPrefab;
             }
         }
 

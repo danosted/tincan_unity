@@ -8,8 +8,11 @@ section is built.
 - **What exists:** the POC (section "POC"): code-built `HullStress`, server-side director with auto-start, ship-damage
   handlers, scenario `HullStressEvent` green solo and host + client. Installer in `Profile_FuelSandbox` and
   `Profile_Test_ShipDamage`, so the sandbox auto-starts it 30 s after hosting.
-- **Known POC limits:** event state is not replicated (the HUD announcement is host-only; clients only see broken
-  parts); no schedule (the director rotates the whole catalog); linear phases only; static catalog.
+- **Known POC limits:** no schedule (the director rotates the whole catalog); linear phases only; static catalog.
+- **Since then (2026-10-31, `gas-squall-event.md`):** E1b in part. The EventState fixture replicates the running event,
+  its phase, the announcement and the last outcome (`IEventState`, `EventStateWriter`, `EventHudPresenter`), so clients
+  see announcements and the scenario probes answer on them. `EventDefinition.Supersedes` lets an event replace another in
+  the rotation (`GasSquall`, id 2 in GasChallenge, replaces `HullStress`), a stopgap before the E1d schedule.
 - **Open before more work:**
   1. **What is a session?** (a voyage from A to B, survive N minutes, deliveries, ...). It decides how events trigger:
      pacing after a quiet gap, place (regions on a route), voyage beats, or consequences of player state. Without a

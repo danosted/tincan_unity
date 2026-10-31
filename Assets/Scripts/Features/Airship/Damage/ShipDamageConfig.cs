@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace TinCan.Features.Airship.Damage
 {
-    /// <summary>Tunables for random breakage on the ship. Assigned on the ShipDamage installer and injected.</summary>
+    /// <summary>Tunables for breakage on the ship and its damage points. Assigned on the ShipDamage installer and injected.</summary>
     [CreateAssetMenu(fileName = "ShipDamageConfig", menuName = "TinCan/Airship/Ship Damage Config")]
     public class ShipDamageConfig : ScriptableObject
     {
@@ -35,6 +35,17 @@ namespace TinCan.Features.Airship.Damage
 
         [Tooltip("Instant effect that fully restores a part (health to max). Used by scenarios and debug tools; players repair with the tool.")]
         public GameplayEffectDefinition? RestoreEffect;
+
+        [Header("Designed ships (ShipDamagePointSpawnUseCase)")]
+        [Tooltip("Networked single-point prefab (NetworkObject, AbilityNetworkMediator, ShipDamagePointNetworkMediator, Marker) " +
+                 "spawned on ships built from a design, which have no fixed damage-sockets fixture.")]
+        public GameObject? DesignedShipPointPrefab;
+
+        [Tooltip("Breakable spots on the hull of a designed ship, spread over its plank floors and stories.")]
+        [Min(0)] public int DesignedShipPoints = 5;
+
+        [Tooltip("Height (metres) above a fitting's socket of the breakable point beside it; every mounted fitting gets one.")]
+        [Min(0f)] public float FittingPointHeight = 1f;
 
         [Header("Repairing (the repair tool)")]
         [Tooltip("Tag a player carries while the repair ability is active (granted by GA_RepairShip's active effect).")]

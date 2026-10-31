@@ -12,7 +12,7 @@ namespace TinCan.Features.DesignedEvents
     public sealed class EventDefinition
     {
         private EventDefinition(int id, string name, string description, IReadOnlyList<EventPhase> phases,
-            IReadOnlyList<IEventAction> successActions, IReadOnlyList<IEventAction> failureActions)
+            IReadOnlyList<IEventAction> successActions, IReadOnlyList<IEventAction> failureActions, IReadOnlyList<int> supersedes)
         {
             Id = id;
             Name = name;
@@ -20,6 +20,7 @@ namespace TinCan.Features.DesignedEvents
             Phases = phases;
             SuccessActions = successActions;
             FailureActions = failureActions;
+            Supersedes = supersedes;
         }
 
         public int Id { get; }
@@ -28,6 +29,9 @@ namespace TinCan.Features.DesignedEvents
         public IReadOnlyList<EventPhase> Phases { get; }
         public IReadOnlyList<IEventAction> SuccessActions { get; }
         public IReadOnlyList<IEventAction> FailureActions { get; }
+
+        /// <summary>Events this one replaces in the director's rotation when both are loaded (by id; they still start by id).</summary>
+        public IReadOnlyList<int> Supersedes { get; }
 
         /// <summary>Every action and condition in the event, for handler checks.</summary>
         public IEnumerable<object> Steps => Phases
@@ -46,6 +50,7 @@ namespace TinCan.Features.DesignedEvents
             private readonly List<EventPhase> _phases = new();
             private readonly List<IEventAction> _success = new();
             private readonly List<IEventAction> _failure = new();
+            private readonly List<int> _supersedes = new();
 
             public Builder(int id, string name)
             {
@@ -62,6 +67,13 @@ namespace TinCan.Features.DesignedEvents
             public Builder Phase(string name, Func<PhaseBuilder, PhaseBuilder> configure)
             {
                 _phases.Add(configure(new PhaseBuilder(name)).Build());
+                return this;
+            }
+
+            /// <summary>The director's rotation runs this event instead of these (for example a richer version of an event).</summary>
+            public Builder Supersedes(params int[] eventIds)
+            {
+                _supersedes.AddRange(eventIds);
                 return this;
             }
 
@@ -95,7 +107,9 @@ namespace TinCan.Features.DesignedEvents
                         : $"{label}: phase '{endless.Name}' has a condition but no Timeout.");
                 }
 
-                return new EventDefinition(_id, _name, _description, _phases.ToArray(), _success.ToArray(), _failure.ToArray());
+                if (_supersedes.Contains(_id)) throw new InvalidOperationException($"{label}: cannot supersede itself.");
+
+                return new EventDefinition(_id, _name, _description, _phases.ToArray(), _success.ToArray(), _failure.ToArray(), _supersedes.Distinct().ToArray());
             }
         }
 

@@ -78,6 +78,7 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("ChartShowsRocks", argument => CheckChartCount(argument, counts => counts.Rocks, "rocks")),
             new ScenarioProbe("ChartShowsPoints", argument => CheckChartCount(argument, counts => counts.Points, "points of interest")),
             new ScenarioProbe("ChartShowsHazards", argument => CheckChartCount(argument, counts => counts.Hazards, "hazard zones")),
+            new ScenarioProbe("ChartShowsGas", argument => CheckChartCount(argument, counts => counts.Gas, "gas pockets")),
             new ScenarioProbe("DiscoveredPoints", CheckDiscovered),
             new ScenarioProbe("HazardFieldScale", CheckFieldScale)
         };
@@ -221,7 +222,7 @@ namespace TinCan.DevTools.Scenarios
             if (table == null || presenter == null) return ScenarioCheck.Fail("no chart table, or no chart presenter");
 
             var counts = presenter.Counts(table);
-            string detail = $"{counts.Waypoints} waypoint pins, {counts.Points} points of interest, {counts.Rocks} rocks, {counts.Hazards} hazards";
+            string detail = $"{counts.Waypoints} waypoint pins, {counts.Points} points of interest, {counts.Rocks} rocks, {counts.Hazards} hazards, {counts.Gas} gas pockets";
             return counts.Waypoints >= int.Parse(atLeast, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
@@ -265,7 +266,7 @@ namespace TinCan.DevTools.Scenarios
             return ScenarioCheck.Pass($"discovered {nearest}, {Vector3.Distance(nearest.Position, at):0} m away");
         }
 
-        private ScenarioCheck CheckChartCount(string atLeast, System.Func<(int Waypoints, int Points, int Rocks, int Hazards), int> count, string what)
+        private ScenarioCheck CheckChartCount(string atLeast, System.Func<(int Waypoints, int Points, int Rocks, int Hazards, int Gas), int> count, string what)
         {
             var table = Table();
             var presenter = _resolver.ResolveOrDefault<ChartPresenter>();

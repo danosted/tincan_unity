@@ -18,8 +18,8 @@ namespace TinCan.DevTools.Editor
 {
     /// <summary>
     /// TinCan > Dev > Ship Designs > Build Assets: the ship parts that hang on a frame (the helm as the core part,
-    /// contributed by the Helm installer; the cairn, the engine, the propeller, the mast, the mount plate), their greybox
-    /// prefabs and materials, the ship designs config and installer, and the built-in designs (<see cref="ShipFrameDesigns"/>,
+    /// contributed by the Helm installer; the cairn, the engine, the propeller, the mast, the mount plate, the rotor mast
+    /// from its Blender model), their greybox prefabs and materials, the ship designs config and installer, and the built-in designs (<see cref="ShipFrameDesigns"/>,
     /// written through the codec, so the files are in canonical form). Materials are created only when missing, so their
     /// colours stay as tuned. Every prefab's pivot is its anchor point: on the floor for a face part, at the node for a
     /// node part. Plans: .docs/plans/modular-airship-builder.md, .docs/plans/frame-only-ships.md.
@@ -32,6 +32,8 @@ namespace TinCan.DevTools.Editor
         public const string StarterPath = DesignsFolder + "Starter.ship.json";
         public const string GalleonPath = DesignsFolder + "Galleon.ship.json";
         public const string RaftPath = DesignsFolder + "Raft.ship.json";
+        public const string CorsairPath = DesignsFolder + "Corsair.ship.json";
+        private const string RotorMastModelPath = "Assets/Models/ShipParts/RotorMast/rotor_mast.fbx";
         public const string InstallerPath = "Assets/Resources/Installers/ShipDesignsFeatureInstaller.asset";
         private const string PrefabsFolder = "Assets/Prefabs/ShipParts/";
         private const string MaterialsFolder = "Assets/Materials/ShipParts/";
@@ -51,6 +53,7 @@ namespace TinCan.DevTools.Editor
         public const string Propeller = "prop.propeller";
         public const string Mast = "hull.mast";
         public const string HullMount = "hull.mount";
+        public const string RotorMast = "hull.rotor_mast";
 
         /// <summary>A mount plate's thickness; it lies on the floor, its socket on top.</summary>
         private const float PlateThickness = 0.1f;
@@ -78,6 +81,10 @@ namespace TinCan.DevTools.Editor
             // A plate on the floor with a socket on top: where fittings (a cannon, a tool rack) are mounted.
             var mount = Part("PART_HullMount", HullMount, "Mount plate", "Hull", ShipPartAttach.Face, MountPrefab(brass), null, Vector3.zero,
                 new ShipPartStats(5f, hull: 10f));
+            // A mast 7.9 m tall on its node with two lift rotors on a vertical axis (3 m across at 3.6 m, 4.8 m across at
+            // 6.35 m) and two pennants streaming aft (-Z); the Blender model (.tools/blender/rotor_mast.py). Mostly flavour.
+            var rotorMast = Part("PART_RotorMast", RotorMast, "Rotor mast", "Hull", ShipPartAttach.Node, RotorMastPrefab(brass, wood), null,
+                Vector3.zero, new ShipPartStats(15f, lift: 150f, hull: 15f), RotorMastFootprint());
             // The cairn: a stone holding the ship's spirit, which lifts the ship (ShipStatsTuning.SpiritLift).
             var cairn = Part("PART_Cairn", Cairn, "Cairn", "Spirit", ShipPartAttach.Face, CairnPrefab(stone, spirit), null, Vector3.zero,
                 new ShipPartStats(40f, hull: 40f), new Vector3Int(0, 0, 0), new Vector3Int(0, 1, 0));
@@ -90,9 +97,10 @@ namespace TinCan.DevTools.Editor
             var starter = WriteDesign(StarterPath, ShipFrameDesigns.StarterDesign());
             var galleon = WriteDesign(GalleonPath, ShipFrameDesigns.GalleonDesign());
             var raft = WriteDesign(RaftPath, ShipFrameDesigns.RaftDesign());
+            var corsair = WriteDesign(CorsairPath, ShipFrameDesigns.CorsairDesign());
             var config = Asset<ShipDesignsConfig>(ConfigPath, designs =>
             {
-                designs.BuiltInDesigns = new List<TextAsset> { starter, galleon, raft };
+                designs.BuiltInDesigns = new List<TextAsset> { starter, galleon, raft, corsair };
                 designs.DefaultDesign = ShipFrameDesigns.StarterName;
                 Configure(designs);
             });
@@ -106,7 +114,7 @@ namespace TinCan.DevTools.Editor
             var installer = Asset<ShipDesignsFeatureInstaller>(InstallerPath, i =>
             {
                 SetField(i, "_config", config);
-                SetList(i, "_parts", new Object[] { cairn, engine, propeller, mast, mount });
+                SetList(i, "_parts", new Object[] { cairn, engine, propeller, mast, mount, rotorMast });
                 SetField(i, "_stateFixture", stateFixture);
             });
             var helmInstaller = Load<HelmFeatureInstaller>(HelmInstallerPath);
@@ -122,7 +130,7 @@ namespace TinCan.DevTools.Editor
 
             AssetDatabase.SaveAssets();
             Debug.Log($"[ShipDesignsAssetBuilder] Ship design assets built ({installer.name}; {ShipFrameDesigns.StarterDesign()}, "
-                      + $"{ShipFrameDesigns.GalleonDesign()}, {ShipFrameDesigns.RaftDesign()}).");
+                      + $"{ShipFrameDesigns.GalleonDesign()}, {ShipFrameDesigns.RaftDesign()}, {ShipFrameDesigns.CorsairDesign()}).");
         }
 
         /// <summary>The config's frame materials, and defaults for limits and tuning added after the asset was made.</summary>
@@ -253,6 +261,58 @@ namespace TinCan.DevTools.Editor
                     Quaternion.Euler(0f, 0f, angle));
             }
 
+            return Save(root);
+        }
+
+        /// <summary>
+        /// The rotor mast's blocks: the pole (eight up), the low rotor's 3 x 3 layer and the high rotor's 5 x 5, and the
+        /// two pennants' blocks behind the pole (-Z).
+        /// </summary>
+        private static Vector3Int[] RotorMastFootprint() =>
+            Enumerable.Range(0, 8).Select(y => new Vector3Int(0, y, 0))
+                .Concat(from x in Enumerable.Range(-1, 3) from z in Enumerable.Range(-1, 3) where x != 0 || z != 0 select new Vector3Int(x, 3, z))
+                .Concat(from x in Enumerable.Range(-2, 5) from z in Enumerable.Range(-2, 5) where x != 0 || z != 0 select new Vector3Int(x, 6, z))
+                .Append(new Vector3Int(0, 4, -1)).Append(new Vector3Int(0, 7, -1))
+                .ToArray();
+
+        /// <summary>
+        /// The Blender rotor mast wrapped as a part: its pivot on the node, its imported materials swapped for the shared
+        /// ship materials (so the parts batch), and a box round the pole the only collider; the rotors and pennants are not
+        /// solid. RotorLow and RotorHigh spin about local Y (static for now).
+        /// </summary>
+        private static GameObject RotorMastPrefab(Material brass, Material wood)
+        {
+            var importer = AssetImporter.GetAtPath(RotorMastModelPath) as ModelImporter
+                           ?? throw new InvalidOperationException($"Missing model {RotorMastModelPath}: run .tools/blender/rotor_mast.py.");
+            importer.globalScale = 1f;
+            importer.addCollider = false;
+            importer.importCameras = false;
+            importer.importLights = false;
+            importer.importAnimation = false;
+            importer.animationType = ModelImporterAnimationType.None;
+            importer.SaveAndReimport();
+
+            var shared = new Dictionary<string, Material>
+            {
+                ["RotorMast_Iron"] = Material("M_ShipIron", new Color(0.2f, 0.3f, 0.3f)),
+                ["RotorMast_Brass"] = brass,
+                ["RotorMast_Wood"] = wood,
+                ["RotorMast_Canvas"] = Material("M_ShipCanvas", new Color(0.86f, 0.82f, 0.7f)),
+                ["RotorMast_Pennant"] = Material("M_ShipPennant", new Color(0.72f, 0.18f, 0.13f)),
+            };
+            var root = new GameObject("ShipPart_RotorMast");
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(Load<GameObject>(RotorMastModelPath), root.transform);
+            model.name = "Mesh";
+            foreach (var renderer in model.GetComponentsInChildren<MeshRenderer>())
+            {
+                renderer.sharedMaterials = renderer.sharedMaterials
+                    .Select(m => m != null && shared.TryGetValue(m.name, out var ship) ? ship : m)
+                    .ToArray();
+            }
+
+            var pole = root.AddComponent<BoxCollider>();
+            pole.center = new Vector3(0f, 3.9f, 0f);
+            pole.size = new Vector3(0.4f, 7.8f, 0.4f);
             return Save(root);
         }
 

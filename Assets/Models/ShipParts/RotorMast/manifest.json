@@ -1,0 +1,32 @@
+{
+  "scene": "rotor_mast",
+  "formats": [
+    "fbx"
+  ],
+  "source": ".tools/blender/rotor_mast.py (Blender 5.2, builds the model from nothing)",
+  "coordinate_system": "Y-up, -Z forward; one exported unit is one meter",
+  "asset_contract": {
+    "title": "Rotor mast",
+    "summary": "A banded iron mast on a wooden step carrying two four-bladed canvas lift rotors on a vertical axis, a brass finial and two red pennants streaming aft. Ship part hull.rotor_mast (node part).",
+    "asset_type": "ship_part",
+    "placement": "Pivot at the centre of the origin block's floor: the frame node the mast stands on (part pivot offset zero). Height 7.85 m.",
+    "nodes": [
+      {
+        "name": "RotorMast_Mast",
+        "role": "Static: step, pole, bands, gear housings, finial and both pennants (pennants along -Z, aft)."
+      },
+      {
+        "name": "RotorLow",
+        "role": "Moving part. Pivot on its hub at 3.6 m; spins about local Y. 2.1 m across."
+      },
+      {
+        "name": "RotorHigh",
+        "role": "Moving part. Pivot on its hub at 6.35 m; spins about local Y. 4.8 m across."
+      }
+    ],
+    "materials": "RotorMast_Iron, RotorMast_Brass, RotorMast_Wood, RotorMast_Canvas, RotorMast_Pennant; ShipDesignsAssetBuilder swaps each for the shared ship material (M_ShipIron, M_ShipEngine, M_ShipHull, M_ShipCanvas, M_ShipPennant).",
+    "footprint_blocks": "Pole (0, 0..7, 0); low rotor layer y 3, x and z -1..1; high rotor layer y 6, x and z -2..2; pennants (0, 4, -1) and (0, 7, -1).",
+    "collision": "One box round the pole on the prefab (0.4 x 7.8 x 0.4 m). Rotors and pennants are not solid.",
+    "movable_parts": "RotorLow and RotorHigh are static for now; spin them about local Y for a lift effect."
+  }
+}

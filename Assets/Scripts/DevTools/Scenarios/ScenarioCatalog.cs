@@ -1051,10 +1051,17 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("TopMenu", 2f, "main")
                     .Wait(0.5f, "a few overboard ticks")
                     .Expect("TopMenu", "main")
+                    // Keyboard and gamepad through the Menu context (U5): the focus starts on the first row and moves.
+                    .Expect("FocusedRow", "host")
+                    // A direction is a value, not a press: hold it briefly (shorter than the repeat delay) for one step.
+                    .Hold(0.15f, ScriptedAction.MenuDown)
+                    .WaitUntil("FocusedRow", 2f, "join")
                     .Tap(ScriptedAction.Cancel)
                     .WaitUntil("TopMenu", 2f, "Overboard")
                     .Checkpoint("paused and back")
-                    .Do("ChooseRespawn")
+                    // The choice's first row is Respawn: Submit uses it, as Enter or gamepad South would.
+                    .Expect("FocusedRow", TinCan.Features.Respawn.OverboardMenus.RespawnItem)
+                    .Tap(ScriptedAction.MenuSubmit)
                     .WaitUntil("SubjectLacksTag", 5f, "State.Overboard")
                     .WaitUntil("SubjectAboard", 5f)
                     .Expect("SubjectHolds", "none")

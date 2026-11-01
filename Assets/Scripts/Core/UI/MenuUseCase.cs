@@ -29,6 +29,9 @@ namespace TinCan.Core.UI
         private readonly MenuSettingsRows? _settingRows;
         private MenuSnapshot? _current;
         private int _sequence;
+        private OpenRequest? _focusedRequest;
+        private MenuDefinition? _focusedMenu;
+        private string? _focusedItem;
 
         public MenuUseCase(IMenuCommandRegistry commands) : this(commands, null, null) { }
 
@@ -152,6 +155,67 @@ namespace TinCan.Core.UI
             Rebuild();
         }
 
+        public void Focus(string itemId)
+        {
+            if (_current == null) return;
+            for (int i = 0; i < _current.Items.Count; i++)
+            {
+                if (_current.Items[i].ItemId != itemId || !MenuFocusProcessor.Focusable(_current.Items[i].Kind)) continue;
+                if (_focusedItem == itemId) return;
+                _focusedItem = itemId;
+                Rebuild();
+                return;
+            }
+        }
+
+        public void MoveFocus(int delta)
+        {
+            if (_current == null) return;
+            int next = MenuFocusProcessor.Move(_current.Items, _current.Focused, delta);
+            if (next < 0 || next == _current.Focused) return;
+            _focusedItem = _current.Items[next].ItemId;
+            Rebuild();
+        }
+
+        public void Adjust(int direction)
+        {
+            if (_current is not { Focused: >= 0 } snapshot) return;
+            var row = snapshot.Items[snapshot.Focused];
+            if (row.Kind == MenuItemKind.Toggle)
+            {
+                Invoke(row.ItemId);
+                return;
+            }
+
+            if (MenuFocusProcessor.Adjust(row, direction) is { } value) SetValue(row.ItemId, value);
+        }
+
+        public void Submit()
+        {
+            if (_current is { Focused: >= 0 } snapshot) Invoke(snapshot.Items[snapshot.Focused].ItemId);
+        }
+
+        /// <summary>
+        /// The focused row of the menu being built: kept by item id while the same menu stays on top, the first focusable
+        /// row when another menu comes up (or the focused row is gone).
+        /// </summary>
+        private int FocusIn(OpenRequest top, MenuDefinition menu, IReadOnlyList<MenuItemRow> rows)
+        {
+            if (!ReferenceEquals(_focusedRequest, top) || !ReferenceEquals(_focusedMenu, menu)) _focusedItem = null;
+            _focusedRequest = top;
+            _focusedMenu = menu;
+
+            int index = -1;
+            for (int i = 0; i < rows.Count && _focusedItem != null; i++)
+            {
+                if (rows[i].ItemId == _focusedItem) index = i;
+            }
+
+            if (index < 0) index = MenuFocusProcessor.First(rows);
+            _focusedItem = index < 0 ? null : rows[index].ItemId;
+            return index;
+        }
+
         public string GetValue(string itemId)
         {
             if (IsOpen && _settingRows != null && _settingRows.TryGetValue(itemId, out var setting)) return setting;
@@ -235,7 +299,7 @@ namespace TinCan.Core.UI
                 rows.Add(new MenuItemRow(item.ItemId, item.Label, item.Kind, value ?? string.Empty));
             }
 
-            _current = new MenuSnapshot(menu.MenuId, menu.Title, rows, top.Stack.Count > 1, top.Owner, top.Kind, top.Pinned);
+            _current = new MenuSnapshot(menu.MenuId, menu.Title, rows, top.Stack.Count > 1, top.Owner, top.Kind, top.Pinned, FocusIn(top, menu, rows));
             Changed?.Invoke();
         }
 

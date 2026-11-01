@@ -49,6 +49,9 @@ namespace TinCan.DevTools.Editor
         {
             ["Global/Cancel"] = ("Back / Menu", "Back out: close the menu, or open the main menu.", true),
             ["Global/SwitchPossession"] = ("Switch Control", "Cycle to the next thing you may control.", true),
+            ["Menu/Navigate"] = ("Menu Navigate", "In a menu: up and down move between rows, left and right change the row's value.", false),
+            ["Menu/Submit"] = ("Menu Select", "In a menu: use the highlighted row.", false),
+            ["Menu/NavigateLetters"] = ("Menu Navigate (WASD)", "In a menu: as Menu Navigate, except on a text field, where the letters are typed.", false),
             ["Camera/Look"] = ("Look", "Turn the camera of whatever you control.", false),
             ["Humanoid/Move"] = ("Move", "Walk.", true),
             ["Humanoid/Jump"] = ("Jump", "Jump.", true),
@@ -166,11 +169,14 @@ namespace TinCan.DevTools.Editor
             });
             SetContents(helmsman, new InputContext[] { humanoid }, NoActions(), NoRoutes(),
                 "At the helm (State.Occupying.Helm). Silences walking but not looking: the helmsman looks around while steering. The axes travel in the predicted input (HelmInputUseCase); Leave is the Interact ability bit.");
-            var menu = Context<InputContext>("Context_Menu", c =>
+            var menu = Context<MenuInputContext>("Context_Menu", c =>
             {
+                c.Navigate = Id("Menu/Navigate");
+                c.NavigateLetters = Id("Menu/NavigateLetters");
+                c.Submit = Id("Menu/Submit");
                 c.Configure(InputContextActivation.WhileMenuOpen, 900, blocksAllLower: true);
                 c.SetContents(None(), NoActions(), new[] { new InputRoute(Id("Global/Cancel"), menuBack) },
-                    "A menu is open: everything below is silent; Cancel steps back.");
+                    "A menu is open: everything below is silent. Navigate (and WASD, except on a text field) moves the focus and adjusts the focused row, Submit uses it (MenuNavigationUseCase); Cancel steps back.");
             });
             var devTools = Context<InputContext>("Context_DevTools", c =>
             {
@@ -342,6 +348,9 @@ namespace TinCan.DevTools.Editor
             var asset = AssetDatabase.LoadAssetAtPath<T>(path);
             if (asset == null)
             {
+                // An asset of another type at the path (a context that gained typed slots) is replaced; the builder
+                // rewrites every reference to it.
+                if (AssetDatabase.LoadAssetAtPath<Object>(path) != null) AssetDatabase.DeleteAsset(path);
                 asset = ScriptableObject.CreateInstance<T>();
                 EnsureDirectory(Path.GetDirectoryName(path)!.Replace('\\', '/'));
                 AssetDatabase.CreateAsset(asset, path);

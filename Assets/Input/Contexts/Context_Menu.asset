@@ -9,10 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2002fe40ba6317a4180a2d8b05e179e1, type: 3}
+  m_Script: {fileID: 11500000, guid: 982712be80eecac4cbe12a5e753124b6, type: 3}
   m_Name: Context_Menu
-  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Input.InputContext
-  _description: 'A menu is open: everything below is silent; Cancel steps back.'
+  m_EditorClassIdentifier: TinCan.UI::TinCan.Core.UI.MenuInputContext
+  _description: 'A menu is open: everything below is silent. Navigate (and WASD,
+    except on a text field) moves the focus and adjusts the focused row, Submit uses
+    it (MenuNavigationUseCase); Cancel steps back.'
   _activation: 3
   _possessedKind: 0
   _tag: {fileID: 0}
@@ -23,3 +25,6 @@ MonoBehaviour:
   _routes:
   - Action: {fileID: 11400000, guid: d4c2589aa24d2d849be5e35a6b405ca8, type: 2}
     Command: {fileID: 11400000, guid: 0fa4192f7a197c646abe393fccd027c1, type: 2}
+  Navigate: {fileID: 11400000, guid: 5d73fd5d113471041a4e9a9894cf9db6, type: 2}
+  NavigateLetters: {fileID: 11400000, guid: 5a1e9c6e9e78ada4fb0db6f8aaf96c23, type: 2}
+  Submit: {fileID: 11400000, guid: b1b558ddff596f94499fc45b43292c78, type: 2}

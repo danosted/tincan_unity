@@ -101,6 +101,53 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void TheFocusedRow_IsMarked_AndAClickedRowTakesTheFocus()
+        {
+            _menus.Open(_page);
+            simulate.FrameUpdate();
+            var rows = rootVisualElement.Q<MenuPanel>().Rows;
+            Assert.That(rows[0].ClassListContains(MenuPanel.FocusedRowUssClassName), Is.True, "the slider, the first row");
+
+            simulate.Click(ButtonLabelled(">"));
+            simulate.FrameUpdate();
+
+            Assert.That(rows[0].ClassListContains(MenuPanel.FocusedRowUssClassName), Is.False);
+            Assert.That(rows[1].ClassListContains(MenuPanel.FocusedRowUssClassName), Is.True, "the choice that was clicked");
+        }
+
+        [Test]
+        public void TheModelsFocus_IsUiToolkitsFocusToo()
+        {
+            _menus.Open(_main);
+            simulate.FrameUpdate();
+
+            Assert.That(panel.focusController.focusedElement, Is.SameAs(ButtonLabelled("Start Host")), "the border and the fill are one row");
+        }
+
+        [Test]
+        public void UiToolkitsOwnNavigation_NeitherMovesTheFocusNorClicks()
+        {
+            var two = MenuDefinition.Create("two", "Two",
+                new MenuItemDefinition { ItemId = "host", Label = "Start Host", Kind = MenuItemKind.Command, CommandId = "Host" },
+                new MenuItemDefinition { ItemId = "again", Label = "Host Again", Kind = MenuItemKind.Command, CommandId = "Host" });
+            UiLayers.StopBuiltInNavigation(panel.visualTree);
+            _menus.Open(two);
+            simulate.FrameUpdate();
+            var focused = panel.focusController.focusedElement;
+
+            simulate.KeyPress(KeyCode.DownArrow);
+            simulate.KeyPress(KeyCode.S);
+            simulate.KeyPress(KeyCode.Tab);
+            simulate.FrameUpdate();
+            simulate.ReturnKeyPress();
+            simulate.FrameUpdate();
+
+            Assert.That(panel.focusController.focusedElement, Is.SameAs(focused), "only the Menu context moves the focus");
+            Assert.That(_command.Executions.Count, Is.Zero, "only the Menu context's Submit clicks");
+            Object.DestroyImmediate(two);
+        }
+
+        [Test]
         public void AMenusBackdrop_KeepsClicksFromAPanelUnderneath()
         {
             int panelClicks = 0;

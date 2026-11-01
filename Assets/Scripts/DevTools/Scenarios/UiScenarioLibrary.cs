@@ -6,9 +6,10 @@ using TinCan.Core.UI;
 namespace TinCan.DevTools.Scenarios
 {
     /// <summary>
-    /// Probes for what this peer's screen shows, read from the UI model: the menu on top (its id, or "none"), whether the
-    /// HUD shows behind it (<see cref="MenuBackdropRules"/>), and the cursor (<see cref="ICursorPolicy"/>). Every scenario
-    /// can use them; press Esc with <c>Tap(ScriptedAction.Cancel)</c>.
+    /// Probes for what this peer's screen shows, read from the UI model: the menu on top (its id, or "none"), the row with
+    /// keyboard and gamepad focus (its item id), whether the HUD shows behind it (<see cref="MenuBackdropRules"/>), and the
+    /// cursor (<see cref="ICursorPolicy"/>). Every scenario can use them; press Esc with <c>Tap(ScriptedAction.Cancel)</c>
+    /// and drive a menu with <c>MenuUp</c>, <c>MenuDown</c>, <c>MenuLeft</c>, <c>MenuRight</c>, <c>MenuSubmit</c>.
     /// </summary>
     public sealed class UiScenarioLibrary : IScenarioLibrary
     {
@@ -26,6 +27,7 @@ namespace TinCan.DevTools.Scenarios
         public IEnumerable<ScenarioProbe> Probes => new[]
         {
             new ScenarioProbe("TopMenu", CheckTopMenu),
+            new ScenarioProbe("FocusedRow", CheckFocusedRow),
             new ScenarioProbe("HudShown", _ => CheckHud(expected: true)),
             new ScenarioProbe("HudHidden", _ => CheckHud(expected: false)),
             new ScenarioProbe("CursorLocked", _ => CheckCursor(CursorState.Locked)),
@@ -39,6 +41,15 @@ namespace TinCan.DevTools.Scenarios
             return string.Equals(shown, expected, StringComparison.OrdinalIgnoreCase)
                 ? ScenarioCheck.Pass($"top menu {detail}")
                 : ScenarioCheck.Fail($"top menu {detail}, expected {expected}");
+        }
+
+        private ScenarioCheck CheckFocusedRow(string expected)
+        {
+            var current = _menus.Current;
+            string focused = current is { Focused: >= 0 } ? current.Items[current.Focused].ItemId : "none";
+            return focused == expected
+                ? ScenarioCheck.Pass($"focus on {focused}")
+                : ScenarioCheck.Fail($"focus on {focused}, expected {expected}");
         }
 
         private ScenarioCheck CheckHud(bool expected)

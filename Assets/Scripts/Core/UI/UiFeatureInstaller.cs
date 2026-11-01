@@ -38,6 +38,8 @@ namespace TinCan.Core.UI
             builder.Register<JoinGameMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
             builder.Register<QuitMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
             builder.Register<ResetBindingsMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
+            // Keyboard and gamepad in menus: Navigate and Submit from the Menu context (InputConfig registers it).
+            builder.Register<MenuNavigationUseCase>(Lifetime.Singleton).As<ITickable>();
 
             if (_mainMenu == null)
             {

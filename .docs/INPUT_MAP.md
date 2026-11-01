@@ -13,7 +13,7 @@ silences it; an action outside every live context reads as released.
 |---|---|---|---|---|---|
 | 1000 | Context_Rebinding | waiting for a key | everything below | (routes only) | core (InputConfig) |
 | 950 | Context_DevTools | always | - | (routes only) | NetTestHarnessFeatureInstaller |
-| 900 | Context_Menu | a menu is open | everything below | (routes only) | core (InputConfig) |
+| 900 | Context_Menu | a menu is open | everything below | MenuNavigationUseCase | core (InputConfig) |
 | 500 | Context_Shipyard | WhileOpened | everything below | ShipyardUseCase | ShipyardFeatureInstaller |
 | 450 | Context_Leashed | possessed actor has State.Leashed | - | (routes only) | not loaded |
 | 400 | Context_Gunner | possessed actor has State.Occupying.Cannon | Context_Humanoid, Context_Camera | GunnerAimUseCase | CannonFeatureInstaller |
@@ -43,11 +43,14 @@ Only while the net harness runs (contributed by its installer): F3 toggles the r
 
 ### Context_Menu
 
-A menu is open: everything below is silent; Cancel steps back.
+A menu is open: everything below is silent. Navigate (and WASD, except on a text field) moves the focus and adjusts the focused row, Submit uses it (MenuNavigationUseCase); Cancel steps back.
 
 | Action | Default keys | Meaning | Rebindable |
 |---|---|---|---|
-| Global/Cancel | `escape` | Back out: close the menu, or open the main menu. | yes |
+| Menu/Navigate | `upArrow` / `downArrow` / `leftArrow` / `rightArrow` / `<Gamepad>/dpad` / `<Gamepad>/leftStick` | In a menu: up and down move between rows, left and right change the row's value. | no |
+| Menu/NavigateLetters | `w` / `s` / `a` / `d` | In a menu: as Menu Navigate, except on a text field, where the letters are typed. | no |
+| Menu/Submit | `enter` / `<Gamepad>/buttonSouth` | In a menu: use the highlighted row. | no |
+| Global/Cancel | `escape` / `<Gamepad>/buttonEast` / `<Gamepad>/start` | Back out: close the menu, or open the main menu. | yes |
 
 | Pressing | Runs | Handled by |
 |---|---|---|
@@ -79,7 +82,7 @@ The shipyard is open (contributed by its installer): fly the camera, build with 
 | Shipyard/Redo | `ctrl` / `y` | Redo the change just undone. | yes |
 | Shipyard/LevelUp | `pageUp` | Frame mode: work on the story above. | yes |
 | Shipyard/LevelDown | `pageDown` | Frame mode: work on the story below. | yes |
-| Global/Cancel | `escape` | Back out: close the menu, or open the main menu. | yes |
+| Global/Cancel | `escape` / `<Gamepad>/buttonEast` / `<Gamepad>/start` | Back out: close the menu, or open the main menu. | yes |
 
 | Pressing | Runs | Handled by |
 |---|---|---|
@@ -138,7 +141,7 @@ Flying the spectator camera. Read by FreeCameraMovementUseCase; Cancel frees the
 | Action | Default keys | Meaning | Rebindable |
 |---|---|---|---|
 | FreeCamera/Move | `w` / `s` / `a` / `d` | Fly the free camera (spectator, a dev tool: not in the Controls menu). | no |
-| Global/Cancel | `escape` | Back out: close the menu, or open the main menu. | yes |
+| Global/Cancel | `escape` / `<Gamepad>/buttonEast` / `<Gamepad>/start` | Back out: close the menu, or open the main menu. | yes |
 
 | Pressing | Runs | Handled by |
 |---|---|---|
@@ -171,7 +174,7 @@ Always on, lowest: Cancel opens the main menu when nothing above wanted it; Tab 
 
 | Action | Default keys | Meaning | Rebindable |
 |---|---|---|---|
-| Global/Cancel | `escape` | Back out: close the menu, or open the main menu. | yes |
+| Global/Cancel | `escape` / `<Gamepad>/buttonEast` / `<Gamepad>/start` | Back out: close the menu, or open the main menu. | yes |
 | Global/SwitchPossession | `tab` | Cycle to the next thing you may control. | yes |
 
 | Pressing | Runs | Handled by |

@@ -1,6 +1,7 @@
 #nullable enable
 using TinCan.Core.Domain.Input;
 using TinCan.Core.Humanoid;
+using TinCan.Core.UI;
 using TinCan.Features.Helm;
 using TinCan.Features.Navigation;
 using TinCan.Features.Weapons.Cannon;
@@ -66,6 +67,11 @@ namespace TinCan.DevTools
                 ScriptedAction.NavigatorZoomOut => (Get<NavigatorInputContext>()?.Zoom, Vector2.left),
                 ScriptedAction.NavigatorLeave => (Get<NavigatorInputContext>()?.Leave, Vector2.right),
                 ScriptedAction.Cancel => (Get<GlobalInputContext>()?.Cancel, Vector2.right),
+                ScriptedAction.MenuUp => (Get<MenuInputContext>()?.Navigate, Vector2.up),
+                ScriptedAction.MenuDown => (Get<MenuInputContext>()?.Navigate, Vector2.down),
+                ScriptedAction.MenuLeft => (Get<MenuInputContext>()?.Navigate, Vector2.left),
+                ScriptedAction.MenuRight => (Get<MenuInputContext>()?.Navigate, Vector2.right),
+                ScriptedAction.MenuSubmit => (Get<MenuInputContext>()?.Submit, Vector2.right),
                 ScriptedAction.SwitchPossession => (Get<GlobalInputContext>()?.SwitchPossession, Vector2.right),
                 _ => (null, Vector2.zero),
             };

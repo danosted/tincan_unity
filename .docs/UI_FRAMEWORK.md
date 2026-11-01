@@ -187,6 +187,40 @@ Nothing in the UI reads a key. Cancel reaches the menus through the input contex
 
 To give Cancel a new meaning somewhere, add a route to that situation's context and a handler; do not read the key.
 
+## Keyboard and gamepad in menus
+
+Menus work without a mouse, through the same **Menu** context (`MenuInputContext`, slots Navigate and Submit), so the
+keys are heard only while a menu is open:
+
+| Input | Keyboard | Gamepad | Does |
+|---|---|---|---|
+| Navigate up / down | arrows, W / S | d-pad, left stick | Moves the focus between rows (wrapping); notes are skipped. |
+| Navigate left / right | arrows, A / D | d-pad, left stick | Adjusts the focused row: a slider steps, a choice moves, a toggle flips. |
+
+WASD is its own action (`Menu/NavigateLetters`) because the letters are also text: on a focused text field they are
+typed and do not navigate; the arrows still leave the field.
+| Submit | Enter | South (A) | Uses the focused row, as a click would. |
+| Cancel | Esc | East (B), Start | Back, as above. |
+
+- **The model owns the focus.** `MenuSnapshot.Focused` is the focused row; a new menu focuses its first usable row,
+  and the same menu keeps its focus by item id while values change. `IMenuSystem.Focus`, `MoveFocus`, `Adjust` and
+  `Submit` change it; `MenuFocusProcessor` is the pure rule (what can take focus, what left and right do).
+- **`MenuNavigationUseCase`** reads Navigate and Submit every frame; a held direction repeats after 0.4 s, then every
+  0.1 s, and the stronger axis wins.
+- **The view shows it, with one focus.** `MenuPanel.ShowFocus` marks the row (`tc-menu-panel__row--focused`, themed
+  in `MenuPanel.uss`), gives it UI Toolkit's own focus as well (so the theme's `:focus` border and the focus fill are
+  always the same row, and a text field there takes the typing) and scrolls to it. A row the pointer presses takes the
+  focus too, so mouse and keys never disagree.
+- **UI Toolkit's own navigation is off.** It reads the devices itself: arrows, WASD and Tab move its focus, Enter
+  clicks a focused button. `UiLayers.StopBuiltInNavigation` ignores those events at the panel's root, where they
+  arrive even when nothing has focus; otherwise they move a second focus and Enter clicks twice
+  (`MenuOverlayViewClickTests.UiToolkitsOwnNavigation_NeitherMovesTheFocusNorClicks`).
+- Scenarios drive it with `ScriptedAction.MenuUp`, `MenuDown`, `MenuLeft`, `MenuRight` (directions are values: use a
+  short `Hold`, under the 0.4 s repeat delay, for one step; a `Tap` carries no value) and `MenuSubmit` (a `Tap`), and read it
+  with the `FocusedRow <item id>` probe.
+- The gamepad bindings are in their own `Gamepad` control scheme; the Controls menu lists and rebinds the keyboard
+  ones only, and Navigate and Submit are not rebindable, so a menu can always be reached.
+
 ## The cursor: one owner
 
 `ICursorPolicy` (`Core/UI/CursorPolicyUseCase.cs`) is the only writer of the cursor, through `UnityCursorDevice`, and
@@ -246,5 +280,5 @@ come from `IInputBindings.DescribeAction`, never typed text, so rebinding shows.
 - Rows are rendered top to bottom with no layout options; the view is a placeholder. Its look is the theme's, a
   grey placeholder until there is an art direction.
 - Values are strings; parse in the command (see `JoinGameMenuCommand` for the port).
-- No navigation with keyboard/gamepad yet; the overlay is mouse-driven.
+- Gamepad play outside menus has no bindings yet: only menus and Cancel have gamepad bindings.
 - Menu assets are matched to commands by string ids; a renamed command breaks the row silently.

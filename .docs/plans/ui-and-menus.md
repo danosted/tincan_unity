@@ -1,4 +1,4 @@
-Status: Approved (2026-10-31); U0-U4 done 2026-11-01 (see Progress); first in [core-systems-roadmap.md](core-systems-roadmap.md)
+Status: Approved (2026-10-31); U0-U5 done 2026-11-01 (see Progress); first in [core-systems-roadmap.md](core-systems-roadmap.md)
 
 # UI and menus: layers, one owner per screen, and tests for what is drawn
 
@@ -174,7 +174,17 @@ choice arrows stepped from the value the row was built with.
   160 px and the keys card clips instead.
 - Still a grey placeholder look: there is no art direction yet.
 
-Next: U5 (keyboard and gamepad navigation).
+**U5 done (2026-11-01): keyboard and gamepad in menus.** A Menu map (Navigate, Submit) and a `Gamepad` control
+scheme in the actions asset; gamepad East and Start also Cancel. `Context_Menu` became a `MenuInputContext` (slots
+Navigate, Submit). The model owns the focus (`MenuSnapshot.Focused`, `IMenuSystem.Focus` / `MoveFocus` / `Adjust` /
+`Submit`, rules in `MenuFocusProcessor`); `MenuNavigationUseCase` reads the context with key repeat; the view marks
+the row (`MenuPanel.ShowFocus`, themed), gives a focused text field the keyboard, lets a clicked row take the focus,
+and stops UI Toolkit's own navigation at the panel root (it moved a second focus and clicked twice: a playtest saw
+the border and the fill on different rows; fixed by one focus, `UiLayers.StopBuiltInNavigation`). Tests: `MenuNavigationUseCaseTests`, a
+focus case in `MenuOverlayViewClickTests`; `OverboardRespawn` now moves the focus in the pause menu and chooses Respawn
+with Submit. Not done: gamepad bindings for play (walking, looking), and a gamepad glyph set for the key hints.
+
+The plan's slices are done.
 
 ## Verification
 - EditMode suite green, plus the new model, view and architecture tests.

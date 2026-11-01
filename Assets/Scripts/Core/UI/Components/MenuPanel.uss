@@ -23,6 +23,14 @@
     flex-shrink: 1;
 }
 
+/* The row the keyboard or gamepad is on. */
+.tc-menu-panel .tc-menu-panel__row--focused {
+    border-color: var(--tc-border-focus);
+    border-width: 1px;
+    border-radius: var(--tc-radius-s);
+    background-color: var(--tc-accent-soft);
+}
+
 /* Text fields, toggles and sliders in a menu. */
 .tc-menu-panel .unity-base-field {
     margin-top: var(--tc-space-s);

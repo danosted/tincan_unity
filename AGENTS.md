@@ -11,6 +11,7 @@ TinCan is a Unity co-op multiplayer FPS (version pinned in `.unity-version`) bui
 3. [`.docs/CODE_MAP.md`](.docs/CODE_MAP.md) — assemblies, folder map, naming glossary, "where does X live", the feature index, and known traps. Read before searching the codebase.
 4. [`.docs/CODE_STANDARDS.md`](.docs/CODE_STANDARDS.md) — C# style, nullable, no coroutines, runtime resolution/injection over `[SerializeField]` component references, tests. Follow for every code sample.
 5. [`.docs/TASK_GUIDES.md`](.docs/TASK_GUIDES.md) and [`.docs/TUTORIAL_NEW_FEATURE.md`](.docs/TUTORIAL_NEW_FEATURE.md) — the recipes and the build order to follow when implementing. Reference details in [`.docs/FEATURE_INSTALLERS.md`](.docs/FEATURE_INSTALLERS.md), [`.docs/UI_FRAMEWORK.md`](.docs/UI_FRAMEWORK.md), [`.docs/INPUT.md`](.docs/INPUT.md) (input contexts; never read a key directly), [`.docs/Network_Initialization_Flow.md`](.docs/Network_Initialization_Flow.md).
+6. [`.docs/ART_DIRECTION.md`](.docs/ART_DIRECTION.md) — the look and feel: inspirations, pillars, palette, materials, shading, atmosphere, motion, and how an asset is reviewed. Read before making or judging anything visual (models, materials, shaders, effects, UI style).
 
 The human entry point is [`.docs/README.md`](.docs/README.md). Keep it and the docs above true: when you change how the project works, update the doc in the same change.
 

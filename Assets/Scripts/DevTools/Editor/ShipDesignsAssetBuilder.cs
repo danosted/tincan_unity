@@ -19,9 +19,9 @@ namespace TinCan.DevTools.Editor
     /// <summary>
     /// TinCan > Dev > Ship Designs > Build Assets: the ship parts that hang on a frame (the helm as the core part,
     /// contributed by the Helm installer; the cairn, the engine, the propeller, the mast, the mount plate, the rotor mast
-    /// from its Blender model), their greybox prefabs and materials, the ship designs config and installer, and the built-in designs (<see cref="ShipFrameDesigns"/>,
-    /// written through the codec, so the files are in canonical form). Materials are created only when missing, so their
-    /// colours stay as tuned. Every prefab's pivot is its anchor point: on the floor for a face part, at the node for a
+    /// from its Blender model), their greybox prefabs, the ship designs config and installer, and the built-in designs (<see cref="ShipFrameDesigns"/>,
+    /// written through the codec, so the files are in canonical form). Materials come from the look's library
+    /// (<see cref="LookMaterials"/>, coloured from the palette). Every prefab's pivot is its anchor point: on the floor for a face part, at the node for a
     /// node part. Plans: .docs/plans/modular-airship-builder.md, .docs/plans/frame-only-ships.md.
     /// </summary>
     public static class ShipDesignsAssetBuilder
@@ -36,7 +36,6 @@ namespace TinCan.DevTools.Editor
         private const string RotorMastModelPath = "Assets/Models/ShipParts/RotorMast/rotor_mast.fbx";
         public const string InstallerPath = "Assets/Resources/Installers/ShipDesignsFeatureInstaller.asset";
         private const string PrefabsFolder = "Assets/Prefabs/ShipParts/";
-        private const string MaterialsFolder = "Assets/Materials/ShipParts/";
         private const string HelmInstallerPath = "Assets/Resources/Installers/HelmFeatureInstaller.asset";
         private const string HelmStationPath = "Assets/Prefabs/Airship/Parts/HelmStation.prefab";
         private const string StationsInstallerPath = "Assets/Resources/Installers/StationsFeatureInstaller.asset";
@@ -61,10 +60,10 @@ namespace TinCan.DevTools.Editor
         [MenuItem("TinCan/Dev/Ship Designs/Build Assets")]
         public static void Build()
         {
-            var wood = Material("M_ShipHull", new Color(0.45f, 0.30f, 0.18f));
-            var brass = Material("M_ShipEngine", new Color(0.55f, 0.42f, 0.2f));
-            var stone = Material("M_ShipCairn", new Color(0.42f, 0.44f, 0.47f));
-            var spirit = Material("M_ShipSpirit", new Color(0.55f, 0.85f, 1f));
+            var wood = LookMaterials.Get("M_ShipHull");
+            var brass = LookMaterials.Get("M_ShipEngine");
+            var stone = LookMaterials.Get("M_ShipCairn");
+            var spirit = LookMaterials.Get("M_ShipSpirit");
 
             // The engine fills its block and the one behind it (-Z).
             var enginePrefab = BoxPrefab("ShipPart_Engine", new Vector3(0f, 0.5f, -0.5f), new Vector3(0.9f, 0.9f, 2f), brass);
@@ -136,8 +135,9 @@ namespace TinCan.DevTools.Editor
         /// <summary>The config's frame materials, and defaults for limits and tuning added after the asset was made.</summary>
         private static void Configure(ShipDesignsConfig designs)
         {
-            designs.FramePlanks = Material("M_ShipDeck", new Color(0.66f, 0.52f, 0.34f));
-            designs.FrameBeams = Material("M_ShipHull", new Color(0.45f, 0.30f, 0.18f));
+            designs.FramePlanks = LookMaterials.Get("M_ShipDeck");
+            designs.FrameBeams = LookMaterials.Get("M_ShipHull");
+            designs.FrameWalls = LookMaterials.Get("M_ShipWalls");
 
             var limits = designs.Limits;
             var defaultLimits = ShipDesignLimits.Default;
@@ -294,11 +294,11 @@ namespace TinCan.DevTools.Editor
 
             var shared = new Dictionary<string, Material>
             {
-                ["RotorMast_Iron"] = Material("M_ShipIron", new Color(0.2f, 0.3f, 0.3f)),
+                ["RotorMast_Iron"] = LookMaterials.Get("M_ShipIron"),
                 ["RotorMast_Brass"] = brass,
                 ["RotorMast_Wood"] = wood,
-                ["RotorMast_Canvas"] = Material("M_ShipCanvas", new Color(0.86f, 0.82f, 0.7f)),
-                ["RotorMast_Pennant"] = Material("M_ShipPennant", new Color(0.72f, 0.18f, 0.13f)),
+                ["RotorMast_Canvas"] = LookMaterials.Get("M_ShipCanvas"),
+                ["RotorMast_Pennant"] = LookMaterials.Get("M_ShipPennant"),
             };
             var root = new GameObject("ShipPart_RotorMast");
             var model = (GameObject)PrefabUtility.InstantiatePrefab(Load<GameObject>(RotorMastModelPath), root.transform);
@@ -425,19 +425,6 @@ namespace TinCan.DevTools.Editor
             {
                 if (box != null) Object.DestroyImmediate(box);
             }
-        }
-
-        private static Material Material(string name, Color colour)
-        {
-            var path = MaterialsFolder + name + ".mat";
-            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (material != null) return material;
-
-            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? throw new InvalidOperationException("URP Lit shader not found.");
-            material = new Material(shader) { name = name, color = colour, enableInstancing = true };
-            EnsureFolder(path);
-            AssetDatabase.CreateAsset(material, path);
-            return material;
         }
 
         private static T Asset<T>(string path, Action<T> configure) where T : ScriptableObject

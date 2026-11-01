@@ -12,7 +12,7 @@ namespace TinCan.Features.ShipDesigns
     /// nodes are (its triangles from <see cref="ShipFrameShape"/>), extruded straight down, with sides. UVs run in metres
     /// along the face's longest side, so boards run lengthwise and keep their size on any face.</item>
     /// <item>Walls: a planked wall face (corners on two stories) is a slab of the same thickness centred on its plane,
-    /// built with the lower story.</item>
+    /// built with the lower story, into the story's wall mesh.</item>
     /// <item>Railings: posts and two rails along each floor edge marked as railed, <see cref="ShipFrameTuning.RailHeight"/>
     /// high, built with the beams (so they have colliders: nobody walks off a railed edge). A gate is the two end posts.</item>
     /// <item>Stairs: a block per step, seen but not collided with, and a ramp under their nosings to walk on, collided
@@ -43,9 +43,10 @@ namespace TinCan.Features.ShipDesigns
             for (int story = 0; story < frame.StoryHeights.Count; story++)
             {
                 var planks = new ShipFrameMesh();
+                var walls = new ShipFrameMesh();
                 foreach (var face in shape.PlankFaces.Where(f => f.Story == story))
                 {
-                    if (face.IsWall) AddWall(planks, face, tuning);
+                    if (face.IsWall) AddWall(walls, face, tuning);
                     else AddSlab(planks, face, tuning);
                 }
 
@@ -61,7 +62,7 @@ namespace TinCan.Features.ShipDesigns
                 var ramps = new ShipFrameMesh();
                 foreach (var flight in flights.Where(f => f.Story - 1 == story)) AddStairs(steps, ramps, flight, tuning);
 
-                stories.Add(new ShipFrameStoryMesh(story, Fingerprint(shape, story, tuning), planks, beams, steps, ramps));
+                stories.Add(new ShipFrameStoryMesh(story, Fingerprint(shape, story, tuning), planks, walls, beams, steps, ramps));
             }
 
             return stories;

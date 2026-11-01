@@ -1,7 +1,8 @@
 // Sky islands (TinCan.Features.SkyIslands). The procedural island mesh carries its masks in vertex colours
 // (SkyIslandMeshData): r grass, g ambient occlusion, b a strata value per ring, a how far down the rock (0 top, 1 apex).
 // Grass where the mesh says top and the surface faces up; warm layered rock elsewhere, darker toward the apex.
-// Main light with wrapped diffuse and shadows, ambient from the probes, fog. Depth passes so clouds and SSAO see it.
+// Lit by the shared light model (Include/TinCanLighting.hlsl), so islands and ships sit in one light; fog. Depth passes so
+// clouds and SSAO see it.
 Shader "TinCan/SkyIsland"
 {
     Properties
@@ -15,6 +16,10 @@ Shader "TinCan/SkyIsland"
         _PatchScale ("Grass patch scale", Float) = 0.04
         _Wrap ("Light wrap", Range(0, 1)) = 0.35
         _AmbientBoost ("Ambient boost", Range(0, 2)) = 1.0
+        _ShadowTint ("Shadow tint", Color) = (0.42, 0.43, 0.61, 1)
+        _ShadowFill ("Shadow fill", Range(0, 1)) = 0.45
+        _BandSoftness ("Band softness", Range(0, 1)) = 0.5
+        _Rim ("Rim", Range(0, 1)) = 0.1
     }
 
     SubShader
@@ -34,6 +39,10 @@ Shader "TinCan/SkyIsland"
             float _PatchScale;
             half _Wrap;
             half _AmbientBoost;
+            half4 _ShadowTint;
+            half _ShadowFill;
+            half _BandSoftness;
+            half _Rim;
         CBUFFER_END
         ENDHLSL
 
@@ -47,10 +56,12 @@ Shader "TinCan/SkyIsland"
             #pragma fragment Frag
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Include/TinCanLighting.hlsl"
 
             struct Attributes
             {
@@ -119,19 +130,24 @@ Shader "TinCan/SkyIsland"
                 half3 albedo = lerp(rock, grass, grassMask);
                 half occlusion = input.color.g;
 
-                float4 shadowCoord = TransformWorldToShadowCoord(input.positionWS);
-                Light mainLight = GetMainLight(shadowCoord);
-                half diffuse = saturate((dot(normalWS, mainLight.direction) + _Wrap) / (1.0 + _Wrap));
-                half3 direct = mainLight.color * diffuse * mainLight.shadowAttenuation;
-                half3 ambient = SampleSH(normalWS) * _AmbientBoost;
+                TinCanSurface surface;
+                surface.albedo = albedo;
+                surface.normalWS = normalWS;
+                surface.positionWS = input.positionWS;
+                surface.positionCS = input.positionCS;
+                surface.occlusion = occlusion;
+                surface.highlight = 0;
 
-                #if defined(_SCREEN_SPACE_OCCLUSION)
-                    AmbientOcclusionFactor ao = GetScreenSpaceAmbientOcclusion(GetNormalizedScreenSpaceUV(input.positionCS));
-                    ambient *= ao.indirectAmbientOcclusion;
-                    direct *= ao.directAmbientOcclusion;
-                #endif
+                TinCanLook look;
+                look.wrap = _Wrap;
+                look.softness = _BandSoftness;
+                look.shadowTint = _ShadowTint.rgb;
+                look.shadowFill = _ShadowFill;
+                look.ambient = _AmbientBoost;
+                look.rim = _Rim;
+                look.highlightSize = 0;
 
-                half3 color = albedo * (direct + ambient * occlusion);
+                half3 color = TinCanShade(surface, look);
                 color = MixFog(color, input.fogFactor);
                 return half4(color, 1);
             }

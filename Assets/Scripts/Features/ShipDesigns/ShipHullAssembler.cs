@@ -54,6 +54,7 @@ namespace TinCan.Features.ShipDesigns
         private readonly ShipFrameTuning _frameTuning;
         private readonly Material? _planks;
         private readonly Material? _beams;
+        private readonly Material? _walls;
 
         public ShipHullAssembler(IShipPartCatalog catalog, IShipHullBuilder builder, bool buildFunctionalParts, ShipDesignsConfig? designs = null)
         {
@@ -63,12 +64,13 @@ namespace TinCan.Features.ShipDesigns
             _frameTuning = designs != null ? designs.Frames : ShipFrameTuning.Default;
             _planks = designs != null ? designs.FramePlanks : null;
             _beams = designs != null ? designs.FrameBeams : null;
+            _walls = designs != null && designs.FrameWalls != null ? designs.FrameWalls : _planks;
         }
 
         /// <summary>Parts with something built for them.</summary>
         public int BuiltCount => _parts.Values.Count(p => p.Handle != null);
 
-        /// <summary>Frame meshes standing (each story's planks, beams, steps and ramps count one each when it has them).</summary>
+        /// <summary>Frame meshes standing (each story's planks, walls, beams, steps and ramps count one each when it has them).</summary>
         public int BuiltFrameMeshes => _stories.Values.Sum(s => s.Meshes.Count);
 
         public int UnknownCount { get; private set; }
@@ -167,6 +169,7 @@ namespace TinCan.Features.ShipDesigns
                 }
 
                 Add("Planks", story.Planks, _planks, ShipFrameMeshUse.Solid);
+                Add("Walls", story.Walls, _walls, ShipFrameMeshUse.Solid);
                 Add("Beams", story.Beams, _beams, ShipFrameMeshUse.Solid);
                 Add("Steps", story.Steps, _planks, ShipFrameMeshUse.Seen);
                 Add("Ramps", story.Ramps, null, ShipFrameMeshUse.Collider);

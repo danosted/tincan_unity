@@ -67,10 +67,12 @@ namespace TinCan.Tests.EditMode
             var stories = processor.Build(frame, tuning);
             var railed = processor.Build(frame.With(edges: frame.Edges.Select(e => e.Id == 13 ? e.WithRail(ShipFrameRailing.Rail) : e)), tuning);
 
-            // Story 0: its floor slab (24 corners) and four wall slabs (24 each); story 1: its floor only.
-            Assert.That(stories[0].Planks.Vertices, Has.Count.EqualTo(24 * 5));
+            // Story 0: its floor slab (24 corners), and four wall slabs (24 each) in their own mesh; story 1: its floor only.
+            Assert.That(stories[0].Planks.Vertices, Has.Count.EqualTo(24));
+            Assert.That(stories[0].Walls.Vertices, Has.Count.EqualTo(24 * 4));
             Assert.That(stories[1].Planks.Vertices, Has.Count.EqualTo(24));
-            float wallTop = stories[0].Planks.Vertices.Max(v => v.y);
+            Assert.That(stories[1].Walls.IsEmpty, Is.True);
+            float wallTop = stories[0].Walls.Vertices.Max(v => v.y);
             Assert.That(wallTop, Is.EqualTo(2.5f).Within(1e-3f), "walls reach the upper floor");
             Assert.That(railed[1].Beams.Vertices.Count, Is.GreaterThan(stories[1].Beams.Vertices.Count));
             Assert.That(railed[1].Beams.Vertices.Max(v => v.y), Is.EqualTo(2.5f + tuning.RailHeight + 0.032f).Within(0.01f), "the top rail");

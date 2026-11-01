@@ -25,14 +25,22 @@ only on far layers, with a setting to turn it off; the palette as it stands.
 ## Slices
 Each slice ends with a contact sheet of the Corsair (L0's tool) the developer looks at before the next.
 
-### L0: palette as data, and a contact sheet
+### L0: palette as data, and a contact sheet (done 2026-11-01)
+Built as planned; the code is under `DevTools/Editor/Look*.cs` (CODE_MAP, "The look"). Materials start reading the
+palette in L1. Until the look profile (L2) exists, the contact sheet lights the ship with a fixed late-afternoon sun
+and a plain sky-coloured background, in a preview scene of its own.
 - One palette source, `Assets/Art/Palette/palette.json` (role, hex), from which a script writes the doc swatches
   (`.docs/art/palette/`) and the Unity materials take their colours. The swatches stop being hand-kept.
 - **TinCan > Dev > Look > Contact Sheet**: builds a design in edit mode off-screen (the shipyard preview builder, the
   way the Corsair renders were made) and renders fixed views (side, three-quarter, bow, deck at eye height) to
   `Logs/look/`. Agents and people review the same pictures.
 
-### L1: the stylized lit shader and the material library
+### L1: the stylized lit shader and the material library (built 2026-11-01, awaiting the developer's look)
+Built as planned: `Shaders/Stylized.shader`, the light model in `Shaders/Include/TinCanLighting.hlsl` (shared by
+`SkyIsland.shader`), the library in `DevTools/Editor/LookMaterials.cs` (**TinCan > Dev > Look > Build Materials**), and
+the wall mesh split (`ShipFrameStoryMesh.Walls`, `ShipDesignsConfig.FrameWalls`). Beams and railings took timber warm,
+walls timber dark; the cairn's stone is rock ochre (the palette has no grey). The helm keeps the pirate pack's material
+until its own model exists. The contact sheet compiles shaders synchronously, or its first views come out blank.
 - `Shaders/Stylized.shader` (`TinCan/Stylized`), text HLSL, SRP batcher compatible, with shadow, depth and
   depth-normals passes: wrapped diffuse in two bands with one softness value; shadows lean toward the palette's
   shadow tint; a soft sky-coloured rim; ambient from the sky; a soft highlight band for metal (no reflections);

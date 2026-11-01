@@ -11,6 +11,9 @@ namespace TinCan.Features.Shipyard
     /// </summary>
     public sealed class ShipyardMenuInputHandler : InputCommandHandler<OpenShipyardMenuCommand>
     {
+        /// <summary>The shipyard menu's request.</summary>
+        public const string MenuOwner = "Shipyard";
+
         private readonly IShipyard _shipyard;
         private readonly IMenuSystem _menus;
         private readonly ShipyardConfig _config;
@@ -26,7 +29,7 @@ namespace TinCan.Features.Shipyard
         {
             if (!_shipyard.IsOpen || _config.Menu == null) return false;
 
-            _menus.Open(_config.Menu);
+            _menus.Request(new MenuRequest(MenuOwner, _config.Menu, MenuKind.Screen));
             _menus.SetValue(ShipyardUseCase.NameField, _shipyard.Design?.Name ?? string.Empty);
             var saved = _shipyard.SavedDesigns.Select(d => d.ToString()).ToList();
             _shipyard.Say(saved.Count == 0 ? "No saved designs yet." : $"Designs: {string.Join(", ", saved)}");

@@ -16,7 +16,7 @@ namespace TinCan.Tests.EditMode
         private RespawnRules _rules = null!;
         private GameplayTag _overboardTag = null!;
         private FakeActorRegistry _actors = null!;
-        private FakeMenus _menus = null!;
+        private MenuUseCase _menus = null!;
         private FakeHudValues _hud = null!;
         private FakeTimeService _time = null!;
         private OverboardChoice _choice = null!;
@@ -32,7 +32,7 @@ namespace TinCan.Tests.EditMode
             _rules.OverboardTag = _overboardTag;
             _rules.Rules = new List<RespawnRule> { new() { Cause = RespawnCause.Overboard, DelaySeconds = 0f } };
             _actors = new FakeActorRegistry();
-            _menus = new FakeMenus();
+            _menus = new MenuUseCase(new MenuCommandRegistry(Array.Empty<IMenuCommand>()));
             _hud = new FakeHudValues();
             _time = new FakeTimeService { Time = 10f };
             _choice = new OverboardChoice();
@@ -63,15 +63,31 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void ClosingTheChoiceUnchosen_ReopensIt()
+        public void TheChoice_IsAPinnedModal_ThatBackAndCloseAllCannotDismiss()
         {
             _player.HeldTags.Add(_overboardTag);
             _useCase.Tick();
 
+            Assert.That(_menus.Back(), Is.False);
             _menus.CloseAll();
             _useCase.Tick();
 
-            Assert.That(_menus.Current?.MenuId, Is.EqualTo(OverboardMenuUseCase.MenuId), "Nobody is stranded overboard.");
+            Assert.That((_menus.Current?.MenuId, _menus.Current?.Kind, _menus.Current?.Pinned),
+                Is.EqualTo((OverboardMenuUseCase.MenuId, (MenuKind?)MenuKind.Modal, (bool?)true)), "Nobody is stranded overboard.");
+        }
+
+        [Test]
+        public void ThePauseMenu_OverTheChoice_IsNotCoveredByTheNextTick()
+        {
+            var pause = MenuDefinition.Create("main", "Main");
+            _player.HeldTags.Add(_overboardTag);
+            _useCase.Tick();
+
+            _menus.Request(new MenuRequest(MenuOwners.Main, pause, MenuKind.Modal));
+            _useCase.Tick();
+
+            Assert.That(_menus.Current?.MenuId, Is.EqualTo("main"));
+            Object.DestroyImmediate(pause);
         }
 
         [Test]
@@ -80,7 +96,6 @@ namespace TinCan.Tests.EditMode
             _player.HeldTags.Add(_overboardTag);
             _useCase.Tick();
             _choice.Choose(OverboardChoiceKind.Respawn, _time.Time);
-            _menus.CloseAll();
 
             _useCase.Tick();
             Assert.That(_menus.IsOpen, Is.False);
@@ -111,29 +126,6 @@ namespace TinCan.Tests.EditMode
 
             Assert.That(_menus.IsOpen, Is.False);
             Assert.That(_hud.All.ContainsKey(OverboardMenuUseCase.HudKey), Is.False);
-        }
-
-        private sealed class FakeMenus : IMenuSystem
-        {
-            private readonly List<MenuDefinition> _stack = new();
-
-            public MenuSnapshot? Current => _stack.Count == 0
-                ? null
-                : new MenuSnapshot(_stack[^1].MenuId, _stack[^1].Title, Array.Empty<MenuItemRow>(), _stack.Count > 1);
-            public bool IsOpen => _stack.Count > 0;
-            public event Action? Changed;
-
-            public void Open(MenuDefinition menu)
-            {
-                _stack.Add(menu);
-                Changed?.Invoke();
-            }
-
-            public void Back() => _stack.RemoveAt(_stack.Count - 1);
-            public void CloseAll() => _stack.Clear();
-            public void Invoke(string itemId) { }
-            public void SetValue(string itemId, string value) { }
-            public string GetValue(string itemId) => string.Empty;
         }
     }
 }

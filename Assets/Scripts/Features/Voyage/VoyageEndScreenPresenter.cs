@@ -8,11 +8,14 @@ namespace TinCan.Features.Voyage
 {
     /// <summary>
     /// Presentation, every peer: while the voyage is over, its end screen is up (Arrived or Lost, each with Restart and
-    /// Quit). It reopens if closed, so Esc cannot drop a player into a dead session, and it closes itself when a new
-    /// voyage starts. Menus silence gameplay input through the Menu input context.
+    /// Quit) as a pinned modal request, so Esc cannot drop a player into a dead session (it opens the pause menu over the
+    /// screen instead) and it covers any other menu; it is withdrawn when a new voyage starts. Menus silence gameplay
+    /// input through the Menu input context.
     /// </summary>
     public class VoyageEndScreenPresenter : ITickable
     {
+        public const string MenuOwner = "Voyage.End";
+
         private readonly IActorRegistry _actors;
         private readonly IMenuSystem _menus;
         private readonly VoyageConfig _config;
@@ -34,21 +37,8 @@ namespace TinCan.Features.Voyage
                 _ => null
             };
 
-            string? showing = _menus.IsOpen ? _menus.Current?.MenuId : null;
-            if (screen == null)
-            {
-                if (showing != null && IsEndScreen(showing)) _menus.CloseAll();
-                return;
-            }
-
-            if (showing == screen.MenuId) return;
-            if (showing != null && !IsEndScreen(showing)) return; // another menu (the main menu) is the player's choice
-            _menus.CloseAll();
-            _menus.Open(screen);
+            if (screen == null) _menus.Withdraw(MenuOwner);
+            else _menus.Request(new MenuRequest(MenuOwner, screen, MenuKind.Modal, pinned: true));
         }
-
-        private bool IsEndScreen(string menuId) =>
-            (_config.ArrivedMenu != null && _config.ArrivedMenu.MenuId == menuId) ||
-            (_config.LostMenu != null && _config.LostMenu.MenuId == menuId);
     }
 }

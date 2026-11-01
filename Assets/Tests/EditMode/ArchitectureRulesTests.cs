@@ -45,6 +45,10 @@ namespace TinCan.Tests.EditMode
         private static readonly Regex DirectInput = new(
             @"\b(Keyboard|Mouse|Gamepad|Pointer|Touchscreen|Joystick)\.current\b|\bUnityEngine\.Input\.|\bInput\.(GetKey|GetAxis|GetButton|GetMouseButton)\w*\b|\bFindAction\(|""<(Keyboard|Mouse|Gamepad|Pointer)>/");
 
+        private static readonly Regex UiSurface = new(@"\bUIDocument\b|\bsortingOrder\b");
+        private static readonly Regex CursorWrite = new(@"\bCursor\.(lockState|visible)\s*=(?!=)");
+        private static readonly Regex OnGui = new(@"\bvoid\s+OnGUI\s*\(");
+
         /// <summary>The assemblies allowed to reference Unity's Input System (the input system, its asset builder, tests).</summary>
         private static readonly HashSet<string> InputSystemAssemblies = new() { "TinCan.Input", "TinCan.DevTools.Editor", "TinCan.Tests.EditMode" };
 
@@ -263,6 +267,49 @@ namespace TinCan.Tests.EditMode
             Assert.That(offenders, Is.Empty,
                 "Read input through IInputReader and a context's typed actions, and route discrete actions to an "
                 + "InputCommandHandler (.docs/INPUT.md). Only TinCan.Input touches Unity's Input System:\n  " + string.Join("\n  ", offenders));
+        }
+
+        [Test]
+        public void ScreenUi_IsDrawnIntoTheLayers()
+        {
+            // One document, one draw order: a view takes its layer's root from IUiLayers instead of making a UIDocument
+            // and typing a sort order (.docs/UI_FRAMEWORK.md, "Layers").
+            var offenders = RuntimeSources()
+                .Where(s => s.Path != "Scripts/Core/UI/UiLayers.cs")
+                .Where(s => UiSurface.IsMatch(WithoutCommentLines(s.Text)))
+                .Select(s => s.Path)
+                .ToList();
+
+            Assert.That(offenders, Is.Empty,
+                "Draw screen UI under IUiLayers.Root(UiLayer); only UiLayers makes a UIDocument or sets a sort order:\n  "
+                + string.Join("\n  ", offenders));
+        }
+
+        [Test]
+        public void TheCursor_HasOneWriter()
+        {
+            var offenders = RuntimeSources()
+                .Where(s => s.Path != "Scripts/Core/UI/UnityCursorDevice.cs")
+                .Where(s => CursorWrite.IsMatch(WithoutCommentLines(s.Text)))
+                .Select(s => s.Path)
+                .ToList();
+
+            Assert.That(offenders, Is.Empty,
+                "Ask ICursorPolicy for a cursor mode instead of writing Cursor.lockState or Cursor.visible:\n  "
+                + string.Join("\n  ", offenders));
+        }
+
+        [Test]
+        public void OnGUI_OnlyInEditorCode()
+        {
+            var offenders = RuntimeSources()
+                .Where(s => OnGui.IsMatch(WithoutCommentLines(s.Text)))
+                .Select(s => s.Path)
+                .ToList();
+
+            Assert.That(offenders, Is.Empty,
+                "Runtime UI is UI Toolkit on IUiLayers (dev readouts on UiLayer.Dev); IMGUI is for Editor code:\n  "
+                + string.Join("\n  ", offenders));
         }
 
         [Test]
@@ -556,6 +603,10 @@ namespace TinCan.Tests.EditMode
                 yield return (relative, File.ReadAllText(file));
             }
         }
+
+        /// <summary>Scripts outside any Editor folder: the code that runs in a player.</summary>
+        private static IEnumerable<(string Path, string Text)> RuntimeSources() =>
+            Sources("Scripts").Where(s => !s.Path.Contains("/Editor/"));
 
         private static string WithoutCommentLines(string text) =>
             string.Join("\n", text.Split('\n').Where(line =>

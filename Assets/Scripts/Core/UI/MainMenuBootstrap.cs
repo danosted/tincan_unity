@@ -27,7 +27,7 @@ namespace TinCan.Core.UI
         public void Initialize()
         {
             _lastState = _networkService.State;
-            if (_lastState == NetworkState.Offline) _menus.Open(_mainMenu);
+            if (_lastState == NetworkState.Offline) OpenMain();
         }
 
         public void Tick()
@@ -49,9 +49,11 @@ namespace TinCan.Core.UI
                     _menus.CloseAll();
                     break;
                 case NetworkState.Offline when !_menus.IsOpen:
-                    _menus.Open(_mainMenu);
+                    OpenMain();
                     break;
             }
         }
+
+        private void OpenMain() => _menus.Request(new MenuRequest(MenuOwners.Main, _mainMenu, MenuKind.Screen));
     }
 }

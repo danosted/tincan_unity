@@ -16,7 +16,7 @@ namespace TinCan.Features.Shipyard
 
         public void Execute(MenuContext context)
         {
-            if (_shipyard.Launch()) context.Menus.CloseAll();
+            if (_shipyard.Launch()) context.Close();
             else context.Menus.Back();
         }
     }

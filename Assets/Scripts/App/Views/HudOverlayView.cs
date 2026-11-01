@@ -10,26 +10,24 @@ namespace TinCan.App.Views
 {
     /// <summary>
     /// Throwaway presentation for <see cref="IHudValues"/>, top-left on a grey card: a labelled bar per meter, then one
-    /// label per value.
+    /// label per value, on the Hud layer. Hidden while the menu on top says so (<see cref="MenuBackdropRules"/>).
     /// </summary>
-    [RequireComponent(typeof(UIDocument))]
     public class HudOverlayView : MonoBehaviour, IInjectedView
     {
         private IHudValues? _hud;
-        private UIDocument? _document;
+        private IMenuSystem? _menus;
+        private IUiLayers? _layers;
         private VisualElement? _panel;
 
         [Inject]
-        public void Construct(IHudValues hud)
+        public void Construct(IHudValues hud, IMenuSystem menus, IUiLayers layers)
         {
             _hud = hud;
+            _menus = menus;
+            _layers = layers;
             _hud.Changed += Render;
+            _menus.Changed += Render;
             Render();
-        }
-
-        private void Awake()
-        {
-            _document = GetComponent<UIDocument>();
         }
 
         private void OnEnable()
@@ -40,14 +38,13 @@ namespace TinCan.App.Views
         private void OnDestroy()
         {
             if (_hud != null) _hud.Changed -= Render;
+            if (_menus != null) _menus.Changed -= Render;
+            _panel?.RemoveFromHierarchy();
         }
 
         private void Render()
         {
-            if (_document == null || _hud == null) return;
-
-            var root = _document.rootVisualElement;
-            if (root == null) return;
+            if (_layers == null || _hud == null || _menus == null) return;
 
             if (_panel == null)
             {
@@ -63,11 +60,12 @@ namespace TinCan.App.Views
                 _panel.style.borderTopLeftRadius = _panel.style.borderTopRightRadius = 6;
                 _panel.style.borderBottomLeftRadius = _panel.style.borderBottomRightRadius = 6;
                 _panel.pickingMode = PickingMode.Ignore;
-                root.Add(_panel);
+                _layers.Root(UiLayer.Hud).Add(_panel);
             }
 
             // An empty HUD shows no card at all.
-            _panel.style.display = _hud.Meters.Count + _hud.All.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            bool shown = MenuBackdropRules.For(_menus.Current?.Kind).ShowHud && _hud.Meters.Count + _hud.All.Count > 0;
+            _panel.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
             _panel.Clear();
             foreach (var meter in _hud.Meters) _panel.Add(Meter(meter.Key, meter.Value));
             foreach (var pair in _hud.All)

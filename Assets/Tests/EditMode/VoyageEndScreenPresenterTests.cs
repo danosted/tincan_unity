@@ -12,31 +12,6 @@ namespace TinCan.Tests.EditMode
     /// <summary><see cref="VoyageEndScreenPresenter"/>: the end screen stays up while the voyage is over, and goes with a new voyage.</summary>
     public class VoyageEndScreenPresenterTests
     {
-        private sealed class FakeMenus : IMenuSystem
-        {
-            private readonly List<MenuDefinition> _stack = new();
-
-            public MenuSnapshot? Current => _stack.Count == 0
-                ? null
-                : new MenuSnapshot(_stack[^1].MenuId, _stack[^1].Title, Array.Empty<MenuItemRow>(), _stack.Count > 1);
-            public bool IsOpen => _stack.Count > 0;
-            public int Opened { get; private set; }
-            public event Action? Changed;
-
-            public void Open(MenuDefinition menu)
-            {
-                Opened++;
-                _stack.Add(menu);
-                Changed?.Invoke();
-            }
-
-            public void Back() => _stack.RemoveAt(_stack.Count - 1);
-            public void CloseAll() => _stack.Clear();
-            public void Invoke(string itemId) { }
-            public void SetValue(string itemId, string value) { }
-            public string GetValue(string itemId) => string.Empty;
-        }
-
         private sealed class FakeState : IVoyageState
         {
             public Guid Id { get; } = Guid.NewGuid();
@@ -58,7 +33,7 @@ namespace TinCan.Tests.EditMode
 
         private VoyageConfig _config = null!;
         private MenuDefinition _main = null!;
-        private FakeMenus _menus = null!;
+        private MenuUseCase _menus = null!;
         private FakeState _state = null!;
         private VoyageEndScreenPresenter _presenter = null!;
 
@@ -69,7 +44,7 @@ namespace TinCan.Tests.EditMode
             _config.ArrivedMenu = MenuDefinition.Create("voyage_arrived", "Arrived");
             _config.LostMenu = MenuDefinition.Create("voyage_lost", "Lost");
             _main = MenuDefinition.Create("main", "TinCan");
-            _menus = new FakeMenus();
+            _menus = new MenuUseCase(new MenuCommandRegistry(Array.Empty<IMenuCommand>()));
             _state = new FakeState { Phase = VoyagePhase.Underway };
             var actors = new FakeActorRegistry();
             actors.Register(_state);
@@ -94,18 +69,21 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void Ended_ShowsTheMatchingScreen_AndReopensItWhenClosed()
+        public void Ended_ShowsTheMatchingScreen_AsAPinnedModal_ThatBackCannotClose()
         {
             _state.Phase = VoyagePhase.Lost;
             _presenter.Tick();
             Assert.That(_menus.Current?.MenuId, Is.EqualTo("voyage_lost"));
+            Assert.That((_menus.Current!.Kind, _menus.Current.Pinned), Is.EqualTo((MenuKind.Modal, true)));
 
-            _menus.CloseAll(); // Esc
+            int changes = 0;
+            _menus.Changed += () => changes++;
+            Assert.That(_menus.Back(), Is.False, "Esc opens the pause menu over it instead");
+            _menus.CloseAll();
             _presenter.Tick();
 
             Assert.That(_menus.Current?.MenuId, Is.EqualTo("voyage_lost"));
-            _presenter.Tick();
-            Assert.That(_menus.Opened, Is.EqualTo(2), "opened once more, not every frame");
+            Assert.That(changes, Is.Zero, "asked again every frame, changed never");
         }
 
         [Test]
@@ -121,14 +99,14 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
-        public void AnotherMenu_IsLeftAlone()
+        public void TheEndScreen_CoversAnotherMenu_AndANewVoyageGivesItBack()
         {
             _menus.Open(_main);
             _state.Phase = VoyagePhase.Arrived;
 
             _presenter.Tick();
 
-            Assert.That(_menus.Current?.MenuId, Is.EqualTo("main"));
+            Assert.That(_menus.Current?.MenuId, Is.EqualTo("voyage_arrived"));
 
             _state.Phase = VoyagePhase.Briefing;
             _presenter.Tick();

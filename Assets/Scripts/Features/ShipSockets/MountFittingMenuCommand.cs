@@ -17,7 +17,7 @@ namespace TinCan.Features.ShipSockets
         public void Execute(MenuContext context)
         {
             if (_choice.TryTake(out var state, out var socket)) state.RequestMount(socket, context.ItemId);
-            context.Menus.CloseAll();
+            context.Close();
         }
     }
 }

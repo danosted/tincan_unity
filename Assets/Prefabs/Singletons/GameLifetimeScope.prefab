@@ -9,7 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 939303122614036447}
-  - component: {fileID: 5899087827058315034}
   - component: {fileID: 8931037576737478181}
   m_Layer: 0
   m_Name: MenuOverlay
@@ -33,29 +32,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 3787434845546203633}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5899087827058315034
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2957995840450545336}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
-  m_PanelSettings: {fileID: 11400000, guid: 0ad071a1cc9d89344a39d40f42fb5473, type: 2}
-  m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 0}
-  m_SortingOrder: 10
-  m_Position: 0
-  m_WorldSpaceSizeMode: 1
-  m_WorldSpaceWidth: 1920
-  m_WorldSpaceHeight: 1080
-  m_PivotReferenceSize: 0
-  m_Pivot: 0
-  m_WorldSpaceCollider: {fileID: 0}
 --- !u!114 &8931037576737478181
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -121,7 +97,6 @@ MonoBehaviour:
   _playerPrefab: {fileID: 925472637626500556, guid: fc298da6d560fb04fba62a7e6f38f196, type: 3}
   _airshipPrefab: {fileID: 4741218207008056854, guid: f227451d8202511408d6163b0a319dd4, type: 3}
   _possessionMediatorPrefab: {fileID: 7436285547912372809, guid: d61734141ac623b43b6120ccf6b09da6, type: 3}
-  _inputBindingConfig: {fileID: 11400000, guid: aee68fefa381a6847b1b923c5ba0df4c, type: 2}
   _featureProfile: {fileID: 0}
 --- !u!1 &6248915608490685301
 GameObject:
@@ -132,7 +107,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4454386550870904411}
-  - component: {fileID: 3028670086647742923}
   - component: {fileID: 315130629226612133}
   m_Layer: 0
   m_Name: HudOverlay
@@ -156,29 +130,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 3787434845546203633}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3028670086647742923
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6248915608490685301}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
-  m_PanelSettings: {fileID: 11400000, guid: 0ad071a1cc9d89344a39d40f42fb5473, type: 2}
-  m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 0}
-  m_SortingOrder: 0
-  m_Position: 0
-  m_WorldSpaceSizeMode: 1
-  m_WorldSpaceWidth: 1920
-  m_WorldSpaceHeight: 1080
-  m_PivotReferenceSize: 0
-  m_Pivot: 0
-  m_WorldSpaceCollider: {fileID: 0}
 --- !u!114 &315130629226612133
 MonoBehaviour:
   m_ObjectHideFlags: 0

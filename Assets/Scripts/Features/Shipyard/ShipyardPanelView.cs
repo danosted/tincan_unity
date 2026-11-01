@@ -2,14 +2,14 @@
 using System;
 using System.Linq;
 using TinCan.Core.Ship.Parts;
+using TinCan.Core.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Object = UnityEngine.Object;
 
 namespace TinCan.Features.Shipyard
 {
     /// <summary>
-    /// The shipyard's panels, code-built UI Toolkit on its own document: on the right, the mode tabs and (parts mode) the
+    /// The shipyard's panels, code-built UI Toolkit on the Panels layer (<see cref="IUiLayers"/>): on the right, the mode tabs and (parts mode) the
     /// parts with their pictures, grouped by category; below them the controls, keys on the left and what they do on the
     /// right. Redrawn only when the model's signature changes. Clicks on a tile or a tab are raised as events; the build
     /// ignores clicks over the panels (<see cref="IsPointerOver"/>).
@@ -20,21 +20,19 @@ namespace TinCan.Features.Shipyard
         private static readonly Color Accent = new(0.3f, 0.8f, 1f, 1f);
         private static readonly Color Muted = new(0.75f, 0.77f, 0.8f, 1f);
 
-        private readonly GameObject _host;
-        private readonly UIDocument _document;
+        private readonly VisualElement _root;
         private readonly Func<string, ShipPartDefinition?> _part;
         private readonly ShipyardThumbnails _thumbnails;
         private string? _signature;
 
-        public ShipyardPanelView(Transform parent, PanelSettings settings, Func<string, ShipPartDefinition?> part, ShipyardThumbnails thumbnails)
+        public ShipyardPanelView(IUiLayers layers, Func<string, ShipPartDefinition?> part, ShipyardThumbnails thumbnails)
         {
             _part = part;
             _thumbnails = thumbnails;
-            _host = new GameObject("ShipyardPanels");
-            _host.transform.SetParent(parent, false);
-            _document = _host.AddComponent<UIDocument>();
-            _document.panelSettings = settings;
-            _document.sortingOrder = 10;
+            _root = new VisualElement { name = "shipyard-panels", pickingMode = PickingMode.Ignore };
+            _root.style.position = Position.Absolute;
+            _root.style.left = _root.style.top = _root.style.right = _root.style.bottom = 0;
+            layers.Root(UiLayer.Panels).Add(_root);
         }
 
         public event Action<string>? PartPicked;
@@ -42,14 +40,11 @@ namespace TinCan.Features.Shipyard
 
         public void Show(ShipyardPanelModel model)
         {
-            var root = _document.rootVisualElement;
-            if (root == null || model.Signature == _signature) return;
+            var root = _root;
+            if (model.Signature == _signature) return;
             _signature = model.Signature;
 
             root.Clear();
-            root.pickingMode = PickingMode.Ignore;
-            root.style.position = Position.Absolute;
-            root.style.left = root.style.top = root.style.right = root.style.bottom = 0;
 
             var column = new VisualElement { pickingMode = PickingMode.Ignore };
             column.style.position = Position.Absolute;
@@ -65,17 +60,19 @@ namespace TinCan.Features.Shipyard
             column.Add(ControlsTable(model));
         }
 
+        /// <summary>Whether the topmost element under the point is one of these panels (the panel is shared with every layer).</summary>
         public bool IsPointerOver(Vector2 screenPoint)
         {
-            var panel = _document.rootVisualElement?.panel;
+            var panel = _root.panel;
             if (panel == null) return false;
             var point = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(screenPoint.x, Screen.height - screenPoint.y));
-            return panel.Pick(point) != null;
+            var picked = panel.Pick(point);
+            return picked != null && _root.Contains(picked);
         }
 
         public void Dispose()
         {
-            if (_host != null) Object.Destroy(_host);
+            _root.RemoveFromHierarchy();
         }
 
         private VisualElement BuildPanel(ShipyardPanelModel model)

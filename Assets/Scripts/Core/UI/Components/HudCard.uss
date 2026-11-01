@@ -1,0 +1,12 @@
+.tc-hud-card {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    padding: var(--tc-space-m) 12px;
+    background-color: var(--tc-surface-hud);
+    border-radius: var(--tc-radius);
+}
+
+.tc-hud-card__line {
+    font-size: var(--tc-font-l);
+}

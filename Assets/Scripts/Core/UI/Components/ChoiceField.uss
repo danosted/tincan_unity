@@ -1,0 +1,21 @@
+.tc-choice-field {
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--tc-space-s);
+}
+
+.tc-choice-field__label {
+    flex-grow: 1;
+    color: var(--tc-text-muted);
+}
+
+.tc-choice-field__value {
+    min-width: 100px;
+    -unity-text-align: middle-center;
+    color: var(--tc-accent);
+}
+
+.tc-choice-field__arrow {
+    width: 28px;
+    height: 24px;
+}

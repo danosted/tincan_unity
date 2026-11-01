@@ -14,4 +14,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.UI.UiFeatureInstaller
   _mainMenu: {fileID: 11400000, guid: b86264eab9e75ba46867776a645cba17, type: 2}
   _panelSettings: {fileID: 11400000, guid: 0ad071a1cc9d89344a39d40f42fb5473, type: 2}
-  _theme: {fileID: 7433441132597879392, guid: b1daf426a7b15cc49aca0d9a16de914f, type: 3}

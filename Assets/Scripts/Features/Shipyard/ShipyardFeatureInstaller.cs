@@ -4,6 +4,7 @@ using TinCan.Core.Domain.Features;
 using TinCan.Core.Domain.Input;
 using TinCan.Core.UI;
 using UnityEngine;
+using UnityEngine.UIElements;
 using VContainer;
 using VContainer.Unity;
 
@@ -15,11 +16,14 @@ namespace TinCan.Features.Shipyard
     /// .docs/plans/modular-airship-builder.md (S3).
     /// </summary>
     [CreateAssetMenu(fileName = "ShipyardFeatureInstaller", menuName = "TinCan/Features/Shipyard Feature Installer")]
-    public class ShipyardFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<InputContext>, IMainMenuRows
+    public class ShipyardFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<InputContext>, FeatureInstaller.IExtension<StyleSheet>,
+        IMainMenuRows
     {
         [SerializeField] private ShipyardConfig? _config;
         [Tooltip("Assets/Input/Contexts/Context_Shipyard: building while the shipyard is open.")]
         [SerializeField] private ShipyardInputContext? _controls;
+        [Tooltip("The shipyard's UI component sheets (Features/Shipyard/UI/*.uss), added to the screen UI where the shipyard loads.")]
+        [SerializeField] private List<StyleSheet> _styles = new();
 
         public override void Install(IContainerBuilder builder)
         {
@@ -47,6 +51,8 @@ namespace TinCan.Features.Shipyard
         {
             get { if (_controls != null) yield return _controls; }
         }
+
+        IEnumerable<StyleSheet> FeatureInstaller.IExtension<StyleSheet>.Contributions => _styles;
 
         public IEnumerable<MenuItemDefinition> MainMenuRows
         {

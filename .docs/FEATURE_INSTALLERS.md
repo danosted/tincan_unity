@@ -107,6 +107,9 @@ whose use case isn't there). The rules:
      `ActorAbilityGrantUseCase` grants them on every peer as the actor registers. The actors know nothing about it;
      their prefab's `_startingAbilities` is for core abilities only (sprint). Don't add a feature's ability there.
      The use case is registered by `GameplayTagsFeatureInstaller`, a GAS core installer that always loads.
+   - **UI component styles:** implement `FeatureInstaller.IExtension<StyleSheet>` and list the `.uss` of the
+     feature's UI components (its `UI/` folder); they are added to the screen UI only where the feature loads. The
+     shipyard contributes `PartTile.uss` this way. See [`UI_FRAMEWORK.md`](UI_FRAMEWORK.md), "Theme and components".
    - **Player settings:** implement `FeatureInstaller.IExtension<SettingDefinition>` and list the feature's
      `Setting_*` assets; they appear on their group's Settings menu page only where the feature loads. The first-person
      camera contributes the field of view this way. See [`plans/player-settings.md`](plans/player-settings.md).

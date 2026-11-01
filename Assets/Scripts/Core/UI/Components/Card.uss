@@ -1,0 +1,32 @@
+.tc-card {
+    flex-direction: column;
+    padding: var(--tc-space-m) 10px;
+    background-color: var(--tc-surface-card);
+    border-radius: var(--tc-radius);
+}
+
+/* Takes the room left in a column, but keeps enough for its header and a row of content. */
+.tc-card--grow {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 160px;
+}
+
+/* Under the card above; it gives up height before the growing card does, and clips what does not fit. */
+.tc-card--below {
+    margin-top: var(--tc-space-m);
+    flex-shrink: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.tc-card__heading {
+    -unity-font-style: bold;
+    color: var(--tc-text-muted);
+    margin-top: var(--tc-space-s);
+}
+
+.tc-card__hint {
+    white-space: normal;
+    color: var(--tc-text-muted);
+}

@@ -7,6 +7,7 @@ using TinCan.Core.Domain.Features;
 using TinCan.DevTools.Perf;
 using TinCan.DevTools.Scenarios;
 using UnityEngine;
+using UnityEngine.UIElements;
 using VContainer;
 using VContainer.Unity;
 
@@ -18,10 +19,17 @@ namespace TinCan.DevTools
     /// nothing, so normal play is unaffected. See .docs/NETWORK_TEST_HARNESS.md.
     /// </summary>
     [CreateAssetMenu(fileName = "NetTestHarnessFeatureInstaller", menuName = "TinCan/Features/Net Test Harness Installer")]
-    public class NetTestHarnessFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<InputContext>
+    public class NetTestHarnessFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<InputContext>, FeatureInstaller.IExtension<StyleSheet>
     {
         [Tooltip("Assets/Input/Contexts/Context_DevTools: F3 toggles the readout. Contributed only while the harness runs.")]
         [SerializeField] private InputContext? _controls;
+        [Tooltip("DevTools/UI/DevReadout.uss: the live readout's look.")]
+        [SerializeField] private StyleSheet? _readoutStyle;
+
+        IEnumerable<StyleSheet> FeatureInstaller.IExtension<StyleSheet>.Contributions
+        {
+            get { if (_readoutStyle != null) yield return _readoutStyle; }
+        }
 
         public IEnumerable<InputContext> Contributions
         {

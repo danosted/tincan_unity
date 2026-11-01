@@ -290,7 +290,7 @@ namespace TinCan.Tests.EditMode
         [Test]
         public void ScreenUi_TakesItsLookFromTheTheme()
         {
-            // Colours, font sizes and weights live in Assets/UI/Theme/TinCanTheme.uss as tokens; views add classes. A
+            // Colours, font sizes and weights live in Assets/UI/Theme/Tokens.uss; components and views add classes. A
             // value computed from data (a meter's width, a thumbnail) is still set in code.
             var offenders = RuntimeSources()
                 .Where(s => s.Text.Contains("UnityEngine.UIElements"))

@@ -1,0 +1,29 @@
+.tc-menu-panel {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    min-width: 360px;
+    max-height: 92%;
+    padding: var(--tc-space-l) var(--tc-space-xl);
+    background-color: var(--tc-surface-panel);
+    border-color: var(--tc-border);
+    border-width: 1px;
+    border-radius: var(--tc-radius);
+}
+
+.tc-menu-panel__title {
+    font-size: var(--tc-font-title);
+    -unity-font-style: bold;
+    margin-bottom: var(--tc-space-l);
+    color: var(--tc-text);
+}
+
+.tc-menu-panel__rows {
+    flex-shrink: 1;
+}
+
+/* Text fields, toggles and sliders in a menu. */
+.tc-menu-panel .unity-base-field {
+    margin-top: var(--tc-space-s);
+}

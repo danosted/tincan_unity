@@ -1,0 +1,29 @@
+.tc-part-tile {
+    width: 84px;
+    height: 104px;
+    margin: var(--tc-space-xs);
+    padding: var(--tc-space-xs);
+    flex-direction: column;
+    align-items: center;
+    border-width: 2px;
+    border-color: var(--tc-transparent);
+}
+
+.tc-part-tile--selected {
+    border-color: var(--tc-accent);
+}
+
+.tc-part-tile__picture {
+    width: 76px;
+    height: 76px;
+}
+
+.tc-part-tile__name {
+    font-size: var(--tc-font-xs);
+    white-space: normal;
+    -unity-text-align: middle-center;
+}
+
+.tc-part-tile--selected .tc-part-tile__name {
+    color: var(--tc-accent);
+}

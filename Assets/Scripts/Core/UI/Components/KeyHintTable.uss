@@ -1,0 +1,19 @@
+/* Rows keep their height; a table with too little room is clipped by its card instead of squashed. */
+.tc-key-hints__row {
+    flex-direction: row;
+    flex-shrink: 0;
+    margin-bottom: 1px;
+}
+
+.tc-key-hints__key {
+    width: 120px;
+    -unity-font-style: bold;
+    color: var(--tc-accent);
+    white-space: normal;
+}
+
+.tc-key-hints__action {
+    flex-grow: 1;
+    flex-shrink: 1;
+    white-space: normal;
+}

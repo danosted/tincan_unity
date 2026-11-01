@@ -1,0 +1,5 @@
+.tc-menu-note {
+    margin-top: var(--tc-space-m);
+    color: var(--tc-warning);
+    white-space: normal;
+}

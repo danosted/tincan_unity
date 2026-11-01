@@ -1,0 +1,10 @@
+.tc-menu-button {
+    height: var(--tc-control-height);
+    margin-top: var(--tc-space-s);
+}
+
+.tc-menu-button--compact {
+    height: 22px;
+    margin-top: 1px;
+    -unity-text-align: middle-left;
+}

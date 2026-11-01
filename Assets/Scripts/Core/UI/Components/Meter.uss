@@ -1,0 +1,31 @@
+.tc-meter {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--tc-space-s);
+}
+
+.tc-meter__label {
+    font-size: var(--tc-font-l);
+    width: 80px;
+}
+
+.tc-meter__track {
+    width: 240px;
+    height: 16px;
+    background-color: var(--tc-surface-track);
+    border-color: var(--tc-border-strong);
+    border-width: 1px;
+}
+
+.tc-meter__fill {
+    height: 100%;
+    background-color: var(--tc-good);
+}
+
+.tc-meter__fill--fair {
+    background-color: var(--tc-fair);
+}
+
+.tc-meter__fill--bad {
+    background-color: var(--tc-bad);
+}

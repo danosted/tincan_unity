@@ -1,0 +1,79 @@
+/*
+ * Unity's built-in controls inside our UI (under the layers' root, .tc-root): buttons, labels, text inputs, toggles,
+ * sliders. Components style themselves in their own sheets; this is the base they sit on. Tokens only.
+ */
+.tc-root {
+    color: var(--tc-text);
+    font-size: var(--tc-font-m);
+}
+
+.tc-root .unity-label {
+    color: var(--tc-text);
+}
+
+.tc-root .unity-button {
+    background-color: var(--tc-surface-control);
+    color: var(--tc-text);
+    border-color: var(--tc-border);
+    border-width: 1px;
+    border-radius: var(--tc-radius-s);
+    -unity-text-align: middle-center;
+}
+
+.tc-root .unity-button:hover {
+    background-color: var(--tc-surface-control-hover);
+}
+
+.tc-root .unity-button:active {
+    background-color: var(--tc-surface-control-active);
+}
+
+.tc-root .unity-button:focus {
+    border-color: var(--tc-border-focus);
+}
+
+.tc-root .unity-base-field__label {
+    color: var(--tc-text-muted);
+    min-width: 160px;
+}
+
+/* Text inputs: a dark well with light text, so typed text always reads. */
+.tc-root .unity-base-text-field__input {
+    background-color: var(--tc-surface-input);
+    color: var(--tc-text);
+    border-color: var(--tc-border);
+    border-width: 1px;
+    border-radius: var(--tc-radius-s);
+    padding-left: var(--tc-space-s);
+    padding-right: var(--tc-space-s);
+    --unity-cursor-color: var(--tc-accent);
+    --unity-selection-color: var(--tc-accent-soft);
+}
+
+.tc-root .unity-base-text-field__input:focus {
+    border-color: var(--tc-border-focus);
+}
+
+.tc-root .unity-base-text-field__input > .unity-text-element {
+    color: var(--tc-text);
+}
+
+.tc-root .unity-toggle__checkmark {
+    background-color: var(--tc-surface-input);
+    border-color: var(--tc-border);
+    -unity-background-image-tint-color: var(--tc-accent);
+}
+
+.tc-root .unity-base-slider__tracker {
+    background-color: var(--tc-surface-track);
+    border-color: var(--tc-border);
+}
+
+.tc-root .unity-base-slider__dragger {
+    background-color: var(--tc-accent);
+    border-color: var(--tc-accent);
+}
+
+.tc-root .unity-scroller {
+    opacity: 0.6;
+}

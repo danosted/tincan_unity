@@ -1,0 +1,11 @@
+.tc-dev-readout {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    width: 560px;
+    min-height: 210px;
+    padding: 6px;
+    font-size: var(--tc-font-s);
+    white-space: normal;
+    background-color: var(--tc-surface-readout);
+}

@@ -18,10 +18,8 @@ namespace TinCan.Core.UI
     public class UiFeatureInstaller : FeatureInstaller
     {
         [SerializeField] private MenuDefinition? _mainMenu;
-        [Tooltip("Assets/Settings/UI/DefaultPanelSettings: the panel every screen layer draws on (IUiLayers).")]
+        [Tooltip("Assets/Settings/UI/DefaultPanelSettings: the panel every screen layer draws on (IUiLayers); its theme is Assets/UI/Theme/TinCan.tss.")]
         [SerializeField] private PanelSettings? _panelSettings;
-        [Tooltip("Assets/UI/Theme/TinCanTheme.uss: the colors, spacing and type of all screen UI, as tokens.")]
-        [SerializeField] private StyleSheet? _theme;
 
         public override int Order => -10;
 
@@ -29,7 +27,8 @@ namespace TinCan.Core.UI
         {
             builder.Register<MenuCommandRegistry>(Lifetime.Singleton).As<IMenuCommandRegistry>();
             builder.Register<MenuUseCase>(Lifetime.Singleton).As<IMenuSystem>();
-            builder.Register<UiLayers>(Lifetime.Singleton).As<IUiLayers>().WithParameter("settings", _panelSettings).WithParameter("theme", _theme);
+            builder.Register(resolver => UiStyleSheets.From(resolver.ResolveOrDefault<FeatureInstallerCatalog>()), Lifetime.Singleton);
+            builder.Register<UiLayers>(Lifetime.Singleton).As<IUiLayers>().WithParameter("settings", _panelSettings);
             builder.Register<UnityCursorDevice>(Lifetime.Singleton).As<ICursorDevice>();
             builder.Register<CursorPolicyUseCase>(Lifetime.Singleton).As<ICursorPolicy>().As<ITickable>().AsSelf();
             builder.Register<MenuCursorPresenter>(Lifetime.Singleton).As<IInitializable>();

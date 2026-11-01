@@ -24,16 +24,7 @@ namespace TinCan.DevTools
             var view = host.AddComponent<NetHarnessOverlayView>();
             view._text = text;
             view._label = new Label { name = "net-harness-overlay", pickingMode = PickingMode.Ignore };
-            var style = view._label.style;
-            style.position = Position.Absolute;
-            style.left = style.top = 10;
-            style.width = 560;
-            style.minHeight = 210;
-            style.paddingLeft = style.paddingRight = style.paddingTop = style.paddingBottom = 6;
-            style.fontSize = 13;
-            style.whiteSpace = WhiteSpace.Normal;
-            style.color = Color.white;
-            style.backgroundColor = new Color(0f, 0f, 0f, 0.6f);
+            view._label.AddToClassList("tc-dev-readout");
             layers.Root(UiLayer.Dev).Add(view._label);
             return view;
         }

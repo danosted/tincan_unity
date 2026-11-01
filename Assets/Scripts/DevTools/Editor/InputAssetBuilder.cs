@@ -257,7 +257,7 @@ namespace TinCan.DevTools.Editor
             Debug.Log($"[InputAssetBuilder] {ids.Count} actions, 11 contexts, 7 commands, 3 ability inputs and the Controls menu built.");
         }
 
-        /// <summary>Menu_Controls (one row per key, Reset, Back), reachable from Menu_Main's Controls row.</summary>
+        /// <summary>Menu_Controls (one row per key, Reset, Back), reachable from Menu_Main (Settings > Controls > Key bindings).</summary>
         private static void BuildControlsMenu()
         {
             var controls = Asset<MenuDefinition>(Menus + "Menu_Controls.asset", menu =>
@@ -274,7 +274,8 @@ namespace TinCan.DevTools.Editor
             });
 
             var main = Load<MenuDefinition>(Menus + "Menu_Main.asset");
-            if (main.Items.Any(item => item.ItemId == "controls")) return;
+            // The settings builder turns this row into Settings (Controls page > Key bindings); either way it is there.
+            if (main.Items.Any(item => item.ItemId is "controls" or "settings")) return;
 
             var mainSerialized = new SerializedObject(main);
             var mainItems = mainSerialized.FindProperty("_items");

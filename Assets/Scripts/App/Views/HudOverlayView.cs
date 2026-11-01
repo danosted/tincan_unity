@@ -9,8 +9,9 @@ using TinCan.Core.Domain.Hud;
 namespace TinCan.App.Views
 {
     /// <summary>
-    /// Throwaway presentation for <see cref="IHudValues"/>, top-left on a grey card: a labelled bar per meter, then one
-    /// label per value, on the Hud layer. Hidden while the menu on top says so (<see cref="MenuBackdropRules"/>).
+    /// Throwaway presentation for <see cref="IHudValues"/>, top-left on a card (theme classes tc-hud, tc-meter): a
+    /// labelled bar per meter, then one label per value, on the Hud layer. Hidden while the menu on top says so
+    /// (<see cref="MenuBackdropRules"/>).
     /// </summary>
     public class HudOverlayView : MonoBehaviour, IInjectedView
     {
@@ -48,18 +49,9 @@ namespace TinCan.App.Views
 
             if (_panel == null)
             {
-                _panel = new VisualElement();
-                _panel.style.position = Position.Absolute;
-                _panel.style.left = 12;
-                _panel.style.top = 12;
-                _panel.style.color = Color.white;
-                // A grey card behind the readouts keeps them legible over bright sky and deck.
-                _panel.style.backgroundColor = new Color(0.25f, 0.25f, 0.25f, 0.75f);
-                _panel.style.paddingTop = _panel.style.paddingBottom = 8;
-                _panel.style.paddingLeft = _panel.style.paddingRight = 12;
-                _panel.style.borderTopLeftRadius = _panel.style.borderTopRightRadius = 6;
-                _panel.style.borderBottomLeftRadius = _panel.style.borderBottomRightRadius = 6;
-                _panel.pickingMode = PickingMode.Ignore;
+                // A card behind the readouts keeps them legible over bright sky and deck (theme: .tc-hud).
+                _panel = new VisualElement { name = "hud", pickingMode = PickingMode.Ignore };
+                _panel.AddToClassList("tc-hud");
                 _layers.Root(UiLayer.Hud).Add(_panel);
             }
 
@@ -72,34 +64,36 @@ namespace TinCan.App.Views
             {
                 // A value-less line (a cue toast such as "Part repaired") shows the key alone.
                 string text = string.IsNullOrEmpty(pair.Value) ? pair.Key : $"{pair.Key}: {pair.Value}";
-                _panel.Add(new Label(text) { style = { fontSize = 20 } });
+                var line = new Label(text) { pickingMode = PickingMode.Ignore };
+                line.AddToClassList("tc-hud__line");
+                _panel.Add(line);
             }
         }
 
-        // A labelled bar; the fill runs red (empty) to green (full).
+        /// <summary>The theme class for a meter's fill: good (no modifier), fair below 60 %, bad below 25 %.</summary>
+        public static string? MeterBand(float fill) => fill switch
+        {
+            < 0.25f => "tc-meter__fill--bad",
+            < 0.6f => "tc-meter__fill--fair",
+            _ => null
+        };
+
+        // A labelled bar; the width is the value, the colour the theme's band for it.
         private static VisualElement Meter(string label, float fill)
         {
-            var row = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 6 } };
-            row.Add(new Label(label) { style = { fontSize = 20, width = 80 } });
+            var row = new VisualElement { pickingMode = PickingMode.Ignore };
+            row.AddToClassList("tc-meter");
+            var name = new Label(label) { pickingMode = PickingMode.Ignore };
+            name.AddToClassList("tc-meter__label");
+            row.Add(name);
 
-            var track = new VisualElement
-            {
-                style =
-                {
-                    width = 240, height = 16,
-                    backgroundColor = new Color(0f, 0f, 0f, 0.55f),
-                    borderTopWidth = 1, borderBottomWidth = 1, borderLeftWidth = 1, borderRightWidth = 1,
-                    borderTopColor = Color.white, borderBottomColor = Color.white, borderLeftColor = Color.white, borderRightColor = Color.white
-                }
-            };
-            track.Add(new VisualElement
-            {
-                style =
-                {
-                    width = Length.Percent(fill * 100f), height = Length.Percent(100f),
-                    backgroundColor = Color.Lerp(new Color(0.85f, 0.2f, 0.15f), new Color(0.3f, 0.85f, 0.35f), fill)
-                }
-            });
+            var track = new VisualElement { pickingMode = PickingMode.Ignore };
+            track.AddToClassList("tc-meter__track");
+            var bar = new VisualElement { pickingMode = PickingMode.Ignore };
+            bar.AddToClassList("tc-meter__fill");
+            if (MeterBand(fill) is { } band) bar.AddToClassList(band);
+            bar.style.width = Length.Percent(Mathf.Clamp01(fill) * 100f);
+            track.Add(bar);
             row.Add(track);
             return row;
         }

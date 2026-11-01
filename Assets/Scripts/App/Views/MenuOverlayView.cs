@@ -1,4 +1,6 @@
 #nullable enable
+using System.Collections.Generic;
+using System.Globalization;
 using TinCan.Core.Domain;
 using TinCan.Core.UI;
 using UnityEngine;
@@ -16,7 +18,7 @@ namespace TinCan.App.Views
     /// </summary>
     public class MenuOverlayView : MonoBehaviour, IInjectedView
     {
-        private static readonly Color Dim = new(0f, 0f, 0f, 0.45f);
+        private const string ValueLabel = "row-value";
 
         private IMenuSystem? _menus;
         private IUiLayers? _layers;
@@ -90,6 +92,13 @@ namespace TinCan.App.Views
                         case Button button when snapshot.Items[i].Kind == MenuItemKind.Binding:
                             button.text = BindingText(snapshot.Items[i]);
                             break;
+                        case Slider slider when Mathf.Abs(slider.value - ParseFloat(value)) > 0.0001f:
+                            slider.SetValueWithoutNotify(ParseFloat(value));
+                            break;
+                        case VisualElement row when snapshot.Items[i].Kind is MenuItemKind.Slider or MenuItemKind.Choice:
+                            var shown = row.Q<Label>(ValueLabel);
+                            if (shown != null) shown.text = value;
+                            break;
                     }
                 }
                 _renderedSnapshot = snapshot;
@@ -97,9 +106,9 @@ namespace TinCan.App.Views
             }
 
             _panel.Clear();
-            _panel.Add(new Label(snapshot.Title) { style = { fontSize = 28, marginBottom = 12, unityFontStyleAndWeight = FontStyle.Bold } });
+            _panel.Add(Classed(new Label(snapshot.Title), "tc-menu__title"));
             // Long menus (Controls) scroll instead of running off the screen.
-            var scroll = new ScrollView(ScrollViewMode.Vertical) { style = { flexShrink = 1 } };
+            var scroll = Classed(new ScrollView(ScrollViewMode.Vertical), "tc-menu__rows");
             _panel.Add(scroll);
             _rows = scroll.contentContainer;
             foreach (var row in snapshot.Items)
@@ -130,64 +139,81 @@ namespace TinCan.App.Views
             {
                 case MenuItemKind.TextField:
                 {
-                    var field = new TextField(row.Label) { value = row.Value };
+                    var field = Classed(new TextField(row.Label) { value = row.Value }, "tc-menu__field");
                     field.RegisterValueChangedCallback(evt => menus.SetValue(row.ItemId, evt.newValue));
                     return field;
                 }
                 case MenuItemKind.Toggle:
                 {
-                    var toggle = new Toggle(row.Label) { value = row.Value == bool.TrueString };
+                    var toggle = Classed(new Toggle(row.Label) { value = row.Value == bool.TrueString }, "tc-menu__field");
                     toggle.RegisterValueChangedCallback(evt => menus.SetValue(row.ItemId, evt.newValue ? bool.TrueString : bool.FalseString));
                     return toggle;
                 }
                 case MenuItemKind.Binding:
-                {
-                    var button = new Button(() => menus.Invoke(row.ItemId)) { text = BindingText(row) };
-                    button.style.marginTop = 1;
-                    button.style.height = 22;
-                    button.style.unityTextAlign = TextAnchor.MiddleLeft;
-                    return button;
-                }
+                    return Classed(new Button(() => menus.Invoke(row.ItemId)) { text = BindingText(row) }, "tc-menu__binding");
+                case MenuItemKind.Slider:
+                    return SliderRow(row, menus);
+                case MenuItemKind.Choice:
+                    return ChoiceRow(row, menus);
                 case MenuItemKind.Note:
-                    return new Label(row.Label) { style = { marginTop = 6, color = new Color(1f, 0.75f, 0.3f), whiteSpace = WhiteSpace.Normal } };
+                    return Classed(new Label(row.Label), "tc-menu__note");
                 default:
-                {
-                    var button = new Button(() => menus.Invoke(row.ItemId)) { text = row.Label };
-                    button.style.marginTop = 4;
-                    button.style.height = 32;
-                    return button;
-                }
+                    return Classed(new Button(() => menus.Invoke(row.ItemId)) { text = row.Label }, "tc-menu__button");
             }
+        }
+
+        /// <summary>Styling is the theme's (Assets/UI/Theme/TinCanTheme.uss): elements get classes, not colors or sizes.</summary>
+        private static T Classed<T>(T element, params string[] classes) where T : VisualElement
+        {
+            foreach (var name in classes) element.AddToClassList(name);
+            return element;
         }
 
         private static string BindingText(MenuItemRow row) => $"{row.Label}  -  {row.Value}";
 
+        /// <summary>A slider with its value in a field beside it; the model snaps the value to the row's step.</summary>
+        private static VisualElement SliderRow(MenuItemRow row, IMenuSystem menus)
+        {
+            var slider = Classed(new Slider(row.Label, row.Min, row.Max) { value = ParseFloat(row.Value), showInputField = true }, "tc-menu__field");
+            slider.RegisterValueChangedCallback(evt => menus.SetValue(row.ItemId, evt.newValue.ToString("0.###", CultureInfo.InvariantCulture)));
+            // Keyboard arrows move it by one step.
+            if (row.Step > 0f) slider.pageSize = row.Step;
+            return slider;
+        }
+
+        /// <summary>The label, then the option between a previous and a next button.</summary>
+        private static VisualElement ChoiceRow(MenuItemRow row, IMenuSystem menus)
+        {
+            var line = Classed(new VisualElement(), "tc-menu__choice");
+            line.Add(Classed(new Label(row.Label), "tc-menu__choice-label"));
+            // The buttons outlive value changes (the layout is kept), so they step from the model's value, not the row's.
+            line.Add(Classed(new Button(() => menus.SetValue(row.ItemId, Step(row.Options, menus.GetValue(row.ItemId), -1))) { text = "<" }, "tc-menu__choice-arrow"));
+            line.Add(Classed(new Label(row.Value) { name = ValueLabel }, "tc-menu__choice-value"));
+            line.Add(Classed(new Button(() => menus.SetValue(row.ItemId, Step(row.Options, menus.GetValue(row.ItemId), 1))) { text = ">" }, "tc-menu__choice-arrow"));
+            return line;
+        }
+
+        /// <summary>The option <paramref name="direction"/> places from the current one, wrapping around.</summary>
+        public static string Step(IReadOnlyList<string> options, string current, int direction)
+        {
+            if (options.Count == 0) return current;
+            int index = 0;
+            for (int i = 0; i < options.Count; i++)
+            {
+                if (options[i] == current) index = i;
+            }
+            return options[((index + direction) % options.Count + options.Count) % options.Count];
+        }
+
+        private static float ParseFloat(string value) =>
+            float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float number) ? number : 0f;
+
         private static VisualElement BuildBackdrop()
         {
             // Takes the pointer (the default picking mode), so a click under a menu reaches nothing below it.
-            var backdrop = new VisualElement { name = "menu-backdrop" };
-            backdrop.style.position = Position.Absolute;
-            backdrop.style.left = backdrop.style.top = backdrop.style.right = backdrop.style.bottom = 0;
-            backdrop.style.backgroundColor = Dim;
-            return backdrop;
+            return Classed(new VisualElement { name = "menu-backdrop" }, "tc-backdrop");
         }
 
-        private static VisualElement BuildPanel()
-        {
-            var panel = new VisualElement { name = "menu-panel" };
-            panel.style.position = Position.Absolute;
-            panel.style.left = Length.Percent(50);
-            panel.style.top = Length.Percent(50);
-            panel.style.translate = new Translate(Length.Percent(-50), Length.Percent(-50));
-            panel.style.minWidth = 320;
-            panel.style.maxHeight = Length.Percent(92);
-            panel.style.paddingTop = 16;
-            panel.style.paddingBottom = 16;
-            panel.style.paddingLeft = 24;
-            panel.style.paddingRight = 24;
-            panel.style.backgroundColor = new Color(0.05f, 0.05f, 0.08f, 0.9f);
-            panel.style.color = Color.white;
-            return panel;
-        }
+        private static VisualElement BuildPanel() => Classed(new VisualElement { name = "menu-panel" }, "tc-menu");
     }
 }

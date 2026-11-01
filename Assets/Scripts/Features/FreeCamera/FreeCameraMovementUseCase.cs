@@ -3,6 +3,7 @@ using UnityEngine;
 using VContainer.Unity;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Input;
+using TinCan.Core.Domain.Settings;
 using TinCan.Core.UI;
 
 namespace TinCan.Features.FreeCamera
@@ -21,6 +22,7 @@ namespace TinCan.Features.FreeCamera
         private readonly FreeCameraRotationProcessor _rotationProcessor;
         private readonly IActorRegistry _registry;
         private readonly ICursorPolicy _cursor;
+        private readonly IPlayerSettings _settings;
 
         public FreeCameraMovementUseCase(
             IInputReader input,
@@ -29,7 +31,8 @@ namespace TinCan.Features.FreeCamera
             FreeCameraMovementProcessor moveProcessor,
             FreeCameraRotationProcessor rotationProcessor,
             IActorRegistry registry,
-            ICursorPolicy cursor)
+            ICursorPolicy cursor,
+            IPlayerSettings settings)
         {
             _input = input;
             _controls = controls;
@@ -38,6 +41,7 @@ namespace TinCan.Features.FreeCamera
             _rotationProcessor = rotationProcessor;
             _registry = registry;
             _cursor = cursor;
+            _settings = settings;
         }
 
         public void Tick()
@@ -58,7 +62,7 @@ namespace TinCan.Features.FreeCamera
 
         private void HandleRotation(IFreeCameraView view)
         {
-            Vector2 mouseDelta = _input.ReadVector2(_camera.Look);
+            Vector2 mouseDelta = LookSettings.Apply(_settings, _input.ReadVector2(_camera.Look));
             if (mouseDelta.sqrMagnitude < 0.001f) return;
 
             var result = _rotationProcessor.CalculateRotation(

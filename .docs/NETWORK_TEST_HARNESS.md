@@ -217,6 +217,8 @@ was too short. The client then checks what it joined into. `ShipDamageLateJoin` 
 
 The Console gets `[Scenario]` lines and a final `[Scenario] SUMMARY {json}`. Play mode ends by itself about 1 s
 after the summary is written. Flags, also usable as MPPM player tags: `scenario:<name>` and `scenariomode:solo`.
+Every harness run (scenarios and bots, through `NetHarnessPlayerTagsMenu.Run`) also sets `defaultsettings`
+(`-defaultsettings`), so a run never reads or saves the developer's player settings; `perf.ps1` passes it too.
 
 ### Adding a scenario for a feature slice
 

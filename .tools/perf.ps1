@@ -77,7 +77,7 @@ function Invoke-CrewLoad([string]$Folder) {
     $bot = $profiles["ctr-bot-1c"]
     $botCount = if ($Desktop) { 3 } else { 4 }
     $botCores = @("4", "5", "6", "7")
-    $common = @("-perf", "-perflabel", "CrewLoad", "-perfduration", "$DurationSeconds", "-perfout", "/perf", "-perfquit")
+    $common = @("-defaultsettings", "-perf", "-perflabel", "CrewLoad", "-perfduration", "$DurationSeconds", "-perfout", "/perf", "-perfquit")
     $serverExtra = @()
     if ($ProfileFrames -gt 0) { $serverExtra += @("-perfprofile", "$ProfileFrames") }
     if ($ServerFps -gt 0) { $serverExtra += @("-serverfps", "$ServerFps") }

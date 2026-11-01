@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: FirstPersonCameraFeatureInstaller
   m_EditorClassIdentifier: TinCan.Features.FirstPersonCamera::TinCan.Features.FirstPersonCamera.FirstPersonCameraFeatureInstaller
   _config: {fileID: 11400000, guid: c8115edafece1e540b8e1e38b833b333, type: 2}
+  _fieldOfView: {fileID: 11400000, guid: 9289d5ba570b7ca41b3080fa55a8e18f, type: 2}

@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6d90218bb9de3f489014d7fdc2a904d, type: 3}
+  m_Name: SettingsFeatureInstaller
+  m_EditorClassIdentifier: TinCan.Settings::TinCan.Core.Settings.SettingsFeatureInstaller
+  _settings:
+  - {fileID: 11400000, guid: f0a7bc8e87212024988eece67a885ac7, type: 2}
+  - {fileID: 11400000, guid: dbc9cbc46738c9d49854e64d39e57256, type: 2}

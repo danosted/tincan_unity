@@ -1,4 +1,4 @@
-Status: Approved (2026-10-31); U0-U2 done 2026-11-01 (see Progress); first in [core-systems-roadmap.md](core-systems-roadmap.md)
+Status: Approved (2026-10-31); U0-U4 done 2026-11-01 (see Progress); first in [core-systems-roadmap.md](core-systems-roadmap.md)
 
 # UI and menus: layers, one owner per screen, and tests for what is drawn
 
@@ -150,7 +150,20 @@ Open: a UI art direction. Until there is one, U4 stays a token sheet with the cu
   Esc steps in `OverboardRespawn` and `VoyageLoop`. "Lose while overboard" is an EditMode test only: no test scene
   loads both Respawn and Voyage.
 
-Next: U3 (add `com.unity.ui.test-framework`), U4, U5.
+**U3 done (2026-11-01, with player-settings S2).** `com.unity.ui.test-framework` 6.4.0 is a built-in package for
+Unity 6000.4 (not on the public registry), referenced by the EditMode test assembly only (`Unity.UI.TestFramework.Runtime`,
+`.Editor`). `MenuOverlayViewClickTests : UITestFixture` clicks rows, the choice arrows and the slider in a simulated
+panel, and checks that a menu's backdrop keeps clicks from a panel underneath. It found a real bug at once: the
+choice arrows stepped from the value the row was built with.
+
+**U4 done (2026-11-01).** `Assets/UI/Theme/TinCanTheme.uss`: tokens on `.tc-root` (surfaces, text, accents and
+states, spacing, radii, font sizes) and classes that use only tokens, loaded by `UiLayers` from `UiFeatureInstaller`.
+The menu, HUD, shipyard panels and the dev readout use classes; nothing sets a colour or font size in code
+(`ScreenUi_TakesItsLookFromTheTheme`). Text inputs are a dark well with light text (they were the button colour with
+white text). The HUD meter is three bands (good, fair, bad) instead of a red-to-green blend, so the colours are
+tokens. Tests: `UiThemeTests`. Still a grey placeholder look: there is no art direction yet.
+
+Next: U5 (keyboard and gamepad navigation).
 
 ## Verification
 - EditMode suite green, plus the new model, view and architecture tests.

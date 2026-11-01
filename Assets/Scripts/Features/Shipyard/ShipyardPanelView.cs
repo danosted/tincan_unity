@@ -9,17 +9,14 @@ using UnityEngine.UIElements;
 namespace TinCan.Features.Shipyard
 {
     /// <summary>
-    /// The shipyard's panels, code-built UI Toolkit on the Panels layer (<see cref="IUiLayers"/>): on the right, the mode tabs and (parts mode) the
-    /// parts with their pictures, grouped by category; below them the controls, keys on the left and what they do on the
-    /// right. Redrawn only when the model's signature changes. Clicks on a tile or a tab are raised as events; the build
-    /// ignores clicks over the panels (<see cref="IsPointerOver"/>).
+    /// The shipyard's panels, code-built UI Toolkit on the Panels layer (<see cref="IUiLayers"/>): on the right, the mode
+    /// tabs and (parts mode) the parts with their pictures, grouped by category; below them the controls, keys on the left
+    /// and what they do on the right. Its look is the theme's (tc-card, tc-tab, tc-tile, tc-keys in
+    /// Assets/UI/Theme/TinCanTheme.uss). Redrawn only when the model's signature changes. Clicks on a tile or a tab are
+    /// raised as events; the build ignores clicks over the panels (<see cref="IsPointerOver"/>).
     /// </summary>
     public sealed class ShipyardPanelView : IDisposable
     {
-        private static readonly Color Card = new(0.08f, 0.09f, 0.11f, 0.86f);
-        private static readonly Color Accent = new(0.3f, 0.8f, 1f, 1f);
-        private static readonly Color Muted = new(0.75f, 0.77f, 0.8f, 1f);
-
         private readonly VisualElement _root;
         private readonly Func<string, ShipPartDefinition?> _part;
         private readonly ShipyardThumbnails _thumbnails;
@@ -29,9 +26,7 @@ namespace TinCan.Features.Shipyard
         {
             _part = part;
             _thumbnails = thumbnails;
-            _root = new VisualElement { name = "shipyard-panels", pickingMode = PickingMode.Ignore };
-            _root.style.position = Position.Absolute;
-            _root.style.left = _root.style.top = _root.style.right = _root.style.bottom = 0;
+            _root = Classed(new VisualElement { name = "shipyard-panels", pickingMode = PickingMode.Ignore }, "tc-fill");
             layers.Root(UiLayer.Panels).Add(_root);
         }
 
@@ -40,22 +35,12 @@ namespace TinCan.Features.Shipyard
 
         public void Show(ShipyardPanelModel model)
         {
-            var root = _root;
             if (model.Signature == _signature) return;
             _signature = model.Signature;
 
-            root.Clear();
-
-            var column = new VisualElement { pickingMode = PickingMode.Ignore };
-            column.style.position = Position.Absolute;
-            column.style.right = 12;
-            column.style.top = 12;
-            column.style.bottom = 12;
-            column.style.width = 300;
-            column.style.flexDirection = FlexDirection.Column;
-            column.style.justifyContent = Justify.SpaceBetween;
-            root.Add(column);
-
+            _root.Clear();
+            var column = Classed(new VisualElement { pickingMode = PickingMode.Ignore }, "tc-side-column");
+            _root.Add(column);
             column.Add(BuildPanel(model));
             column.Add(ControlsTable(model));
         }
@@ -77,39 +62,25 @@ namespace TinCan.Features.Shipyard
 
         private VisualElement BuildPanel(ShipyardPanelModel model)
         {
-            var card = CardElement();
-            card.style.flexShrink = 1;
-            card.style.minHeight = 0;
+            var card = Classed(new VisualElement(), "tc-card", "tc-card--fill");
 
-            var tabs = new VisualElement();
-            tabs.style.flexDirection = FlexDirection.Row;
-            tabs.style.marginBottom = 6;
+            var tabs = Classed(new VisualElement(), "tc-tabs");
             tabs.Add(Tab("Parts", model.Mode == ShipyardMode.Parts, () => ModePicked?.Invoke(ShipyardMode.Parts)));
             tabs.Add(Tab("Frame", model.Mode == ShipyardMode.Frame, () => ModePicked?.Invoke(ShipyardMode.Frame)));
             card.Add(tabs);
 
             if (model.Mode == ShipyardMode.Frame)
             {
-                var hint = new Label("Draw the hull: click the floor to place nodes, click nodes to join them. A closed loop becomes a planked face.");
-                hint.style.whiteSpace = WhiteSpace.Normal;
-                hint.style.color = Muted;
-                card.Add(hint);
+                card.Add(Classed(new Label("Draw the hull: click the floor to place nodes, click nodes to join them. A closed loop becomes a planked face."), "tc-hint"));
                 return card;
             }
 
-            var scroll = new ScrollView(ScrollViewMode.Vertical);
-            scroll.style.flexShrink = 1;
+            var scroll = Classed(new ScrollView(ScrollViewMode.Vertical), "tc-menu__rows");
             foreach (var group in model.Parts.GroupBy(p => p.Category))
             {
-                var heading = new Label(string.IsNullOrEmpty(group.Key) ? "Other" : group.Key);
-                heading.style.unityFontStyleAndWeight = FontStyle.Bold;
-                heading.style.color = Muted;
-                heading.style.marginTop = 4;
-                scroll.Add(heading);
+                scroll.Add(Classed(new Label(string.IsNullOrEmpty(group.Key) ? "Other" : group.Key), "tc-heading"));
 
-                var grid = new VisualElement();
-                grid.style.flexDirection = FlexDirection.Row;
-                grid.style.flexWrap = Wrap.Wrap;
+                var grid = Classed(new VisualElement(), "tc-grid");
                 foreach (var tile in group) grid.Add(Tile(tile));
                 scroll.Add(grid);
             }
@@ -120,61 +91,28 @@ namespace TinCan.Features.Shipyard
 
         private VisualElement Tile(ShipyardPartTile tile)
         {
-            var button = new Button(() => PartPicked?.Invoke(tile.PartId)) { tooltip = tile.PartId };
-            button.style.width = 84;
-            button.style.height = 104;
-            button.style.marginLeft = button.style.marginRight = 2;
-            button.style.marginTop = button.style.marginBottom = 2;
-            button.style.paddingLeft = button.style.paddingRight = button.style.paddingTop = button.style.paddingBottom = 2;
-            button.style.flexDirection = FlexDirection.Column;
-            button.style.alignItems = Align.Center;
-            button.style.backgroundColor = new Color(0.14f, 0.15f, 0.18f, 1f);
-            var border = tile.Selected ? Accent : new Color(0f, 0f, 0f, 0f);
-            button.style.borderLeftColor = button.style.borderRightColor = button.style.borderTopColor = button.style.borderBottomColor = border;
-            button.style.borderLeftWidth = button.style.borderRightWidth = button.style.borderTopWidth = button.style.borderBottomWidth = 2;
+            var button = Classed(new Button(() => PartPicked?.Invoke(tile.PartId)) { tooltip = tile.PartId }, "tc-tile");
+            if (tile.Selected) button.AddToClassList("tc-tile--selected");
 
-            var picture = new VisualElement();
-            picture.style.width = 76;
-            picture.style.height = 76;
+            var picture = Classed(new VisualElement(), "tc-tile__picture");
             if (_part(tile.PartId) is { } part && _thumbnails.Of(part) is { } texture)
             {
                 picture.style.backgroundImage = Background.FromRenderTexture((RenderTexture)texture);
             }
 
             button.Add(picture);
-            var name = new Label(tile.Name);
-            name.style.fontSize = 11;
-            name.style.whiteSpace = WhiteSpace.Normal;
-            name.style.unityTextAlign = TextAnchor.MiddleCenter;
-            name.style.color = tile.Selected ? Accent : Color.white;
-            button.Add(name);
+            button.Add(Classed(new Label(tile.Name), "tc-tile__name"));
             return button;
         }
 
         private static VisualElement ControlsTable(ShipyardPanelModel model)
         {
-            var card = CardElement();
-            card.style.marginTop = 8;
-            card.style.flexShrink = 0;
+            var card = Classed(new VisualElement(), "tc-card", "tc-card--below");
             foreach (var row in model.Controls)
             {
-                var line = new VisualElement();
-                line.style.flexDirection = FlexDirection.Row;
-                line.style.marginBottom = 1;
-
-                var keys = new Label(row.Keys);
-                keys.style.width = 120;
-                keys.style.unityFontStyleAndWeight = FontStyle.Bold;
-                keys.style.color = Accent;
-                keys.style.whiteSpace = WhiteSpace.Normal;
-                line.Add(keys);
-
-                var action = new Label(row.Action);
-                action.style.flexGrow = 1;
-                action.style.flexShrink = 1;
-                action.style.whiteSpace = WhiteSpace.Normal;
-                action.style.color = Color.white;
-                line.Add(action);
+                var line = Classed(new VisualElement(), "tc-keys");
+                line.Add(Classed(new Label(row.Keys), "tc-keys__key"));
+                line.Add(Classed(new Label(row.Action), "tc-keys__action"));
                 card.Add(line);
             }
 
@@ -183,24 +121,15 @@ namespace TinCan.Features.Shipyard
 
         private static Button Tab(string text, bool active, Action onClick)
         {
-            var tab = new Button(onClick) { text = text };
-            tab.style.flexGrow = 1;
-            tab.style.height = 26;
-            tab.style.backgroundColor = active ? new Color(0.18f, 0.35f, 0.45f, 1f) : new Color(0.14f, 0.15f, 0.18f, 1f);
-            tab.style.color = active ? Color.white : Muted;
-            tab.style.unityFontStyleAndWeight = active ? FontStyle.Bold : FontStyle.Normal;
+            var tab = Classed(new Button(onClick) { text = text }, "tc-tab");
+            if (active) tab.AddToClassList("tc-tab--active");
             return tab;
         }
 
-        private static VisualElement CardElement()
+        private static T Classed<T>(T element, params string[] classes) where T : VisualElement
         {
-            var card = new VisualElement();
-            card.style.backgroundColor = Card;
-            card.style.paddingLeft = card.style.paddingRight = 10;
-            card.style.paddingTop = card.style.paddingBottom = 8;
-            card.style.borderTopLeftRadius = card.style.borderTopRightRadius = card.style.borderBottomLeftRadius = card.style.borderBottomRightRadius = 6;
-            card.style.flexDirection = FlexDirection.Column;
-            return card;
+            foreach (var name in classes) element.AddToClassList(name);
+            return element;
         }
     }
 }

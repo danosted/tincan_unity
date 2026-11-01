@@ -122,7 +122,9 @@ Scripted presses obey contexts exactly like keys: `GunnerFire` does nothing unle
 
 ## Controls menu
 
-Main menu > **Controls** (`Assets/UI/Menus/Menu_Controls.asset`). Its `Bindings` row expands into one row per
+Main menu > **Settings > Controls > Key bindings** (`Assets/UI/Menus/Menu_Controls.asset`). The Controls page above
+it holds the look settings (sensitivity, invert Y; `Core/Domain/Settings/LookSettings.cs`), which every mouse view
+applies to its look delta. Its `Bindings` row expands into one row per
 rebindable key; composite parts such as Move Forward count separately. Clicking a row waits for a key, and Esc
 cancels. A refused key shows why below the list. **Reset to Defaults** drops every override. The overrides are saved in
 PlayerPrefs (`TinCan.InputBindings`) and loaded at start. A gamepad later means adding a control scheme and bindings to

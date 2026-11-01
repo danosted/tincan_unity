@@ -51,6 +51,7 @@ Pick the path that matches what you want to do right now.
 | [`NETWORK_TEST_HARNESS.md`](NETWORK_TEST_HARNESS.md) | You need to feel or measure what a remote client feels: simulated latency, an input bot, and movement telemetry. |
 | [`PERFORMANCE.md`](PERFORMANCE.md) | You want to know whether a change costs frames, ticks, memory or bandwidth: perf runs in containers, the budgets, and how to read a report. |
 | [`Network_Initialization_Flow.md`](Network_Initialization_Flow.md) | Deep dive: how VContainer and NGO initialise across host, server and client. |
+| [`ART_DIRECTION.md`](ART_DIRECTION.md) | You are making or judging anything visual: the feel, the inspirations, pillars, palette, materials, shading, motion and how an asset is reviewed. |
 | [`CODE_STANDARDS.md`](CODE_STANDARDS.md) | C# rules everyone follows (naming, guard clauses, nullable, no regions). |
 | [`AI_CONFIGURATION.md`](AI_CONFIGURATION.md) | How AI assistants are expected to behave here. Read it so you know what to expect from them. |
 | [`../.tools/README.md`](../.tools/README.md) | Setup, upgrade, verify and build scripts, their shared modules, the server container (Podman), Unity CLI and MCP configuration. |

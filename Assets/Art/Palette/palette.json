@@ -1,0 +1,27 @@
+{
+  "roles": [
+    { "id": "ink", "name": "Ink", "hex": "#1C1719", "use": "The deepest darks: night, the inside of holds and hatches, silhouettes against glow" },
+    { "id": "plum", "name": "Plum", "hex": "#4A1F3B", "use": "Deep shadow at dusk and night, far silhouettes in mist" },
+    { "id": "mulberry", "name": "Mulberry", "hex": "#7B3B5A", "use": "Dusk sky bands, shadowed cloth, spirit-world accents" },
+    { "id": "timber-dark", "name": "Timber dark", "hex": "#5A3A24", "use": "Hull sides, beams, frames" },
+    { "id": "timber-warm", "name": "Timber warm", "hex": "#8A5A36", "use": "Rails, posts, furniture" },
+    { "id": "deck", "name": "Deck", "hex": "#C9A473", "use": "Plank floors" },
+    { "id": "russet", "name": "Russet", "hex": "#9E4A28", "use": "Autumn foliage, painted wood, worn leather" },
+    { "id": "burnt-orange", "name": "Burnt orange", "hex": "#D07A30", "use": "Autumn foliage, sunset light, warm accents" },
+    { "id": "leaf-gold", "name": "Leaf gold", "hex": "#E0AE48", "use": "Autumn foliage highlights, light through leaves" },
+    { "id": "brass", "name": "Brass", "hex": "#B88A3E", "use": "Hubs, bands, fittings, finials" },
+    { "id": "iron-teal", "name": "Iron teal", "hex": "#3E5E5E", "use": "Masts, machinery, pipes" },
+    { "id": "lacquer-red", "name": "Lacquer red", "hex": "#B5402F", "use": "Flags, roofs, accents, special places" },
+    { "id": "canvas", "name": "Canvas", "hex": "#E6DCC0", "use": "Sails, rotor blades, awnings" },
+    { "id": "lantern-amber", "name": "Lantern amber", "hex": "#F2A541", "use": "Lanterns, windows at dusk, warm glow" },
+    { "id": "spirit-cyan", "name": "Spirit cyan", "hex": "#8FE3F0", "use": "The cairn's spirit, magic, interaction glow" },
+    { "id": "grass", "name": "Grass", "hex": "#7FA650", "use": "Island tops" },
+    { "id": "rock-ochre", "name": "Rock ochre", "hex": "#B98E5A", "use": "Island strata" },
+    { "id": "mist", "name": "Mist", "hex": "#C9C3D6", "use": "The haze between layers of the view; tinted by the light it carries" },
+    { "id": "sky", "name": "Sky", "hex": "#8FB8D8", "use": "Day sky" },
+    { "id": "horizon-haze", "name": "Horizon haze", "hex": "#E8E2D0", "use": "The sky at the horizon, aerial perspective" },
+    { "id": "cloud", "name": "Cloud", "hex": "#FBF6EC", "use": "Cloud light" },
+    { "id": "cloud-shadow", "name": "Cloud shadow", "hex": "#A9A6C8", "use": "Cloud undersides" },
+    { "id": "shadow-tint", "name": "Shadow tint", "hex": "#6A6E9C", "use": "What shadows lean toward instead of black" }
+  ]
+}

@@ -22,6 +22,8 @@ namespace TinCan.Features.ShipDesigns
         public Material? FramePlanks;
         [Tooltip("The material of frame beams and railings.")]
         public Material? FrameBeams;
+        [Tooltip("The material of frame walls (wall faces, which join two stories); the plank material when empty.")]
+        public Material? FrameWalls;
 
         [Header("Designs")]
         [Tooltip("Read-only designs that ship with the game (*.ship.json TextAssets under Assets/Settings/ShipDesigns/).")]

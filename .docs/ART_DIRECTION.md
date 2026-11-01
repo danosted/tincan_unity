@@ -49,11 +49,13 @@ Each pillar is a test an asset passes or fails.
 
 ## Colour
 One palette for the whole world (the 3D counterpart of `Assets/UI/Theme/Tokens.uss`). Assets use these roles, not
-free colours. **(proposal)** The swatches are SVGs in [`art/palette/`](art/palette/) (`palette.svg` is the whole set);
-when a colour changes, change its swatch too.
+free colours. The source is `Assets/Art/Palette/palette.json`: change a colour there, then run
+**TinCan > Dev > Look > Write Palette Docs**, which writes the swatches in [`art/palette/`](art/palette/) (small SVG
+samples of each colour; `palette.svg` is the whole set) and the table below. A test fails when they disagree.
 
 ![The palette](art/palette/palette.svg)
 
+<!-- palette:begin (written by TinCan > Dev > Look > Write Palette Docs; edit palette.json instead) -->
 | | Role | Hex | Used for |
 |---|---|---|---|
 | ![](art/palette/ink.svg) | Ink | `#1C1719` | The deepest darks: night, the inside of holds and hatches, silhouettes against glow |
@@ -79,21 +81,38 @@ when a colour changes, change its swatch too.
 | ![](art/palette/cloud.svg) | Cloud | `#FBF6EC` | Cloud light |
 | ![](art/palette/cloud-shadow.svg) | Cloud shadow | `#A9A6C8` | Cloud undersides |
 | ![](art/palette/shadow-tint.svg) | Shadow tint | `#6A6E9C` | What shadows lean toward instead of black |
+<!-- palette:end -->
 
 ## Materials
 A small, fixed library shared by every asset, so ships batch and stay consistent. A Blender asset names its materials
 after these roles; the asset builder swaps them for the shared Unity materials (the rotor mast does this already:
-`ShipDesignsAssetBuilder.RotorMastPrefab`). Today's shared ship materials, in `Assets/Materials/ShipParts/`:
-`M_ShipHull` (timber), `M_ShipDeck`, `M_ShipEngine` (brass), `M_ShipIron`, `M_ShipCanvas`, `M_ShipPennant`, `M_ShipCairn`,
-`M_ShipSpirit`. Variation within a material comes from vertex colour (wear, dirt, sun-bleach), not from new
-materials.
+`ShipDesignsAssetBuilder.RotorMastPrefab`). The library is a table in `DevTools/Editor/LookMaterials.cs`: each
+material is on `TinCan/Stylized`, names a palette role and, at most, a metal highlight or a glow. **TinCan > Dev > Look >
+Build Materials** writes them into `Assets/Materials/ShipParts/` from the palette, so colours are tuned in
+`palette.json`, never on a material:
+
+| Material | Role | For |
+|---|---|---|
+| `M_ShipWalls` | timber dark | Frame hull walls |
+| `M_ShipHull` | timber warm | Beams, railings, wooden parts |
+| `M_ShipDeck` | deck | Plank floors, stair steps |
+| `M_ShipEngine` | brass, highlight | Engines, hubs, bands |
+| `M_ShipIron` | iron teal, highlight | Masts, machinery |
+| `M_ShipCanvas` | canvas | Rotor blades, sails |
+| `M_ShipPennant` | lacquer red | Pennants, flags |
+| `M_ShipCairn` | rock ochre | The cairn's stone |
+| `M_ShipSpirit` | spirit cyan, glow | The cairn's spirit |
+
+Variation within a material comes from vertex colour (wear, dirt, sun-bleach; the shader's vertex colour switch), not
+from new materials.
 
 ## Light and shading (the look)
 Most of the feel comes from here, not from the models. The target **(proposal)**:
-- **One stylized lit shader** for world assets: wrapped diffuse banded into two or three soft steps, shadows tinted
+- **One stylized lit shader** for world assets: wrapped diffuse banded into two soft steps, shadows tinted
   toward the shadow tint, a soft sky-coloured rim, ambient from the sky, little or no specular. Metal reads as metal by
   colour and a soft highlight band, not by reflections. Vertex colour multiplies the base (ambient occlusion, wear).
-  `Assets/Shaders/SkyIsland.shader` (wrapped diffuse, vertex-colour masks) is the nearest thing today.
+  Built: `Assets/Shaders/Stylized.shader` (`TinCan/Stylized`), with the light model in
+  `Assets/Shaders/Include/TinCanLighting.hlsl`, which `SkyIsland.shader` shares.
 - **No ink outlines** on the world; `TargetOutline` stays the interaction highlight only.
 - **Sky and clouds** painterly: big soft cloud shapes, a warm horizon haze, aerial perspective (distance fades toward
   the sky colour).
@@ -138,9 +157,10 @@ An asset is done when a turntable or in-game render shows it and each answer is 
 6. Did the developer see the render and accept it?
 
 ## Today, and the gap
-- Ship parts are greybox primitives on URP Lit, except the rotor mast (the first Blender part, on URP Lit).
-- The frame hull uses one deck material for planks and one beam material; hull sides cannot yet differ from decks.
-- Sky islands and clouds have their own shaders and are closest to the target.
+- Ship parts are greybox primitives, except the rotor mast (the first Blender part); all are on the stylized shader
+  and the library materials. The helm still uses the pirate pack's meshes and material.
+- The frame hull has three materials: deck floors, timber-dark walls, timber-warm beams and railings.
+- Sky islands share the ships' light model; clouds have their own shaders.
 - The UI is a grey placeholder theme ([`UI_FRAMEWORK.md`](UI_FRAMEWORK.md), [`plans/ui-and-menus.md`](plans/ui-and-menus.md)).
 - Third-party packs are present: `Assets/Stylized_Pirate_Ship/`, `Assets/Fantasy Skybox FREE/`, volumetric clouds
   (`Assets/ThirdParty/`).

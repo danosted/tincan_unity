@@ -149,12 +149,18 @@ An asset is done when a turntable or in-game render shows it and each answer is 
 - 2026-11-01: the earthy palette stays, leaning into autumn (russet, burnt orange, leaf gold), with a dark end (ink,
   plum, mulberry). Ori and the Blind Forest joins the inspirations for its misty, glowing atmosphere and soft-focus
   depth.
+- 2026-11-01:
+  - **Palette shades:** accepted as they are; judged again in the look slice's first renders.
+  - **Shading:** two bands with a wide, soft edge and coloured shadows; the edge softness is one tunable value.
+  - **Outlines:** none on the world (`TargetOutline` keeps meaning "you can interact with this"); characters are
+    revisited when they exist, a soft rim glow before any ink line.
+  - **Characters:** stylized-realistic, about 5.5 to 6 heads, slightly large heads, hands and props; this keeps the
+    2 m player and the crew-animation placeholder. Settled in detail at crew-animation's art step.
+  - **Third-party packs:** the pirate ship and the skybox go
+    ([`plans/remove-old-third-party-content.md`](plans/remove-old-third-party-content.md)); the volumetric clouds stay.
+  - **Hero time of day:** golden late afternoon; the other times come later through the grading and the light.
+  - **Depth of field in play:** far layers only, folded into the mist, with a graphics setting to turn it off; full
+    depth of field in the shipyard, menus, the map and cutscenes.
 
 ## Open questions for the developer
-1. The new darks and autumn colours: right shades, or adjust after seeing them in a render?
-2. Shading: two or three bands, and how hard the band edges are (painterly soft or crisp cel)?
-3. Outlines: none (proposed), thin on characters only, or everywhere?
-4. Characters: how stylized (FF9 chibi proportions, or Ghibli realistic proportions)?
-5. The third-party packs: keep as placeholders, restyle them, or remove them once our own assets exist?
-6. Which time of day is the hero look the first slice should nail?
-7. Depth of field in play: only on far layers (proposed), or none at all in first person?
+None right now. New ones go here as the look slice ([`plans/look-slice.md`](plans/look-slice.md)) raises them.

@@ -14,7 +14,6 @@ Shader "TinCan/SkyIsland"
         _RockDeep ("Rock (deep, toward the apex)", Color) = (0.24, 0.18, 0.16, 1)
         _StrataPerMetre ("Strata bands per metre", Float) = 0.12
         _PatchScale ("Grass patch scale", Float) = 0.04
-        _Wrap ("Light wrap", Range(0, 1)) = 0.35
         _AmbientBoost ("Ambient boost", Range(0, 2)) = 1.0
         _ShadowTint ("Shadow tint", Color) = (0.42, 0.43, 0.61, 1)
         _ShadowFill ("Shadow fill", Range(0, 1)) = 0.45
@@ -37,7 +36,6 @@ Shader "TinCan/SkyIsland"
             half4 _RockDeep;
             float _StrataPerMetre;
             float _PatchScale;
-            half _Wrap;
             half _AmbientBoost;
             half4 _ShadowTint;
             half _ShadowFill;
@@ -62,6 +60,7 @@ Shader "TinCan/SkyIsland"
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
             #include "Include/TinCanLighting.hlsl"
+            #include "Include/TinCanAtmosphere.hlsl"
 
             struct Attributes
             {
@@ -139,16 +138,17 @@ Shader "TinCan/SkyIsland"
                 surface.highlight = 0;
 
                 TinCanLook look;
-                look.wrap = _Wrap;
+                look.wrap = 0; // islands shadow themselves: a wrapped band would be cut by the shadow map
                 look.softness = _BandSoftness;
                 look.shadowTint = _ShadowTint.rgb;
                 look.shadowFill = _ShadowFill;
                 look.ambient = _AmbientBoost;
                 look.rim = _Rim;
                 look.highlightSize = 0;
+                look.bands = 2;
 
                 half3 color = TinCanShade(surface, look);
-                color = MixFog(color, input.fogFactor);
+                color = TinCanAtmosphere(color, input.positionWS, input.fogFactor);
                 return half4(color, 1);
             }
             ENDHLSL

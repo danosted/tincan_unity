@@ -774,8 +774,28 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipPickerScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        public static readonly ScenarioEntry MountFitting = new(
-            new Scenario.Builder("MountFitting")
+        // The look's atmosphere (.docs/plans/look-slice.md, L2), in the one test area that loads it. Presentation, so each
+        // peer checks its own: the Atmosphere owns fog, ambient, sun and post. Cloud whiteout is AtmosphereProcessorTests'.
+        public static readonly ScenarioEntry LookApplies = new(
+            new Scenario.Builder("LookApplies")
+                .InScene(TestScenes.Look)
+                .Describe("Host and client spawn in the look's test area -> on each peer the Atmosphere owns the air: banded fog on, plain fog and ambient from the look, the sun at the look's colour and intensity, post effects on the local camera.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("LookApplied", 15f))
+                .Act(s => s
+                    .WaitUntil("LookApplied", 45f)
+                    .Wait(1f, "a few frames of the look")
+                    .Expect("LookApplied")
+                    .Checkpoint("look"))
+                .Assert(s => s
+                    .Wait(2f, "the subject checks its own view")
+                    .Expect("LookApplied"))
+                .Build(),
+            builder => builder.Register<LookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        public static readonly ScenarioEntry MountFitting = new(            new Scenario.Builder("MountFitting")
                 .InScene(TestScenes.Shipyard)
                 .Describe("Face a free socket on the designed ship -> press Interact -> the fitting menu opens on the subject's peer only -> pick the cannon -> the server mounts it on that socket for every peer.")
                 .Timeout(120f)
@@ -1618,7 +1638,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

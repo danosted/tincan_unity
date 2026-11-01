@@ -52,7 +52,24 @@ until its own model exists. The contact sheet compiles shaders synchronously, or
   change in ShipDesigns, with its tests.
 - `SkyIsland.shader` takes the same lighting include, so islands and ships sit in one light.
 
-### L2: air you can see
+### L2: air you can see (built 2026-11-01, awaiting the developer's look in a play scene)
+Built: `Shaders/Include/TinCanAtmosphere.hlsl` (in Stylized, SkyIsland, CloudSea, CloudPuff), the Atmosphere feature
+(`Features/Atmosphere/`, in `Profile_Galleon` and `Profile_FuelSandbox`), the core contracts `IViewSubmersion` and
+`IAtmosphereOwner` (`Core/Domain/Atmosphere/`), and `Settings/Look/Look_GoldenAfternoon` with its bloom volume
+(**TinCan > Dev > Look > Build Atmosphere**). Along the way:
+- Ambient gives way to the sun on lit faces (`TinCanLighting.hlsl`), so lit surfaces no longer wash out.
+- The play scenes name their sun (Lighting > Sun Source): none did, so the cloud dimming never reached the light.
+- The cloud tuning rig (`CloudAtmosphereDirector`) also wrote the sun every frame; it now leaves it to the owner.
+- The player camera had post-processing off; the atmosphere turns it on for the local camera.
+- Not covered: the volumetric clouds (third-party) and the skybox take no banded air; L3's painted sky matches the
+  horizon to the fog.
+- Verified: `AtmosphereProcessorTests` (cloud whiteout and dimming) and the scenario `LookApplies` in a new test area,
+  `Test_Look` (Test_Core plus Atmosphere; decided 2026-11-01: the one test area with the look, so the rule that every
+  slice ships a scenario holds and the other areas stay plain), solo and host + client. Flying into the cloud deck is
+  not scripted: the boundary rescues a ship that deep. The test-range builder now names each scene's sun; only
+  `Test_Look` is rebuilt so far.
+
+Planned:
 - A shared include, `Shaders/Include/TinCanAtmosphere.hlsl`: height fog in bands (densest at the cloud sea, thinning
   upward), tinted by the angle to the sun (gold toward it, plum and blue away), distance fading to the mist colour.
   Used by the stylized, island and cloud shaders, so everything fades the same way.
@@ -70,6 +87,20 @@ until its own model exists. The contact sheet compiles shaders synchronously, or
   shadows), shadows-midtones-highlights, the wide bloom, depth of field (Gaussian, starting beyond the play space,
   folded into the mist), no vignette, lens dirt or chromatic aberration.
 - A graphics setting, "Far blur" (on by default), through the Settings feature.
+
+### The lab sheet (2026-11-01)
+**TinCan > Dev > Look > Lab Sheet** renders the look on test geometry (`Logs/look/lab.png`), because the ship's flat
+faces hide the shading. Its first renders found three faults, now fixed:
+- **The band sat past the terminator.** Wrapped diffuse put the step at N.L 0.35, and the shadow map cut the wrapped
+  part in jagged steps. The step now starts at the terminator, and its width is the softness in N.L. Wrap defaults to 0,
+  and the islands no longer use it.
+- **The fog hid everything beyond about 250 m.** It now gives about 25% at 250 m, 65% at 1 km and 85% (the cap) at 2 km.
+- **Glows did not bloom in the sheets.** They rendered into a low-range target; they now use an HDR one.
+
+A third, half-lit band is now an option (`_Bands` 3).
+
+Open: the band softness (the library's 0.35 reads as smooth shading; 0.02 to 0.1 reads as cel steps), and two or
+three bands.
 
 ## Verify
 - EditMode tests: every ship part's renderers use `TinCan/Stylized` with library materials; the palette JSON and the

@@ -1,5 +1,6 @@
 #nullable enable
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Atmosphere;
 using TinCan.Core.Domain.Features;
 using UnityEngine;
 using VContainer;
@@ -22,7 +23,7 @@ namespace TinCan.Features.CloudBoundary
         {
             builder.RegisterInstance(_config);
             builder.RegisterInstance(_visualProfile);
-            builder.RegisterComponentInHierarchy<CloudEnvironmentView>();
+            builder.RegisterComponentInHierarchy<CloudEnvironmentView>().AsSelf().As<IViewSubmersion>();
             builder.Register<CloudBoundaryProcessor>(Lifetime.Singleton);
             builder.Register<CloudSurfaceQuery>(Lifetime.Singleton).As<ICloudSurfaceQuery>();
             builder.Register<NoOpCloudBoundaryExpiryHandler>(Lifetime.Singleton).As<ICloudBoundaryExpiryHandler>();

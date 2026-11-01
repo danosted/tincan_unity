@@ -117,7 +117,8 @@ Most of the feel comes from here, not from the models. The target **(proposal)**
 - **Sky and clouds** painterly: big soft cloud shapes, a warm horizon haze, aerial perspective (distance fades toward
   the sky colour).
 - **Atmosphere (after Ori):** height fog in layers, densest in the cloud sea and thinning upward, tinted by the light
-  that crosses it (gold toward the sun, plum and blue away from it). Light shafts where sun or lanterns cross mist.
+  that crosses it (gold toward the sun, plum and blue away from it). Built: `Shaders/Include/TinCanAtmosphere.hlsl`,
+  set each frame by the Atmosphere feature from `Settings/Look/Look_GoldenAfternoon`. Light shafts where sun or lanterns cross mist.
   Every glow carries a wide, soft halo, so light bleeds into the air instead of stopping at the object. Far islands
   and ships become flat, misty silhouettes in two or three depth bands.
 - **Depth of field:** soft focus pushes depth, but never on what a player must read. In play: a gentle blur only on

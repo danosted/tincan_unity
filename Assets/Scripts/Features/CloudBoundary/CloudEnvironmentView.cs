@@ -4,11 +4,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Atmosphere;
 using VContainer;
 
 namespace TinCan.Features.CloudBoundary
 {
-    public class CloudEnvironmentView : MonoBehaviour
+    /// <summary>
+    /// The cloud sea's legacy visuals, and how deep the local view is in the cloud deck (<see cref="IViewSubmersion"/>).
+    /// Without an <see cref="IAtmosphereOwner"/> (the test range) it also turns submersion into whiteout fog and a dimmed sun;
+    /// with one (the play scenes' Atmosphere feature), the owner does that and this only reports the submersion.
+    /// </summary>
+    public class CloudEnvironmentView : MonoBehaviour, IViewSubmersion
     {
         private readonly List<Matrix4x4> _puffMatrices = new();
         private readonly List<GameObject> _puffPool = new();
@@ -26,6 +32,8 @@ namespace TinCan.Features.CloudBoundary
         private Light? _sunLight;
         private float _baseLightIntensity;
         private bool _baseAtmosphereCached;
+        private bool _atmosphereOwnedElsewhere;
+        private bool _evaluated;
         private bool _baseFogEnabled;
         private Color _baseFogColor;
         private float _baseFogDensity;
@@ -39,6 +47,10 @@ namespace TinCan.Features.CloudBoundary
 
         public CloudSubmersionState CurrentAtmosphere { get; private set; }
 
+        public float Submersion => CurrentAtmosphere.Submersion;
+        public float Whiteout => CurrentAtmosphere.Whiteout;
+        public float LightMultiplier => _evaluated ? CurrentAtmosphere.LightMultiplier : 1f;
+
         [Inject]
         public void Construct(
             ICloudSurfaceQuery surfaceQuery,
@@ -46,8 +58,10 @@ namespace TinCan.Features.CloudBoundary
             CloudVisualProfile visualProfile,
             CloudSubmersionProcessor submersionProcessor,
             CloudSubmersionConfig submersionConfig,
-            ILocalViewCamera viewCamera)
+            ILocalViewCamera viewCamera,
+            IObjectResolver resolver)
         {
+            _atmosphereOwnedElsewhere = resolver.TryResolve<IAtmosphereOwner>(out _);
             _viewCamera = viewCamera;
             _surfaceQuery = surfaceQuery;
             _boundaryConfig = boundaryConfig;
@@ -116,6 +130,11 @@ namespace TinCan.Features.CloudBoundary
                 _submersionConfig.MinLightMultiplier,
                 _submersionConfig.VapourGain,
                 _submersionConfig.AudioGain);
+            _evaluated = true;
+            if (_atmosphereOwnedElsewhere)
+            {
+                return;
+            }
 
             RenderSettings.fog = true;
             RenderSettings.fogColor = Color.Lerp(_baseFogColor, _submersionConfig.WhiteoutFogColor, CurrentAtmosphere.Whiteout);

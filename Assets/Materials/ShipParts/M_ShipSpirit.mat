@@ -27,12 +27,13 @@ Material:
     m_Floats:
     - _Ambient: 1
     - _BandSoftness: 0.35
+    - _Bands: 2
     - _Highlight: 0
     - _HighlightSize: 0.08
     - _Rim: 0.15
     - _ShadowFill: 0.45
     - _VertexColor: 0
-    - _Wrap: 0.3
+    - _Wrap: 0
     m_Colors:
     - _BaseColor: {r: 0.56078434, g: 0.8901961, b: 0.9411765, a: 1}
     - _EmissionColor: {r: 0.89725494, g: 1.4243138, b: 1.5058824, a: 1}

@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27c8f63939eeea2469d5a244a757da08, type: 3}
+  m_Name: Look_GoldenAfternoon
+  m_EditorClassIdentifier: TinCan.Features.Atmosphere::TinCan.Features.Atmosphere.LookProfile
+  Settings:
+    SunColour: {r: 0.9635294, g: 0.9047059, b: 0.7847059, a: 1}
+    SunIntensity: 1.1
+    SunAngles: {x: 28, y: 60}
+    AmbientSky: {r: 0.4766667, g: 0.61333334, b: 0.72, a: 0.85}
+    AmbientHorizon: {r: 0.7733334, g: 0.7533334, b: 0.6933334, a: 0.85}
+    AmbientGround: {r: 0.5633334, g: 0.55333334, b: 0.6666667, a: 0.85}
+    SunwardFog: {r: 0.89882356, g: 0.81490195, b: 0.6290196, a: 1}
+    AwayFog: {r: 0.7254902, g: 0.7078432, b: 0.8117647, a: 1}
+    SunwardFocus: 3
+    FogBaseHeight: 10
+    FogDensity: 0.0015
+    FogFalloff: 0.01
+    HazeDensity: 0.0002
+    MaxFog: 0.85
+    WhiteoutColour: {r: 0.9843137, g: 0.9647059, b: 0.9254902, a: 1}
+    WhiteoutDensity: 0.08
+  Post: {fileID: 11400000, guid: 4cefbaa7e302a394fbce38d4dccbaf8f, type: 2}

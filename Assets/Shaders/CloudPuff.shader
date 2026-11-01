@@ -31,6 +31,7 @@ Shader "TinCan/Environment/Cloud Puff"
             #pragma fragment Frag
             #pragma multi_compile_instancing
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Include/TinCanAtmosphere.hlsl"
 
             struct Attributes
             {
@@ -141,7 +142,7 @@ Shader "TinCan/Environment/Cloud Puff"
                 color.rgb += (shapeNoise - 0.5) * 0.1;
                 color.a *= edgeFade * density;
                 color.rgb *= color.a;
-                return color;
+                return TinCanAtmospherePremultiplied(color, input.positionWS);
             }
             ENDHLSL
         }

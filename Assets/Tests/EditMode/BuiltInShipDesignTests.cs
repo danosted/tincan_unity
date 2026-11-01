@@ -31,12 +31,14 @@ namespace TinCan.Tests.EditMode
         {
             ShipFrameDesigns.StarterName => ShipFrameDesigns.StarterDesign(),
             ShipFrameDesigns.GalleonName => ShipFrameDesigns.GalleonDesign(),
+            ShipFrameDesigns.CorsairName => ShipFrameDesigns.CorsairDesign(),
             _ => ShipFrameDesigns.RaftDesign(),
         };
 
         [TestCase(ShipFrameDesigns.StarterName)]
         [TestCase(ShipFrameDesigns.GalleonName)]
         [TestCase(ShipFrameDesigns.RaftName)]
+        [TestCase(ShipFrameDesigns.CorsairName)]
         public void TheConfig_ListsIt_AndItLoads_AsAValidShip_ThatFlies(string name)
         {
             var config = Config();
@@ -57,6 +59,7 @@ namespace TinCan.Tests.EditMode
         [TestCase(ShipFrameDesigns.StarterName)]
         [TestCase(ShipFrameDesigns.GalleonName)]
         [TestCase(ShipFrameDesigns.RaftName)]
+        [TestCase(ShipFrameDesigns.CorsairName)]
         public void TheCommittedFile_IsWhatTheBuilderWrites(string name)
         {
             var file = AssetDatabase.LoadAssetAtPath<TextAsset>(ShipDesignsAssetBuilder.DesignsFolder + name + ".ship.json");
@@ -67,6 +70,7 @@ namespace TinCan.Tests.EditMode
         [TestCase(ShipFrameDesigns.StarterName)]
         [TestCase(ShipFrameDesigns.GalleonName)]
         [TestCase(ShipFrameDesigns.RaftName)]
+        [TestCase(ShipFrameDesigns.CorsairName)]
         public void EveryPlankFace_IsCoveredByItsTriangles(string name)
         {
             foreach (var face in ShipFrameShape.From(Built(name).Frame).PlankFaces)
@@ -122,6 +126,25 @@ namespace TinCan.Tests.EditMode
         }
 
         [Test]
+        public void TheCorsair_HasFourStories_JoinedByStairs_AndThreeRotorMastsOnItsCentreline()
+        {
+            var corsair = ShipFrameDesigns.CorsairDesign();
+            var shape = ShipFrameShape.From(corsair.Frame);
+
+            Assert.That(Enumerable.Range(0, 4).Select(s => ShipFrameUnits.ToMetres(corsair.Frame.StoryFloor(s))), Is.EqualTo(new[] { -3.5f, -0.5f, 2.5f, 5.5f }));
+            var flights = shape.Stairs(ShipFrameTuning.Default.StairSlope).ToList();
+            Assert.That(flights.Select(f => f.Story), Is.EquivalentTo(new[] { 1, 2, 2, 3 }), "the hatch to the hold, two up to the quarterdeck, one up the castle");
+
+            var rotors = corsair.Parts.Where(p => p.PartId == ShipDesignsAssetBuilder.RotorMast).ToList();
+            Assert.That(rotors, Has.Count.EqualTo(3));
+            foreach (var rotor in rotors)
+            {
+                Assert.That(ShipPartPose.TryGetAnchorPoint(rotor.Anchor, shape, out var point), Is.True);
+                Assert.That(point.x, Is.EqualTo(0f).Within(1e-4f), $"{rotor} stands on the centreline");
+            }
+        }
+
+        [Test]
         public void TheShipyardTestProfile_LoadsShipDesignsAndTheShipyard()
         {
             var profile = AssetDatabase.LoadAssetAtPath<FeatureProfile>(ShipDesignsAssetBuilder.ProfilePath);
@@ -143,7 +166,7 @@ namespace TinCan.Tests.EditMode
 
             Assert.That(parts.Count(p => p.IsCairn), Is.EqualTo(1));
             Assert.That(parts.Where(p => p.Attach == ShipPartAttach.Node).Select(p => p.PartId),
-                Is.EquivalentTo(new[] { ShipDesignsAssetBuilder.Mast, ShipDesignsAssetBuilder.Propeller }));
+                Is.EquivalentTo(new[] { ShipDesignsAssetBuilder.Mast, ShipDesignsAssetBuilder.Propeller, ShipDesignsAssetBuilder.RotorMast }));
         }
 
         /// <summary>A face loop's Newell vector: along its normal, as long as twice its area seen along that normal.</summary>

@@ -7,7 +7,7 @@ namespace TinCan.DevTools.Editor
 {
     /// <summary>
     /// The built-in designs, all frames with parts hung on them (.docs/plans/frame-only-ships.md), written by
-    /// <see cref="ShipDesignsAssetBuilder"/>: the Starter sloop, the Galleon and the Raft. Positions are frame units (10
+    /// <see cref="ShipDesignsAssetBuilder"/>: the Starter sloop, the Galleon, the Raft and the Corsair. Positions are frame units (10
     /// cm), x across the ship (+ starboard), z along it (+ bow); every design's first story floor is at -0.5 m.
     /// </summary>
     public static class ShipFrameDesigns
@@ -15,6 +15,7 @@ namespace TinCan.DevTools.Editor
         public const string StarterName = "Starter";
         public const string GalleonName = "Galleon";
         public const string RaftName = "Raft";
+        public const string CorsairName = "Corsair";
 
         /// <summary>
         /// The starter: a sloop 6 m wide and 11 m long, one railed deck with a pointed bow; the helm midships, the cairn
@@ -198,6 +199,107 @@ namespace TinCan.DevTools.Editor
                 new ShipPartPlacement(32, ShipDesignsAssetBuilder.Cairn, ShipPartAnchor.OnFace(27, 0, 60), 0),
             };
             return new ShipDesign(RaftName, "TinCan", 33, parts, frame: frame);
+        }
+
+        /// <summary>The Corsair's hold floor, seen from above in frame units (x, z), stern port first, then round by the bow.</summary>
+        private static readonly (int X, int Z)[] CorsairHold =
+        {
+            (-18, -120), (18, -120), (22, -90), (24, -30), (22, 40), (16, 80), (5, 105), (-5, 105), (-16, 80), (-22, 40), (-24, -30), (-22, -90),
+        };
+
+        /// <summary>The Corsair's chine, node for node round the hold, where the bilge meets the hull walls.</summary>
+        private static readonly (int X, int Z)[] CorsairChine =
+        {
+            (-26, -132), (26, -132), (34, -96), (36, -30), (34, 40), (25, 86), (7, 120), (-7, 120), (-25, 86), (-34, 40), (-36, -30), (-34, -96),
+        };
+
+        /// <summary>The Corsair's main deck, node for node over the chine; the bow sheers up (drift).</summary>
+        private static readonly (int X, int Z, int Drift)[] CorsairDeck =
+        {
+            (-30, -140, 0), (30, -140, 0), (40, -100, 0), (42, -30, 0), (40, 40, 0), (30, 90, 2), (8, 130, 5), (-8, 130, 5), (-30, 90, 2),
+            (-40, 40, 0), (-42, -30, 0), (-40, -100, 0),
+        };
+
+        /// <summary>
+        /// The Corsair, after a sky-galleon concept: a round-bellied hull 8.4 m wide and 35 m long with its bowsprit, four
+        /// stories. The keel story (floor -3.5 m) is the hold with a bilge rising 0.4 m all round it to the chine, so the hull
+        /// rounds under; the walls lean out from the chine to the main deck (-0.5 m), whose bow sheers up into a railed
+        /// bowsprit. A railed hatch with a flight to the hold; a cabin aft under the quarterdeck (2.5 m), two flights up to it
+        /// either side; on the quarterdeck the stern castle, walled at the sides and stern, open forward, a flight from its
+        /// roof (5.5 m), where the helm stands. Three rotor masts on the centreline (bow, waist, the castle's stern), two
+        /// propellers on the stern chine, an engine and the cairn in the hold, four mount plates (bow and quarterdeck).
+        /// </summary>
+        public static ShipDesign CorsairDesign()
+        {
+            var b = new FrameBuilder(-35, 30, 30, 30, 30);
+            int n = CorsairHold.Length;
+
+            // The keel story (0): the hold floor, and the bilge round it up to the chine.
+            int[] hold = CorsairHold.Select(p => b.Node(0, p.X, p.Z)).ToArray();
+            int[] chine = CorsairChine.Select(p => b.Node(0, p.X, p.Z, 4)).ToArray();
+            int holdFloor = b.Face(hold);
+            for (int i = 0; i < n; i++) b.Face(hold[i], hold[(i + 1) % n], chine[(i + 1) % n], chine[i]);
+
+            // The main deck (story 1) and the hull walls up to it from the chine.
+            int[] d = CorsairDeck.Select(p => b.Node(1, p.X, p.Z, p.Drift)).ToArray();
+            for (int i = 0; i < n; i++) b.Face(chine[i], chine[(i + 1) % n], d[(i + 1) % n], d[i]);
+
+            // The deck round the hatch: the cabin floor, a strip aft of the hatch, the two sides, the waist (its forward
+            // edge a beam across, with the fore mast's node), the bow and the bowsprit.
+            int k1 = b.Node(1, -15, -20), k2 = b.Node(1, 15, -20), k3 = b.Node(1, 15, 30), kc = b.Node(1, 0, 30), k4 = b.Node(1, -15, 30);
+            int fore = b.Node(1, 0, 95, 3);
+            int sprit = b.Node(1, 0, 210, 8);
+            b.Face(d[0], d[1], d[2], d[3], d[10], d[11]);
+            b.Face(d[10], d[3], k2, k1);
+            b.Face(d[3], d[4], k3, k2);
+            int waist = b.Face(d[4], d[5], fore, d[8], d[9], k4, kc, k3);
+            b.Face(d[5], d[6], d[7], d[8], fore);
+            b.Face(d[9], d[10], k1, k4);
+            b.Face(d[6], sprit, d[7]);
+            b.Rail(ShipFrameRailing.Rail, d[3], d[4], d[5], d[6], sprit, d[7], d[8], d[9], d[10]);
+            b.Rail(ShipFrameRailing.Rail, k2, k3, kc, k4, k1);
+            b.Stair(k1, k2, 0, 1);
+
+            // The quarterdeck (story 2) over the cabin, its front split for the two flights down to the main deck.
+            int q0 = b.Node(2, -30, -140), q1 = b.Node(2, 30, -140), q2 = b.Node(2, 40, -100), q3 = b.Node(2, 42, -30), qd = b.Node(2, 35, -30),
+                qc = b.Node(2, 25, -30), qb = b.Node(2, -25, -30), qa = b.Node(2, -35, -30), q10 = b.Node(2, -42, -30), q11 = b.Node(2, -40, -100);
+            b.Face(d[0], d[1], q1, q0);
+            b.Face(d[1], d[2], q2, q1);
+            b.Face(d[2], d[3], q3, q2);
+            b.Face(d[11], d[0], q0, q11);
+            b.Face(d[10], d[11], q11, q10);
+            int quarterdeck = b.Face(q0, q1, q2, q3, qd, qc, qb, qa, q10, q11);
+            b.Rail(ShipFrameRailing.Rail, qd, q3, q2, q1);
+            b.Rail(ShipFrameRailing.Rail, qb, qc);
+            b.Rail(ShipFrameRailing.Rail, q0, q11, q10, qa);
+            b.Stair(qa, qb, 0, 1);
+            b.Stair(qc, qd, 0, 1);
+
+            // The stern castle on the quarterdeck: walls at the stern (over the cabin's) and sides, its roof (story 3) railed
+            // but for a flight down to the quarterdeck at its port front.
+            int t2 = b.Node(2, 30, -85), t3 = b.Node(2, -30, -85);
+            int r0 = b.Node(3, -30, -140), rm = b.Node(3, 0, -140), r1 = b.Node(3, 30, -140), r2 = b.Node(3, 30, -85), rs = b.Node(3, -12, -85),
+                r3 = b.Node(3, -30, -85);
+            b.Face(q0, q1, r1, rm, r0);
+            b.Face(q1, t2, r2, r1);
+            b.Face(t3, q0, r0, r3);
+            int castle = b.Face(r0, rm, r1, r2, rs, r3);
+            b.Rail(ShipFrameRailing.Rail, rs, r2, r1, rm, r0, r3);
+            b.Stair(r3, rs, 0, 1);
+
+            b.OnFace(ShipDesignsAssetBuilder.CoreHelm, castle, 0, -110);
+            b.OnFace(ShipDesignsAssetBuilder.Cairn, holdFloor, 0, -60);
+            b.OnFace(ShipDesignsAssetBuilder.Engine, holdFloor, 0, -95);
+            b.OnNode(ShipDesignsAssetBuilder.Propeller, chine[0]);
+            b.OnNode(ShipDesignsAssetBuilder.Propeller, chine[1]);
+            b.OnNode(ShipDesignsAssetBuilder.RotorMast, fore);
+            b.OnNode(ShipDesignsAssetBuilder.RotorMast, kc);
+            b.OnNode(ShipDesignsAssetBuilder.RotorMast, rm);
+            b.OnFace(ShipDesignsAssetBuilder.HullMount, waist, -28, 60);
+            b.OnFace(ShipDesignsAssetBuilder.HullMount, waist, 28, 60);
+            b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, -36, -60);
+            b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, 34, -60);
+            return b.Build(CorsairName);
         }
 
         /// <summary>

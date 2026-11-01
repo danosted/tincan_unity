@@ -27,6 +27,7 @@ plan is the contract those meshes follow, so they replace the greybox visuals wi
 | `hull.wall_window` | 1 × 3 × 1 | The same wall with a 0.5 × 0.8 m window 1.1 m above the floor. | 5, 0, 0, 12 |
 | `hull.bow` | 9 × 6 × 4 box from the keel up, plus the bowsprit's cells | A prow for a 9-wide hull: tapers from the hull to a point 4 m ahead, plank top flush with the main deck, rails on its outer edges, a bowsprit. Generated mesh (`Assets/Models/ShipParts/Greybox/Bow.asset`) with a convex collider. | 60, 0, 0, 120 |
 | `prop.propeller` | nacelle cell + a 3 × 3 disc one cell behind (-Z) | A nacelle with a four-blade propeller. Static for now. | 25, 0, 400, 20 |
+| `hull.rotor_mast` (node, added 2026-11-01) | pole 1 × 8, a 3 × 3 layer at y 3, a 5 × 5 layer at y 6, two pennant cells behind (-Z) | The first Blender part (`Assets/Models/ShipParts/RotorMast/`, from `.tools/blender/rotor_mast.py`, with its `manifest.json`): a mast with two lift rotors on a vertical axis (`RotorLow`, `RotorHigh`, spinning about local Y; static for now) and red pennants. Mostly flavour; the Corsair carries three. | 15, 150, 0, 15 |
 
 Yaw orientation k turns a part 90°·k clockwise seen from above: the +X edge of a rail or wall faces +X, -Z, -X, +Z for
 k = 0, 1, 2, 3; stairs rise toward +Z, -X, -Z, +X.

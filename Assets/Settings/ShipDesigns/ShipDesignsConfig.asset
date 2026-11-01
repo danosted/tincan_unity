@@ -51,4 +51,5 @@ MonoBehaviour:
   - {fileID: 4900000, guid: 703ad1adcd7d5f64da3fea612463da02, type: 3}
   - {fileID: 4900000, guid: 348ddaf73aaeb514a8abda537648cc18, type: 3}
   - {fileID: 4900000, guid: f35ddc663a37288469509f160f298308, type: 3}
+  - {fileID: 4900000, guid: 5237f2bcaab067d4abbe9db81cd7e75e, type: 3}
   DefaultDesign: Starter

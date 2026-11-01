@@ -25,8 +25,8 @@ namespace TinCan.Features.Shipyard
         public void Execute(MenuContext context)
         {
             _shipyard.Close();
-            context.Menus.CloseAll();
-            if (!_network.IsActive) context.Menus.Open(_mainMenu);
+            context.Close();
+            if (!_network.IsActive) context.Menus.Request(new MenuRequest(MenuOwners.Main, _mainMenu, MenuKind.Screen));
         }
     }
 }

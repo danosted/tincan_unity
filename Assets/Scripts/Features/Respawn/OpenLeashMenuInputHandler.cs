@@ -25,7 +25,7 @@ namespace TinCan.Features.Respawn
             var local = _actors.GetLocalPlayerActor<IHumanoidCharacterView>();
             if (_menus.IsOpen || local == null || _rules.LeashedTag == null || !local.HasTag(_rules.LeashedTag)) return false;
 
-            _menus.Open(OverboardMenus.Leashed(RespawnProcessor.RuleFor(_rules.Rules, RespawnCause.Overboard)));
+            _menus.Request(new MenuRequest(OverboardMenuUseCase.LeashMenuOwner, OverboardMenus.Leashed(RespawnProcessor.RuleFor(_rules.Rules, RespawnCause.Overboard)), MenuKind.Screen));
             return true;
         }
     }

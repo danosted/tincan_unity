@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TinCan.Core.Ship.Parts;
+using TinCan.Core.UI;
 using TinCan.Features.ShipDesigns;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -21,10 +22,13 @@ namespace TinCan.Features.Shipyard
         private static readonly int Color = Shader.PropertyToID("_Color");
         /// <summary>Thumbnails are rendered this far below the stage, where nothing else is.</summary>
         private static readonly Vector3 StudioOffset = new(0f, -500f, 0f);
+        private const string CursorOwner = "Shipyard";
 
         private readonly ShipyardConfig _config;
         private readonly IShipPartCatalog _catalog;
         private readonly ShipDesignsConfig _designs;
+        private readonly IUiLayers _layers;
+        private readonly ICursorPolicy _cursor;
         private readonly List<GameObject> _markers = new();
         private GameObject? _root;
         private Transform? _preview;
@@ -40,11 +44,13 @@ namespace TinCan.Features.Shipyard
         private ShipyardPanelView? _panel;
         private ShipyardThumbnails? _thumbnails;
 
-        public ShipyardStage(ShipyardConfig config, IShipPartCatalog catalog, ShipDesignsConfig designs)
+        public ShipyardStage(ShipyardConfig config, IShipPartCatalog catalog, ShipDesignsConfig designs, IUiLayers layers, ICursorPolicy cursor)
         {
             _config = config;
             _catalog = catalog;
             _designs = designs;
+            _layers = layers;
+            _cursor = cursor;
         }
 
         public bool IsShown => _root != null;
@@ -84,18 +90,15 @@ namespace TinCan.Features.Shipyard
             _hoverFill = Fill("HoverFill");
             _pendingLine = Line("PendingLine", 0.04f);
 
-            if (_config.PanelSettings != null)
-            {
-                _thumbnails = new ShipyardThumbnails(_config.StageOrigin + StudioOffset);
-                _panel = new ShipyardPanelView(_root.transform, _config.PanelSettings, id => _catalog.TryGet(id, out var part) ? part : null, _thumbnails);
-                _panel.PartPicked += id => PartPicked?.Invoke(id);
-                _panel.ModePicked += mode => ModePicked?.Invoke(mode);
-            }
+            _thumbnails = new ShipyardThumbnails(_config.StageOrigin + StudioOffset);
+            _panel = new ShipyardPanelView(_layers, id => _catalog.TryGet(id, out var part) ? part : null, _thumbnails);
+            _panel.PartPicked += id => PartPicked?.Invoke(id);
+            _panel.ModePicked += mode => ModePicked?.Invoke(mode);
         }
 
         public void Hide()
         {
-            SetLooking(false);
+            _cursor.Release(CursorOwner);
             _panel?.Dispose();
             _thumbnails?.Dispose();
             if (_hoverFill != null) Object.Destroy(_hoverFill.sharedMesh);
@@ -205,11 +208,7 @@ namespace TinCan.Features.Shipyard
             _camera.transform.SetPositionAndRotation(_preview.TransformPoint(pose.Position), _preview.rotation * pose.Rotation);
         }
 
-        public void SetLooking(bool looking)
-        {
-            Cursor.lockState = looking ? CursorLockMode.Locked : CursorLockMode.None;
-            Cursor.visible = !looking;
-        }
+        public void SetLooking(bool looking) => _cursor.Request(CursorOwner, looking ? CursorState.Locked : CursorState.Free);
 
         public void ShowPanel(ShipyardPanelModel model) => _panel?.Show(model);
 

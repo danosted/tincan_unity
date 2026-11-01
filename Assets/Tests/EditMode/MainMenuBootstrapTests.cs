@@ -52,7 +52,7 @@ namespace TinCan.Tests.EditMode
             _main = MenuDefinition.Create("main", "Main", new MenuItemDefinition { ItemId = "quit", Label = "Quit", Kind = MenuItemKind.Command, CommandId = "Quit" });
             _bootstrap = new MainMenuBootstrap(_menus, _network, _main);
             _open = new OpenMenuInputHandler(_menus, _network, _possession, _main);
-            _back = new MenuBackInputHandler(_menus);
+            _back = new MenuBackInputHandler(_menus, _main);
             _openCommand = ScriptableObject.CreateInstance<OpenMenuCommand>();
             _backCommand = ScriptableObject.CreateInstance<MenuBackCommand>();
             _body = new FakePossessable();

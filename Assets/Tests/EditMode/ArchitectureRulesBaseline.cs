@@ -61,6 +61,6 @@ namespace TinCan.Tests.EditMode
         };
 
         /// <summary>Scripts under <c>Assets/Scripts</c> without <c>#nullable enable</c> (review C12).</summary>
-        public const int FilesWithoutNullableLimit = 91;
+        public const int FilesWithoutNullableLimit = 90;
     }
 }

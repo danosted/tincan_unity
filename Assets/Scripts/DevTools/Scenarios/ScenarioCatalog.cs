@@ -469,7 +469,13 @@ namespace TinCan.DevTools.Scenarios
                 .Act(s => s
                     .WaitUntil("VoyagePhase", 60f, "Arrived")
                     .WaitUntil("MenuShown", 5f, "voyage_arrived")
+                    .Expect("HudShown")
                     .Checkpoint("arrived")
+                    // The end screen is pinned: Esc opens the pause menu over it, Esc again comes back to it.
+                    .Tap(ScriptedAction.Cancel)
+                    .WaitUntil("TopMenu", 2f, "main")
+                    .Tap(ScriptedAction.Cancel)
+                    .WaitUntil("TopMenu", 2f, "voyage_arrived")
                     .Do("RecordVoyage")
                     .Do("PressMenuItem", "restart")
                     .WaitUntil("VoyageAdvanced", 10f)
@@ -1036,11 +1042,24 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("SubjectHasTag", 10f, "State.Overboard")
                     .WaitUntil("OverboardMenuOpen", 3f)
                     .WaitUntil("RespawnHudShows", 3f, "Overboard")
+                    .Expect("HudShown")
+                    .Expect("CursorFree")
                     .Checkpoint("overboard")
+                    // Esc over the pinned choice opens the pause menu on top (the next tick must not cover it), and
+                    // Esc again returns to the choice (.docs/plans/ui-and-menus.md, U2).
+                    .Tap(ScriptedAction.Cancel)
+                    .WaitUntil("TopMenu", 2f, "main")
+                    .Wait(0.5f, "a few overboard ticks")
+                    .Expect("TopMenu", "main")
+                    .Tap(ScriptedAction.Cancel)
+                    .WaitUntil("TopMenu", 2f, "Overboard")
+                    .Checkpoint("paused and back")
                     .Do("ChooseRespawn")
                     .WaitUntil("SubjectLacksTag", 5f, "State.Overboard")
                     .WaitUntil("SubjectAboard", 5f)
                     .Expect("SubjectHolds", "none")
+                    .Expect("TopMenu", "none")
+                    .WaitUntil("CursorLocked", 2f)
                     .Checkpoint("aboard"))
                 .Assert(s => s
                     .WaitUntil("SubjectOverboard", 30f)

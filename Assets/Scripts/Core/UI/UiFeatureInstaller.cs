@@ -3,6 +3,7 @@ using TinCan.Core.Domain.Features;
 using TinCan.Core.Domain.Input;
 using TinCan.Core.UI.Commands;
 using UnityEngine;
+using UnityEngine.UIElements;
 using VContainer;
 using VContainer.Unity;
 using TinCan.Core.Domain.Hud;
@@ -17,6 +18,8 @@ namespace TinCan.Core.UI
     public class UiFeatureInstaller : FeatureInstaller
     {
         [SerializeField] private MenuDefinition? _mainMenu;
+        [Tooltip("Assets/Settings/UI/DefaultPanelSettings: the panel every screen layer draws on (IUiLayers).")]
+        [SerializeField] private PanelSettings? _panelSettings;
 
         public override int Order => -10;
 
@@ -24,6 +27,10 @@ namespace TinCan.Core.UI
         {
             builder.Register<MenuCommandRegistry>(Lifetime.Singleton).As<IMenuCommandRegistry>();
             builder.Register<MenuUseCase>(Lifetime.Singleton).As<IMenuSystem>();
+            builder.Register<UiLayers>(Lifetime.Singleton).As<IUiLayers>().WithParameter("settings", _panelSettings);
+            builder.Register<UnityCursorDevice>(Lifetime.Singleton).As<ICursorDevice>();
+            builder.Register<CursorPolicyUseCase>(Lifetime.Singleton).As<ICursorPolicy>().As<ITickable>().AsSelf();
+            builder.Register<MenuCursorPresenter>(Lifetime.Singleton).As<IInitializable>();
             builder.Register<CommandLineSessionBootstrap>(Lifetime.Singleton).As<IStartable>().As<ITickable>();
             builder.Register<HudUseCase>(Lifetime.Singleton).As<IHudValues>();
             builder.Register<StartHostMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();

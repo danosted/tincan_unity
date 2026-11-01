@@ -36,7 +36,7 @@ namespace TinCan.Features.ShipSockets
                 if (!state.TryTakeChooser(out var socket)) continue;
 
                 _choice.Begin(state, socket);
-                _menus.Open(_menu ??= Menu());
+                _menus.Request(new MenuRequest(MenuId, _menu ??= Menu(), MenuKind.Screen));
             }
         }
 

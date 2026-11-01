@@ -1,7 +1,6 @@
 #nullable enable
 using TinCan.Core.UI;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace TinCan.Features.Shipyard
 {
@@ -62,7 +61,5 @@ namespace TinCan.Features.Shipyard
         public Material? FloorMaterial;
         [Tooltip("Menu_Shipyard: save, load, new, launch, exit.")]
         public MenuDefinition? Menu;
-        [Tooltip("Panel settings for the shipyard's panels (parts, tools, controls).")]
-        public PanelSettings? PanelSettings;
     }
 }

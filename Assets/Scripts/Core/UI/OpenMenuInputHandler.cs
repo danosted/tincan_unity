@@ -31,7 +31,7 @@ namespace TinCan.Core.UI
             bool inOwnBody = _possession.CurrentPossession == _possession.PlayerActor;
             if (_network.State != NetworkState.Offline && !inOwnBody) return false;
 
-            _menus.Open(_mainMenu);
+            _menus.Request(new MenuRequest(MenuOwners.Main, _mainMenu, MenuKind.Screen));
             return true;
         }
     }

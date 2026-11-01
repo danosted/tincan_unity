@@ -1,5 +1,4 @@
 #nullable enable
-using TinCan.Core.Domain.Networking;
 using TinCan.Core.Domain;
 using TinCan.Core.UI;
 using UnityEngine;
@@ -10,30 +9,29 @@ namespace TinCan.App.Views
 {
     /// <summary>
     /// Throwaway presentation for <see cref="IMenuSystem"/>: renders a plain UI Toolkit tree from the current
-    /// MenuSnapshot, preserving controls while values change. Replace this class when real UI arrives.
+    /// MenuSnapshot, preserving controls while values change. A modal request draws on the Modal layer, any other menu on
+    /// the Menus layer; behind it a backdrop dims the scene and takes the pointer when <see cref="MenuBackdropRules"/>
+    /// says so, so nothing under a menu can be clicked. The cursor is <see cref="ICursorPolicy"/>'s, not this view's.
+    /// Replace this class when real UI arrives.
     /// </summary>
-    [RequireComponent(typeof(UIDocument))]
     public class MenuOverlayView : MonoBehaviour, IInjectedView
     {
+        private static readonly Color Dim = new(0f, 0f, 0f, 0.45f);
+
         private IMenuSystem? _menus;
-        private INetworkService? _networkService;
-        private UIDocument? _document;
+        private IUiLayers? _layers;
+        private VisualElement? _backdrop;
         private VisualElement? _panel;
         private VisualElement? _rows;
         private MenuSnapshot? _renderedSnapshot;
 
         [Inject]
-        public void Construct(IMenuSystem menus, INetworkService networkService)
+        public void Construct(IMenuSystem menus, IUiLayers layers)
         {
             _menus = menus;
-            _networkService = networkService;
+            _layers = layers;
             _menus.Changed += Render;
             Render();
-        }
-
-        private void Awake()
-        {
-            _document = GetComponent<UIDocument>();
         }
 
         private void OnEnable()
@@ -44,33 +42,36 @@ namespace TinCan.App.Views
         private void OnDestroy()
         {
             if (_menus != null) _menus.Changed -= Render;
+            _backdrop?.RemoveFromHierarchy();
+            _panel?.RemoveFromHierarchy();
         }
 
         private void Render()
         {
-            if (_document == null || _menus == null) return;
+            if (_layers == null || _menus == null) return;
 
-            var root = _document.rootVisualElement;
-            if (root == null) return;
-
-            if (_panel == null || _panel.parent != root)
-            {
-                _panel = BuildPanel();
-                _renderedSnapshot = null;
-                root.Add(_panel);
-            }
+            _backdrop ??= BuildBackdrop();
+            _panel ??= BuildPanel();
 
             var snapshot = _menus.Current;
             if (snapshot == null)
             {
                 _renderedSnapshot = null;
+                _backdrop.style.display = DisplayStyle.None;
                 _panel.style.display = DisplayStyle.None;
-                ApplyCursor(false);
                 return;
             }
 
+            var layer = _layers.Root(snapshot.Kind == MenuKind.Modal ? UiLayer.Modal : UiLayer.Menus);
+            if (_panel.parent != layer)
+            {
+                layer.Add(_backdrop);
+                layer.Add(_panel);
+            }
+
+            bool dim = MenuBackdropRules.For(snapshot.Kind).DimScene;
+            _backdrop.style.display = dim ? DisplayStyle.Flex : DisplayStyle.None;
             _panel.style.display = DisplayStyle.Flex;
-            ApplyCursor(true);
 
             if (HasSameLayout(snapshot))
             {
@@ -161,9 +162,19 @@ namespace TinCan.App.Views
 
         private static string BindingText(MenuItemRow row) => $"{row.Label}  -  {row.Value}";
 
+        private static VisualElement BuildBackdrop()
+        {
+            // Takes the pointer (the default picking mode), so a click under a menu reaches nothing below it.
+            var backdrop = new VisualElement { name = "menu-backdrop" };
+            backdrop.style.position = Position.Absolute;
+            backdrop.style.left = backdrop.style.top = backdrop.style.right = backdrop.style.bottom = 0;
+            backdrop.style.backgroundColor = Dim;
+            return backdrop;
+        }
+
         private static VisualElement BuildPanel()
         {
-            var panel = new VisualElement();
+            var panel = new VisualElement { name = "menu-panel" };
             panel.style.position = Position.Absolute;
             panel.style.left = Length.Percent(50);
             panel.style.top = Length.Percent(50);
@@ -177,21 +188,6 @@ namespace TinCan.App.Views
             panel.style.backgroundColor = new Color(0.05f, 0.05f, 0.08f, 0.9f);
             panel.style.color = Color.white;
             return panel;
-        }
-
-        private void ApplyCursor(bool menuOpen)
-        {
-            if (menuOpen)
-            {
-                UnityEngine.Cursor.lockState = CursorLockMode.None;
-                UnityEngine.Cursor.visible = true;
-                return;
-            }
-
-            // Restore the in-game cursor only once a session is running; offline there is nothing to lock for.
-            if (_networkService == null || !_networkService.IsActive) return;
-            UnityEngine.Cursor.lockState = CursorLockMode.Locked;
-            UnityEngine.Cursor.visible = false;
         }
     }
 }

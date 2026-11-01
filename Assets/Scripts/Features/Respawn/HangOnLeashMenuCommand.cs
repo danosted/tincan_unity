@@ -25,7 +25,7 @@ namespace TinCan.Features.Respawn
         public void Execute(MenuContext context)
         {
             OverboardRequest.Send(_actors, _choice, OverboardChoiceKind.Leash, _time.Time);
-            context.Menus.CloseAll();
+            context.Close();
         }
     }
 }

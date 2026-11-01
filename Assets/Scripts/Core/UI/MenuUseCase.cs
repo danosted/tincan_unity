@@ -7,7 +7,9 @@ using VContainer;
 namespace TinCan.Core.UI
 {
     /// <summary>
-    /// Application Layer: owns the menu stack and per-menu values and dispatches commands. Cancel reaches it through the
+    /// Application Layer: owns the open menu requests (one per owner, each with its own stack of submenus), the per-menu
+    /// values, and dispatches commands. The request on top is chosen by <see cref="MenuArbitrationProcessor"/>; rows,
+    /// values and Back act on it alone, so Back never falls into another feature's menu. Cancel reaches it through the
     /// input contexts (MenuBackInputHandler, OpenMenuInputHandler). A <see cref="MenuItemKind.Bindings"/> row expands into
     /// one row per key the player can change (<see cref="IInputBindings"/>); invoking one waits for the new key.
     /// Pure C# apart from the ScriptableObject definitions it is handed.
@@ -18,10 +20,12 @@ namespace TinCan.Core.UI
 
         private readonly IMenuCommandRegistry _commands;
         private readonly IInputBindings? _bindings;
-        private readonly List<MenuDefinition> _stack = new();
+        private readonly List<OpenRequest> _requests = new();
+        private readonly List<MenuRequestRank> _ranks = new();
         private readonly Dictionary<string, string> _values = new();
         private readonly Dictionary<string, InputBindingSlot> _bindingRows = new();
         private MenuSnapshot? _current;
+        private int _sequence;
 
         public MenuUseCase(IMenuCommandRegistry commands) : this(commands, null) { }
 
@@ -34,37 +38,68 @@ namespace TinCan.Core.UI
         }
 
         public MenuSnapshot? Current => _current;
-        public bool IsOpen => _stack.Count > 0;
+        public bool IsOpen => _requests.Count > 0;
         public event Action? Changed;
+
+        public void Request(MenuRequest request)
+        {
+            if (request.Menu == null || string.IsNullOrEmpty(request.Owner)) return;
+
+            int index = IndexOf(request.Owner);
+            if (index >= 0)
+            {
+                var open = _requests[index];
+                if (open.Stack[0].MenuId == request.Menu.MenuId && open.Kind == request.Kind && open.Pinned == request.Pinned) return;
+                Remove(index);
+            }
+
+            SeedValues(request.Menu);
+            _requests.Add(new OpenRequest(request.Owner, request.Kind, request.Pinned, ++_sequence, request.Menu));
+            Rebuild();
+        }
+
+        public void Withdraw(string owner)
+        {
+            int index = IndexOf(owner);
+            if (index < 0) return;
+            Remove(index);
+            Rebuild();
+        }
+
+        public bool IsRequested(string owner) => IndexOf(owner) >= 0;
 
         public void Open(MenuDefinition menu)
         {
             if (menu == null) return;
-
-            foreach (var item in menu.Items)
-            {
-                var key = ValueKey(menu.MenuId, item.ItemId);
-                if (!_values.ContainsKey(key)) _values[key] = item.DefaultValue ?? string.Empty;
-            }
-
-            _stack.Add(menu);
-            Rebuild();
+            Request(new MenuRequest(menu.MenuId, menu, MenuKind.Screen));
         }
 
-        public void Back()
+        public bool Back()
         {
-            if (!IsOpen) return;
-            _bindings?.CancelRebind();
-            _stack.RemoveAt(_stack.Count - 1);
-            Rebuild();
+            var top = Top();
+            if (top == null) return false;
+
+            if (top.Stack.Count > 1)
+            {
+                _bindings?.CancelRebind();
+                top.Stack.RemoveAt(top.Stack.Count - 1);
+                Rebuild();
+                return true;
+            }
+
+            if (top.Pinned) return false;
+            Withdraw(top.Owner);
+            return true;
         }
 
         public void CloseAll()
         {
-            if (!IsOpen) return;
-            _bindings?.CancelRebind();
-            _stack.Clear();
-            Rebuild();
+            int before = _requests.Count;
+            for (int i = _requests.Count - 1; i >= 0; i--)
+            {
+                if (!_requests[i].Pinned) Remove(i);
+            }
+            if (_requests.Count != before) Rebuild();
         }
 
         public void Invoke(string itemId)
@@ -75,15 +110,17 @@ namespace TinCan.Core.UI
                 return;
             }
 
-            if (!TryGetItem(itemId, out var menu, out var item)) return;
+            if (!TryGetItem(itemId, out var request, out var menu, out var item)) return;
 
             switch (item.Kind)
             {
                 case MenuItemKind.Command when _commands.TryGetCommand(item.CommandId, out var command):
-                    command.Execute(new MenuContext(this, menu.MenuId, item.ItemId));
+                    command.Execute(new MenuContext(this, request.Owner, menu.MenuId, item.ItemId));
                     break;
                 case MenuItemKind.Submenu when item.Submenu != null:
-                    Open(item.Submenu);
+                    SeedValues(item.Submenu);
+                    request.Stack.Add(item.Submenu);
+                    Rebuild();
                     break;
                 case MenuItemKind.Back:
                     Back();
@@ -96,7 +133,7 @@ namespace TinCan.Core.UI
 
         public void SetValue(string itemId, string value)
         {
-            if (!TryGetItem(itemId, out var menu, out _)) return;
+            if (!TryGetItem(itemId, out _, out var menu, out _)) return;
 
             var key = ValueKey(menu.MenuId, itemId);
             if (_values.TryGetValue(key, out var existing) && existing == value) return;
@@ -107,17 +144,45 @@ namespace TinCan.Core.UI
 
         public string GetValue(string itemId)
         {
-            if (!TryGetItem(itemId, out var menu, out _)) return string.Empty;
+            if (!TryGetItem(itemId, out _, out var menu, out _)) return string.Empty;
             return _values.TryGetValue(ValueKey(menu.MenuId, itemId), out var value) ? value : string.Empty;
         }
 
-        private bool TryGetItem(string itemId, out MenuDefinition menu, out MenuItemDefinition item)
+        private OpenRequest? Top()
         {
+            _ranks.Clear();
+            foreach (var request in _requests) _ranks.Add(new MenuRequestRank(request.Kind, request.Sequence));
+            int top = MenuArbitrationProcessor.Top(_ranks);
+            return top < 0 ? null : _requests[top];
+        }
+
+        private int IndexOf(string owner) => _requests.FindIndex(r => r.Owner == owner);
+
+        private void Remove(int index)
+        {
+            if (ReferenceEquals(_requests[index], Top())) _bindings?.CancelRebind();
+            _requests.RemoveAt(index);
+        }
+
+        private void SeedValues(MenuDefinition menu)
+        {
+            foreach (var item in menu.Items)
+            {
+                var key = ValueKey(menu.MenuId, item.ItemId);
+                if (!_values.ContainsKey(key)) _values[key] = item.DefaultValue ?? string.Empty;
+            }
+        }
+
+        private bool TryGetItem(string itemId, out OpenRequest request, out MenuDefinition menu, out MenuItemDefinition item)
+        {
+            request = null!;
             menu = null!;
             item = default;
-            if (!IsOpen) return false;
+            var top = Top();
+            if (top == null) return false;
 
-            menu = _stack[_stack.Count - 1];
+            request = top;
+            menu = top.Stack[top.Stack.Count - 1];
             foreach (var candidate in menu.Items)
             {
                 if (candidate.ItemId != itemId) continue;
@@ -129,16 +194,17 @@ namespace TinCan.Core.UI
 
         private void Rebuild()
         {
-            if (!IsOpen)
+            var top = Top();
+            _bindingRows.Clear();
+            if (top == null)
             {
                 _current = null;
                 Changed?.Invoke();
                 return;
             }
 
-            var menu = _stack[_stack.Count - 1];
+            var menu = top.Stack[top.Stack.Count - 1];
             var rows = new List<MenuItemRow>(menu.Items.Count);
-            _bindingRows.Clear();
             foreach (var item in menu.Items)
             {
                 if (item.Kind == MenuItemKind.Bindings)
@@ -151,7 +217,7 @@ namespace TinCan.Core.UI
                 rows.Add(new MenuItemRow(item.ItemId, item.Label, item.Kind, value ?? string.Empty));
             }
 
-            _current = new MenuSnapshot(menu.MenuId, menu.Title, rows, _stack.Count > 1);
+            _current = new MenuSnapshot(menu.MenuId, menu.Title, rows, top.Stack.Count > 1, top.Owner, top.Kind, top.Pinned);
             Changed?.Invoke();
         }
 
@@ -177,5 +243,24 @@ namespace TinCan.Core.UI
         }
 
         private static string ValueKey(string menuId, string itemId) => menuId + "/" + itemId;
+
+        /// <summary>One owner's request and its stack of submenus (the root first).</summary>
+        private sealed class OpenRequest
+        {
+            public readonly string Owner;
+            public readonly MenuKind Kind;
+            public readonly bool Pinned;
+            public readonly int Sequence;
+            public readonly List<MenuDefinition> Stack;
+
+            public OpenRequest(string owner, MenuKind kind, bool pinned, int sequence, MenuDefinition root)
+            {
+                Owner = owner;
+                Kind = kind;
+                Pinned = pinned;
+                Sequence = sequence;
+                Stack = new List<MenuDefinition> { root };
+            }
+        }
     }
 }

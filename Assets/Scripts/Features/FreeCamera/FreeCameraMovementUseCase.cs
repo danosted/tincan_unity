@@ -3,6 +3,7 @@ using UnityEngine;
 using VContainer.Unity;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Input;
+using TinCan.Core.UI;
 
 namespace TinCan.Features.FreeCamera
 {
@@ -19,6 +20,7 @@ namespace TinCan.Features.FreeCamera
         private readonly FreeCameraMovementProcessor _moveProcessor;
         private readonly FreeCameraRotationProcessor _rotationProcessor;
         private readonly IActorRegistry _registry;
+        private readonly ICursorPolicy _cursor;
 
         public FreeCameraMovementUseCase(
             IInputReader input,
@@ -26,7 +28,8 @@ namespace TinCan.Features.FreeCamera
             CameraInputContext camera,
             FreeCameraMovementProcessor moveProcessor,
             FreeCameraRotationProcessor rotationProcessor,
-            IActorRegistry registry)
+            IActorRegistry registry,
+            ICursorPolicy cursor)
         {
             _input = input;
             _controls = controls;
@@ -34,17 +37,23 @@ namespace TinCan.Features.FreeCamera
             _moveProcessor = moveProcessor;
             _rotationProcessor = rotationProcessor;
             _registry = registry;
+            _cursor = cursor;
         }
 
         public void Tick()
         {
+            bool anyActive = false;
             foreach (var view in _registry.GetActors<IFreeCameraView>())
             {
                 if (!view.IsActive) continue;
 
+                anyActive = true;
                 HandleRotation(view);
                 HandleMovement(view);
             }
+
+            // A cursor freed with the toggle goes back to the policy's default once nothing flies a free camera.
+            if (!anyActive) _cursor.Release(ToggleCursorInputHandler.CursorOwner);
         }
 
         private void HandleRotation(IFreeCameraView view)

@@ -7,6 +7,7 @@ using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
 using TinCan.Core.Humanoid;
+using TinCan.Core.UI;
 using Unity.Netcode;
 using UnityEngine;
 using VContainer.Unity;
@@ -32,6 +33,7 @@ namespace TinCan.DevTools
         private readonly INetworkService _network;
         private readonly NetworkManager _networkManager;
         private readonly IEventPublisher _events;
+        private readonly IUiLayers _layers;
 
         private readonly MovementResponseTracker _tracker = new(MaxLegalSpeed);
         private Transform? _platform;
@@ -51,7 +53,8 @@ namespace TinCan.DevTools
             IActorRegistry registry,
             INetworkService network,
             NetworkManager networkManager,
-            IEventPublisher events)
+            IEventPublisher events,
+            IUiLayers layers)
         {
             _options = options;
             _session = session;
@@ -59,6 +62,7 @@ namespace TinCan.DevTools
             _network = network;
             _networkManager = networkManager;
             _events = events;
+            _layers = layers;
         }
 
         public void Initialize()
@@ -66,7 +70,7 @@ namespace TinCan.DevTools
             if (!_options.IsActive) return;
 
             _session.RouteCompleted += WriteReport;
-            _overlay = NetHarnessOverlayView.Create(DescribeLive);
+            _overlay = NetHarnessOverlayView.Create(DescribeLive, _layers);
         }
 
         /// <summary>Shows or hides the live readout (F3, routed by the DevTools input context).</summary>

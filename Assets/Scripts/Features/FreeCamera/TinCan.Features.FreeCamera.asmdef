@@ -4,6 +4,7 @@
     "references": [
         "TinCan.Core.Domain",
         "TinCan.Possession",
+        "TinCan.UI",
         "VContainer"
     ],
     "includePlatforms": [],

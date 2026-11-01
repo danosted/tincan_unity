@@ -12,8 +12,8 @@ namespace TinCan.Features.Respawn
     /// <summary>
     /// This peer, per frame, the local player's choices.
     /// - **Overboard** (the replicated overboard tag): the choice is open: respawn, or hang on the leash where the ship has a
-    ///   leash point. It reopens if it is closed before choosing, and again if a leash choice gets no answer (the server
-    ///   refused it), so nobody is stranded. The HUD line "Respawn" counts down the rule's delay from when this peer saw the
+    ///   leash point. It is a pinned modal request, so Esc opens the pause menu over it rather than closing it, and it
+    ///   comes back if a leash choice gets no answer (the server refused it), so nobody is stranded. The HUD line "Respawn" counts down the rule's delay from when this peer saw the
     ///   fall; the server keeps the real clock.
     /// - **Leashed** (the leashed tag): the HUD says how to climb and how to respawn (Interact opens the choice,
     ///   <see cref="OpenLeashMenuInputHandler"/>); nothing is forced, so the player can climb.
@@ -22,6 +22,10 @@ namespace TinCan.Features.Respawn
     {
         public const string MenuId = OverboardMenus.OverboardMenuId;
         public const string HudKey = "Respawn";
+        /// <summary>The overboard choice's menu request: a pinned modal, withdrawn once a choice is made.</summary>
+        public const string MenuOwner = "Respawn.Overboard";
+        /// <summary>The leash choice's request (<see cref="OpenLeashMenuInputHandler"/>), an ordinary screen.</summary>
+        public const string LeashMenuOwner = "Respawn.Leash";
 
         // A leash choice the server has not answered in this long is taken as refused: the choice opens again.
         private const float LeashAnswerSeconds = 3f;
@@ -64,7 +68,8 @@ namespace TinCan.Features.Respawn
             {
                 if (!_shown) return;
                 _hud.Remove(HudKey);
-                if (_menus.Current?.MenuId is OverboardMenus.OverboardMenuId or OverboardMenus.LeashMenuId) _menus.CloseAll();
+                _menus.Withdraw(MenuOwner);
+                _menus.Withdraw(LeashMenuOwner);
                 _shown = false;
                 return;
             }
@@ -72,6 +77,7 @@ namespace TinCan.Features.Respawn
             _shown = true;
             if (leashed)
             {
+                _menus.Withdraw(MenuOwner);
                 _hud.Set(HudKey, LeashedHudText(_rules.CanClimb));
                 return;
             }
@@ -82,7 +88,8 @@ namespace TinCan.Features.Respawn
             float remaining = RespawnProcessor.Remaining(_since, _time.Time, rule.DelaySeconds);
             _hud.Set(HudKey, HudText(_choice.Chosen, remaining));
 
-            if (!_choice.Chosen && _menus.Current?.MenuId != MenuId) _menus.Open(OverboardMenus.Overboard(rule, CanLeash()));
+            if (_choice.Chosen) _menus.Withdraw(MenuOwner);
+            else if (!_menus.IsRequested(MenuOwner)) _menus.Request(new MenuRequest(MenuOwner, OverboardMenus.Overboard(rule, CanLeash()), MenuKind.Modal, pinned: true));
         }
 
         /// <summary>The HUD line while overboard: the countdown, or what happens next.</summary>

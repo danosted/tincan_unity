@@ -13,9 +13,11 @@ namespace TinCan.Core.UI
         public string Owner { get; }
         public MenuKind Kind { get; }
         public bool Pinned { get; }
+        /// <summary>The row with keyboard and gamepad focus (an index into <see cref="Items"/>), -1 for none.</summary>
+        public int Focused { get; }
 
         public MenuSnapshot(string menuId, string title, IReadOnlyList<MenuItemRow> items, bool canGoBack,
-            string owner = "", MenuKind kind = MenuKind.Screen, bool pinned = false)
+            string owner = "", MenuKind kind = MenuKind.Screen, bool pinned = false, int focused = -1)
         {
             MenuId = menuId;
             Title = title;
@@ -24,6 +26,7 @@ namespace TinCan.Core.UI
             Owner = owner;
             Kind = kind;
             Pinned = pinned;
+            Focused = focused;
         }
     }
 }

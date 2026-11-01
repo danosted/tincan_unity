@@ -56,5 +56,12 @@ namespace TinCan.DevTools
         NavigatorZoomIn,
         NavigatorZoomOut,
         NavigatorLeave,
+
+        // In a menu (Menu context): focus and use rows, as arrows and Enter (or the d-pad and South) would
+        MenuUp,
+        MenuDown,
+        MenuLeft,
+        MenuRight,
+        MenuSubmit,
     }
 }

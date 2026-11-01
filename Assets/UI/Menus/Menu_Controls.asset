@@ -21,15 +21,18 @@ MonoBehaviour:
     CommandId: 
     Submenu: {fileID: 0}
     DefaultValue: 
+    SettingsGroup: 0
   - ItemId: reset
     Label: Reset to Defaults
     Kind: 0
     CommandId: ResetBindings
     Submenu: {fileID: 0}
     DefaultValue: 
+    SettingsGroup: 0
   - ItemId: back
     Label: Back
     Kind: 4
     CommandId: 
     Submenu: {fileID: 0}
     DefaultValue: 
+    SettingsGroup: 0

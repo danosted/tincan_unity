@@ -36,5 +36,14 @@ namespace TinCan.Core.UI
         void Invoke(string itemId);
         void SetValue(string itemId, string value);
         string GetValue(string itemId);
+
+        /// <summary>Keyboard and gamepad focus (<see cref="MenuSnapshot.Focused"/>): focus a row, e.g. the one clicked.</summary>
+        void Focus(string itemId);
+        /// <summary>Moves the focus to the next focusable row down (+1) or up (-1), wrapping.</summary>
+        void MoveFocus(int delta);
+        /// <summary>Left (-1) or right (+1) on the focused row: a slider steps, a choice moves, a toggle flips.</summary>
+        void Adjust(int direction);
+        /// <summary>Uses the focused row, as a click would.</summary>
+        void Submit();
     }
 }

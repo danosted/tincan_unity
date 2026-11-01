@@ -81,9 +81,27 @@ namespace TinCan.Core.UI
                 document.sortingOrder = 0;
                 _host.SetActive(true);
                 root = document.rootVisualElement;
+                if (root.panel != null) StopBuiltInNavigation(root.panel.visualTree);
             }
 
             AddLayers(root, _sheets.All).CopyTo(_layers, 0);
+        }
+
+        /// <summary>
+        /// UI Toolkit moves its own focus on arrows, WASD and Tab, and clicks a focused button on Enter, reading the devices
+        /// itself. Our keys come through the input contexts (the Menu context drives the menu's focus), so those events are
+        /// stopped at the panel's root, where they arrive even when nothing has focus: one focus, one click.
+        /// </summary>
+        public static void StopBuiltInNavigation(VisualElement panelRoot)
+        {
+            panelRoot.RegisterCallback<NavigationMoveEvent>(Ignore, TrickleDown.TrickleDown);
+            panelRoot.RegisterCallback<NavigationSubmitEvent>(Ignore, TrickleDown.TrickleDown);
+        }
+
+        private static void Ignore(EventBase evt)
+        {
+            (evt.target as VisualElement)?.focusController?.IgnoreEvent(evt);
+            evt.StopImmediatePropagation();
         }
     }
 }

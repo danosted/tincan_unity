@@ -1,5 +1,4 @@
 #nullable enable
-using System.Collections.Generic;
 using System.Globalization;
 using TinCan.Core.Domain;
 using TinCan.Core.UI;
@@ -98,14 +97,24 @@ namespace TinCan.App.Views
                             break;
                     }
                 }
+                _panel.ShowFocus(snapshot.Focused);
                 _renderedSnapshot = snapshot;
                 return;
             }
 
             _panel.Title = snapshot.Title;
             _panel.Rows.Clear();
-            foreach (var row in snapshot.Items) _panel.Rows.Add(BuildRow(row));
+            foreach (var row in snapshot.Items) _panel.Rows.Add(Focusing(BuildRow(row), row.ItemId));
+            _panel.ShowFocus(snapshot.Focused);
             _renderedSnapshot = snapshot;
+        }
+
+        /// <summary>A row the pointer presses takes the keyboard and gamepad focus too, so the two never disagree.</summary>
+        private VisualElement Focusing(VisualElement element, string itemId)
+        {
+            var menus = _menus!;
+            element.RegisterCallback<PointerDownEvent>(_ => menus.Focus(itemId), TrickleDown.TrickleDown);
+            return element;
         }
 
         private bool HasSameLayout(MenuSnapshot snapshot)
@@ -147,7 +156,7 @@ namespace TinCan.App.Views
                 {
                     var choice = new ChoiceField(row.Label, row.Value);
                     // The field outlives value changes (the layout is kept), so it steps from the model's value, not the row's.
-                    choice.Stepped += direction => menus.SetValue(row.ItemId, Step(row.Options, menus.GetValue(row.ItemId), direction));
+                    choice.Stepped += direction => menus.SetValue(row.ItemId, MenuFocusProcessor.Step(row.Options, menus.GetValue(row.ItemId), direction));
                     return choice;
                 }
                 case MenuItemKind.Note:
@@ -164,21 +173,7 @@ namespace TinCan.App.Views
         {
             var slider = new Slider(row.Label, row.Min, row.Max) { value = ParseFloat(row.Value), showInputField = true };
             slider.RegisterValueChangedCallback(evt => menus.SetValue(row.ItemId, evt.newValue.ToString("0.###", CultureInfo.InvariantCulture)));
-            // Keyboard arrows move it by one step.
-            if (row.Step > 0f) slider.pageSize = row.Step;
             return slider;
-        }
-
-        /// <summary>The option <paramref name="direction"/> places from the current one, wrapping around.</summary>
-        public static string Step(IReadOnlyList<string> options, string current, int direction)
-        {
-            if (options.Count == 0) return current;
-            int index = 0;
-            for (int i = 0; i < options.Count; i++)
-            {
-                if (options[i] == current) index = i;
-            }
-            return options[((index + direction) % options.Count + options.Count) % options.Count];
         }
 
         private static float ParseFloat(string value) =>

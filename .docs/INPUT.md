@@ -51,7 +51,10 @@ context never runs. Examples: `CannonFeatureInstaller`, `HelmFeatureInstaller`, 
 See [INPUT_MAP.md](INPUT_MAP.md) for the full table. In short, from the top:
 
 1. **Rebinding** silences everything while the Controls menu waits for a key.
-2. **Menu** silences everything below it; Cancel steps back.
+2. **Menu** silences everything below it. Navigate (arrows, WASD except on a text field, d-pad, left stick) moves
+   and adjusts the focused row, Submit (Enter, gamepad South) uses it (`MenuNavigationUseCase`), Cancel (Esc,
+   gamepad East or Start) steps back.
+   See [`UI_FRAMEWORK.md`](UI_FRAMEWORK.md), "Keyboard and gamepad in menus".
 3. **DevTools** (only while the harness runs): F3 toggles the readout.
    **Shipyard** (only while the shipyard is open: activation `WhileOpened`, which its owner switches through
    `IInputContextSwitch`) silences everything below it. Building is read by `ShipyardUseCase`; Cancel opens the
@@ -127,5 +130,6 @@ it holds the look settings (sensitivity, invert Y; `Core/Domain/Settings/LookSet
 applies to its look delta. Its `Bindings` row expands into one row per
 rebindable key; composite parts such as Move Forward count separately. Clicking a row waits for a key, and Esc
 cancels. A refused key shows why below the list. **Reset to Defaults** drops every override. The overrides are saved in
-PlayerPrefs (`TinCan.InputBindings`) and loaded at start. A gamepad later means adding a control scheme and bindings to
-the asset, with no code change; the menu lists `Keyboard&Mouse` bindings today.
+PlayerPrefs (`TinCan.InputBindings`) and loaded at start. The asset has a `Gamepad` control scheme, used so far by menu
+navigation and Cancel; gamepad play means adding bindings to it, with no code change. The menu lists and rebinds
+`Keyboard&Mouse` bindings only.

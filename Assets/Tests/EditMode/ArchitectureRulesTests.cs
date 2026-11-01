@@ -48,6 +48,8 @@ namespace TinCan.Tests.EditMode
         private static readonly Regex UiSurface = new(@"\bUIDocument\b|\bsortingOrder\b");
         private static readonly Regex CursorWrite = new(@"\bCursor\.(lockState|visible)\s*=(?!=)");
         private static readonly Regex OnGui = new(@"\bvoid\s+OnGUI\s*\(");
+        private static readonly Regex InlineLook = new(
+            @"\bstyle\.(color|backgroundColor|fontSize|unityFontStyleAndWeight|border(Top|Bottom|Left|Right)Color)\s*=(?!=)|\bstyle\s*=\s*\{[^}]*\b(color|backgroundColor|fontSize|unityFontStyleAndWeight)\s*=");
 
         /// <summary>The assemblies allowed to reference Unity's Input System (the input system, its asset builder, tests).</summary>
         private static readonly HashSet<string> InputSystemAssemblies = new() { "TinCan.Input", "TinCan.DevTools.Editor", "TinCan.Tests.EditMode" };
@@ -282,6 +284,22 @@ namespace TinCan.Tests.EditMode
 
             Assert.That(offenders, Is.Empty,
                 "Draw screen UI under IUiLayers.Root(UiLayer); only UiLayers makes a UIDocument or sets a sort order:\n  "
+                + string.Join("\n  ", offenders));
+        }
+
+        [Test]
+        public void ScreenUi_TakesItsLookFromTheTheme()
+        {
+            // Colours, font sizes and weights live in Assets/UI/Theme/TinCanTheme.uss as tokens; views add classes. A
+            // value computed from data (a meter's width, a thumbnail) is still set in code.
+            var offenders = RuntimeSources()
+                .Where(s => s.Text.Contains("UnityEngine.UIElements"))
+                .Where(s => InlineLook.IsMatch(WithoutCommentLines(s.Text)))
+                .Select(s => s.Path)
+                .ToList();
+
+            Assert.That(offenders, Is.Empty,
+                "Style screen UI with theme classes (.docs/UI_FRAMEWORK.md, \"Theme\"), not inline colours or font sizes:\n  "
                 + string.Join("\n  ", offenders));
         }
 

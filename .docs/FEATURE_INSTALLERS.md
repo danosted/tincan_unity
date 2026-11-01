@@ -107,6 +107,9 @@ whose use case isn't there). The rules:
      `ActorAbilityGrantUseCase` grants them on every peer as the actor registers. The actors know nothing about it;
      their prefab's `_startingAbilities` is for core abilities only (sprint). Don't add a feature's ability there.
      The use case is registered by `GameplayTagsFeatureInstaller`, a GAS core installer that always loads.
+   - **Player settings:** implement `FeatureInstaller.IExtension<SettingDefinition>` and list the feature's
+     `Setting_*` assets; they appear on their group's Settings menu page only where the feature loads. The first-person
+     camera contributes the field of view this way. See [`plans/player-settings.md`](plans/player-settings.md).
    - **Items:** implement `FeatureInstaller.IExtension<ItemDefinition>` and list the feature's `ITEM_*` assets. The
      core item catalog is built from what the loaded features contribute, so an item exists only where the feature
      that makes it work does. For example, Fuel contributes the jerry can, the net-catch minigame the net, and ship

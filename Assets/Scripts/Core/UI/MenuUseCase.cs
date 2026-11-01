@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using TinCan.Core.Domain.Input;
+using TinCan.Core.Domain.Settings;
 using VContainer;
 
 namespace TinCan.Core.UI
@@ -11,7 +12,8 @@ namespace TinCan.Core.UI
     /// values, and dispatches commands. The request on top is chosen by <see cref="MenuArbitrationProcessor"/>; rows,
     /// values and Back act on it alone, so Back never falls into another feature's menu. Cancel reaches it through the
     /// input contexts (MenuBackInputHandler, OpenMenuInputHandler). A <see cref="MenuItemKind.Bindings"/> row expands into
-    /// one row per key the player can change (<see cref="IInputBindings"/>); invoking one waits for the new key.
+    /// one row per key the player can change (<see cref="IInputBindings"/>); invoking one waits for the new key. A
+    /// <see cref="MenuItemKind.Settings"/> row expands into the player settings of its group (<see cref="MenuSettingsRows"/>).
     /// Pure C# apart from the ScriptableObject definitions it is handed.
     /// </summary>
     public class MenuUseCase : IMenuSystem
@@ -24,17 +26,23 @@ namespace TinCan.Core.UI
         private readonly List<MenuRequestRank> _ranks = new();
         private readonly Dictionary<string, string> _values = new();
         private readonly Dictionary<string, InputBindingSlot> _bindingRows = new();
+        private readonly MenuSettingsRows? _settingRows;
         private MenuSnapshot? _current;
         private int _sequence;
 
-        public MenuUseCase(IMenuCommandRegistry commands) : this(commands, null) { }
+        public MenuUseCase(IMenuCommandRegistry commands) : this(commands, null, null) { }
+
+        public MenuUseCase(IMenuCommandRegistry commands, IInputBindings? bindings) : this(commands, bindings, null) { }
 
         [Inject]
-        public MenuUseCase(IMenuCommandRegistry commands, IInputBindings? bindings)
+        public MenuUseCase(IMenuCommandRegistry commands, IInputBindings? bindings, IPlayerSettings? settings)
         {
             _commands = commands;
             _bindings = bindings;
             if (_bindings != null) _bindings.Changed += OnBindingsChanged;
+            if (settings == null) return;
+            _settingRows = new MenuSettingsRows(settings);
+            settings.Changed += _ => OnBindingsChanged();
         }
 
         public MenuSnapshot? Current => _current;
@@ -110,6 +118,7 @@ namespace TinCan.Core.UI
                 return;
             }
 
+            if (IsOpen && _settingRows != null && _settingRows.TryInvoke(itemId)) return;
             if (!TryGetItem(itemId, out var request, out var menu, out var item)) return;
 
             switch (item.Kind)
@@ -133,6 +142,7 @@ namespace TinCan.Core.UI
 
         public void SetValue(string itemId, string value)
         {
+            if (IsOpen && _settingRows != null && _settingRows.TrySetValue(itemId, value)) return;
             if (!TryGetItem(itemId, out _, out var menu, out _)) return;
 
             var key = ValueKey(menu.MenuId, itemId);
@@ -144,6 +154,7 @@ namespace TinCan.Core.UI
 
         public string GetValue(string itemId)
         {
+            if (IsOpen && _settingRows != null && _settingRows.TryGetValue(itemId, out var setting)) return setting;
             if (!TryGetItem(itemId, out _, out var menu, out _)) return string.Empty;
             return _values.TryGetValue(ValueKey(menu.MenuId, itemId), out var value) ? value : string.Empty;
         }
@@ -196,6 +207,7 @@ namespace TinCan.Core.UI
         {
             var top = Top();
             _bindingRows.Clear();
+            _settingRows?.Clear();
             if (top == null)
             {
                 _current = null;
@@ -210,6 +222,12 @@ namespace TinCan.Core.UI
                 if (item.Kind == MenuItemKind.Bindings)
                 {
                     AddBindingRows(item, rows);
+                    continue;
+                }
+
+                if (item.Kind == MenuItemKind.Settings)
+                {
+                    _settingRows?.Add(item, rows);
                     continue;
                 }
 

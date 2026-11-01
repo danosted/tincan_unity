@@ -1,5 +1,6 @@
 #nullable enable
 using System.Collections.Generic;
+using TinCan.Core.Domain.Settings;
 using UnityEngine;
 
 namespace TinCan.Core.UI
@@ -16,7 +17,17 @@ namespace TinCan.Core.UI
         /// <summary>Generated: one rebindable key (its value is the key); invoking it waits for a new key.</summary>
         Binding,
         /// <summary>Generated: a line of text (why the last rebind was refused).</summary>
-        Note
+        Note,
+        /// <summary>
+        /// Placeholder in a definition: expands to one row per player setting in its <see cref="MenuItemDefinition.SettingsGroup"/>
+        /// (a <see cref="Slider"/>, <see cref="Toggle"/>, <see cref="Choice"/> or <see cref="TextField"/>), then a
+        /// Reset to defaults row. The rows read and write <c>IPlayerSettings</c>.
+        /// </summary>
+        Settings,
+        /// <summary>Generated: a number in a range (the row's Min, Max and Step).</summary>
+        Slider,
+        /// <summary>Generated: one of the row's Options; invoking it moves to the next one.</summary>
+        Choice
     }
 
     /// <summary>
@@ -32,6 +43,8 @@ namespace TinCan.Core.UI
         public string CommandId;
         public MenuDefinition? Submenu;
         public string DefaultValue;
+        [Tooltip("Settings rows: which settings page this row expands to.")]
+        public SettingGroup SettingsGroup;
     }
 
     /// <summary>

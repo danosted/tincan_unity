@@ -24,6 +24,8 @@ namespace TinCan.DevTools.Editor
         private const string SessionKey = "TinCan.NetHarness.RunThisSession";   // survives domain reloads only
         private const double LaunchTimeoutSeconds = 180;
         private const int MaxWriteAttempts = 6;
+        /// <summary>Read as -defaultsettings: the settings store reads and saves nothing (SettingsFeatureInstaller).</summary>
+        private const string DefaultSettingsTag = "defaultsettings";
 
         private static bool IsClone => Application.dataPath.Replace('\\', '/').Contains("/Library/VP/");
 
@@ -78,6 +80,9 @@ namespace TinCan.DevTools.Editor
                 return;
             }
 
+            // Harness runs never read or save a developer's player settings (a slow sensitivity would bend a bot route).
+            hostTags = WithDefaultSettings(hostTags);
+            clientTags = clientTags.Length == 0 ? clientTags : WithDefaultSettings(clientTags);
             if (!Apply(hostTags, clientTags)) return;
 
             EditorPrefs.SetBool(PendingKey, true);
@@ -140,9 +145,12 @@ namespace TinCan.DevTools.Editor
             Debug.Log($"[NetHarness] Player tags cleared ({reason}).");
         }
 
+        private static string[] WithDefaultSettings(string[] tags) =>
+            tags.Contains(DefaultSettingsTag) ? tags : tags.Append(DefaultSettingsTag).ToArray();
+
         /// <summary>Tags this menu owns; anything else a developer created by hand is left alone.</summary>
         private static bool IsHarnessTag(string tag) =>
-            tag is "autohost" or "autojoin" or "telemetry" || tag.StartsWith("netsim:") || tag.StartsWith("bot:") ||
+            tag is "autohost" or "autojoin" or "telemetry" or DefaultSettingsTag || tag.StartsWith("netsim:") || tag.StartsWith("bot:") ||
             tag.StartsWith("scenario:") || tag.StartsWith("scenariomode:") || tag.StartsWith("joindelay:");
 
         private static bool Apply(string[] hostTags, string[] clientTags)

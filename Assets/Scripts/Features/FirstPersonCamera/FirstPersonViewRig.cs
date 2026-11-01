@@ -1,8 +1,10 @@
 #nullable enable
 using System.Collections.Generic;
 using TinCan.Core.Domain.Look;
+using TinCan.Core.Domain.Settings;
 using UnityEngine;
 using UnityEngine.Rendering;
+using VContainer;
 
 namespace TinCan.Features.FirstPersonCamera
 {
@@ -15,20 +17,38 @@ namespace TinCan.Features.FirstPersonCamera
     /// </summary>
     public sealed class FirstPersonViewRig : IViewRig
     {
+        /// <summary>The player's field of view; contributed by this feature's installer, its default the config's.</summary>
+        public const string FieldOfViewKey = "view.fov";
+
         private readonly FirstPersonCameraConfig _config;
+        private readonly IPlayerSettings? _settings;
         private float _savedFieldOfView;
         private float _savedNearClip;
         private readonly List<(Renderer Renderer, ShadowCastingMode Mode)> _hidden = new();
         private HeldItemOverlay? _overlay;
         private Quaternion? _trailing;
+        private Camera? _held;
 
-        public FirstPersonViewRig(FirstPersonCameraConfig config) => _config = config;
+        public FirstPersonViewRig(FirstPersonCameraConfig config) : this(config, null) { }
+
+        /// <summary>With the player's settings: the field of view is theirs, and a change shows at once.</summary>
+        [Inject]
+        public FirstPersonViewRig(FirstPersonCameraConfig config, IPlayerSettings? settings)
+        {
+            _config = config;
+            _settings = settings;
+            if (_settings != null) _settings.Changed += OnSettingChanged;
+        }
+
+        /// <summary>The field of view to look through: the player's setting where there is one, else the config's.</summary>
+        public float FieldOfView => _settings != null && _settings.Has(FieldOfViewKey) ? _settings.GetFloat(FieldOfViewKey) : _config.FieldOfView;
 
         public void Take(Camera camera, IReadOnlyList<Renderer> body)
         {
+            _held = camera;
             _savedFieldOfView = camera.fieldOfView;
             _savedNearClip = camera.nearClipPlane;
-            camera.fieldOfView = _config.FieldOfView;
+            camera.fieldOfView = FieldOfView;
             camera.nearClipPlane = _config.NearClip;
             _trailing = null;
             AttachOverlay(camera);
@@ -45,6 +65,7 @@ namespace TinCan.Features.FirstPersonCamera
 
         public void Release(Camera camera, IReadOnlyList<Renderer> body)
         {
+            _held = null;
             camera.fieldOfView = _savedFieldOfView;
             camera.nearClipPlane = _savedNearClip;
             _overlay?.Detach();
@@ -75,6 +96,11 @@ namespace TinCan.Features.FirstPersonCamera
 
         public static (Vector3 Position, Quaternion Rotation) Eyes(in ViewPose pose) =>
             (pose.VisualPosition + Vector3.up * pose.EyeHeight, Quaternion.Euler(pose.Pitch, pose.Yaw, 0f));
+
+        private void OnSettingChanged(string key)
+        {
+            if (key == FieldOfViewKey && _held != null) _held.fieldOfView = FieldOfView;
+        }
 
         private void AttachOverlay(Camera camera)
         {

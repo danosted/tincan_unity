@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdc5d24807772234b917f80104cfb899, type: 3}
+  m_Name: Menu_Settings
+  m_EditorClassIdentifier: TinCan.UI::TinCan.Core.UI.MenuDefinition
+  _menuId: settings
+  _title: Settings
+  _items:
+  - ItemId: controls
+    Label: Controls
+    Kind: 3
+    CommandId: 
+    Submenu: {fileID: 11400000, guid: 094af8c62c123a44cb7aca845bff9d1c, type: 2}
+    DefaultValue: 
+    SettingsGroup: 0
+  - ItemId: view
+    Label: View
+    Kind: 3
+    CommandId: 
+    Submenu: {fileID: 11400000, guid: 44e7df810cd954b45b7801b9edaea4f1, type: 2}
+    DefaultValue: 
+    SettingsGroup: 0
+  - ItemId: back
+    Label: Back
+    Kind: 4
+    CommandId: 
+    Submenu: {fileID: 0}
+    DefaultValue: 
+    SettingsGroup: 0

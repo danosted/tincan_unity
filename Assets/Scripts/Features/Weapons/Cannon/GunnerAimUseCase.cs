@@ -5,7 +5,9 @@ using TinCan.Core.Domain.Input;
 using TinCan.Core.Domain.Networking;
 using TinCan.Core.Humanoid;
 using TinCan.Features.Stations;
+using TinCan.Core.Domain.Settings;
 using UnityEngine;
+using VContainer;
 using VContainer.Unity;
 
 namespace TinCan.Features.Weapons.Cannon
@@ -26,12 +28,20 @@ namespace TinCan.Features.Weapons.Cannon
         private readonly INetworkService _network;
         private readonly CannonConfig _config;
         private readonly CannonAimProcessor _aim;
+        private readonly IPlayerSettings? _settings;
         private Guid? _manned;
         private Vector2 _current;
 
         public GunnerAimUseCase(IInputReader input, GunnerInputContext controls, IInputContexts contexts, IActorRegistry actors,
             INetworkService network, CannonConfig config, CannonAimProcessor aim)
+            : this(input, controls, contexts, actors, network, config, aim, null) { }
+
+        /// <summary>With the player's settings: their look sensitivity scales the cannon's own, and invert Y applies.</summary>
+        [Inject]
+        public GunnerAimUseCase(IInputReader input, GunnerInputContext controls, IInputContexts contexts, IActorRegistry actors,
+            INetworkService network, CannonConfig config, CannonAimProcessor aim, IPlayerSettings? settings)
         {
+            _settings = settings;
             _input = input;
             _controls = controls;
             _contexts = contexts;
@@ -59,7 +69,8 @@ namespace TinCan.Features.Weapons.Cannon
                 _current = new Vector2(cannon.Yaw, cannon.Elevation);
             }
 
-            _current = _aim.Steer(_current, _input.ReadVector2(_controls.Aim), _config.AimSensitivity, _config.AimLimits);
+            var delta = LookSettings.Apply(_settings, _input.ReadVector2(_controls.Aim));
+            _current = _aim.Steer(_current, delta, _config.AimSensitivity, _config.AimLimits);
         }
 
         /// <summary>Scenario seam: points the barrel at an exact aim, as if the mouse had moved there.</summary>

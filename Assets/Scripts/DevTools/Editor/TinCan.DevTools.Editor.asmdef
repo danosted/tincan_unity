@@ -33,6 +33,8 @@
         "TinCan.Possession",
         "TinCan.Ship",
         "TinCan.UI",
+        "TinCan.Settings",
+        "TinCan.Features.FirstPersonCamera",
         "TinCan.Features.FreeCamera",
         "Unity.InputSystem",
         "Unity.Netcode.Runtime"

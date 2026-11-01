@@ -8,18 +8,24 @@ namespace TinCan.Core.UI
 {
     /// <summary>
     /// <see cref="IUiLayers"/> on one UIDocument, made on first use: one container per <see cref="UiLayer"/>, added in
-    /// enum order, so a later layer draws over an earlier one. The only place a UIDocument is created or sorted.
+    /// enum order, so a later layer draws over an earlier one. The only place a UIDocument is created or sorted. The theme
+    /// (<c>Assets/UI/Theme/TinCanTheme.uss</c>) is loaded on the root, so every layer takes its tokens and classes.
     /// </summary>
     public sealed class UiLayers : IUiLayers, IDisposable
     {
+        /// <summary>The class the theme's tokens are defined on; every layer sits under it.</summary>
+        public const string RootClass = "tc-root";
+
         private readonly PanelSettings? _settings;
+        private readonly StyleSheet? _theme;
         private readonly VisualElement[] _layers = new VisualElement[Enum.GetValues(typeof(UiLayer)).Length];
         private GameObject? _host;
         private bool _built;
 
-        public UiLayers(PanelSettings? settings)
+        public UiLayers(PanelSettings? settings, StyleSheet? theme)
         {
             _settings = settings;
+            _theme = theme;
         }
 
         public VisualElement Root(UiLayer layer)
@@ -36,10 +42,12 @@ namespace TinCan.Core.UI
             _host = null;
         }
 
-        /// <summary>Adds the layer containers under <paramref name="root"/>, back to front.</summary>
-        public static VisualElement[] AddLayers(VisualElement root)
+        /// <summary>Adds the theme and the layer containers under <paramref name="root"/>, back to front.</summary>
+        public static VisualElement[] AddLayers(VisualElement root, StyleSheet? theme = null)
         {
             root.pickingMode = PickingMode.Ignore;
+            root.AddToClassList(RootClass);
+            if (theme != null) root.styleSheets.Add(theme);
             var layers = new VisualElement[Enum.GetValues(typeof(UiLayer)).Length];
             for (int i = 0; i < layers.Length; i++)
             {
@@ -73,7 +81,8 @@ namespace TinCan.Core.UI
                 root = document.rootVisualElement;
             }
 
-            AddLayers(root).CopyTo(_layers, 0);
+            if (_theme == null) Debug.LogWarning("[UiLayers] No theme on the UI feature installer; screen UI falls back to Unity's default look.");
+            AddLayers(root, _theme).CopyTo(_layers, 0);
         }
     }
 }

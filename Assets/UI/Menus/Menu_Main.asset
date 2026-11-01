@@ -21,21 +21,25 @@ MonoBehaviour:
     CommandId: StartHost
     Submenu: {fileID: 0}
     DefaultValue: 
+    SettingsGroup: 0
   - ItemId: join
     Label: Join Game
     Kind: 3
     CommandId: 
     Submenu: {fileID: 11400000, guid: 455b0fd50187cfa488accb3caba3b579, type: 2}
     DefaultValue: 
-  - ItemId: controls
-    Label: Controls
+    SettingsGroup: 0
+  - ItemId: settings
+    Label: Settings
     Kind: 3
     CommandId: 
-    Submenu: {fileID: 11400000, guid: 3fa08c49629d3664987fef0e1a2d740f, type: 2}
+    Submenu: {fileID: 11400000, guid: 69c55f3defbb02e429c7fe26f7ec33ea, type: 2}
     DefaultValue: 
+    SettingsGroup: 0
   - ItemId: quit
     Label: Quit
     Kind: 0
     CommandId: Quit
     Submenu: {fileID: 0}
     DefaultValue: 
+    SettingsGroup: 0

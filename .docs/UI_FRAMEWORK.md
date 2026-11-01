@@ -30,7 +30,8 @@ Create via **Assets > Create > TinCan > UI > Menu Definition**. Fields:
 |---|---|
 | `ItemId` | Unique within the menu. Used by `Invoke`, `SetValue`, `GetValue` and by commands to read sibling values. |
 | `Label` | Display text. |
-| `Kind` | `Command`, `TextField`, `Toggle`, `Submenu`, `Back`. |
+| `Kind` | `Command`, `TextField`, `Toggle`, `Submenu`, `Back`; placeholders `Bindings` (the key rows) and `Settings` (a settings page). `Binding`, `Note`, `Slider` and `Choice` rows are generated, never authored. |
+| `SettingsGroup` | For `Settings` rows: which group's settings the row expands to. |
 | `CommandId` | For `Command` rows: the id an `IMenuCommand` declares. |
 | `Submenu` | For `Submenu` rows: another `MenuDefinition` to push. |
 | `DefaultValue` | Initial value of `TextField` / `Toggle` rows (toggles use `"True"` / `"False"`). |
@@ -76,6 +77,28 @@ on a `UIDocument` or `sortingOrder` outside `UiLayers`, and on `OnGUI` outside a
 **What sits behind a menu** is a rule table, `MenuBackdropRules`: a `Screen` dims the scene and hides the HUD; a
 `Modal` dims the scene and keeps the HUD (the respawn countdown and the voyage line belong with those choices); a
 `Panel` changes nothing. The dim backdrop takes the pointer, so nothing under a menu can be clicked.
+
+## Theme
+
+All screen UI takes its look from one style sheet, `Assets/UI/Theme/TinCanTheme.uss`, which `UiLayers` loads on the
+layers' root (it also gets the class `tc-root`). It is set on `UiFeatureInstaller` (**Theme** field).
+
+- **Tokens.** The top of the sheet defines every colour, spacing step, radius and font size as a custom property on
+  `.tc-root`: surfaces (`--tc-surface-panel`, `-card`, `-hud`, `-control`, `-input`, ...), text (`--tc-text`,
+  `--tc-text-muted`), accents and states (`--tc-accent`, `--tc-warning`, `--tc-good`, `--tc-fair`, `--tc-bad`),
+  `--tc-space-*`, `--tc-radius*`, `--tc-font-*`. To restyle the game, change the tokens; nothing else needs to move.
+- **Classes.** The rest of the sheet uses tokens only: built-in controls inside our UI (`.tc-root .unity-button`,
+  text inputs as a dark well with light text, toggles, sliders), menus (`tc-menu`, `tc-menu__*`, `tc-backdrop`),
+  the HUD (`tc-hud`, `tc-meter`, with `--fair` and `--bad` bands), feature panels (`tc-card`, `tc-tab`, `tc-tile`,
+  `tc-keys`, `tc-side-column`) and the dev readout.
+- **Views add classes; they do not set colours, font sizes or weights in code.** Only values that come from data
+  stay in code (a meter's width, a thumbnail, show and hide). The architecture rule `ScreenUi_TakesItsLookFromTheTheme`
+  checks it; `UiThemeTests` checks that every token used is defined and that the installer loads the sheet.
+- A new screen: add its classes to the sheet with tokens, and new tokens only for a new kind of colour or size.
+
+Offline scenes have no camera, so nothing clears the screen between frames: after a menu changes, the old one shows
+faintly for a few frames under a translucent panel. That is the empty scene, not the theme; in a session the camera
+clears every frame.
 
 ## Adding a command
 
@@ -176,12 +199,25 @@ for the cursor: a resolve cycle); `MenuCursorPresenter` passes it the menu's ope
 A `MenuItemKind.Bindings` row expands at snapshot time into one `Binding` row per key the player can change
 (`IInputBindings.Slots`: "Humanoid: Jump - Space"). Invoking a Binding row waits for a key (the value reads
 "Press a key..."; Esc cancels); a refused key adds a `Note` row saying why. The Reset to Defaults row runs
-`ResetBindingsMenuCommand`. `MenuOverlayView` renders rows in a scroll view, so long menus fit the screen.
+`ResetBindingsMenuCommand`. `MenuOverlayView` renders rows in a scroll view, so long menus fit the screen. It is
+reached through Settings > Controls > Key bindings.
+
+## Settings menu (player settings)
+
+Main menu > **Settings** (`Menu_Settings`) has one page per settings group (`Menu_Settings_Controls`,
+`Menu_Settings_View`). A page's `Settings` row expands at snapshot time (`MenuSettingsRows`) into one row per
+`SettingDefinition` of its group loaded in this scene: a slider becomes a `Slider` row (it carries `Min`, `Max`,
+`Step`), a toggle a `Toggle`, a choice a `Choice` row (it carries its `Options`; the view draws `<` and `>`), text a
+`TextField`. Then **Reset to defaults** for that page. The rows read and write `IPlayerSettings` directly (not the
+menu's own values), which checks and saves them; a group with nothing loaded says so. Adding a setting needs no menu
+work: see [`plans/player-settings.md`](plans/player-settings.md) and `CODE_MAP.md`, "A player setting". The pages
+and the main menu row are built by **TinCan > Dev > Settings > Build Assets**.
+
 
 ## Automation and tests
 
 - Model tests: `MenuUseCaseTests`, `MenuArbitrationProcessorTests` (requests, kinds, pinned, Esc, Back staying inside a request, the backdrop rules), `CursorPolicyUseCaseTests`, `MenuBindingRowsTests`, `MenuCommandRegistryTests`, `MenuCommandTests`, `HudUseCaseTests`, `MainMenuBootstrapTests`, `CommandLineSessionBootstrapTests`. Build menus in code with `MenuDefinition.Create(...)`; `Fakes/FakeMenuCommand`, `Fakes/FakeHudValues`, `Fakes/FakePossessionState`, `Fakes/FakeUiLayers`, `Fakes/FakeCursorDevice` exist.
-- View tests: `MenuOverlayViewTests` draws both overlays into `FakeUiLayers` on a real panel (text editing, the Modal layer, the HUD under a Screen and a Modal).
+- View tests: `MenuOverlayViewTests` draws both overlays into `FakeUiLayers` on a real panel (text editing, the Modal layer, the HUD under a Screen and a Modal). `MenuOverlayViewClickTests` runs the menu view in a simulated panel from `com.unity.ui.test-framework` (built in, 6.4.0, test assembly only; `UITestFixture`, `simulate.Click`, `simulate.FrameUpdate`): a click runs a row, the choice arrows and the slider write the setting, and a menu's backdrop keeps clicks from a panel underneath. Write new view tests that way.
 - Scenario probes for any scenario (`DevTools/Scenarios/UiScenarioLibrary.cs`): `TopMenu <id|none>`, `HudShown`, `HudHidden`, `CursorLocked`, `CursorFree`; press Esc with `Tap(ScriptedAction.Cancel)`. `OverboardRespawn` and `VoyageLoop` use them.
 - Play-mode automation: scenarios and bots press `ScriptedAction` intents (`DevTools/ScriptedAction.cs`), which `ScriptedActionMap` turns into context actions on `IScriptedInput`; the input reader merges them with the keyboard under the same context rules. Injecting Input System events does not work while the Editor is unfocused; use this seam instead.
 
@@ -200,7 +236,8 @@ come from `IInputBindings.DescribeAction`, never typed text, so rebinding shows.
 
 ## Known limits
 
-- Rows are rendered top to bottom with no layout options; the view is a placeholder.
+- Rows are rendered top to bottom with no layout options; the view is a placeholder. Its look is the theme's, a
+  grey placeholder until there is an art direction.
 - Values are strings; parse in the command (see `JoinGameMenuCommand` for the port).
 - No navigation with keyboard/gamepad yet; the overlay is mouse-driven.
 - Menu assets are matched to commands by string ids; a renamed command breaks the row silently.

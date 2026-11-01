@@ -1,7 +1,10 @@
 #nullable enable
 using NUnit.Framework;
 using TinCan.Core.Domain.Look;
+using TinCan.Core.Domain.Settings;
+using TinCan.Core.Settings;
 using TinCan.Features.FirstPersonCamera;
+using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -70,6 +73,26 @@ namespace TinCan.Tests.EditMode
             Assert.That(camera.fieldOfView, Is.EqualTo(60f).Within(1e-3f));
             Assert.That(camera.nearClipPlane, Is.EqualTo(0.3f).Within(1e-5f));
             Assert.That(body.shadowCastingMode, Is.EqualTo(ShadowCastingMode.On));
+        }
+
+        [Test]
+        public void ThePlayersFieldOfView_IsUsed_AndAChangeShowsWhileTaken()
+        {
+            var fov = SettingDefinition.Slider(FirstPersonViewRig.FieldOfViewKey, "Field of view", SettingGroup.View, 60f, 110f, 1f, 75f);
+            var settings = new PlayerSettingsUseCase(new SettingsCatalog(new[] { fov }), new FakeSettingsStore(), new FakeTimeService());
+            var rig = new FirstPersonViewRig(_config, settings);
+            var camera = _cameraObject.GetComponent<Camera>();
+
+            rig.Take(camera, System.Array.Empty<Renderer>());
+            Assert.That(camera.fieldOfView, Is.EqualTo(75f).Within(1e-3f), "the setting's default, not the config's 80");
+
+            settings.Set(FirstPersonViewRig.FieldOfViewKey, "95");
+            Assert.That(camera.fieldOfView, Is.EqualTo(95f).Within(1e-3f));
+
+            rig.Release(camera, System.Array.Empty<Renderer>());
+            settings.Set(FirstPersonViewRig.FieldOfViewKey, "100");
+            Assert.That(camera.fieldOfView, Is.Not.EqualTo(100f).Within(1e-3f), "a released camera is left alone");
+            Object.DestroyImmediate(fov);
         }
 
         [Test]

@@ -6,6 +6,7 @@
         "TinCan.Core.Infrastructure",
         "TinCan.Entities",
         "TinCan.Features.CloudBoundary",
+        "TinCan.Features.Atmosphere",
         "TinCan.Gas",
         "TinCan.Humanoid",
         "TinCan.Input",

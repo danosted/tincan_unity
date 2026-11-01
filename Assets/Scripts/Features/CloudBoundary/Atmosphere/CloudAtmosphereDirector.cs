@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Atmosphere;
 using VContainer;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -23,11 +24,14 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
     public class CloudAtmosphereDirector : MonoBehaviour, IInjectedView
     {
         private ITimeService? _timeService;
+        private bool _sunOwnedElsewhere;
 
         [Inject]
-        public void Construct(ITimeService timeService)
+        public void Construct(ITimeService timeService, IObjectResolver resolver)
         {
             _timeService = timeService;
+            // In Play the atmosphere, when a scene has one, owns the sun's colour and intensity.
+            _sunOwnedElsewhere = resolver.TryResolve<IAtmosphereOwner>(out _);
         }
 
 
@@ -241,7 +245,7 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
 
         private void ApplyLight(bool markDirty)
         {
-            if (_sunLight == null)
+            if (_sunLight == null || (_sunOwnedElsewhere && Application.isPlaying))
             {
                 return;
             }

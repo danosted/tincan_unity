@@ -100,6 +100,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "ShipPickerSwap (Host + Client, Lag100)")]
         public static void ShipPickerSwapDuo() => RunDuo("ShipPickerSwap", "Lag100");
 
+        [MenuItem(Root + "LookApplies (Host)")]
+        public static void LookAppliesSolo() => RunSolo("LookApplies");
+
+        [MenuItem(Root + "LookApplies (Host + Client, Lag100)")]
+        public static void LookAppliesDuo() => RunDuo("LookApplies", "Lag100");
+
         [MenuItem(Root + "MountFitting (Host)")]
         public static void MountFittingSolo() => RunSolo("MountFitting");
 

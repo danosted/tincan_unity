@@ -5,11 +5,14 @@ using System.IO;
 using System.Linq;
 using TinCan.Core.Domain.Features;
 using TinCan.Core.Ship.Parts;
+using TinCan.Features.Atmosphere;
 using TinCan.Features.ShipDesigns;
 using TinCan.Features.Shipyard;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
@@ -19,8 +22,9 @@ namespace TinCan.DevTools.Editor
     /// TinCan > Dev > Look > Contact Sheet: builds a built-in ship design in edit mode, in a preview scene of its own (so
     /// the open scene's lights and objects stay out of it), and renders four fixed views (side, three-quarter, bow, deck
     /// at eye height) into one picture in <see cref="OutputFolder"/>. Agents and people review the same picture after
-    /// every look change. The light is a fixed late-afternoon sun from the palette until the look profile owns it.
-    /// <see cref="Render"/> takes any built-in design by name. Plan: .docs/plans/look-slice.md (L0).
+    /// every look change. The light, the air and the post effects are the golden-afternoon look's (<see cref="LookProfile"/>,
+    /// the ship at cruising height), or a plain late-afternoon sun before that look is built.
+    /// <see cref="Render"/> takes any built-in design by name. Plan: .docs/plans/look-slice.md (L0, L2).
     /// </summary>
     public static class LookContactSheet
     {
@@ -31,6 +35,8 @@ namespace TinCan.DevTools.Editor
         private const float FieldOfView = 30f;
         private const float DeckFieldOfView = 60f;
         private const float EyeHeight = 1.7f;
+        /// <summary>Where the ship floats: cruising height, above the densest fog.</summary>
+        private static readonly Vector3 ShipPosition = new(0f, 60f, 0f);
 
         private enum View { Side, ThreeQuarter, Bow, Deck }
 
@@ -49,27 +55,34 @@ namespace TinCan.DevTools.Editor
                 ?? throw new InvalidOperationException($"no ship designs config at {ShipDesignsAssetBuilder.ConfigPath}");
             var design = BuiltInDesign(config, designName);
             var palette = LookPalette.Load();
+            var look = AssetDatabase.LoadAssetAtPath<LookProfile>(AtmosphereAssetBuilder.LookPath);
 
             // Compile shader variants on the spot: asynchronous compilation would leave the first views blank.
             bool asyncShaders = ShaderUtil.allowAsyncCompilation;
             ShaderUtil.allowAsyncCompilation = false;
             var scene = EditorSceneManager.NewPreviewScene();
             var sheet = new Texture2D(TileWidth * 2, TileHeight * 2, TextureFormat.RGB24, false);
-            var target = new RenderTexture(TileWidth, TileHeight, 24) { antiAliasing = 4 };
+            // HDR, so glows exceed 1 and the look's bloom picks them up.
+            var target = new RenderTexture(TileWidth, TileHeight, 24, RenderTextureFormat.DefaultHDR) { antiAliasing = 4 };
+            GameObject? volume = null;
             try
             {
                 var root = new GameObject(designName);
                 SceneManager.MoveGameObjectToScene(root, scene);
+                root.transform.position = ShipPosition;
                 new ShipHullAssembler(Catalog(), new ShipyardPreviewBuilder(), buildFunctionalParts: true, config).Apply(design, root.transform);
 
-                AddSun(scene, palette);
-                var camera = AddCamera(scene, palette, target);
+                AddSun(scene, palette, look);
+                var camera = AddCamera(scene, palette, look, target);
+                volume = ApplyLook(look);
                 var corners = RendererCorners(root);
-                var deck = DeckEye(design.Frame);
+                var deck = ShipPosition + DeckEye(design.Frame);
 
                 foreach (View view in Enum.GetValues(typeof(View)))
                 {
                     Aim(camera, view, corners, deck);
+                    // The first render after a script reload can come out blank; a second one is cheap.
+                    if (view == View.Side) camera.Render();
                     camera.Render();
                     RenderTexture.active = target;
                     int tile = (int)view;
@@ -88,6 +101,10 @@ namespace TinCan.DevTools.Editor
             finally
             {
                 ShaderUtil.allowAsyncCompilation = asyncShaders;
+                AtmosphereShaderGlobals.SetEnabled(false);
+                if (volume != null) Object.DestroyImmediate(volume);
+                AtmosphereShaderGlobals.SetEnabled(false);
+                if (volume != null) Object.DestroyImmediate(volume);
                 RenderTexture.active = null;
                 Object.DestroyImmediate(target);
                 Object.DestroyImmediate(sheet);
@@ -113,26 +130,55 @@ namespace TinCan.DevTools.Editor
                 .OfType<FeatureInstaller.IExtension<ShipPartDefinition>>()
                 .SelectMany(e => e.Contributions));
 
-        private static void AddSun(Scene scene, LookPalette palette)
+        internal static void AddSun(Scene scene, LookPalette palette, LookProfile? look)
         {
             var sun = new GameObject("Sun").AddComponent<Light>();
             SceneManager.MoveGameObjectToScene(sun.gameObject, scene);
             sun.type = LightType.Directional;
+            sun.shadows = LightShadows.Soft;
+            if (look != null)
+            {
+                var settings = look.Settings;
+                sun.color = settings.SunColour;
+                sun.intensity = settings.SunIntensity;
+                sun.transform.rotation = Quaternion.Euler(settings.SunAngles.x, settings.SunAngles.y, 0f);
+                return;
+            }
+
             sun.color = Color.Lerp(Color.white, palette["leaf-gold"], 0.35f);
             sun.intensity = 1.1f;
-            sun.shadows = LightShadows.Soft;
             // Low and from the port quarter, so the side and three-quarter views see lit and shadowed faces.
             sun.transform.rotation = Quaternion.Euler(30f, 60f, 0f);
         }
 
-        private static Camera AddCamera(Scene scene, LookPalette palette, RenderTexture target)
+        /// <summary>The look's air (clear of cloud) in the shader globals, and its post effects in a global volume
+        /// (destroyed after the render); nothing without a look.</summary>
+        internal static GameObject? ApplyLook(LookProfile? look)
+        {
+            if (look == null) return null;
+            var settings = look.Settings;
+            AtmosphereShaderGlobals.Apply(new AtmosphereProcessor().Evaluate(settings, whiteout: 0f, lightMultiplier: 1f), settings);
+            AtmosphereShaderGlobals.SetEnabled(true);
+            if (look.Post == null) return null;
+
+            var holder = new GameObject("Look Volume") { hideFlags = HideFlags.HideAndDontSave };
+            var volume = holder.AddComponent<Volume>();
+            volume.isGlobal = true;
+            volume.priority = 100;
+            volume.sharedProfile = look.Post;
+            return holder;
+        }
+
+        internal static Camera AddCamera(Scene scene, LookPalette palette, LookProfile? look, RenderTexture target)
         {
             var camera = new GameObject("Camera").AddComponent<Camera>();
             SceneManager.MoveGameObjectToScene(camera.gameObject, scene);
             camera.scene = scene;
             camera.cameraType = CameraType.Game;
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = palette["sky"];
+            // Behind the ship, the colour the air fades toward away from the sun, so the haze reads against it.
+            camera.backgroundColor = look != null ? look.Settings.AwayFog : palette["sky"];
+            if (look != null) camera.GetUniversalAdditionalCameraData().renderPostProcessing = true;
             camera.nearClipPlane = 0.1f;
             camera.farClipPlane = 1000f;
             camera.targetTexture = target;

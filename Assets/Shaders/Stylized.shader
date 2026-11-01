@@ -1,7 +1,7 @@
 // The project's stylized lit surface (plan .docs/plans/look-slice.md, L1; .docs/ART_DIRECTION.md, "Light and shading"):
 // one flat base colour from the palette, shaded by the shared light model (Include/TinCanLighting.hlsl: two soft bands,
 // tinted shadows, sky ambient and rim, a highlight band for metal), optional vertex colour (wear, occlusion), emission
-// for glowing things, fog. Shadow, depth and depth-normals passes so it casts shadows and clouds and SSAO see it.
+// for glowing things, the shared air (Include/TinCanAtmosphere.hlsl). Shadow, depth and depth-normals passes so it casts shadows and clouds and SSAO see it.
 // The library materials that use it are built from the palette by TinCan > Dev > Look > Build Materials.
 Shader "TinCan/Stylized"
 {
@@ -10,8 +10,9 @@ Shader "TinCan/Stylized"
         [MainColor] _BaseColor ("Base colour", Color) = (0.79, 0.64, 0.45, 1)
         _ShadowTint ("Shadow tint", Color) = (0.42, 0.43, 0.61, 1)
         _ShadowFill ("Shadow fill", Range(0, 1)) = 0.45
-        _Wrap ("Light wrap", Range(0, 1)) = 0.3
+        _Wrap ("Light wrap", Range(0, 1)) = 0
         _BandSoftness ("Band softness", Range(0, 1)) = 0.35
+        [IntRange] _Bands ("Bands", Range(2, 3)) = 2
         _Ambient ("Ambient", Range(0, 2)) = 1.0
         _Rim ("Rim", Range(0, 1)) = 0.15
         _Highlight ("Metal highlight", Range(0, 1)) = 0
@@ -33,6 +34,7 @@ Shader "TinCan/Stylized"
             half _ShadowFill;
             half _Wrap;
             half _BandSoftness;
+            half _Bands;
             half _Ambient;
             half _Rim;
             half _Highlight;
@@ -59,6 +61,7 @@ Shader "TinCan/Stylized"
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
             #include "Include/TinCanLighting.hlsl"
+            #include "Include/TinCanAtmosphere.hlsl"
 
             struct Attributes
             {
@@ -112,9 +115,10 @@ Shader "TinCan/Stylized"
                 look.ambient = _Ambient;
                 look.rim = _Rim;
                 look.highlightSize = _HighlightSize;
+                look.bands = _Bands;
 
                 half3 colour = TinCanShade(surface, look) + _EmissionColor.rgb;
-                colour = MixFog(colour, input.fogFactor);
+                colour = TinCanAtmosphere(colour, input.positionWS, input.fogFactor);
                 return half4(colour, 1);
             }
             ENDHLSL

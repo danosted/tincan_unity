@@ -4,6 +4,7 @@
     "references": [
         "TinCan.Core.Domain",
         "TinCan.Features.CloudBoundary",
+        "TinCan.Features.Atmosphere",
         "TinCan.Gas",
         "TinCan.Humanoid",
         "TinCan.Interaction",
@@ -34,6 +35,8 @@
         "TinCan.Features.Boarding",
         "TinCan.UI",
         "Unity.Netcode.Runtime",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime",
         "Unity.Networking.Transport",
         "Unity.Collections",
         "VContainer"

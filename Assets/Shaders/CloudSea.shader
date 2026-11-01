@@ -29,6 +29,7 @@ Shader "TinCan/Environment/Cloud Sea"
             #pragma fragment Frag
             #pragma multi_compile_fog
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Include/TinCanAtmosphere.hlsl"
 
             struct Attributes
             {
@@ -112,7 +113,7 @@ Shader "TinCan/Environment/Cloud Sea"
                 float edgeFade = smoothstep(0.02, _EdgeSoftness, noisyFacing);
                 color.a *= edgeFade * lerp(0.72, 1.0, density);
                 color.rgb *= color.a;
-                return color;
+                return TinCanAtmospherePremultiplied(color, input.positionWS);
             }
             ENDHLSL
         }

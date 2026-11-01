@@ -41,7 +41,8 @@ namespace TinCan.DevTools.Editor
             (TestScenes.Shipyard, "Profile_Test_Shipyard"),
             (TestScenes.GrappleHook, "Profile_Test_GrappleHook"),
             (TestScenes.Respawn, "Profile_Test_Respawn"),
-            (TestScenes.Navigation, "Profile_Test_Navigation")
+            (TestScenes.Navigation, "Profile_Test_Navigation"),
+            (TestScenes.Look, "Profile_Test_Look")
         };
 
         [MenuItem("TinCan/Dev/Test Range/Rebuild Scenes")]
@@ -98,6 +99,8 @@ namespace TinCan.DevTools.Editor
             var sun = light.GetComponent<Light>();
             sun.type = LightType.Directional;
             sun.shadows = LightShadows.Soft;
+            // Named as the scene's sun (Lighting > Sun Source), which the cloud dimming and the look's atmosphere drive.
+            RenderSettings.sun = sun;
 
             // The ships spawn about 40 m up; a player who walks off lands here instead of falling forever.
             var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);

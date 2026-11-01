@@ -265,6 +265,7 @@ move the subject.
 | `Test_GrappleHook` | GrappleHook | HookAboard |
 | `Test_Respawn` | GrappleHook, Respawn | OverboardRespawn, LeashClimb, WinchRescue |
 | `Test_Navigation` | Stations, Helm, Voyage, SkyIslands, SkyHazards, Navigation | CompassCourse, ChartPlot, ChartIslands, ChartHazards |
+| `Test_Look` | Atmosphere (the look's fog, ambient, sun and post; the only test area with it, the others stay plain) | LookApplies |
 
 **The scenes are generated.** `DevTools/Editor/TestRangeSceneBuilder.cs` (**TinCan > Dev > Test Range > Rebuild
 Scenes**) builds every scene from its `Areas` table and adds them to the build list. Clients load the host's scene

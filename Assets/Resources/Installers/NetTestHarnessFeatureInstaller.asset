@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: NetTestHarnessFeatureInstaller
   m_EditorClassIdentifier: TinCan.DevTools::TinCan.DevTools.NetTestHarnessFeatureInstaller
   _controls: {fileID: 11400000, guid: 7af3935694bb6d644a1852e437803a9d, type: 2}
+  _readoutStyle: {fileID: 7433441132597879392, guid: 7eabfc8e81253da4a9bf2d0e71ea8dc1, type: 3}

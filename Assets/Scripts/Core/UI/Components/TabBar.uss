@@ -1,0 +1,17 @@
+.tc-tab-bar {
+    flex-direction: row;
+    flex-shrink: 0;
+    margin-bottom: 6px;
+}
+
+.tc-tab-bar__tab {
+    flex-grow: 1;
+    height: 26px;
+    color: var(--tc-text-muted);
+}
+
+.tc-tab-bar__tab--active {
+    background-color: var(--tc-surface-control-active);
+    color: var(--tc-text);
+    -unity-font-style: bold;
+}

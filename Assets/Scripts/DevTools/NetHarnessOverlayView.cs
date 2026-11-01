@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using TinCan.Core.UI;
+using TinCan.DevTools.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -23,8 +24,7 @@ namespace TinCan.DevTools
             DontDestroyOnLoad(host);
             var view = host.AddComponent<NetHarnessOverlayView>();
             view._text = text;
-            view._label = new Label { name = "net-harness-overlay", pickingMode = PickingMode.Ignore };
-            view._label.AddToClassList("tc-dev-readout");
+            view._label = new DevReadout { name = "net-harness-overlay" };
             layers.Root(UiLayer.Dev).Add(view._label);
             return view;
         }

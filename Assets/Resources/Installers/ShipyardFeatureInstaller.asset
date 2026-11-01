@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Features.Shipyard::TinCan.Features.Shipyard.ShipyardFeatureInstaller
   _config: {fileID: 11400000, guid: 890a378a2f626c54aacb1d11f4724649, type: 2}
   _controls: {fileID: 11400000, guid: ea339ce438bb00a4a91a3e328d484de7, type: 2}
+  _styles:
+  - {fileID: 7433441132597879392, guid: 4a316c4f29d7b6047969659b95e6b356, type: 3}

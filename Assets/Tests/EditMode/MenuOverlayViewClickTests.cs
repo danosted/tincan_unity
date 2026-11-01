@@ -4,6 +4,7 @@ using NUnit.Framework;
 using TinCan.Core.Domain.Settings;
 using TinCan.Core.Settings;
 using TinCan.Core.UI;
+using TinCan.Core.UI.Components;
 using TinCan.Tests.EditMode.Fakes;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -84,7 +85,7 @@ namespace TinCan.Tests.EditMode
             simulate.Click(ButtonLabelled(">"));
             simulate.Click(ButtonLabelled("<"));
             Assert.That(_settings.GetString("graphics.quality"), Is.EqualTo("High"), "wrapped to Low, then back");
-            Assert.That(rootVisualElement.Q<Label>("row-value").text, Is.EqualTo("High"), "the shown value follows");
+            Assert.That(rootVisualElement.Q<ChoiceField>().Value, Is.EqualTo("High"), "the shown value follows");
         }
 
         [Test]

@@ -1,0 +1,24 @@
+/* Layout helpers any view can use: no look, only placement. */
+.tc-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* A column of cards down the right edge (the shipyard's parts and controls). */
+.tc-side-column {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    bottom: 12px;
+    width: 300px;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.tc-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+}

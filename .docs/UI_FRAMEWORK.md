@@ -78,23 +78,30 @@ on a `UIDocument` or `sortingOrder` outside `UiLayers`, and on `OnGUI` outside a
 `Modal` dims the scene and keeps the HUD (the respawn countdown and the voyage line belong with those choices); a
 `Panel` changes nothing. The dim backdrop takes the pointer, so nothing under a menu can be clicked.
 
-## Theme
+## Theme and components
 
-All screen UI takes its look from one style sheet, `Assets/UI/Theme/TinCanTheme.uss`, which `UiLayers` loads on the
-layers' root (it also gets the class `tc-root`). It is set on `UiFeatureInstaller` (**Theme** field).
+Screen UI is built from **components**: small UI Toolkit elements, each a C# class (`[UxmlElement]`, usable from
+UXML and UI Builder too) with its own `.uss` beside it. The look comes from **tokens**; views only compose
+components and feed them data.
 
-- **Tokens.** The top of the sheet defines every colour, spacing step, radius and font size as a custom property on
-  `.tc-root`: surfaces (`--tc-surface-panel`, `-card`, `-hud`, `-control`, `-input`, ...), text (`--tc-text`,
-  `--tc-text-muted`), accents and states (`--tc-accent`, `--tc-warning`, `--tc-good`, `--tc-fair`, `--tc-bad`),
-  `--tc-space-*`, `--tc-radius*`, `--tc-font-*`. To restyle the game, change the tokens; nothing else needs to move.
-- **Classes.** The rest of the sheet uses tokens only: built-in controls inside our UI (`.tc-root .unity-button`,
-  text inputs as a dark well with light text, toggles, sliders), menus (`tc-menu`, `tc-menu__*`, `tc-backdrop`),
-  the HUD (`tc-hud`, `tc-meter`, with `--fair` and `--bad` bands), feature panels (`tc-card`, `tc-tab`, `tc-tile`,
-  `tc-keys`, `tc-side-column`) and the dev readout.
-- **Views add classes; they do not set colours, font sizes or weights in code.** Only values that come from data
-  stay in code (a meter's width, a thumbnail, show and hide). The architecture rule `ScreenUi_TakesItsLookFromTheTheme`
-  checks it; `UiThemeTests` checks that every token used is defined and that the installer loads the sheet.
-- A new screen: add its classes to the sheet with tokens, and new tokens only for a new kind of colour or size.
+| Piece | Where | What |
+|---|---|---|
+| Theme | `Assets/UI/Theme/TinCan.tss` | The panel's theme (set on `Settings/UI/DefaultPanelSettings`): Unity's default controls, then the files below, then every core component sheet. |
+| Tokens | `Assets/UI/Theme/Tokens.uss` | Every colour, spacing step, radius and font size as a variable (`--tc-surface-*`, `--tc-text*`, `--tc-accent`, `--tc-warning`, `--tc-good`/`fair`/`bad`, `--tc-space-*`, `--tc-radius*`, `--tc-font-*`). **To restyle the game, change these.** |
+| Controls | `Assets/UI/Theme/Controls.uss` | Unity's built-in controls inside our UI (under `.tc-root`): buttons, labels, text inputs (a dark well with light text), toggles, sliders. |
+| Layout | `Assets/UI/Theme/Layout.uss` | Placement helpers with no look: `tc-fill`, `tc-side-column`, `tc-grid`. |
+| Core components | `Assets/Scripts/Core/UI/Components/` (`TinCan.UI`) | `Backdrop`, `MenuPanel`, `MenuButton` (`Compact`), `MenuNote`, `ChoiceField`, `Card` (`Grow`, `Below`, `Heading`, `Hint`), `TabBar`, `KeyHintTable`, `HudCard`, `Meter` (its band by value: `Meter.Band`). Imported by the theme. |
+| Feature components | the feature's `UI/` folder, e.g. `Features/Shipyard/UI/PartTile`; `DevTools/UI/DevReadout` | Their sheets are listed on the feature's installer, which implements `IExtension<StyleSheet>`; `UiLayers` adds them to the layers' root (`UiStyleSheets`). Core never names a feature's sheet, and the styles exist only where the feature loads. |
+
+Rules, each checked by a test:
+- **A sheet uses tokens for colours and font sizes**, never literal values (`UiThemeTests.EverySheet_TakesColoursAndFontSizesFromTheTokens`); only `Tokens.uss` holds them.
+- **Every core component sheet is imported by the theme**, and every feature sheet is contributed by an installer (`UiThemeTests`).
+- **Views and components set no colour, font size or weight in code** (`ScreenUi_TakesItsLookFromTheTheme`); only values from data stay in code (a meter's width, a thumbnail, show and hide).
+- Class names are BEM-style with the `tc-` prefix: `tc-meter`, `tc-meter__fill`, `tc-meter__fill--bad`; each component exposes them as `UssClassName` constants.
+
+**Adding a component:** write the class and its `.uss` beside it (tokens only). A core one goes in
+`Core/UI/Components/` and gets an `@import` line in `TinCan.tss`; a feature one goes in the feature's `UI/` folder and
+on the installer's style sheet list. Add a token only for a new kind of colour or size.
 
 Offline scenes have no camera, so nothing clears the screen between frames: after a menu changes, the old one shows
 faintly for a few frames under a translucent panel. That is the empty scene, not the theme; in a session the camera

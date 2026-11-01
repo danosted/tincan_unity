@@ -1,0 +1,20 @@
+/*
+ * The TinCan theme, set on Settings/UI/DefaultPanelSettings: Unity's default controls, our tokens, the base for the
+ * built-in controls, layout helpers, then one sheet per core component (Assets/Scripts/Core/UI/Components). A
+ * feature's components bring their own sheets through their installer (IExtension<StyleSheet>), never through here.
+ * Adding a core component: add its sheet below (UiThemeTests fails on one that is missing).
+ */
+@import url("unity-theme://default");
+@import url("Tokens.uss");
+@import url("Controls.uss");
+@import url("Layout.uss");
+@import url("/Assets/Scripts/Core/UI/Components/Backdrop.uss");
+@import url("/Assets/Scripts/Core/UI/Components/Card.uss");
+@import url("/Assets/Scripts/Core/UI/Components/ChoiceField.uss");
+@import url("/Assets/Scripts/Core/UI/Components/HudCard.uss");
+@import url("/Assets/Scripts/Core/UI/Components/KeyHintTable.uss");
+@import url("/Assets/Scripts/Core/UI/Components/MenuButton.uss");
+@import url("/Assets/Scripts/Core/UI/Components/MenuNote.uss");
+@import url("/Assets/Scripts/Core/UI/Components/MenuPanel.uss");
+@import url("/Assets/Scripts/Core/UI/Components/Meter.uss");
+@import url("/Assets/Scripts/Core/UI/Components/TabBar.uss");

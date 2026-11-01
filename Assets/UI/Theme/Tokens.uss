@@ -1,0 +1,49 @@
+/*
+ * Design tokens: every colour, spacing step, radius and font size the UI uses. Change these to restyle the game.
+ * Components never use a literal colour or font size; they use these (UiThemeTests checks it). The panel's root has
+ * them (:root), and so does the layers' root (.tc-root) for panels without this theme.
+ */
+:root, .tc-root {
+    /* Surfaces */
+    --tc-surface-panel: rgba(16, 18, 24, 0.94);
+    --tc-surface-card: rgba(24, 27, 34, 0.86);
+    --tc-surface-hud: rgba(40, 42, 48, 0.78);
+    --tc-surface-control: rgb(44, 49, 60);
+    --tc-surface-control-hover: rgb(56, 63, 78);
+    --tc-surface-control-active: rgb(38, 86, 110);
+    --tc-surface-input: rgb(10, 12, 16);
+    --tc-surface-track: rgba(0, 0, 0, 0.55);
+    --tc-surface-readout: rgba(0, 0, 0, 0.6);
+    --tc-backdrop: rgba(0, 0, 0, 0.45);
+    --tc-transparent: rgba(0, 0, 0, 0);
+
+    /* Text */
+    --tc-text: rgb(232, 235, 240);
+    --tc-text-muted: rgb(160, 168, 180);
+
+    /* Accents and states */
+    --tc-accent: rgb(77, 204, 255);
+    --tc-accent-soft: rgba(77, 204, 255, 0.25);
+    --tc-border: rgba(255, 255, 255, 0.12);
+    --tc-border-strong: rgb(232, 235, 240);
+    --tc-border-focus: rgb(77, 204, 255);
+    --tc-warning: rgb(255, 191, 77);
+    --tc-good: rgb(77, 217, 89);
+    --tc-fair: rgb(230, 190, 60);
+    --tc-bad: rgb(217, 51, 38);
+
+    /* Spacing, shape, type */
+    --tc-space-xs: 2px;
+    --tc-space-s: 4px;
+    --tc-space-m: 8px;
+    --tc-space-l: 16px;
+    --tc-space-xl: 24px;
+    --tc-radius: 6px;
+    --tc-radius-s: 3px;
+    --tc-font-xs: 11px;
+    --tc-font-s: 13px;
+    --tc-font-m: 16px;
+    --tc-font-l: 20px;
+    --tc-font-title: 28px;
+    --tc-control-height: 32px;
+}

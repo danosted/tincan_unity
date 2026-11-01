@@ -156,12 +156,23 @@ Unity 6000.4 (not on the public registry), referenced by the EditMode test assem
 panel, and checks that a menu's backdrop keeps clicks from a panel underneath. It found a real bug at once: the
 choice arrows stepped from the value the row was built with.
 
-**U4 done (2026-11-01).** `Assets/UI/Theme/TinCanTheme.uss`: tokens on `.tc-root` (surfaces, text, accents and
-states, spacing, radii, font sizes) and classes that use only tokens, loaded by `UiLayers` from `UiFeatureInstaller`.
-The menu, HUD, shipyard panels and the dev readout use classes; nothing sets a colour or font size in code
-(`ScreenUi_TakesItsLookFromTheTheme`). Text inputs are a dark well with light text (they were the button colour with
-white text). The HUD meter is three bands (good, fair, bad) instead of a red-to-green blend, so the colours are
-tokens. Tests: `UiThemeTests`. Still a grey placeholder look: there is no art direction yet.
+**U4 done (2026-11-01): theme and components** (the developer chose a component-based structure over one sheet).
+- `Assets/UI/Theme/TinCan.tss` is the panel's theme (`DefaultPanelSettings`): Unity's default controls, `Tokens.uss`
+  (every colour, spacing step, radius and font size), `Controls.uss` (built-in controls under `.tc-root`; text inputs
+  a dark well with light text, they were the button colour with white text), `Layout.uss`, and every core component
+  sheet.
+- Components are C# elements (`[UxmlElement]`) with their own `.uss` beside them: core ones in
+  `Core/UI/Components/` (`Backdrop`, `MenuPanel`, `MenuButton`, `MenuNote`, `ChoiceField`, `Card`, `TabBar`,
+  `KeyHintTable`, `HudCard`, `Meter`), feature ones in the feature's `UI/` (`Shipyard/UI/PartTile`,
+  `DevTools/UI/DevReadout`), their sheets contributed by the installer through `IExtension<StyleSheet>`
+  (`UiStyleSheets`, added by `UiLayers`), so core never names a feature's sheet.
+- The menu, HUD and shipyard views compose components; nothing sets a colour or font size in code. The HUD meter is
+  three bands (good, fair, bad) instead of a red-to-green blend, so its colours are tokens.
+- Tests: `UiThemeTests` (the panel's theme, every core sheet imported, tokens only in every sheet, every feature sheet
+  contributed, the components in the menu), `ScreenUi_TakesItsLookFromTheTheme`.
+- Captures showed the shipyard's parts card squeezed by the keys table on a short screen: the growing card now keeps
+  160 px and the keys card clips instead.
+- Still a grey placeholder look: there is no art direction yet.
 
 Next: U5 (keyboard and gamepad navigation).
 

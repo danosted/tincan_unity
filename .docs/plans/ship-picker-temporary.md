@@ -1,4 +1,4 @@
-Status: Draft
+Status: Done
 
 # Ship picker (temporary)
 
@@ -58,8 +58,19 @@ scriptable from scenarios); both peers see `ShipDesignBuilt` with the Raft's has
 
 ## Removing it
 Delete `Features/ShipPicker/`, `Resources/Installers/ShipPickerFeatureInstaller.asset`, the two profile entries,
-`ShipPickerUseCaseTests`, the scenario and its library and catalog entry, and the `CODE_MAP.md` row. Nothing else
-names it.
+`ShipPickerUseCaseTests`, the scenario and its library and catalog entry, the `TinCan.Features.ShipPicker` reference
+in `TinCan.DevTools.asmdef` and `TinCan.Tests.EditMode.asmdef`, the `CODE_MAP.md` row, and the ship-picker example
+in `UI_FRAMEWORK.md` ("A menu whose rows come from data"). Nothing else names it.
+
+## As built (P1, P2)
+- `Pick` validates the design itself (`ShipDesignValidator`, as the shipyard's Launch does) before `Select`, so a
+  design that cannot fly is never selected, even with no ship in play. Offline, a pick only selects.
+- Design rows are labelled by `ShipDesignListing.ToString()` ("Raft (built in)", matching the shipyard's list); their
+  ids are `ship/<key>` so no key can clash with Back.
+- A refusal reopens the picker with the reason as a `Note` row; a pick closes every menu (back to the game).
+- The scenario adds a probe `ShipFlies <key>` (replicated and built hash equal the stored design's). Phases cannot
+  signal each other directly, so the subject jumps once it has checked the Raft; the server waits for its feet to rise
+  (`SubjectFeetAbove`, replicated), lets it land, then picks `Starter` back.
 
 ## Risks and open questions
 1. **Crew on deck during a rebuild.** Launch rebuilds ships in play already, but no scenario has players standing on

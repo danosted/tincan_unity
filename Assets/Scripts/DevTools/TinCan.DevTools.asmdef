@@ -26,6 +26,7 @@
         "TinCan.Features.SkyIslands",
         "TinCan.Features.ShipDesigns",
         "TinCan.Features.Shipyard",
+        "TinCan.Features.ShipPicker",
         "TinCan.Features.ShipSockets",
         "TinCan.Features.GrappleHook",
         "TinCan.Features.Respawn",

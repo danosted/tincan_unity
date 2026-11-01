@@ -731,6 +731,49 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipyardScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
+        // The temporary ship picker (.docs/plans/ship-picker-temporary.md). (-1.5, 1.5) m in ship space is plank floor on both the
+        // starter and the raft (both decks at -0.5 m). Once the subject has checked the raft it jumps; the server sees its feet
+        // rise (replicated) and picks the starter back.
+        public static readonly ScenarioEntry ShipPickerSwap = new(
+            new Scenario.Builder("ShipPickerSwap")
+                .InScene(TestScenes.Shipyard)
+                .Describe("The subject stands on the starter's deck -> the host picks the built-in raft -> every peer rebuilds the ship as the raft and the subject is still aboard -> the host picks the starter back -> rebuilt again, still aboard.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("ShipDesignBuilt", 20f, "5")
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("PlaceSubjectAtCell", "-1.5,0,1.5,0")
+                    .WaitUntil("SubjectOnShip", 10f)
+                    .Wait(1f, "teleport settles")
+                    .Do("PickShip", "Raft")
+                    .WaitUntil("ShipFlies", 30f, "Raft"))
+                .Act(s => s
+                    .WaitUntil("ShipFlies", 45f, "Raft")
+                    .Wait(1f, "the rebuilt ship settles")
+                    .Expect("SubjectOnShip")
+                    .Checkpoint("raft")
+                    .Hold(0.2f, ScriptedAction.Jump)
+                    .WaitUntil("ShipFlies", 45f, "Starter")
+                    .Wait(1f, "the rebuilt ship settles")
+                    .Expect("SubjectOnShip")
+                    .Checkpoint("starter"))
+                .Assert(s => s
+                    .Expect("SubjectOnShip")
+                    .WaitUntil("SubjectFeetAbove", 45f, "-0.2")
+                    .Wait(1.5f, "the subject lands on the raft")
+                    .Expect("SubjectOnShip")
+                    .Do("PickShip", "Starter")
+                    .WaitUntil("ShipFlies", 30f, "Starter")
+                    .Wait(1f, "the rebuilt ship settles")
+                    .Expect("SubjectOnShip"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<ShipDesignsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipPickerScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
         public static readonly ScenarioEntry MountFitting = new(
             new Scenario.Builder("MountFitting")
                 .InScene(TestScenes.Shipyard)
@@ -1575,7 +1618,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

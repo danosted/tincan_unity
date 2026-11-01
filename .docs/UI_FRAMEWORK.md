@@ -145,6 +145,12 @@ before Quit, only in scenes that load the feature (`MainMenuComposition`). The s
 2. Reach it either as a `Submenu` row of an existing menu (no code) or by requesting it from a command or use case (inject `IMenuSystem`; pick an owner name, a kind, and whether it is pinned).
 3. Nothing else: the view renders any snapshot generically.
 
+**A menu whose rows come from data** (one row per saved thing) is built in code with `MenuDefinition.Create` each time
+it opens, so it is never stale, and shown with `IMenuSystem.Open`, over the menu that opened it (Back returns there).
+Every data row shares one command, which reads its row from `MenuContext.ItemId`; prefix the ids so none clashes with
+Back. A `Note` row in the definition shows a line of text (a refusal's reason). Example: the ship picker,
+`Features/ShipPicker/ShipPickerUseCase.cs` (`BuildMenu`) and `PickShipMenuCommand.cs`.
+
 ## Showing a HUD value
 
 `IHudValues` is a tiny key-to-text store. Write a presenter (an `ITickable` in TinCan.Features) that computes the text and calls `Set`; call `Remove` when the value no longer applies. `HudOverlayView` renders every key as a label on a grey card at the top left (hidden while the HUD is empty, and under a `Screen` menu); keys are shown in insertion order.

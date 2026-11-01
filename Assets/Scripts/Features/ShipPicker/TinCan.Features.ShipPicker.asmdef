@@ -1,0 +1,20 @@
+{
+    "name": "TinCan.Features.ShipPicker",
+    "rootNamespace": "TinCan.Features.ShipPicker",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Ship",
+        "TinCan.UI",
+        "TinCan.Features.ShipDesigns",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

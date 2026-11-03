@@ -54,20 +54,29 @@ function Invoke-Compile {
     return $false
 }
 
-function Invoke-Tests([string]$TestFilter, [switch]$SaveDirtyScenes) {
+function Invoke-Tests([string]$TestFilter, [string[]]$TestAssembly = @(), [switch]$SaveDirtyScenes) {
     Confirm-ScenesClean -SaveDirtyScenes:$SaveDirtyScenes
-    $arguments = @("test", "run", "--mode", "EditMode")
-    if ($TestFilter) { $arguments += @("--filter", $TestFilter) }
-    $result = Invoke-Unity $arguments 600
-    if (-not $result.Summary) {
-        $modal = Get-UnityModal
-        if ($modal) { Stop-Unusable $modal }
-        Stop-Unusable "test run returned no summary: $($result | ConvertTo-Json -Depth 5 -Compress)"
+    # The test runner takes one filter per run, and an assembly filter matches one assembly (by part of its name), so
+    # each test assembly is its own run.
+    $runs = [System.Collections.Generic.List[string[]]]::new()
+    if ($TestAssembly.Count -gt 0) { foreach ($name in $TestAssembly) { $runs.Add(@("--filter", $name, "--filter_type", "assembly")) } }
+    elseif ($TestFilter) { $runs.Add(@("--filter", $TestFilter)) }
+    else { $runs.Add(@()) }
+    $total = 0; $passed = 0; $results = @()
+    foreach ($run in $runs) {
+        $result = Invoke-Unity (@("test", "run", "--mode", "EditMode") + $run) 600
+        if (-not $result.Summary) {
+            $modal = Get-UnityModal
+            if ($modal) { Stop-Unusable $modal }
+            Stop-Unusable "test run returned no summary: $($result | ConvertTo-Json -Depth 5 -Compress)"
+        }
+        $total += $result.Summary.Total; $passed += $result.Summary.Passed; $results += @($result.Results)
     }
 
-    $summary = $result.Summary
-    $detail = "$($summary.Passed)/$($summary.Total) passed" + $(if ($TestFilter) { " (filter '$TestFilter')" } else { "" })
-    $failed = @($result.Results | Where-Object { $_.Status -ne "Passed" -and $_.Status -ne "Skipped" })
+    $summary = [pscustomobject]@{ Total = $total; Passed = $passed }
+    $scope = if ($TestAssembly.Count -gt 0) { " (assemblies $($TestAssembly -join ', '))" } elseif ($TestFilter) { " (filter '$TestFilter')" } else { "" }
+    $detail = "$($summary.Passed)/$($summary.Total) passed$scope"
+    $failed = @($results | Where-Object { $_.Status -ne "Passed" -and $_.Status -ne "Skipped" })
     if ($failed.Count -gt 0 -or $summary.Total -eq 0) {
         Write-Tier "Tests" "FAIL" $detail
         $failed | Select-Object -First 15 | ForEach-Object {

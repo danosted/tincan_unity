@@ -1,0 +1,34 @@
+{
+  "name": "TinCan.Input.Tests",
+  "rootNamespace": "TinCan.Core.Input.Tests",
+  "references": [
+    "TinCan.Core.Domain",
+    "TinCan.Gas",
+    "TinCan.Humanoid",
+    "TinCan.Input",
+    "TinCan.Interaction",
+    "TinCan.Possession",
+    "TinCan.Targeting",
+    "TinCan.Tests.Fakes",
+    "TinCan.UI",
+    "Unity.InputSystem",
+    "VContainer",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,179 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using NUnit.Framework;
+using TinCan.Core.Domain;
+using TinCan.Core.Domain.Abilities;
+using TinCan.Core.Domain.Abilities.Attributes;
+using TinCan.Features.Airship.Fuel;
+using TinCan.Core.Interaction;
+using Unity.Netcode;
+using UnityEditor;
+using UnityEngine;
+using TinCan.Tests.Fakes;
+using Object = UnityEngine.Object;
+
+namespace TinCan.Features.Airship.Fuel.Minigame.Tests
+{
+    public class FuelFixtureRegistrationTests
+    {
+        private sealed class RecordingAbilityRegistry : IAbilityRegistry
+        {
+            public readonly HashSet<IAbilityControllerBase> Controllers = new();
+            public IEnumerable<IAbilityControllerBase> AllControllers => Controllers;
+            public void Register(IAbilityControllerBase controller) => Controllers.Add(controller);
+            public void Unregister(IAbilityControllerBase controller) => Controllers.Remove(controller);
+        }
+
+        private sealed class CountingModuleRegistry : IShipModuleRegistry
+        {
+            private readonly List<IShipModule> _modules = new();
+            public IReadOnlyList<IShipModule> Modules => _modules;
+            public int Registrations { get; private set; }
+            public void RegisterModule(IShipModule module) { Registrations++; _modules.Add(module); }
+            public void UnregisterModule(IShipModule module) => _modules.Remove(module);
+        }
+
+        private readonly List<GameObject> _objects = new();
+        private FakeActorRegistry _actors = null!;
+        private RecordingAbilityRegistry _abilities = null!;
+        private IActorOrchestrator _orchestrator = null!;
+        private FuelTankNetworkMediator _tank = null!;
+        private FakeEntity _entity = null!;
+        private FuelConfig _config = null!;
+        private GameplayAttribute _fuel = null!;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _actors = new FakeActorRegistry();
+            _abilities = new RecordingAbilityRegistry();
+            _orchestrator = new TinCan.Core.Infrastructure.ActorOrchestrator(_actors, new InteractorRegistry(), _abilities);
+            var fixture = CreateObject("Fuel fixture");
+            _entity = fixture.AddComponent<FakeEntity>();
+            _tank = fixture.AddComponent<FuelTankNetworkMediator>();
+            _tank.Construct(_orchestrator);
+            _config = ScriptableObject.CreateInstance<FuelConfig>();
+            _fuel = AssetDatabase.LoadAssetAtPath<GameplayAttribute>(
+                AssetDatabase.GUIDToAssetPath(AssetDatabase.FindAssets("Attr_Fuel t:GameplayAttribute")[0]));
+            typeof(FuelTankNetworkMediator).GetField("_config", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(_tank, _config);
+            typeof(FuelTankNetworkMediator).GetField("_fuelAttribute", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(_tank, _fuel);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            foreach (var instance in _objects) if (instance != null) Object.DestroyImmediate(instance);
+            _objects.Clear();
+            Object.DestroyImmediate(_config);
+        }
+
+        [Test]
+        public void SpawnAndDespawn_RegisterActorAndChildCapabilityThenCleanUp()
+        {
+            var child = CreateObject("Capability");
+            child.transform.SetParent(_tank.transform);
+            var controller = AddAbilityController(child);
+
+            _orchestrator.RegisterEntity(_entity);
+
+            Assert.That(_actors.GetActors<IShipModule>(), Does.Contain(_tank));
+            Assert.That(_tank.Id, Is.EqualTo(_entity.EntityId), "The tank on the entity's root has the entity's id.");
+            Assert.That(_abilities.Controllers, Does.Contain(controller));
+
+            _orchestrator.UnregisterEntity(_entity);
+
+            Assert.That(_actors.AllActors, Is.Empty);
+            Assert.That(_abilities.Controllers, Is.Empty);
+        }
+
+        [Test]
+        public void RegisterShipModule_RepeatedAttachmentAndReparenting_HasOneMembership()
+        {
+            var first = new CountingModuleRegistry();
+            var second = new CountingModuleRegistry();
+            _orchestrator.RegisterShipModule(_tank, first);
+            _orchestrator.RegisterShipModule(_tank, first);
+            Assert.That(first.Registrations, Is.EqualTo(1));
+
+            _orchestrator.RegisterShipModule(_tank, second);
+            Assert.That(first.Modules, Is.Empty);
+            Assert.That(second.Modules, Is.EqualTo(new[] { _tank }));
+
+            _orchestrator.UnregisterShipModule(_tank);
+            Assert.That(second.Modules, Is.Empty);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Spawn_WithEarlyOrLateParent_BindsOnceAndCleansUp(bool parentBeforeSpawn)
+        {
+            var ship = CreateShip("Ship", 42f);
+            if (parentBeforeSpawn) _tank.transform.SetParent(ship.transform);
+            _tank.OnNetworkSpawn();
+            if (!parentBeforeSpawn) ChangeParent(ship);
+            _tank.OnAttachedToShip(ship.GetComponent<IActor>()); // Server also sends explicit attachment.
+
+            Assert.That(ship.GetComponent<IShipModuleRegistry>().Modules, Is.EqualTo(new[] { _tank }));
+            Assert.That(_tank.Level, Is.EqualTo(42f));
+
+            _tank.OnNetworkDespawn();
+
+            Assert.That(ship.GetComponent<IShipModuleRegistry>().Modules, Is.Empty);
+            Assert.That(_actors.AllActors, Is.Empty);
+            Assert.That(_tank.Level, Is.Zero);
+        }
+
+        [Test]
+        public void ParentChange_RebindsFuelAndRemovesPreviousMembership()
+        {
+            var first = CreateShip("First", 42f);
+            var second = CreateShip("Second", 17f);
+            _tank.OnNetworkSpawn();
+            ChangeParent(first);
+            ChangeParent(second);
+
+            Assert.That(first.GetComponent<IShipModuleRegistry>().Modules, Is.Empty);
+            Assert.That(second.GetComponent<IShipModuleRegistry>().Modules, Is.EqualTo(new[] { _tank }));
+            Assert.That(_tank.Level, Is.EqualTo(17f));
+
+            ChangeParent(null);
+
+            Assert.That(second.GetComponent<IShipModuleRegistry>().Modules, Is.Empty);
+            Assert.That(_tank.Level, Is.Zero);
+        }
+
+        private GameObject CreateObject(string name)
+        {
+            var instance = new GameObject(name);
+            _objects.Add(instance);
+            return instance;
+        }
+
+        private IAbilityControllerBase AddAbilityController(GameObject instance)
+        {
+            var type = Type.GetType("TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, TinCan.Network", true)!;
+            var controller = (IAbilityControllerBase)instance.AddComponent(type);
+            typeof(NetworkBehaviour).GetProperty("IsOwner")!.SetValue(controller, true);
+            return controller;
+        }
+
+        private GameObject CreateShip(string name, float fuel)
+        {
+            var ship = CreateObject(name);
+            var controller = AddAbilityController(ship);
+            controller.SetAttribute(_fuel, new AttributeValue(fuel));
+            var type = Type.GetType("TinCan.Network.Infrastructure.ShipModuleRegistryNetworkMediator, TinCan.Network", true)!;
+            ship.AddComponent(type);
+            return ship;
+        }
+
+        private void ChangeParent(GameObject? ship)
+        {
+            _tank.transform.SetParent(ship != null ? ship.transform : null);
+            // Exercise the NGO callback without a transport; no RPC or serialized asset changes are needed.
+            _tank.OnNetworkObjectParentChanged(ship != null ? ship.GetComponent<NetworkObject>() : null!);
+        }
+    }
+}

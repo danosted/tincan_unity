@@ -22,7 +22,7 @@ The canonical description is `.docs/NETWORK_TEST_HARNESS.md` ("Scenarios" and "T
    ```
    - `-UpTo Solo` skips host + client, but it still plays, so it still needs the developer's yes. Prefer iterating on
      `-UpTo Tests` and asking once for the full ladder at the end.
-   - Add `-TestFilter <Fragment>` to narrow the EditMode tier.
+   - Add `-TestAssembly <X.Tests>[,<Y.Tests>]` to run only those test assemblies, or `-TestFilter <Fragment>` to narrow by test name.
    - Use `.\.tools\verify.ps1 -UpTo Tests` when there is no scenario yet.
    - For a change to shared code, run every scenario as one batch: `.\.tools\verify.ps1 -All -SaveDirtyScenes`
      (compile and tests run once; never loop over `verify.ps1` per scenario).

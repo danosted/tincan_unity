@@ -4,7 +4,7 @@ namespace TinCan.Features.ShipDesigns
     /// <summary>
     /// The design file format. Every file carries <c>formatVersion</c>. A change to the format raises
     /// <see cref="CurrentVersion"/>, adds one <see cref="IShipDesignMigration"/> from the old version, and commits a sample of
-    /// the old format under <c>Assets/Tests/EditMode/ShipDesigns/</c> that must keep loading.
+    /// the old format under <c>Features/ShipDesigns/Tests/GoldenFiles/</c> that must keep loading.
     /// Version 2 (.docs/plans/ship-frames.md): the frame, and <c>nextId</c> (shared by parts and frame elements) in place of
     /// <c>nextPartInstanceId</c>.
     /// Version 3: a part's <c>pos</c> (frame units, 10 cm) in place of its grid <c>cell</c>, so parts sit anywhere on a frame.

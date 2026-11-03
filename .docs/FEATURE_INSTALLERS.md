@@ -138,7 +138,7 @@ whose use case isn't there). The rules:
    cannot see a dependency that isn't a service. The net-catch minigame, for example, only makes sense with the fuel
    feature's jerry cans, and no check catches a profile that loads it without Fuel.
 
-Enforcement, in `Assets/Tests/EditMode/ArchitectureRulesTests.cs`:
+Enforcement, in `Assets/Tests/Architecture/ArchitectureRulesTests.cs`:
 - `SharedPrefabs_DoNotRequireFeatureServices` fails when a component on a shared prefab injects a type only an
   installer registers, or lists a starting ability a feature also grants.
 - `FeatureProfiles_CanBuildTheirServices` runs the real `ProjectLifetimeScope.Configure` for every profile asset,

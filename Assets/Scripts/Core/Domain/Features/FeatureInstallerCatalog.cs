@@ -52,7 +52,8 @@ namespace TinCan.Core.Domain.Features
             return assembly.StartsWith("TinCan.", StringComparison.Ordinal)
                    && !assembly.StartsWith("TinCan.Features", StringComparison.Ordinal)
                    && !assembly.StartsWith("TinCan.DevTools", StringComparison.Ordinal)
-                   && !assembly.StartsWith("TinCan.Tests", StringComparison.Ordinal);
+                   && !assembly.StartsWith("TinCan.Tests", StringComparison.Ordinal)
+                   && !assembly.EndsWith(".Tests", StringComparison.Ordinal);
         }
 
         public static List<FeatureInstaller> Sort(IEnumerable<FeatureInstaller> installers) =>

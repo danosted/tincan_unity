@@ -31,6 +31,10 @@ Last tier to run: Compile, Tests, Solo or Duo (default: Duo when a scenario is g
 .PARAMETER TestFilter
 Optional EditMode filter (for example "ScenarioRunner"). Omit to run the whole suite.
 
+.PARAMETER TestAssembly
+Run only these test assemblies (comma-separated, for example TinCan.Features.Shipyard.Tests,TinCan.Ship.Tests).
+A name matches by part, so TinCan.Features.Airship.Fuel also runs Fuel.Minigame's tests. Not with -TestFilter.
+
 .PARAMETER SaveDirtyScenes
 If an open scene is marked modified, save it instead of stopping. Unity otherwise shows a blocking
 "Scene(s) Have Been Modified" dialog when tests start or Play ends. After Play sessions the flag is often spurious.
@@ -53,6 +57,7 @@ Faster when running several verifies in a row; the next run then skips the scene
 .\.tools\verify.ps1 -Scenario NetCatch,RepairLoop
 .\.tools\verify.ps1 -All
 .\.tools\verify.ps1 -UpTo Tests
+.\.tools\verify.ps1 -UpTo Tests -TestAssembly TinCan.Features.Shipyard.Tests
 #>
 
 #Requires -Version 7.0
@@ -63,6 +68,7 @@ param(
     [ValidateSet("Compile", "Tests", "Solo", "Duo")]
     [string]$UpTo,
     [string]$TestFilter,
+    [string[]]$TestAssembly = @(),
     [int]$ScenarioTimeoutSeconds = 240,
     [switch]$SaveDirtyScenes,
     [switch]$RestartEditor,
@@ -77,6 +83,8 @@ foreach ($module in "Common", "Editor", "Mppm", "Verify") {
 
 $Tiers = @("Compile", "Tests", "Solo", "Duo")
 $Scenario = @($Scenario | ForEach-Object { $_ -split "," } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+$TestAssembly = @($TestAssembly | ForEach-Object { $_ -split "," } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+if ($TestAssembly.Count -gt 0 -and $TestFilter) { throw "-TestAssembly and -TestFilter cannot be combined: the test runner takes one filter." }
 if (-not $UpTo) { $UpTo = if ($Scenario.Count -gt 0 -or $All) { "Duo" } else { "Tests" } }
 if (($UpTo -in @("Solo", "Duo")) -and $Scenario.Count -eq 0 -and -not $All) { throw "-Scenario or -All is required for the $UpTo tier." }
 $lastTier = [array]::IndexOf($Tiers, $UpTo)
@@ -91,7 +99,7 @@ try {
 
     # Compile and Tests run once, however many scenarios follow.
     if (-not (Invoke-Compile)) { exit $ExitFail }
-    if ($lastTier -ge 1 -and -not (Invoke-Tests -TestFilter $TestFilter -SaveDirtyScenes:$SaveDirtyScenes)) { exit $ExitFail }
+    if ($lastTier -ge 1 -and -not (Invoke-Tests -TestFilter $TestFilter -TestAssembly $TestAssembly -SaveDirtyScenes:$SaveDirtyScenes)) { exit $ExitFail }
     if ($lastTier -lt 2) { exit $ExitPass }
 
     $scenarioOptions = @{ TimeoutSeconds = $ScenarioTimeoutSeconds; SaveDirtyScenes = $SaveDirtyScenes }

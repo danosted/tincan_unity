@@ -1,0 +1,31 @@
+{
+  "name": "TinCan.Features.DesignedEvents.Tests",
+  "rootNamespace": "TinCan.Features.DesignedEvents.Tests",
+  "references": [
+    "TinCan.Core.Domain",
+    "TinCan.Features.DesignedEvents",
+    "TinCan.Gas",
+    "TinCan.Targeting",
+    "TinCan.Tests.Fakes",
+    "Unity.Collections",
+    "Unity.Netcode.Runtime",
+    "VContainer",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

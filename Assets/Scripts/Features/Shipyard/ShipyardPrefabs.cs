@@ -23,7 +23,10 @@ namespace TinCan.Features.Shipyard
             }
             finally
             {
-                Object.Destroy(holder);
+                // In edit mode (the look's contact sheet and sweeps) Destroy refuses and would leave the holder in the
+                // open scene.
+                if (Application.isPlaying) Object.Destroy(holder);
+                else Object.DestroyImmediate(holder);
             }
         }
 

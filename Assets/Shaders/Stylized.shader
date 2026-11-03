@@ -3,6 +3,8 @@
 // tinted shadows, sky ambient and rim, a highlight band for metal), optional vertex colour (wear, occlusion), emission
 // for glowing things, the shared air (Include/TinCanAtmosphere.hlsl). Shadow, depth and depth-normals passes so it casts shadows and clouds and SSAO see it.
 // The library materials that use it are built from the palette by TinCan > Dev > Look > Build Materials.
+// Band softness, bands, rim and shadow fill follow the look while one applies (Include/TinCanLighting.hlsl), unless the
+// material keeps its own (the "Keep own" switches, set from the library table); the look's surface style applies too.
 Shader "TinCan/Stylized"
 {
     Properties
@@ -15,6 +17,10 @@ Shader "TinCan/Stylized"
         [IntRange] _Bands ("Bands", Range(2, 3)) = 2
         _Ambient ("Ambient", Range(0, 2)) = 1.0
         _Rim ("Rim", Range(0, 1)) = 0.15
+        [ToggleUI] _OwnBandSoftness ("Keep own band softness", Float) = 0
+        [ToggleUI] _OwnBands ("Keep own bands", Float) = 0
+        [ToggleUI] _OwnRim ("Keep own rim", Float) = 0
+        [ToggleUI] _OwnShadowFill ("Keep own shadow fill", Float) = 0
         _Highlight ("Metal highlight", Range(0, 1)) = 0
         _HighlightSize ("Highlight size", Range(0, 1)) = 0.08
         [Toggle] _VertexColor ("Multiply by vertex colour", Float) = 0
@@ -37,6 +43,10 @@ Shader "TinCan/Stylized"
             half _Bands;
             half _Ambient;
             half _Rim;
+            half _OwnBandSoftness;
+            half _OwnBands;
+            half _OwnRim;
+            half _OwnShadowFill;
             half _Highlight;
             half _HighlightSize;
             half _VertexColor;
@@ -58,6 +68,7 @@ Shader "TinCan/Stylized"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
             #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+            #pragma multi_compile_fragment _ _TINCAN_SURFACE_DRIFT _TINCAN_SURFACE_BRUSH
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
             #include "Include/TinCanLighting.hlsl"
@@ -78,6 +89,7 @@ Shader "TinCan/Stylized"
                 float3 normalWS : TEXCOORD1;
                 half4 color : TEXCOORD2;
                 half fogFactor : TEXCOORD3;
+                float3 positionOS : TEXCOORD4;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -92,6 +104,7 @@ Shader "TinCan/Stylized"
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.color = input.color;
                 output.fogFactor = ComputeFogFactor(position.positionCS.z);
+                output.positionOS = input.positionOS.xyz;
                 return output;
             }
 
@@ -106,6 +119,7 @@ Shader "TinCan/Stylized"
                 surface.positionCS = input.positionCS;
                 surface.occlusion = vertexColour.a;
                 surface.highlight = _Highlight;
+                surface.styleCoord = input.positionOS;
 
                 TinCanLook look;
                 look.wrap = _Wrap;
@@ -116,6 +130,7 @@ Shader "TinCan/Stylized"
                 look.rim = _Rim;
                 look.highlightSize = _HighlightSize;
                 look.bands = _Bands;
+                TinCanFollowLookShading(look, half4(_OwnBandSoftness, _OwnBands, _OwnRim, _OwnShadowFill));
 
                 half3 colour = TinCanShade(surface, look) + _EmissionColor.rgb;
                 colour = TinCanAtmosphere(colour, input.positionWS, input.fogFactor);

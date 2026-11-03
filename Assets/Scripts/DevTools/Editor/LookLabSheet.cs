@@ -106,8 +106,7 @@ namespace TinCan.DevTools.Editor
             finally
             {
                 ShaderUtil.allowAsyncCompilation = asyncShaders;
-                AtmosphereShaderGlobals.SetEnabled(false);
-                if (volume != null) Object.DestroyImmediate(volume);
+                LookContactSheet.ClearLook(volume);
                 foreach (var item in temporary) Object.DestroyImmediate(item);
                 RenderTexture.active = null;
                 Object.DestroyImmediate(target);
@@ -129,8 +128,11 @@ namespace TinCan.DevTools.Editor
                     for (int column = 0; column < Softness.Length; column++)
                     {
                         var variant = new Material(canvas) { name = $"Canvas soft {Softness[column]} bands {2 + row}" };
+                        // Its own values, not the look's: this tile compares them.
                         variant.SetFloat("_BandSoftness", Softness[column]);
+                        variant.SetFloat("_OwnBandSoftness", 1f);
                         variant.SetFloat("_Bands", 2 + row);
+                        variant.SetFloat("_OwnBands", 1f);
                         temporary.Add(variant);
                         var position = centre + across * ((column - 1.5f) * 2.6f) + Vector3.up * ((0.5f - row) * 2.6f);
                         Shape(scene, PrimitiveType.Sphere, position, Vector3.one * 2f, variant).shadowCastingMode = ShadowCastingMode.Off;
@@ -253,11 +255,11 @@ namespace TinCan.DevTools.Editor
             _ = Shape(scene, PrimitiveType.Cylinder, new Vector3(foot.x, (bottom + top) * 0.5f, foot.z), new Vector3(width, (top - bottom) * 0.5f, width),
                 Library("M_ShipWalls"));
 
-        private static Material Library(string name) =>
+        internal static Material Library(string name) =>
             AssetDatabase.LoadAssetAtPath<Material>(LookMaterials.Find(name).Path)
             ?? throw new InvalidOperationException($"missing {name}: run TinCan > Dev > Look > Build Materials");
 
-        private static MeshRenderer Shape(Scene scene, PrimitiveType type, Vector3 position, Vector3 scale, Material material, Quaternion? rotation = null)
+        internal static MeshRenderer Shape(Scene scene, PrimitiveType type, Vector3 position, Vector3 scale, Material material, Quaternion? rotation = null)
         {
             var shape = GameObject.CreatePrimitive(type);
             Object.DestroyImmediate(shape.GetComponent<Collider>());

@@ -57,6 +57,7 @@ Note: `ProjectSettings/ProjectVersion.txt` is owned by the Unity Editor and is l
 **Usage:**
 ```powershell
 .\.tools\verify.ps1 -UpTo Tests            # compile + EditMode tests
+.\.tools\verify.ps1 -UpTo Tests -TestAssembly TinCan.Features.Shipyard.Tests   # only these test assemblies
 .\.tools\verify.ps1 -Scenario NetCatch     # + the scenario, solo and host + client (takes over the Editor)
 .\.tools\verify.ps1 -All                   # every scenario
 ```

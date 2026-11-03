@@ -143,7 +143,7 @@ lists every result. Run `-All` before committing a change that touches shared co
 | Tier | What runs | Typical time | Catches |
 |---|---|---|---|
 | Compile | `AssetDatabase.Refresh`, then the Editor's compile state; errors from `script recompile_status` | ~10 s unchanged | build breaks, including scripts broken before the run |
-| Tests | `unity cmd test run --mode EditMode` (optional `-TestFilter`) | ~10 s | processor, use case and handler logic |
+| Tests | `unity cmd test run --mode EditMode` (optional `-TestAssembly` or `-TestFilter`) | ~10 s | processor, use case and handler logic |
 | Solo | menu **TinCan > Dev > Scenarios > *X* (Host)** | ~15 s | wiring, installers, assets, server flow |
 | Duo | menu **TinCan > Dev > Scenarios > *X* (Host + Client, Lag100)** | ~40 s | replication, prediction, what the remote player sees |
 

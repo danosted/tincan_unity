@@ -184,7 +184,8 @@ namespace TinCan.DevTools.Editor
 
         private static IReadOnlyList<Type> TinCanTypes() =>
             AppDomain.CurrentDomain.GetAssemblies()
-                .Where(a => a.GetName().Name.StartsWith("TinCan.", StringComparison.Ordinal) && !a.GetName().Name.StartsWith("TinCan.Tests", StringComparison.Ordinal))
+                .Where(a => a.GetName().Name.StartsWith("TinCan.", StringComparison.Ordinal) && !a.GetName().Name.StartsWith("TinCan.Tests", StringComparison.Ordinal)
+                            && !a.GetName().Name.EndsWith(".Tests", StringComparison.Ordinal))
                 .SelectMany(a =>
                 {
                     try { return a.GetTypes(); }

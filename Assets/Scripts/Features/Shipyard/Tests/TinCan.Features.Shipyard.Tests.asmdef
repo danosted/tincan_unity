@@ -1,0 +1,38 @@
+{
+  "name": "TinCan.Features.Shipyard.Tests",
+  "rootNamespace": "TinCan.Features.Shipyard.Tests",
+  "references": [
+    "TinCan.Core.Domain",
+    "TinCan.Features.ShipDesigns",
+    "TinCan.Features.ShipDesigns.Tests",
+    "TinCan.Features.Shipyard",
+    "TinCan.Gas",
+    "TinCan.Humanoid",
+    "TinCan.Input",
+    "TinCan.Interaction",
+    "TinCan.Possession",
+    "TinCan.Ship",
+    "TinCan.Targeting",
+    "TinCan.Tests.Fakes",
+    "TinCan.UI",
+    "UniTask",
+    "VContainer",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

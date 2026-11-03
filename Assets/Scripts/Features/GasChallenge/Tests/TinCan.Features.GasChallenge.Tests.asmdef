@@ -1,0 +1,38 @@
+{
+  "name": "TinCan.Features.GasChallenge.Tests",
+  "rootNamespace": "TinCan.Features.GasChallenge.Tests",
+  "references": [
+    "TinCan.Core.Domain",
+    "TinCan.Features.Airship.Damage",
+    "TinCan.Features.Airship.Damage.Tests",
+    "TinCan.Features.DesignedEvents",
+    "TinCan.Features.GasChallenge",
+    "TinCan.Gas",
+    "TinCan.Humanoid",
+    "TinCan.Interaction",
+    "TinCan.Items",
+    "TinCan.Possession",
+    "TinCan.Ship",
+    "TinCan.Targeting",
+    "TinCan.Tests.Fakes",
+    "Unity.Netcode.Runtime",
+    "VContainer",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

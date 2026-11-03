@@ -59,9 +59,15 @@ and rename it. Reference:
 - any other feature Ballast builds on, and nothing else.
 
 A feature you don't reference is invisible to your code, which is the point. Every profile that loads Ballast must
-then load those features too; a rule test checks it. Add a reference to `TinCan.Tests.EditMode.asmdef` for your
-tests, and to `TinCan.DevTools.asmdef` if a scenario library uses Ballast's types. Rationale: [CODE_MAP.md, "Assemblies
+then load those features too; a rule test checks it. Add a reference to `TinCan.DevTools.asmdef` if a scenario
+library uses Ballast's types. Rationale: [CODE_MAP.md, "Assemblies
 and the one-way rule"](CODE_MAP.md#assemblies-and-the-one-way-rule). Every file starts with `#nullable enable`.
+
+Give Ballast its test assembly at the same time: `Features/Ballast/Tests/TinCan.Features.Ballast.Tests.asmdef`, copied
+from [`Features/GasChallenge/Tests/TinCan.Features.GasChallenge.Tests.asmdef`](../Assets/Scripts/Features/GasChallenge/Tests/TinCan.Features.GasChallenge.Tests.asmdef)
+and renamed (`rootNamespace` `TinCan.Features.Ballast.Tests`). It references Ballast, what Ballast references,
+`TinCan.Tests.Fakes`, and the test assemblies of features Ballast builds on when you use their fakes. It stays Editor
+only with the `UNITY_INCLUDE_TESTS` constraint (CODE_STANDARDS.md §7; a rule test checks it).
 
 ### 2. Config
 
@@ -83,7 +89,7 @@ references the mediator type directly.
 
 ### 5. Processor tests
 
-`Assets/Tests/EditMode/BallastProcessorTests.cs` from `FuelConsumptionProcessorTests.cs`. Zero throttle fills
+`Features/Ballast/Tests/BallastProcessorTests.cs` from `Features/Airship/Fuel/Tests/FuelConsumptionProcessorTests.cs`. Zero throttle fills
 nothing; full throttle fills rate times dt; clamp holds at capacity.
 
 **Checkpoint:**
@@ -116,7 +122,7 @@ instead (see `JerryCanSupplyNetworkMediator.cs` for the `NetworkVariable` + `OnV
   server's `IShipModule.OnAttachedToShip` callback. Delegate membership to the orchestrator's
   `RegisterShipModule(this, registry)` and `UnregisterShipModule(this)` methods. Rebind local state when
   changing ships, and clear the binding on detachment or despawn. See `Fuel/FuelTankNetworkMediator.cs`
-  and `Assets/Tests/EditMode/FuelFixtureRegistrationTests.cs` for early/late parenting and repeated attachment.
+  and `Features/Airship/Fuel/Minigame/Tests/FuelFixtureRegistrationTests.cs` for early/late parenting and repeated attachment.
 - Every write (`Fill`, `Dump`) starts with `if (!IsServer ...) return;` and clamps through the processor.
 
 ### 9. Locator
@@ -135,7 +141,7 @@ revalidate with `IsAlive`. Publish `BallastFullEvent` once on the transition, no
 
 ### 11. Use case tests + fake
 
-`Assets/Tests/EditMode/Fakes/FakeBallastTank.cs` from `Fakes/FakeFuelTank.cs`: a plain fake recording
+`Features/Ballast/Tests/Fakes/FakeBallastTank.cs` from `Features/Airship/Fuel/Tests/Fakes/FakeFuelTank.cs`: a plain fake recording
 `TotalFilled` / `DumpCalls`, plus a `FakeBallastTankBehaviour : MonoBehaviour` with `AttachTo(GameObject, config)`
 so the locator path is exercised. `BallastFillUseCaseTests.cs` from `FuelConsumptionUseCaseTests.cs`: no work
 on client; no fill without possessor; fills when driven; finds the tank on a child object; full event exactly once.
@@ -269,7 +275,7 @@ rebase on `origin/main`, PR to `danosted/tincan_unity` main with the file list a
 | Feature does nothing, no errors | Installer asset is not under a `Resources/Installers` folder, or a reference on it is unassigned. Check the console for the installer's warning. |
 | Pressing E does nothing | `IA_` dropdown is blank (handler renamed after the asset was made), or the collider is below the interaction ray, or `_interactionDefinition` is unassigned on the target. |
 | Fixture spawns at the world origin or drifts | Prefab root is missing `AutoObjectParentSync`, or it has a `NetworkTransform`. |
-| Test file will not compile: type not found | Your class is in an assembly the tests don't reference yet. Add the feature's assembly to `TinCan.Tests.EditMode.asmdef`. |
+| Test file will not compile: type not found | The test assembly does not reference the assembly that type lives in. Add it to your `*.Tests.asmdef` if your feature builds on it (or it is a core system); otherwise the test belongs elsewhere (CODE_STANDARDS.md §7). |
 | Nothing moves in play, scheduler never resolves | A class has a test-only constructor overload and VContainer picked it. Mark the real constructor `[Inject]`. |
 | Value correct on host, wrong on a late joiner | You relied on `NetworkVariable.OnValueChanged` for the initial value. Read `.Value` in `OnNetworkSpawn` as well. |
 | Level resets to base when another effect fires | You stored a persistent value in a GAS `CurrentValue`. Use `BaseValue` (see `FuelAttributeSet`). |

@@ -34,8 +34,9 @@ Pick the path that matches what you want to do right now.
   intent travels as bits in an `InputState`, never as a side-channel RPC.
 - **Behaviour is data.** Abilities, effects, tags, interactions, menus, fixtures and tunables are ScriptableObject
   assets created from the **TinCan** create menu. Many changes need no code at all.
-- **Tests are EditMode, NUnit, hand-written fakes.** `Assets/Tests/EditMode/`, fakes in `Fakes/`. No PlayMode
-  suite, no mocking library.
+- **Tests are EditMode, NUnit, hand-written fakes.** Each assembly keeps its tests beside it in `Tests/` (its own
+  `X.Tests` assembly); shared fakes and the rule tests live under `Assets/Tests/`. No PlayMode suite, no mocking
+  library. Rules: [CODE_STANDARDS.md §7](CODE_STANDARDS.md#7-tests).
 
 ## Map of the docs
 

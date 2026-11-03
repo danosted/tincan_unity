@@ -1,0 +1,36 @@
+{
+  "name": "TinCan.Features.ShipPicker.Tests",
+  "rootNamespace": "TinCan.Features.ShipPicker.Tests",
+  "references": [
+    "TinCan.Core.Domain",
+    "TinCan.Features.ShipDesigns",
+    "TinCan.Features.ShipDesigns.Tests",
+    "TinCan.Features.ShipPicker",
+    "TinCan.Gas",
+    "TinCan.Humanoid",
+    "TinCan.Interaction",
+    "TinCan.Possession",
+    "TinCan.Ship",
+    "TinCan.Targeting",
+    "TinCan.Tests.Fakes",
+    "TinCan.UI",
+    "VContainer",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

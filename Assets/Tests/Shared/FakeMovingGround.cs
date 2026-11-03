@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using TinCan.Core.Domain;
 
-namespace TinCan.Tests.EditMode.Fakes
+namespace TinCan.Tests.Fakes
 {
     /// <summary>
     /// Minimal moving-ground component with no Awake-time dependency, safe to use in EditMode tests.

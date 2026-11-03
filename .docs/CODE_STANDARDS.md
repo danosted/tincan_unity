@@ -56,14 +56,24 @@ For where code goes, see [`CODE_MAP.md`](./CODE_MAP.md); for the design rules, [
 - **Regions:** Do not use `#region`. If a class is too large and needs regions, it should be refactored into multiple classes.
 
 ## 7. Tests
-- Processors, use cases and interaction handlers ship with an EditMode test in `Assets/Tests/EditMode/`.
-- Use the hand-written fakes in `Assets/Tests/EditMode/Fakes/`; add one when an interface has none. No mocking framework.
+- Processors, use cases and interaction handlers ship with an EditMode test.
+- **Each assembly has its own test assembly, beside it.** The tests of `X` live in `X.Tests`: a `Tests/` folder next to
+  `X`'s asmdef, holding `X.Tests.asmdef` (Editor only, define constraint `UNITY_INCLUDE_TESTS`) and namespace
+  `<X's namespace>.Tests`. Example: `Features/Shipyard/Tests/TinCan.Features.Shipyard.Tests.asmdef`. A new feature
+  creates its test assembly with its asmdef; copy one from a feature of the same shape.
+- **A test assembly follows the one-way rule.** `X.Tests` references `X`, what `X` builds on, any core system (`Core/*`),
+  and the shared fakes; never a feature `X` does not build on. A test that combines features neither builds on lives in
+  `TinCan.Tests.Integration` (`Assets/Tests/Integration/`); whole-project rule tests live in `TinCan.Tests.Architecture`.
+- **Fakes live with the interface they fake.** A fake of a core interface goes in `TinCan.Tests.Fakes`
+  (`Assets/Tests/Fakes/`); a fake of a feature's interface goes in that feature's test assembly, under `Tests/Fakes/`.
+  Use the hand-written fakes; add one when an interface has none. No mocking framework.
 - Views keep their math in a `public static` function and test that.
-- `Assets/Tests/EditMode/ArchitectureRulesTests.cs` checks the rules that can be checked: naming, global lookups in
+- Run part of the suite with `.\.tools\verify.ps1 -UpTo Tests -TestAssembly <X.Tests>[,<Y.Tests>]`.
+- `Assets/Tests/Architecture/ArchitectureRulesTests.cs` checks the rules that can be checked: naming, global lookups in
   `Features`, registrations in `ProjectLifetimeScope`, a test per processor/use case/handler, `#nullable enable`, no
-  `#region` or coroutines, and the assembly rules (a feature in its own assembly, core never referencing a feature,
-  profiles loading the features their features reference). Known offenders sit in `ArchitectureRulesBaseline.cs`. Remove an entry when you fix it; never
-  add one without the developer's agreement.
+  `#region` or coroutines, the assembly rules (a feature in its own assembly, core never referencing a feature,
+  profiles loading the features their features reference) and the test assembly rules above. Known offenders sit in
+  `ArchitectureRulesBaseline.cs`. Remove an entry when you fix it; never add one without the developer's agreement.
 
 ## Related Documents
 

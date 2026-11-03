@@ -1,0 +1,29 @@
+{
+  "name": "TinCan.Core.Domain.Tests",
+  "rootNamespace": "TinCan.Core.Domain.Tests",
+  "references": [
+    "TinCan.Core.Domain",
+    "TinCan.Possession",
+    "TinCan.Tests.Fakes",
+    "UniTask",
+    "Unity.Netcode.Runtime",
+    "VContainer",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

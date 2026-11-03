@@ -1,0 +1,35 @@
+{
+  "name": "TinCan.Features.Weapons.Cannon.Tests",
+  "rootNamespace": "TinCan.Features.Weapons.Cannon.Tests",
+  "references": [
+    "TinCan.Core.Domain",
+    "TinCan.Features.Stations",
+    "TinCan.Features.Weapons.Cannon",
+    "TinCan.Gas",
+    "TinCan.Humanoid",
+    "TinCan.Interaction",
+    "TinCan.Possession",
+    "TinCan.Ship",
+    "TinCan.Targeting",
+    "TinCan.Tests.Fakes",
+    "Unity.Netcode.Runtime",
+    "VContainer",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

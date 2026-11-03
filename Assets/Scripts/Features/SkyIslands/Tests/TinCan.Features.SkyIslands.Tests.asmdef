@@ -1,0 +1,33 @@
+{
+  "name": "TinCan.Features.SkyIslands.Tests",
+  "rootNamespace": "TinCan.Features.SkyIslands.Tests",
+  "references": [
+    "TinCan.Core.Domain",
+    "TinCan.Features.SkyIslands",
+    "TinCan.Gas",
+    "TinCan.Humanoid",
+    "TinCan.Interaction",
+    "TinCan.Possession",
+    "TinCan.Ship",
+    "TinCan.Targeting",
+    "TinCan.Tests.Fakes",
+    "VContainer",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

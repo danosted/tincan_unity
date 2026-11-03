@@ -61,7 +61,7 @@ unity cmd console get --level error
 - Prefab: add the target component and a collider at chest height (the interaction ray starts at the
   player's eye, `HumanoidControllerView` Eye Height 0.7 m above the capsule-centre pivot, so about 1.7 m above the feet; 3 m range), assign the `IA_` asset.
 
-**Verify:** a handler test (copy `Assets/Tests/EditMode/PourFuelInteractionHandlerTests.cs`); then Play, Start
+**Verify:** a handler test (copy `Features/Airship/Fuel/Tests/PourFuelInteractionHandlerTests.cs`); then Play, Start
 Host, walk up, press E, watch the console for your `LogInfo` line.
 
 **Trap:** the handler is stored by assembly-qualified name. Renaming the class blanks the dropdown and makes the
@@ -163,7 +163,7 @@ both peers. Exact counts catch doubled bursts. Then listen and look in a host + 
 - HUD value: an `ITickable` presenter that calls `IHudValues.Set(key, text)`. Copy
   `Features/Airship/Fuel/FuelHudPresenter.cs`; register `.As<ITickable>()`.
 
-**Verify:** `Assets/Tests/EditMode/MenuCommandTests.cs`, `FuelHudPresenterTests.cs` as templates
+**Verify:** `App/Tests/MenuCommandTests.cs`, `Features/Airship/Fuel/Tests/FuelHudPresenterTests.cs` as templates
 (`Fakes/FakeHudValues.cs`, `Fakes/FakeMenuCommand.cs`).
 
 **Trap:** `CommandId` and HUD keys are strings; a typo is silent.
@@ -220,7 +220,9 @@ attributes; do not add a second GAS tick without moving ownership out of the glo
 
 **When:** always, for processors, use cases and handlers. Views get a static math function tested instead.
 
-**Touch:** `Assets/Tests/EditMode/<Class>Tests.cs`; fakes in `Assets/Tests/EditMode/Fakes/`.
+**Touch:** `<the class's assembly folder>/Tests/<Class>Tests.cs`, in that assembly's `X.Tests` (create it beside the
+asmdef if it has none, CODE_STANDARDS.md §7). Fakes of core interfaces in `Assets/Tests/Fakes/`; fakes of a feature's
+interfaces in that feature's `Tests/Fakes/`.
 
 **Steps:**
 1. Name tests `Method_Scenario_Outcome` (`Handle_CarryingACanIntoAFullTank_KeepsTheCan`).
@@ -233,13 +235,16 @@ attributes; do not add a second GAS tick without moving ownership out of the glo
 5. For a `MonoBehaviour` view, move the math into a `public static` and test that (`FuelGaugeView.NeedleAngle`).
 
 **Verify:**
-```bash
-unity cmd test run --mode EditMode
+```powershell
+.\.tools\verify.ps1 -UpTo Tests -TestAssembly TinCan.Features.<Name>.Tests   # just yours
+.\.tools\verify.ps1 -UpTo Tests                                             # the whole suite, before you finish
 ```
 
-**Trap:** the tests see only the assemblies listed in `TinCan.Tests.EditMode.asmdef`. A test that can't find your
-class usually means its assembly (a new feature's, for example) isn't listed there yet: add it. Nothing compiles into
-`Assembly-CSharp` any more, which tests could never reference.
+**Trap:** a test assembly sees only what its asmdef references, and the one-way rule decides what it may reference:
+its assembly, what that builds on, core systems and the shared fakes. A test that needs a feature its assembly does not
+build on is in the wrong place: move it to the feature that builds on both, or to `TinCan.Tests.Integration`. CS0012
+("defined in an assembly that is not referenced") means a type you touch comes from an assembly you did not list:
+add it.
 
 ## 8. Run and playtest with a second player
 

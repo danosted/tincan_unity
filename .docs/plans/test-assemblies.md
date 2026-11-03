@@ -1,4 +1,4 @@
-Status: Approved (2026-11-03); starts after hosting-and-joining S1 lands
+Status: Done (2026-11-03): T0–T6 built, 1371/1371 green; open: `-Changed` (T5) and the compile-time comparison
 
 # Test assemblies: one per assembly under test
 
@@ -88,3 +88,26 @@ Each slice ends with `verify.ps1 -UpTo Tests` green and the test count unchanged
   `FakeNetworkConnections` and `FakePlayerSettings` are core fakes.
 - Fakes used across features may show a feature's tests reaching into another feature: each case is either a real
   dependency (reference the other feature's test assembly) or a fake that belongs in core.
+
+## Progress (2026-11-03)
+- **T0.** Baseline: 1369 tests green, `-UpTo Tests` 52 s (compile 17 s).
+- **T1–T3.** 246 files moved with their `.meta` into 39 `X.Tests` assemblies beside their code, plus
+  `TinCan.Tests.Fakes` (27 core fakes), `TinCan.Tests.Architecture` (5) and `TinCan.Tests.Integration` (2:
+  `GasPocketChartSourceTests`, `EntityTests`). `TinCan.Tests.EditMode` is gone. Golden files moved to
+  `Features/ShipDesigns/Tests/GoldenFiles/`.
+- **Changes the one-way rule forced** (tests kept their assertions):
+  `FakeInputContexts.Helmsman()` became `FakeHelmInputContexts` in Helm's tests; `FakeEquipment.cs` split into the core
+  `FakeEquipmentActor`, Fuel's `FakeJerryCanSupply` and Minigame's `FakeNetRack`; `TargetableRegistrationTests` uses a
+  core `FakeTargetables` instead of ship damage points; `ShipyardUseCaseTests` uses a new core `FakeSessionService`.
+  `CommandLineSessionBootstrapTests` and `MainMenuBootstrapTests` drive the real `DirectSessionService`, so they live
+  in `TinCan.Network.Tests`, the highest assembly they use.
+- **T4.** Rule tests `TestAssemblies_SitBesideWhatTheyTest` and `TestAssemblies_FollowTheOneWayRule`; the source scans
+  skip `Tests/` folders as code and read them as tests. `FeatureInstallerCatalog.IsCore` and `InputMapWriter` skip
+  `*.Tests` assemblies too.
+- **T5.** `verify.ps1 -TestAssembly <a>[,<b>]` (one runner call per assembly; the runner's assembly filter matches by
+  part of the name). Open: `-Changed`.
+- **T6.** CODE_STANDARDS §7, CODE_MAP, TASK_GUIDES §7, TUTORIAL_NEW_FEATURE (step 1 creates the test assembly),
+  FEATURE_INSTALLERS, README, AGENTS.md, the verify-feature skill, NETWORK_TEST_HARNESS, `.tools/README.md`.
+- **Left as is.** Each `X.Tests` references the whole of what `X` builds on (allowed by the rule) rather than only
+  what its tests touch; trim when one gets in the way. The compile-time gain is not measured yet: compare an edit to
+  one leaf feature against the T0 baseline.

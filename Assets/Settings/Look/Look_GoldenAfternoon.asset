@@ -29,4 +29,10 @@ MonoBehaviour:
     MaxFog: 0.85
     WhiteoutColour: {r: 0.9843137, g: 0.9647059, b: 0.9254902, a: 1}
     WhiteoutDensity: 0.08
+  Shading:
+    BandSoftness: 0.35
+    Bands: 2
+    Rim: 0.15
+    ShadowFill: 0.45
+  Surface: {fileID: 0}
   Post: {fileID: 11400000, guid: 4cefbaa7e302a394fbce38d4dccbaf8f, type: 2}

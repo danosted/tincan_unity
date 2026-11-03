@@ -50,7 +50,7 @@ namespace TinCan.Tests.EditMode
         public void Begin_Server_SetsTheListenEndpoint_ThenStartsAServer()
         {
             var network = new FakeNetworkService();
-            var bootstrap = new CommandLineSessionBootstrap(network, new FakeEventPublisher(), new FakeTimeService());
+            var bootstrap = new CommandLineSessionBootstrap(FakeSessions.Direct(network), new FakeEventPublisher(), new FakeTimeService());
 
             bootstrap.Begin(new[] { "-server", ":9000" });
 
@@ -71,7 +71,7 @@ namespace TinCan.Tests.EditMode
         public void Start_AutoJoinArgs_ConnectsOnce()
         {
             var network = new FakeNetworkService();
-            var bootstrap = new CommandLineSessionBootstrap(network, new FakeEventPublisher(), new FakeTimeService());
+            var bootstrap = new CommandLineSessionBootstrap(FakeSessions.Direct(network), new FakeEventPublisher(), new FakeTimeService());
 
             // Environment args are the test runner's; this only checks Start is safe to call.
             Assert.DoesNotThrow(() => bootstrap.Start());
@@ -98,7 +98,7 @@ namespace TinCan.Tests.EditMode
         public void Begin_JoinWithoutDelay_ConnectsImmediately()
         {
             var network = new FakeNetworkService();
-            var bootstrap = new CommandLineSessionBootstrap(network, new FakeEventPublisher(), new FakeTimeService());
+            var bootstrap = new CommandLineSessionBootstrap(FakeSessions.Direct(network), new FakeEventPublisher(), new FakeTimeService());
 
             bootstrap.Begin(new[] { "-autojoin" });
 
@@ -110,7 +110,7 @@ namespace TinCan.Tests.EditMode
         {
             var network = new FakeNetworkService();
             var time = new FakeTimeService { DeltaTime = 1f };
-            var bootstrap = new CommandLineSessionBootstrap(network, new FakeEventPublisher(), time);
+            var bootstrap = new CommandLineSessionBootstrap(FakeSessions.Direct(network), new FakeEventPublisher(), time);
 
             bootstrap.Begin(new[] { "-autojoin", "-joindelay", "2.5" });
             bootstrap.Tick();
@@ -126,7 +126,7 @@ namespace TinCan.Tests.EditMode
         public void Begin_HostIgnoresJoinDelay()
         {
             var network = new FakeNetworkService();
-            var bootstrap = new CommandLineSessionBootstrap(network, new FakeEventPublisher(), new FakeTimeService());
+            var bootstrap = new CommandLineSessionBootstrap(FakeSessions.Direct(network), new FakeEventPublisher(), new FakeTimeService());
 
             bootstrap.Begin(new[] { "-autohost", "-joindelay", "5" });
 

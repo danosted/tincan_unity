@@ -21,21 +21,32 @@ MonoBehaviour:
     CommandId: 
     Submenu: {fileID: 0}
     DefaultValue: 127.0.0.1
+    SettingsGroup: 0
   - ItemId: port
     Label: Port
     Kind: 1
     CommandId: 
     Submenu: {fileID: 0}
     DefaultValue: 7777
+    SettingsGroup: 0
   - ItemId: connect
     Label: Connect
     Kind: 0
     CommandId: JoinGame
     Submenu: {fileID: 0}
     DefaultValue: 
+    SettingsGroup: 0
+  - ItemId: status
+    Label: 
+    Kind: 7
+    CommandId: 
+    Submenu: {fileID: 0}
+    DefaultValue: 
+    SettingsGroup: 0
   - ItemId: back
     Label: Back
     Kind: 4
     CommandId: 
     Submenu: {fileID: 0}
     DefaultValue: 
+    SettingsGroup: 0

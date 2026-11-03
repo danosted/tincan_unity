@@ -5,10 +5,16 @@ For where code goes, see [`CODE_MAP.md`](./CODE_MAP.md); for the design rules, [
 
 ## 1. Asynchronous Programming
 - **No Coroutines.** Unity Coroutines (`IEnumerator`) are not used in this project.
-- **UniTask is the intended replacement, but it is not installed yet** and no async code exists in the repo.
-  If you need async work, add the [UniTask](https://github.com/Cysharp/UniTask) package to
-  `Packages/manifest.json` first (agree it with the team), then use `async UniTask` / `async UniTaskVoid`.
-- **Cancellation:** Always pass and respect `CancellationToken`s in async methods to avoid leaks when GameObjects are destroyed.
+- **UniTask** ([`com.cysharp.unitask`](https://github.com/Cysharp/UniTask), from OpenUPM) is the async library. An
+  assembly that uses it lists `UniTask` in its asmdef references. Use `async UniTask` / `UniTask<T>`, never `Task`, in
+  game code.
+- **`UniTaskVoid` only at the edge:** a fire-and-forget start (a menu command, a bootstrap) is a private
+  `async UniTaskVoid` called with `.Forget()`, and it handles the result itself. Example: `JoinGameMenuCommand`.
+- **Cancellation:** every method returning `UniTask` takes a `CancellationToken` and passes it on
+  (`ArchitectureRulesTests.AsyncMethods_TakeACancellationToken`). A long-lived owner cancels its own token on
+  `Dispose` (VContainer disposes singletons).
+- **Tests** can be `async Task` (Unity Test Framework) and `await` a UniTask. Fakes complete synchronously, so nothing
+  waits on the player loop. Example: `DirectSessionServiceEndTests`.
 
 ## 2. Dependency Injection & References
 - **Minimize `[SerializeField]`:** Do not drag-and-drop references in the Unity Inspector unless absolutely necessary (like setting up a UI prefab or a visual effect). `[SerializeField]` is fine for tunables, config assets, `InteractionDefinition`s and asset identities (tags, attributes).

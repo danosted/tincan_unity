@@ -296,11 +296,28 @@ namespace TinCan.Core.UI
                 }
 
                 _values.TryGetValue(ValueKey(menu.MenuId, item.ItemId), out var value);
+                if (item.Kind == MenuItemKind.Note)
+                {
+                    AddNoteRow(item, value, rows);
+                    continue;
+                }
+
                 rows.Add(new MenuItemRow(item.ItemId, item.Label, item.Kind, value ?? string.Empty));
             }
 
             _current = new MenuSnapshot(menu.MenuId, menu.Title, rows, top.Stack.Count > 1, top.Owner, top.Kind, top.Pinned, FocusIn(top, menu, rows));
             Changed?.Invoke();
+        }
+
+        /// <summary>
+        /// An authored note shows its value when a command set one (the Join menu's status line), else its label; with
+        /// neither it is left out, so a status line takes no room until there is something to say.
+        /// </summary>
+        private static void AddNoteRow(MenuItemDefinition item, string? value, List<MenuItemRow> rows)
+        {
+            string text = string.IsNullOrEmpty(value) ? item.Label : value!;
+            if (string.IsNullOrEmpty(text)) return;
+            rows.Add(new MenuItemRow(item.ItemId, text, MenuItemKind.Note, string.Empty));
         }
 
         private void AddBindingRows(MenuItemDefinition item, List<MenuItemRow> rows)

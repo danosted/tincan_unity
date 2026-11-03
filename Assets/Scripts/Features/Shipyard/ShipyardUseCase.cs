@@ -1,6 +1,8 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Hud;
 using TinCan.Core.Domain.Input;
@@ -50,6 +52,7 @@ namespace TinCan.Features.Shipyard
         private readonly IShipDesigns _shipDesigns;
         private readonly IHudValues _hud;
         private readonly INetworkService _network;
+        private readonly ISessionService _session;
         private readonly IActorRegistry _actors;
         private readonly ShipyardAimProcessor _aim = new();
         private readonly ShipyardFlyProcessor _fly = new();
@@ -77,7 +80,7 @@ namespace TinCan.Features.Shipyard
         public ShipyardUseCase(ShipyardConfig config, ShipyardInputContext controls, IInputReader input, IInputBindings bindings,
             IInputContextSwitch contexts, IShipyardStage stage, IShipPartCatalog catalog, IShipDesignStore store, ShipDesignEditProcessor edits,
             ShipDesignValidator validator, ShipStatsProcessor stats, ShipDesignsConfig designs, IShipDesigns shipDesigns, IHudValues hud,
-            INetworkService network, IActorRegistry actors)
+            INetworkService network, ISessionService session, IActorRegistry actors)
         {
             _config = config;
             _controls = controls;
@@ -94,6 +97,7 @@ namespace TinCan.Features.Shipyard
             _shipDesigns = shipDesigns;
             _hud = hud;
             _network = network;
+            _session = session;
             _actors = actors;
             _stage.PartPicked += partId =>
             {
@@ -363,7 +367,8 @@ namespace TinCan.Features.Shipyard
             }
 
             Close();
-            if (!_network.IsActive) _network.StartHost();
+            // Hosting completes at once; nothing outlives this call to cancel.
+            if (!_session.IsActive) _session.HostAsync(HostOptions.Default, CancellationToken.None).Forget();
             return true;
         }
 

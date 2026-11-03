@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
@@ -19,7 +21,7 @@ namespace TinCan.Core.UI
     /// Multiplayer Play Mode player tags (see <see cref="LaunchArguments"/>). Runs after the menu bootstrap; the menu
     /// closes itself once the session is up.
     /// </summary>
-    public class CommandLineSessionBootstrap : IStartable, ITickable
+    public class CommandLineSessionBootstrap : IStartable, ITickable, IDisposable
     {
         public const string HostFlag = "-autohost";
         public const string ServerFlag = "-server";
@@ -27,17 +29,18 @@ namespace TinCan.Core.UI
         public const string JoinFlag = "-autojoin";
         public const string JoinDelayFlag = "-joindelay";
 
-        private readonly INetworkService _networkService;
+        private readonly ISessionService _session;
         private readonly IEventPublisher _eventPublisher;
         private readonly ITimeService _time;
+        private readonly CancellationTokenSource _lifetime = new();
 
         private SessionRequest? _pendingJoin;
         private float _joinDelayRemaining;
 
         [Inject]
-        public CommandLineSessionBootstrap(INetworkService networkService, IEventPublisher eventPublisher, ITimeService time)
+        public CommandLineSessionBootstrap(ISessionService session, IEventPublisher eventPublisher, ITimeService time)
         {
-            _networkService = networkService;
+            _session = session;
             _eventPublisher = eventPublisher;
             _time = time;
         }
@@ -47,18 +50,17 @@ namespace TinCan.Core.UI
         /// <summary>Acts on <paramref name="args"/>: hosts or joins now, or schedules a delayed join for <see cref="Tick"/>.</summary>
         public void Begin(IReadOnlyList<string>? args)
         {
-            if (!TryParse(args, out var request) || _networkService.IsActive) return;
+            if (!TryParse(args, out var request) || _session.IsActive) return;
 
             switch (request.Kind)
             {
                 case SessionRequestKind.Host:
                     _eventPublisher.LogInfo("Session", "Auto-hosting from command line.");
-                    _networkService.StartHost();
+                    Report("Host", _session.HostAsync(HostOptions.Default, _lifetime.Token)).Forget();
                     break;
                 case SessionRequestKind.Server:
                     _eventPublisher.LogInfo("Session", $"Starting a dedicated server on {request.Address}:{request.Port} from command line.");
-                    _networkService.SetListenEndpoint(request.Address, request.Port);
-                    _networkService.StartServer();
+                    Report("Server", _session.HostAsync(new HostOptions(dedicated: true, listenAddress: request.Address, port: request.Port), _lifetime.Token)).Forget();
                     break;
                 case SessionRequestKind.Join when request.DelaySeconds > 0f:
                     _eventPublisher.LogInfo("Session", $"Auto-joining {request.Address}:{request.Port} in {request.DelaySeconds:0.#} s (late join).");
@@ -79,14 +81,26 @@ namespace TinCan.Core.UI
             if (_joinDelayRemaining > 0f) return;
 
             _pendingJoin = null;
-            if (!_networkService.IsActive) Join(request);
+            if (!_session.IsActive) Join(request);
         }
 
         private void Join(SessionRequest request)
         {
             _eventPublisher.LogInfo("Session", $"Auto-joining {request.Address}:{request.Port} from command line.");
-            _networkService.SetConnection(request.Address, request.Port);
-            _networkService.StartClient();
+            Report("Join", _session.JoinAsync(new JoinTarget(request.Address, request.Port), _lifetime.Token)).Forget();
+        }
+
+        public void Dispose()
+        {
+            _lifetime.Cancel();
+            _lifetime.Dispose();
+        }
+
+        // Unattended runs have no menu to show a refusal on: the log is where it shows.
+        private async UniTaskVoid Report(string what, UniTask<SessionStart> starting)
+        {
+            var start = await starting;
+            if (!start.IsStarted) _eventPublisher.LogWarning("Session", $"{what} from command line did not start: {start.Message}");
         }
 
         public static bool TryParse(IReadOnlyList<string>? args, out SessionRequest request)

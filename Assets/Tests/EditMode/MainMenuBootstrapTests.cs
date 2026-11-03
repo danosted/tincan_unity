@@ -32,6 +32,8 @@ namespace TinCan.Tests.EditMode
         }
 
         private SwitchableNetwork _network = null!;
+        private FakeNetworkConnections _connections = null!;
+        private ISessionService _session = null!;
         private FakePossessionState _possession = null!;
         private MenuUseCase _menus = null!;
         private MenuDefinition _main = null!;
@@ -47,10 +49,12 @@ namespace TinCan.Tests.EditMode
         public void SetUp()
         {
             _network = new SwitchableNetwork();
+            _connections = new FakeNetworkConnections();
+            _session = FakeSessions.Direct(_network, _connections);
             _possession = new FakePossessionState();
             _menus = new MenuUseCase(new MenuCommandRegistry(new IMenuCommand[0]));
             _main = MenuDefinition.Create("main", "Main", new MenuItemDefinition { ItemId = "quit", Label = "Quit", Kind = MenuItemKind.Command, CommandId = "Quit" });
-            _bootstrap = new MainMenuBootstrap(_menus, _network, _main);
+            _bootstrap = new MainMenuBootstrap(_menus, _network, _session, _main);
             _open = new OpenMenuInputHandler(_menus, _network, _possession, _main);
             _back = new MenuBackInputHandler(_menus, _main);
             _openCommand = ScriptableObject.CreateInstance<OpenMenuCommand>();
@@ -99,6 +103,73 @@ namespace TinCan.Tests.EditMode
             _bootstrap.Tick();
 
             Assert.That(_menus.IsOpen, Is.True);
+        }
+
+        private void JoinedAndPlaying()
+        {
+            _bootstrap.Initialize();
+            _session.JoinAsync(new JoinTarget("10.0.0.5", 7777), default);
+            _connections.ConnectedAsClient(0);
+            _bootstrap.Tick();
+        }
+
+        [Test]
+        public void RemovedWithAReason_OpensMainMenuWithTheReasonOnTop()
+        {
+            JoinedAndPlaying();
+
+            _connections.Disconnect(0, "Kicked by the host.");
+            _network.State = NetworkState.Offline;
+            _bootstrap.Tick();
+
+            var rows = _menus.Current!.Items;
+            Assert.That(_menus.Current.MenuId, Is.EqualTo(_main.MenuId));
+            Assert.That(rows[0].Kind, Is.EqualTo(MenuItemKind.Note));
+            Assert.That(rows[0].Label, Is.EqualTo("Kicked by the host."));
+            Assert.That(rows.Count, Is.EqualTo(_main.Items.Count + 1), "the authored rows follow the notice");
+        }
+
+        [Test]
+        public void ConnectionLost_ShowsConnectionLost()
+        {
+            JoinedAndPlaying();
+
+            _connections.Disconnect(0);
+            _network.State = NetworkState.Offline;
+            _bootstrap.Tick();
+
+            Assert.That(_menus.Current!.Items[0].Label, Is.EqualTo(SessionEnd.ConnectionLostMessage));
+        }
+
+        [Test]
+        public void JoinRefused_LeavesTheMenuItCameFrom()
+        {
+            // The Join menu says why (JoinGameMenuCommand); the main menu does not take over.
+            _bootstrap.Initialize();
+            _session.JoinAsync(new JoinTarget("10.0.0.5", 7777), default);
+            _network.State = NetworkState.Connecting;
+            _bootstrap.Tick();
+
+            _connections.Disconnect(0, "The game is full (8 players).");
+            _network.State = NetworkState.Offline;
+            _bootstrap.Tick();
+
+            Assert.That(_session.LastEnd, Is.Null);
+            Assert.That(_menus.Current!.Items[0].Kind, Is.Not.EqualTo(MenuItemKind.Note));
+        }
+
+        [Test]
+        public void Leave_OpensThePlainMainMenu()
+        {
+            _bootstrap.Initialize();
+            _session.HostAsync(HostOptions.Default, default);
+            _bootstrap.Tick();
+
+            _session.Leave();
+            _bootstrap.Tick();
+
+            Assert.That(_menus.IsOpen, Is.True);
+            Assert.That(_menus.Current!.Items[0].Kind, Is.Not.EqualTo(MenuItemKind.Note));
         }
 
         [Test]

@@ -2,6 +2,7 @@
     "name": "TinCan.Network",
     "rootNamespace": "TinCan.Network.Infrastructure",
     "references": [
+        "UniTask",
         "TinCan.Core.Domain",
         "TinCan.Core.Infrastructure",
         "TinCan.Gas",

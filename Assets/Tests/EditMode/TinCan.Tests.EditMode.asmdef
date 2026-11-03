@@ -2,8 +2,10 @@
     "name": "TinCan.Tests.EditMode",
     "rootNamespace": "",
     "references": [
+        "UniTask",
         "TinCan.Core.Domain",
         "TinCan.Core.Infrastructure",
+        "TinCan.Network",
         "TinCan.Entities",
         "TinCan.Features.CloudBoundary",
         "TinCan.Features.Atmosphere",

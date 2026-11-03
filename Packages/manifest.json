@@ -17,6 +17,7 @@
     "com.unity.ui": "2.0.0",
     "com.unity.ui.test-framework": "6.4.0",
     "jp.hadashikick.vcontainer": "1.17.0",
+    "com.cysharp.unitask": "2.5.11",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.pipeline": "0.9.1-exp.1"
   },
@@ -26,6 +27,7 @@
       "url": "https://package.openupm.com",
       "scopes": [
         "com.openupm",
+        "com.cysharp",
         "jp.hadashikick"
       ]
     }

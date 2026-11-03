@@ -505,6 +505,29 @@ namespace TinCan.Tests.EditMode
                 + "and split the class rather than folding it:\n  " + string.Join("\n  ", offenders));
         }
 
+        [Test]
+        public void AsyncMethods_TakeACancellationToken()
+        {
+            // UniTaskVoid is the fire-and-forget edge (a menu command, a bootstrap); whatever it awaits takes the token.
+            const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+            var offenders = ProjectTypes()
+                .Where(t => !t.IsDefined(typeof(CompilerGeneratedAttribute), false))
+                .SelectMany(t => t.GetMethods(all).Select(m => (Type: t, Method: m)))
+                .Where(x => !x.Method.IsDefined(typeof(CompilerGeneratedAttribute), false))
+                .Where(x => IsUniTask(x.Method.ReturnType))
+                .Where(x => x.Method.GetParameters().All(p => p.ParameterType != typeof(System.Threading.CancellationToken)))
+                .Select(x => $"{TypeName(x.Type)}.{x.Method.Name}")
+                .Distinct()
+                .ToList();
+
+            Assert.That(offenders, Is.Empty,
+                "An async method takes a CancellationToken and passes it on (CODE_STANDARDS.md §1):\n  " + string.Join("\n  ", offenders));
+        }
+
+        private static bool IsUniTask(Type type) =>
+            type == typeof(Cysharp.Threading.Tasks.UniTask)
+            || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Cysharp.Threading.Tasks.UniTask<>));
+
         private static void AssertMatchesBaseline(IEnumerable<string> actual, IEnumerable<string> baseline,
             string baselineName, string rule)
         {

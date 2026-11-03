@@ -93,7 +93,7 @@ namespace TinCan.Tests.EditMode
             _store = new FileShipDesignStore(_directory,
                 new Dictionary<string, string> { ["Starter"] = _codec.Encode(Design((Helm, 0, 0, 0), (Beam, 2, 0, 0))), ["Bare"] = _codec.Encode(ShipDesign.Empty("Bare")) }, _codec, 100_000);
             _shipyard = new ShipyardUseCase(_config, _controls, _input, new FakeInputBindings(), _switch, _stage, _parts.Catalog, _store, new ShipDesignEditProcessor(),
-                new ShipDesignValidator(), new ShipStatsProcessor(), _designs, _shipDesigns, _hud, _network, new FakeActorRegistry());
+                new ShipDesignValidator(), new ShipStatsProcessor(), _designs, _shipDesigns, _hud, _network, FakeSessions.Direct(_network), new FakeActorRegistry());
         }
 
         [TearDown]

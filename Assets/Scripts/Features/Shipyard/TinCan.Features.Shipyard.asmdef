@@ -2,6 +2,7 @@
     "name": "TinCan.Features.Shipyard",
     "rootNamespace": "TinCan.Features.Shipyard",
     "references": [
+        "UniTask",
         "TinCan.Core.Domain",
         "TinCan.Ship",
         "TinCan.UI",

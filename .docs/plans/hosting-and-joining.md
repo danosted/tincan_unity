@@ -1,4 +1,4 @@
-Status: Approved (2026-10-31); last in [core-systems-roadmap.md](core-systems-roadmap.md)
+Status: Approved (2026-10-31); S1 done 2026-11-03 (see Progress); last in [core-systems-roadmap.md](core-systems-roadmap.md)
 
 # Hosting and joining without a vendor's servers
 
@@ -108,6 +108,29 @@ rejoins as a new client and boards like any late joiner.
    hits a host that cannot map its port, or when testers want a server that is always up. Until then the container
    runs on the developer's PC (port forwarded by hand when needed).
 5. **No password at first.** Approval checks version and player cap; a password comes when someone needs one.
+
+## Progress
+**S1 (done 2026-11-03; EditMode suite green; `verify.ps1 -All`: 39 of 40 scenarios pass solo and host + client):**
+- `MountFitting` fails host + client only, after the client has joined: it stands 2.85 m off the deck and its interact
+  finds no socket. It is tracked outside this plan (the shipyard and look work had uncommitted changes at the time).
+- NGO fills `DisconnectReason` with its own "[Disconnect Event]..." line when the server gave none;
+  `NGONetworkService.ServerReason` keeps only what the server said, so a drop reads "Connection lost."
+- UniTask 2.5.11 is installed (OpenUPM) for this. The seam is `HostAsync` / `JoinAsync(target, cancellation)`
+  returning a `SessionStart` (started, refused with the host's reason, failed, already active), plus `Leave`,
+  `Players`, `LastEnd` and the events. Hosting completes at once today; it stays async for S3's port mapping.
+  `Discover` comes with S2, address codes with S3.
+- A join waits for the host's answer. While it waits, the Join menu's `status` note reads "Connecting to ...",
+  and a refusal or an unreachable address replaces it with the reason. A join that never got in is not a session end.
+- `INetworkConnections` (Core.Domain) is the connection side of the network service: payload, approval callback,
+  connects and disconnects. `NGONetworkService` implements it, so `INetworkService` and its five test fakes did not
+  change. The core `SessionFeatureInstaller` exposes it, so `ProjectLifetimeScope` did not change.
+- Approval: same `Application.version`, room under `HostOptions.MaxPlayers` (default 8). No password (decision 5) and
+  no ban list yet.
+- Names travel in the payload and are kept per client on the server (`Players`). The name is the `player.name`
+  setting once player-settings S3 adds it, "Player" until then. Replicating it to every peer (nameplates) is left to
+  [crew-pings-and-markers.md](crew-pings-and-markers.md), which reads `ISessionService.Players` on the server.
+- A running session that drops (removed with a reason, or the connection lost) opens the main menu with the reason on
+  top. "Host left" still reads "Connection lost." (S4, Drops).
 
 ## Verification
 - EditMode suite green, plus the new tests. `verify.ps1 -All` after S1 (asked for first): joining by address unchanged

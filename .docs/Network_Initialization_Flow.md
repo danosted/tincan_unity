@@ -85,6 +85,14 @@ sequenceDiagram
 | Dedicated server | `-server [address][:port]` (default `0.0.0.0:7777`) | that endpoint, set through `INetworkService.SetListenEndpoint` and forced over NGO's own `-port` / `-ip` overrides | no |
 | Client | Join menu, or `-autojoin [address[:port]]` (default `127.0.0.1:7777`) | n/a | yes |
 
+Every start goes through `ISessionService` (`Network/Infrastructure/Session/DirectSessionService.cs`), never straight to
+`INetworkService`. Connection approval is always on: a client sends its build version and name
+(`ConnectionPayload`), and the server refuses another version or a full game (`ConnectionApprovalProcessor`, default
+8 players with the host's own) with a reason the client's main menu shows. The host's own client is always let in.
+Player objects are never NGO's: approval sets `CreatePlayerObject = false` and `NGONetworkService` spawns the player
+on connect, as above. Every peer must run the same build, the dedicated server image included (rebuild it with
+`.tools/build.ps1` after a version change).
+
 The flags are parsed by `Core/UI/CommandLineSessionBootstrap.cs`. `0.0.0.0` accepts players from other machines;
 `127.0.0.1` only from this one. The transport is UDP: allow the port through the host's firewall for LAN play.
 

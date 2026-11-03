@@ -9,7 +9,7 @@ using System;
 
 namespace TinCan.Network.Infrastructure
 {
-    public class NGONetworkService : INetworkService, IInitializable, IDisposable
+    public class NGONetworkService : INetworkService, INetworkConnections, IInitializable, IDisposable
     {
         private const int HeadlessClientFrameRate = 60;
 
@@ -22,6 +22,46 @@ namespace TinCan.Network.Infrastructure
             _manager = manager;
             _spawner = spawner;
         }
+
+        public Func<ConnectionRequest, ConnectionDecision> Approval { get; set; }
+        public event Action<ulong> ClientConnected;
+        public event Action<ulong, string> ClientDisconnected;
+
+        public void SetConnectionPayload(byte[] payload)
+        {
+            if (_manager != null) _manager.NetworkConfig.ConnectionData = payload ?? Array.Empty<byte>();
+        }
+
+        // Approval is always on, so every peer's NetworkConfig agrees; with no Approval set everyone is let in. The player
+        // object is never NGO's: OnClientConnected spawns it through the spawner.
+        private void ApproveConnection(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
+        {
+            var decision = Approval?.Invoke(new ConnectionRequest(request.ClientNetworkId, request.ClientNetworkId == NetworkManager.ServerClientId, request.Payload))
+                ?? ConnectionDecision.Approve();
+            response.Approved = decision.Approved;
+            response.Reason = decision.Reason;
+            response.CreatePlayerObject = false;
+            response.Pending = false;
+        }
+
+        private void OnClientDisconnected(ulong clientId)
+        {
+            // On a client, the server's refusal (or kick) reason; the server has none to read for its clients.
+            string reason = _manager != null && !_manager.IsServer ? ServerReason(_manager.DisconnectReason) : null;
+            ClientDisconnected?.Invoke(clientId, reason);
+        }
+
+        private const string GeneratedReasonPrefix = "[Disconnect Event]";
+
+        /// <summary>
+        /// The reason the server gave, or null. NGO's <c>DisconnectReason</c> is the server's text when it sent one, else
+        /// a line NGO writes itself ("[Disconnect Event][Client-1]... The transport was shutdown."), which is no reason
+        /// to show a player (NGO 2.11, <c>NetworkConnectionManager.GenerateDisconnectInformation</c>).
+        /// </summary>
+        public static string ServerReason(string disconnectReason) =>
+            string.IsNullOrWhiteSpace(disconnectReason) || disconnectReason.StartsWith(GeneratedReasonPrefix, StringComparison.Ordinal)
+                ? null
+                : disconnectReason;
 
         public void SetPlayerPrefab(GameObject prefab)
         {
@@ -36,6 +76,9 @@ namespace TinCan.Network.Infrastructure
             {
                 Debug.Log("[NGONetworkService] Subscribing to OnClientConnectedCallback.");
                 _manager.OnClientConnectedCallback += OnClientConnected;
+                _manager.OnClientDisconnectCallback += OnClientDisconnected;
+                _manager.NetworkConfig.ConnectionApproval = true;
+                _manager.ConnectionApprovalCallback = ApproveConnection;
             }
         }
 
@@ -44,12 +87,15 @@ namespace TinCan.Network.Infrastructure
             if (_manager != null)
             {
                 _manager.OnClientConnectedCallback -= OnClientConnected;
+                _manager.OnClientDisconnectCallback -= OnClientDisconnected;
+                if (_manager.ConnectionApprovalCallback == ApproveConnection) _manager.ConnectionApprovalCallback = null;
             }
         }
 
         private void OnClientConnected(ulong clientId)
         {
             Debug.Log($"[NGONetworkService] Client connected with ID: {clientId}");
+            ClientConnected?.Invoke(clientId);
             // If we are the server (or host), spawn the player when they connect
             if (IsServer && _playerPrefab != null)
             {

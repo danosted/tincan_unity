@@ -2,6 +2,7 @@
     "name": "TinCan.UI",
     "rootNamespace": "",
     "references": [
+        "UniTask",
         "TinCan.Core.Domain",
         "TinCan.Possession",
         "VContainer"

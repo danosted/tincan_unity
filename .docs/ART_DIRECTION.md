@@ -20,6 +20,7 @@ outside.
 | Final Fantasy IX | Chunky, rounded, storybook proportions; airships with propellers, paddles and rotor masts; saturated ochre, red and teal. Every prop has character. | Pre-rendered backdrops and photographic detail. |
 | Ori and the Blind Forest | Atmosphere: air you can see. Layered mist where light and shadow blend into each other, light bleeding into humid air around every glow, deep darks next to luminous highlights, and soft focus on near and far layers so the eye goes to the middle. | Its side-on 2D parallax set-up, and blur that hides what a player needs to read. |
 | Autumn | The palette: leaves turning russet, burnt orange and gold over earthy browns, with deep plum and near-black in the shadows. | |
+| The Legend of Zelda: Tears of the Kingdom | The sky as a place: islands over a sea of cloud, seen from above and dived through. Clouds as big, simple masses with a lit top, a soft coloured shadow side and a bright rim, readable from far away; distance flattening into painterly colour. | Its cool green palette and its stone-and-glow tech: our light stays autumn gold. |
 | Studio Ghibli overall | Painterly skies with huge clouds, soft light with coloured shadows, flat colour with gentle gradients instead of fine texture, wind in grass, cloth and hair. Calm moments. | Anything that needs hand-drawn 2D to work. |
 
 ## Pillars
@@ -115,7 +116,13 @@ Most of the feel comes from here, not from the models. The target **(proposal)**
   `Assets/Shaders/Include/TinCanLighting.hlsl`, which `SkyIsland.shader` shares.
 - **No ink outlines** on the world; `TargetOutline` stays the interaction highlight only.
 - **Sky and clouds** painterly: big soft cloud shapes, a warm horizon haze, aerial perspective (distance fades toward
-  the sky colour).
+  the sky colour). Clouds read as shapes, not simulated vapour (after Tears of the Kingdom and Ghibli): a
+  few large rounded masses lit in one soft gradient, not the world's bands (cream tops, warm grey shadows tinted by
+  the sky), soft edges, a gentle rim toward the sun, and little fine wispy detail. They are judged against a sky,
+  never a flat colour. The cloud sea seen from above reads as one rolling surface. **(proposal)** Depth from soft
+  creases between a few big lobes, small lumps only on the top outline, and a low-resolution softness over all of it.
+  Iterated in the cloud lab (**TinCan > Dev > Look > Build Cloud Lab**) as mesh clouds on
+  `Shaders/StylizedCloud.shader`.
 - **Atmosphere (after Ori):** height fog in layers, densest in the cloud sea and thinning upward, tinted by the light
   that crosses it (gold toward the sun, plum and blue away from it). Built: `Shaders/Include/TinCanAtmosphere.hlsl`,
   set each frame by the Atmosphere feature from `Settings/Look/Look_GoldenAfternoon`. Light shafts where sun or lanterns cross mist.
@@ -161,7 +168,8 @@ An asset is done when a turntable or in-game render shows it and each answer is 
 - Ship parts are greybox primitives, except the rotor mast (the first Blender part); all are on the stylized shader
   and the library materials. The helm still uses the pirate pack's meshes and material.
 - The frame hull has three materials: deck floors, timber-dark walls, timber-warm beams and railings.
-- Sky islands share the ships' light model; clouds have their own shaders.
+- Sky islands share the ships' light model; clouds have their own shaders. The volumetric clouds look too realistic
+  for the style (developer, 2026-11-01): fine eroded detail, photographic light.
 - The UI is a grey placeholder theme ([`UI_FRAMEWORK.md`](UI_FRAMEWORK.md), [`plans/ui-and-menus.md`](plans/ui-and-menus.md)).
 - Third-party packs are present: `Assets/Stylized_Pirate_Ship/`, `Assets/Fantasy Skybox FREE/`, volumetric clouds
   (`Assets/ThirdParty/`).
@@ -182,6 +190,11 @@ An asset is done when a turntable or in-game render shows it and each answer is 
   - **Hero time of day:** golden late afternoon; the other times come later through the grading and the light.
   - **Depth of field in play:** far layers only, folded into the mist, with a graphics setting to turn it off; full
     depth of field in the shipyard, menus, the map and cutscenes.
+
+- 2026-11-01: Tears of the Kingdom joins the inspirations, for its sky islands over a cloud sea and its readable,
+  stylized clouds.
+- 2026-11-01: clouds take one soft light gradient with warm grey shadows (the cloud lab's "+ soft light" step), not
+  the world's bands; the cloud sea is one domed surface (sea C, plan look-slice "The cloud lab").
 
 ## Open questions for the developer
 None right now. New ones go here as the look slice ([`plans/look-slice.md`](plans/look-slice.md)) raises them.

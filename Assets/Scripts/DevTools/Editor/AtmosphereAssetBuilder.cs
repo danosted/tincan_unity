@@ -126,7 +126,7 @@ namespace TinCan.DevTools.Editor
             EditorUtility.SetDirty(target);
         }
 
-        private static void EnsureDirectory(string? folder)
+        internal static void EnsureDirectory(string? folder)
         {
             if (string.IsNullOrEmpty(folder)) return;
             folder = folder!.Replace('\\', '/');

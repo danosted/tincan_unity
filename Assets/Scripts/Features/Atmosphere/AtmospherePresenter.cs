@@ -17,7 +17,10 @@ namespace TinCan.Features.Atmosphere
     /// from CloudBoundary when the scene has it) into the look and applies it: the banded fog the TinCan shaders read
     /// (Shaders/Include/TinCanAtmosphere.hlsl), a matching plain fog for every other shader, the three-colour ambient,
     /// and the sun's colour, intensity and angle. A global volume carries the look's post effects, and the local camera
-    /// gets post-processing turned on. Leaving restores the shaders' plain fog. Plan: .docs/plans/look-slice.md (L2).
+    /// gets post-processing turned on. The look's shading and surface style go to the shaders too
+    /// (<see cref="LookShaderGlobals"/>), every frame, so editing the profile or the style asset in Play shows at once.
+    /// Leaving restores the shaders' plain fog and the materials' own shading. Plans: .docs/plans/look-slice.md (L2),
+    /// .docs/plans/artstyle-pipeline-breakdown.md.
     /// </summary>
     public sealed class AtmospherePresenter : IAtmosphereOwner, IStartable, ILateTickable, IDisposable
     {
@@ -25,6 +28,7 @@ namespace TinCan.Features.Atmosphere
 
 
         private readonly LookProfile _profile;
+        private readonly ISurfaceStyle _surface;
         private readonly AtmosphereProcessor _processor;
         private readonly ILocalViewCamera _view;
         private readonly IObjectResolver _resolver;
@@ -33,9 +37,10 @@ namespace TinCan.Features.Atmosphere
         private Light? _sun;
         private Camera? _postCamera;
 
-        public AtmospherePresenter(LookProfile profile, AtmosphereProcessor processor, ILocalViewCamera view, IObjectResolver resolver)
+        public AtmospherePresenter(LookProfile profile, ISurfaceStyle surface, AtmosphereProcessor processor, ILocalViewCamera view, IObjectResolver resolver)
         {
             _profile = profile;
+            _surface = surface;
             _processor = processor;
             _view = view;
             _resolver = resolver;
@@ -63,6 +68,7 @@ namespace TinCan.Features.Atmosphere
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.fogMode = FogMode.Exponential;
             AtmosphereShaderGlobals.SetEnabled(true);
+            LookShaderGlobals.SetEnabled(true);
 
             if (_profile.Post != null)
             {
@@ -81,6 +87,7 @@ namespace TinCan.Features.Atmosphere
             Current = frame;
 
             AtmosphereShaderGlobals.Apply(frame, look);
+            LookShaderGlobals.Apply(_profile.Shading, _surface.Evaluate());
 
 
             var camera = _view.Camera;
@@ -109,6 +116,7 @@ namespace TinCan.Features.Atmosphere
         public void Dispose()
         {
             AtmosphereShaderGlobals.SetEnabled(false);
+            LookShaderGlobals.SetEnabled(false);
             if (_volume != null) Object.Destroy(_volume);
         }
     }

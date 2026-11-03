@@ -51,9 +51,6 @@ namespace TinCan.DevTools.Editor
         /// <summary>Renders the contact sheet of a built-in design and returns the picture's full path.</summary>
         public static string Render(string designName)
         {
-            var config = AssetDatabase.LoadAssetAtPath<ShipDesignsConfig>(ShipDesignsAssetBuilder.ConfigPath)
-                ?? throw new InvalidOperationException($"no ship designs config at {ShipDesignsAssetBuilder.ConfigPath}");
-            var design = BuiltInDesign(config, designName);
             var palette = LookPalette.Load();
             var look = AssetDatabase.LoadAssetAtPath<LookProfile>(AtmosphereAssetBuilder.LookPath);
 
@@ -67,10 +64,7 @@ namespace TinCan.DevTools.Editor
             GameObject? volume = null;
             try
             {
-                var root = new GameObject(designName);
-                SceneManager.MoveGameObjectToScene(root, scene);
-                root.transform.position = ShipPosition;
-                new ShipHullAssembler(Catalog(), new ShipyardPreviewBuilder(), buildFunctionalParts: true, config).Apply(design, root.transform);
+                var root = BuildShip(scene, designName, out var design);
 
                 AddSun(scene, palette, look);
                 var camera = AddCamera(scene, palette, look, target);
@@ -101,16 +95,30 @@ namespace TinCan.DevTools.Editor
             finally
             {
                 ShaderUtil.allowAsyncCompilation = asyncShaders;
-                AtmosphereShaderGlobals.SetEnabled(false);
-                if (volume != null) Object.DestroyImmediate(volume);
-                AtmosphereShaderGlobals.SetEnabled(false);
-                if (volume != null) Object.DestroyImmediate(volume);
+                ClearLook(volume);
                 RenderTexture.active = null;
                 Object.DestroyImmediate(target);
                 Object.DestroyImmediate(sheet);
                 EditorSceneManager.ClosePreviewScene(scene);
             }
         }
+
+        /// <summary>Builds a built-in design at cruising height in <paramref name="scene"/>, as the shipyard preview does.</summary>
+        internal static GameObject BuildShip(Scene scene, string designName, out ShipDesign design)
+        {
+            var config = AssetDatabase.LoadAssetAtPath<ShipDesignsConfig>(ShipDesignsAssetBuilder.ConfigPath)
+                ?? throw new InvalidOperationException($"no ship designs config at {ShipDesignsAssetBuilder.ConfigPath}");
+            design = BuiltInDesign(config, designName);
+            var root = new GameObject(designName);
+            SceneManager.MoveGameObjectToScene(root, scene);
+            root.transform.position = ShipPosition;
+            new ShipHullAssembler(Catalog(), new ShipyardPreviewBuilder(), buildFunctionalParts: true, config).Apply(design, root.transform);
+            return root;
+        }
+
+        /// <summary>Points the camera at the ship from its three-quarter view, framing every renderer.</summary>
+        internal static void AimThreeQuarter(Camera camera, GameObject ship) =>
+            Aim(camera, View.ThreeQuarter, RendererCorners(ship), ship.transform.position);
 
         private static ShipDesign BuiltInDesign(ShipDesignsConfig config, string name)
         {
@@ -130,7 +138,7 @@ namespace TinCan.DevTools.Editor
                 .OfType<FeatureInstaller.IExtension<ShipPartDefinition>>()
                 .SelectMany(e => e.Contributions));
 
-        internal static void AddSun(Scene scene, LookPalette palette, LookProfile? look)
+        internal static Light AddSun(Scene scene, LookPalette palette, LookProfile? look)
         {
             var sun = new GameObject("Sun").AddComponent<Light>();
             SceneManager.MoveGameObjectToScene(sun.gameObject, scene);
@@ -142,23 +150,27 @@ namespace TinCan.DevTools.Editor
                 sun.color = settings.SunColour;
                 sun.intensity = settings.SunIntensity;
                 sun.transform.rotation = Quaternion.Euler(settings.SunAngles.x, settings.SunAngles.y, 0f);
-                return;
+                return sun;
             }
 
             sun.color = Color.Lerp(Color.white, palette["leaf-gold"], 0.35f);
             sun.intensity = 1.1f;
             // Low and from the port quarter, so the side and three-quarter views see lit and shadowed faces.
             sun.transform.rotation = Quaternion.Euler(30f, 60f, 0f);
+            return sun;
         }
 
-        /// <summary>The look's air (clear of cloud) in the shader globals, and its post effects in a global volume
-        /// (destroyed after the render); nothing without a look.</summary>
+        /// <summary>The look's air (clear of cloud), shading and surface style in the shader globals, and its post effects
+        /// in a global volume; nothing without a look. Undo it with <see cref="ClearLook"/> in a finally, or the Scene view
+        /// keeps the look.</summary>
         internal static GameObject? ApplyLook(LookProfile? look)
         {
             if (look == null) return null;
             var settings = look.Settings;
             AtmosphereShaderGlobals.Apply(new AtmosphereProcessor().Evaluate(settings, whiteout: 0f, lightMultiplier: 1f), settings);
             AtmosphereShaderGlobals.SetEnabled(true);
+            LookShaderGlobals.Apply(look.Shading, look.ActiveSurface.Evaluate());
+            LookShaderGlobals.SetEnabled(true);
             if (look.Post == null) return null;
 
             var holder = new GameObject("Look Volume") { hideFlags = HideFlags.HideAndDontSave };
@@ -167,6 +179,14 @@ namespace TinCan.DevTools.Editor
             volume.priority = 100;
             volume.sharedProfile = look.Post;
             return holder;
+        }
+
+        /// <summary>Takes the look back out of the shader globals and destroys its volume.</summary>
+        internal static void ClearLook(GameObject? volume)
+        {
+            AtmosphereShaderGlobals.SetEnabled(false);
+            LookShaderGlobals.SetEnabled(false);
+            if (volume != null) Object.DestroyImmediate(volume);
         }
 
         internal static Camera AddCamera(Scene scene, LookPalette palette, LookProfile? look, RenderTexture target)

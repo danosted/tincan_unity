@@ -30,6 +30,10 @@ Material:
     - _Bands: 2
     - _Highlight: 0.6
     - _HighlightSize: 0.08
+    - _OwnBandSoftness: 0
+    - _OwnBands: 0
+    - _OwnRim: 0
+    - _OwnShadowFill: 0
     - _Rim: 0.15
     - _ShadowFill: 0.45
     - _VertexColor: 0

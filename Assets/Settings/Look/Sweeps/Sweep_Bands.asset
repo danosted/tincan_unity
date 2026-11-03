@@ -1,0 +1,105 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a80ce59539b7d94a951327ec0a42912, type: 3}
+  m_Name: Sweep_Bands
+  m_EditorClassIdentifier: TinCan.DevTools.Editor::TinCan.DevTools.Editor.LookSweep
+  Base: {fileID: 0}
+  Subjects: 0000000001000000
+  Variants:
+  - Label: 
+    OverrideBandSoftness: 1
+    BandSoftness: 0.05
+    OverrideBands: 1
+    Bands: 2
+    OverrideRim: 0
+    Rim: 0.15
+    OverrideShadowFill: 0
+    ShadowFill: 0.45
+    OverrideSurface: 0
+    Surface: {fileID: 0}
+  - Label: 
+    OverrideBandSoftness: 1
+    BandSoftness: 0.1
+    OverrideBands: 1
+    Bands: 2
+    OverrideRim: 0
+    Rim: 0.15
+    OverrideShadowFill: 0
+    ShadowFill: 0.45
+    OverrideSurface: 0
+    Surface: {fileID: 0}
+  - Label: 
+    OverrideBandSoftness: 1
+    BandSoftness: 0.2
+    OverrideBands: 1
+    Bands: 2
+    OverrideRim: 0
+    Rim: 0.15
+    OverrideShadowFill: 0
+    ShadowFill: 0.45
+    OverrideSurface: 0
+    Surface: {fileID: 0}
+  - Label: 
+    OverrideBandSoftness: 1
+    BandSoftness: 0.35
+    OverrideBands: 1
+    Bands: 2
+    OverrideRim: 0
+    Rim: 0.15
+    OverrideShadowFill: 0
+    ShadowFill: 0.45
+    OverrideSurface: 0
+    Surface: {fileID: 0}
+  - Label: 
+    OverrideBandSoftness: 1
+    BandSoftness: 0.05
+    OverrideBands: 1
+    Bands: 3
+    OverrideRim: 0
+    Rim: 0.15
+    OverrideShadowFill: 0
+    ShadowFill: 0.45
+    OverrideSurface: 0
+    Surface: {fileID: 0}
+  - Label: 
+    OverrideBandSoftness: 1
+    BandSoftness: 0.1
+    OverrideBands: 1
+    Bands: 3
+    OverrideRim: 0
+    Rim: 0.15
+    OverrideShadowFill: 0
+    ShadowFill: 0.45
+    OverrideSurface: 0
+    Surface: {fileID: 0}
+  - Label: 
+    OverrideBandSoftness: 1
+    BandSoftness: 0.2
+    OverrideBands: 1
+    Bands: 3
+    OverrideRim: 0
+    Rim: 0.15
+    OverrideShadowFill: 0
+    ShadowFill: 0.45
+    OverrideSurface: 0
+    Surface: {fileID: 0}
+  - Label: 
+    OverrideBandSoftness: 1
+    BandSoftness: 0.35
+    OverrideBands: 1
+    Bands: 3
+    OverrideRim: 0
+    Rim: 0.15
+    OverrideShadowFill: 0
+    ShadowFill: 0.45
+    OverrideSurface: 0
+    Surface: {fileID: 0}

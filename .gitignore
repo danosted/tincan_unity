@@ -175,3 +175,13 @@ Packages/Library/
 
 # Output generated
 /output/
+
+# The cloud lab: written by TinCan > Dev > Look > Build Cloud Lab (the meshes are large; the materials are committed).
+# After the !Assets/** re-include above, or it would win.
+/Assets/Scenes/Lab/
+/Assets/Scenes/Lab.meta
+/Assets/Art/Clouds/
+/Assets/Art/Clouds.meta
+
+# Reference images from other works stay local (ART_DIRECTION, "References": links and our own paintovers only).
+/.docs/art/samples/

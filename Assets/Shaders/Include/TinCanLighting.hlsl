@@ -3,7 +3,11 @@
 // ambient from the sky probes, a soft sky-coloured rim, and a soft highlight band for metal (no reflections). Every
 // light, the main one and lanterns alike, is shaded the same way. Used by TinCan/Stylized and TinCan/SkyIsland, so
 // ships and islands sit in one light.
-// Include after Core.hlsl, in a forward pass that declares the main-light shadow, additional-light and SSAO keywords.
+// The look's shading values and its surface style (plan .docs/plans/artstyle-pipeline-breakdown.md) come from globals
+// the Atmosphere feature sets (Features/Atmosphere/LookShaderGlobals.cs). Without it the material's own values hold and
+// no surface style keyword is on, so a shader that declares none of them (the clouds) shades exactly as before.
+// Include after Core.hlsl, in a forward pass that declares the main-light shadow, additional-light and SSAO keywords;
+// to take the surface styles, also `#pragma multi_compile_fragment _ _TINCAN_SURFACE_DRIFT _TINCAN_SURFACE_BRUSH`.
 #ifndef TINCAN_LIGHTING_INCLUDED
 #define TINCAN_LIGHTING_INCLUDED
 
@@ -11,6 +15,27 @@
 
 // How much of the sky's ambient a face keeps where the sun reaches it.
 #define TINCAN_AMBIENT_IN_SUN 0.25h
+
+// Globals, not per material (the SRP batcher stays happy): _TinCanShadingOn is 1 while a look applies its shading.
+float _TinCanShadingOn;
+float4 _TinCanShading;       // x band softness, y bands, z rim, w shadow fill
+float4 _TinCanSurfaceParams; // the active surface style's values; what they mean is the style's own
+
+// A surface style changes the albedo (TinCanStyleAlbedo) or N.L before the bands (TinCanStyleNDotL), sampled in object
+// space so a pattern rides with a moving ship. One file per style; flat (no keyword) changes nothing.
+#if defined(_TINCAN_SURFACE_DRIFT)
+#include "Surface/ColourDrift.hlsl"
+#elif defined(_TINCAN_SURFACE_BRUSH)
+#include "Surface/BrushEdge.hlsl"
+#endif
+
+#ifndef TINCAN_STYLE_ALBEDO
+half3 TinCanStyleAlbedo(half3 albedo, float3 styleCoord) { return albedo; }
+#endif
+
+#ifndef TINCAN_STYLE_NDOTL
+half TinCanStyleNDotL(half nDotL, float3 styleCoord) { return nDotL; }
+#endif
 
 struct TinCanSurface
 {
@@ -20,6 +45,7 @@ struct TinCanSurface
     float4 positionCS;
     half occlusion;  // baked or vertex occlusion, 1 none
     half highlight;  // strength of the metal highlight band, 0 none
+    float3 styleCoord; // where a surface style samples its pattern: the object-space position
 };
 
 struct TinCanLook
@@ -33,6 +59,21 @@ struct TinCanLook
     half highlightSize; // width of the metal highlight band, 0..1
     half bands;         // 2: lit and shadow; 3: a half-lit band between them
 };
+
+// The look's shading values in place of the material's, except those the material keeps (keepOwn x softness, y bands,
+// z rim, w shadow fill: 1 keeps the material's). With no look applied the material's values hold.
+void TinCanFollowLookShading(inout TinCanLook look, half4 keepOwn)
+{
+    if (_TinCanShadingOn < 0.5)
+    {
+        return;
+    }
+
+    look.softness = keepOwn.x > 0.5h ? look.softness : (half)_TinCanShading.x;
+    look.bands = keepOwn.y > 0.5h ? look.bands : (half)_TinCanShading.y;
+    look.rim = keepOwn.z > 0.5h ? look.rim : (half)_TinCanShading.z;
+    look.shadowFill = keepOwn.w > 0.5h ? look.shadowFill : (half)_TinCanShading.w;
+}
 
 // 0 in the shadow band, 1 in the lit band. The step begins at the terminator (where the surface turns from the light)
 // and is as wide as the softness, in units of N.L: a band that crossed the terminator would be cut by the shadow map
@@ -53,7 +94,8 @@ half TinCanBand(half nDotL, half wrap, half softness, half bands)
 
 half TinCanLit(Light light, TinCanSurface surface, TinCanLook look)
 {
-    return TinCanBand(dot(surface.normalWS, light.direction), look.wrap, look.softness, look.bands) * light.shadowAttenuation;
+    half nDotL = TinCanStyleNDotL(dot(surface.normalWS, light.direction), surface.styleCoord);
+    return TinCanBand(nDotL, look.wrap, look.softness, look.bands) * light.shadowAttenuation;
 }
 
 half3 TinCanLightContribution(Light light, TinCanSurface surface, TinCanLook look, float3 viewWS)
@@ -75,6 +117,7 @@ half3 TinCanLightContribution(Light light, TinCanSurface surface, TinCanLook loo
 
 half3 TinCanShade(TinCanSurface surface, TinCanLook look)
 {
+    surface.albedo = TinCanStyleAlbedo(surface.albedo, surface.styleCoord);
     float3 viewWS = GetWorldSpaceNormalizeViewDir(surface.positionWS);
     half3 sky = SampleSH(surface.normalWS);
 

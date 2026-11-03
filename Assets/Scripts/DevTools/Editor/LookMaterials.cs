@@ -22,12 +22,17 @@ namespace TinCan.DevTools.Editor
 
         public sealed class Entry
         {
-            public Entry(string name, string role, float highlight = 0f, float glow = 0f)
+            public Entry(string name, string role, float highlight = 0f, float glow = 0f,
+                float? ownBandSoftness = null, int? ownBands = null, float? ownRim = null, float? ownShadowFill = null)
             {
                 Name = name;
                 Role = role;
                 Highlight = highlight;
                 Glow = glow;
+                OwnBandSoftness = ownBandSoftness;
+                OwnBands = ownBands;
+                OwnRim = ownRim;
+                OwnShadowFill = ownShadowFill;
             }
 
             public string Name { get; }
@@ -38,6 +43,12 @@ namespace TinCan.DevTools.Editor
             public float Highlight { get; }
             /// <summary>How brightly it glows in its own colour (HDR, so bloom picks it up), 0 for none.</summary>
             public float Glow { get; }
+            // The shading values this material keeps for itself instead of following the look's (null: follow it). Set
+            // here, not on the .mat: building rewrites the material from this table.
+            public float? OwnBandSoftness { get; }
+            public int? OwnBands { get; }
+            public float? OwnRim { get; }
+            public float? OwnShadowFill { get; }
         }
 
         public static IReadOnlyList<Entry> Library { get; } = new[]
@@ -78,6 +89,10 @@ namespace TinCan.DevTools.Editor
             var glow = entry.Glow > 0f ? palette[entry.Role] * entry.Glow : Color.black;
             glow.a = 1f;
             built.SetColor("_EmissionColor", glow);
+            Keep(built, "_BandSoftness", "_OwnBandSoftness", entry.OwnBandSoftness);
+            Keep(built, "_Bands", "_OwnBands", entry.OwnBands);
+            Keep(built, "_Rim", "_OwnRim", entry.OwnRim);
+            Keep(built, "_ShadowFill", "_OwnShadowFill", entry.OwnShadowFill);
 
             var material = AssetDatabase.LoadAssetAtPath<Material>(entry.Path);
             if (material == null)
@@ -93,6 +108,12 @@ namespace TinCan.DevTools.Editor
             EditorUtility.SetDirty(material);
             UnityEngine.Object.DestroyImmediate(built);
             return material;
+        }
+
+        private static void Keep(Material material, string property, string keepSwitch, float? own)
+        {
+            material.SetFloat(keepSwitch, own.HasValue ? 1f : 0f);
+            if (own.HasValue) material.SetFloat(property, own.Value);
         }
     }
 }

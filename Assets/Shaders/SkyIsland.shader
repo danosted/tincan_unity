@@ -2,7 +2,8 @@
 // (SkyIslandMeshData): r grass, g ambient occlusion, b a strata value per ring, a how far down the rock (0 top, 1 apex).
 // Grass where the mesh says top and the surface faces up; warm layered rock elsewhere, darker toward the apex.
 // Lit by the shared light model (Include/TinCanLighting.hlsl), so islands and ships sit in one light; fog. Depth passes so
-// clouds and SSAO see it.
+// clouds and SSAO see it. Islands keep their own band softness, bands, rim and shadow fill by default (the "Keep own"
+// switches); turn one off to follow the look's. The look's surface style applies to them as it does to ships.
 Shader "TinCan/SkyIsland"
 {
     Properties
@@ -19,6 +20,10 @@ Shader "TinCan/SkyIsland"
         _ShadowFill ("Shadow fill", Range(0, 1)) = 0.45
         _BandSoftness ("Band softness", Range(0, 1)) = 0.5
         _Rim ("Rim", Range(0, 1)) = 0.1
+        [ToggleUI] _OwnBandSoftness ("Keep own band softness", Float) = 1
+        [ToggleUI] _OwnBands ("Keep own bands (two)", Float) = 1
+        [ToggleUI] _OwnRim ("Keep own rim", Float) = 1
+        [ToggleUI] _OwnShadowFill ("Keep own shadow fill", Float) = 1
     }
 
     SubShader
@@ -41,6 +46,10 @@ Shader "TinCan/SkyIsland"
             half _ShadowFill;
             half _BandSoftness;
             half _Rim;
+            half _OwnBandSoftness;
+            half _OwnBands;
+            half _OwnRim;
+            half _OwnShadowFill;
         CBUFFER_END
         ENDHLSL
 
@@ -57,6 +66,7 @@ Shader "TinCan/SkyIsland"
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
             #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+            #pragma multi_compile_fragment _ _TINCAN_SURFACE_DRIFT _TINCAN_SURFACE_BRUSH
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
             #include "Include/TinCanLighting.hlsl"
@@ -77,6 +87,7 @@ Shader "TinCan/SkyIsland"
                 float3 normalWS : TEXCOORD1;
                 half4 color : TEXCOORD2;
                 half fogFactor : TEXCOORD3;
+                float3 positionOS : TEXCOORD4;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -91,6 +102,7 @@ Shader "TinCan/SkyIsland"
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.color = input.color;
                 output.fogFactor = ComputeFogFactor(position.positionCS.z);
+                output.positionOS = input.positionOS.xyz;
                 return output;
             }
 
@@ -136,6 +148,7 @@ Shader "TinCan/SkyIsland"
                 surface.positionCS = input.positionCS;
                 surface.occlusion = occlusion;
                 surface.highlight = 0;
+                surface.styleCoord = input.positionOS;
 
                 TinCanLook look;
                 look.wrap = 0; // islands shadow themselves: a wrapped band would be cut by the shadow map
@@ -146,6 +159,7 @@ Shader "TinCan/SkyIsland"
                 look.rim = _Rim;
                 look.highlightSize = 0;
                 look.bands = 2;
+                TinCanFollowLookShading(look, half4(_OwnBandSoftness, _OwnBands, _OwnRim, _OwnShadowFill));
 
                 half3 color = TinCanShade(surface, look);
                 color = TinCanAtmosphere(color, input.positionWS, input.fogFactor);

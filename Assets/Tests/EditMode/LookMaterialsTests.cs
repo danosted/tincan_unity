@@ -33,6 +33,10 @@ namespace TinCan.Tests.EditMode
                 Assert.That(Distance(material.GetColor("_BaseColor"), palette[entry.Role]), Is.LessThan(0.002f), $"{entry.Name} base colour is {entry.Role}");
                 Assert.That(Distance(material.GetColor("_ShadowTint"), palette[LookMaterials.ShadowTintRole]), Is.LessThan(0.002f), $"{entry.Name} shadow tint");
                 Assert.That(material.GetColor("_EmissionColor").maxColorComponent > 0f, Is.EqualTo(entry.Glow > 0f), $"{entry.Name} glows only when it should");
+                Assert.That(material.GetFloat("_OwnBandSoftness") > 0.5f, Is.EqualTo(entry.OwnBandSoftness.HasValue), $"{entry.Name} keeps its own softness only when the table says");
+                Assert.That(material.GetFloat("_OwnBands") > 0.5f, Is.EqualTo(entry.OwnBands.HasValue), $"{entry.Name} keeps its own bands only when the table says");
+                Assert.That(material.GetFloat("_OwnRim") > 0.5f, Is.EqualTo(entry.OwnRim.HasValue), $"{entry.Name} keeps its own rim only when the table says");
+                Assert.That(material.GetFloat("_OwnShadowFill") > 0.5f, Is.EqualTo(entry.OwnShadowFill.HasValue), $"{entry.Name} keeps its own shadow fill only when the table says");
             }
         }
 

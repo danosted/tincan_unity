@@ -70,6 +70,16 @@ JSON (owner, purpose, since, pid). `$env:TINCAN_LOCK_OWNER` names the holder (de
 a crashed or killed run is taken over automatically, so never delete it by hand. Rules for several sessions:
 [`AGENTS.md`](../AGENTS.md), "Several sessions at once".
 
+### `plans.ps1`
+
+**Purpose:** Regenerate `.docs/plans/README.md`, the index of every plan grouped by status
+**When to use:** After adding a plan or changing a plan's `Status:` line
+**Usage:**
+```powershell
+.\.tools\plans.ps1          # write the index
+.\.tools\plans.ps1 -Check   # exit 1 if the index is stale or a plan has no valid status line
+```
+
 ### `build.ps1`
 
 **Purpose:** Build the Linux dedicated server, its container image and (with `-Client`) the matching Windows client

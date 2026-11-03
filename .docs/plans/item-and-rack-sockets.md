@@ -1,5 +1,4 @@
-Status: Approved (the developer asked for the Carry socket, then left; the design calls below were made in their
-absence and are theirs to revisit)
+Status: Approved (the developer asked for the Carry socket, then left; the design calls below were made in their absence and are theirs to revisit)
 
 # Items, held visuals and the net rack as sockets (delete the shared TinCan.Features block)
 

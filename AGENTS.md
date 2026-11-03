@@ -59,4 +59,4 @@ Several AI sessions (and the developer) can work on this repo at the same time, 
 - Fresh machine setup: `.\.tools\setup.cmd` (details in [`.tools/README.md`](.tools/README.md)). `.unity-version` is the version source of truth; `ProjectSettings/ProjectVersion.txt` is owned by the Editor.
 - Scenes contain no camera. The camera lives on the player prefab and only exists after Play → Start Host spawns the player — "No cameras rendering" before that is expected, not a bug.
 - Empty asset folders are kept in git via `.gitkeep` files (Unity ignores dot-files, so they get no `.meta`).
-- Plans live in `.docs/plans/` and are committed with the work. Start each with a `Status: Draft | Approved | Done` line.
+- Plans live in `.docs/plans/` and are committed with the work. Start each with a one-line `Status: Draft | Approved | Done` line (a replaced plan is Done, and says what replaced it). To find a plan or its status, read the index `.docs/plans/README.md`; after adding a plan or changing a status, regenerate it with `.\.tools\plans.ps1` (never edit it by hand).

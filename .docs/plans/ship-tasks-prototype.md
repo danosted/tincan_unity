@@ -1,6 +1,6 @@
-# Ship Tasks Prototype: UI framework, Fuel, Jerry Cans, Net Minigame, Gauge
+Status: Approved (2026-09-05). Living document: tick checkboxes and append to the Progress Log as slices land. Read this first in every session (AI or human).
 
-**Status:** Approved 2026-09-05. Living document: tick checkboxes and append to the Progress Log as slices land. Read this first in every session (AI or human).
+# Ship Tasks Prototype: UI framework, Fuel, Jerry Cans, Net Minigame, Gauge
 
 ## Context
 

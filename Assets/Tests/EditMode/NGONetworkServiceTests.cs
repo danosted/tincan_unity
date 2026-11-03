@@ -79,5 +79,14 @@ namespace TinCan.Tests.EditMode
                 Object.DestroyImmediate(gameObject);
             }
         }
+
+        [TestCase(null, null)]
+        [TestCase("", null)]
+        [TestCase("[Disconnect Event][Client-1][TransportClientId-4294967296][TransportShutdown] NetworkConnectionManager was shutdown. The transport was shutdown.", null)]
+        [TestCase("The game is full (8 players).", "The game is full (8 players).")]
+        public void ServerReason_KeepsOnlyWhatTheServerSaid(string? disconnectReason, string? expected)
+        {
+            Assert.That(TinCan.Network.Infrastructure.NGONetworkService.ServerReason(disconnectReason!), Is.EqualTo(expected));
+        }
     }
 }

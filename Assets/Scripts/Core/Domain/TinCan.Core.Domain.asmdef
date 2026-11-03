@@ -2,6 +2,7 @@
     "name": "TinCan.Core.Domain",
     "rootNamespace": "",
     "references": [
+        "UniTask",
         "Unity.Netcode.Runtime",
         "VContainer"
     ],

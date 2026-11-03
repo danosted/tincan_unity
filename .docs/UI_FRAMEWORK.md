@@ -151,6 +151,10 @@ Every data row shares one command, which reads its row from `MenuContext.ItemId`
 Back. A `Note` row in the definition shows a line of text (a refusal's reason). Example: the ship picker,
 `Features/ShipPicker/ShipPickerUseCase.cs` (`BuildMenu`) and `PickShipMenuCommand.cs`.
 
+**A status line in an authored menu** is a `Note` row with an empty label: hidden until a command sets its value with
+`IMenuSystem.SetValue`, then the value is its text (`MenuUseCase.AddNoteRow`). Example: `Menu_Join`'s `status` row,
+written by `JoinGameMenuCommand` ("Connecting to ...", then the host's refusal).
+
 ## Showing a HUD value
 
 `IHudValues` is a tiny key-to-text store. Write a presenter (an `ITickable` in TinCan.Features) that computes the text and calls `Set`; call `Remove` when the value no longer applies. `HudOverlayView` renders every key as a label on a grey card at the top left (hidden while the HUD is empty, and under a `Screen` menu); keys are shown in insertion order.

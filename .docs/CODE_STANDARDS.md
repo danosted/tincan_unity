@@ -68,7 +68,8 @@ For where code goes, see [`CODE_MAP.md`](./CODE_MAP.md); for the design rules, [
   (`Assets/Tests/Fakes/`); a fake of a feature's interface goes in that feature's test assembly, under `Tests/Fakes/`.
   Use the hand-written fakes; add one when an interface has none. No mocking framework.
 - Views keep their math in a `public static` function and test that.
-- Run part of the suite with `.\.tools\verify.ps1 -UpTo Tests -TestAssembly <X.Tests>[,<Y.Tests>]`.
+- Run part of the suite with `.\.tools\verify.ps1 -UpTo Tests -TestAssembly <X.Tests>`. Each assembly is its own
+  runner call (about 10 s), so for more than two or three run the whole suite.
 - `Assets/Tests/Architecture/ArchitectureRulesTests.cs` checks the rules that can be checked: naming, global lookups in
   `Features`, registrations in `ProjectLifetimeScope`, a test per processor/use case/handler, `#nullable enable`, no
   `#region` or coroutines, the assembly rules (a feature in its own assembly, core never referencing a feature,

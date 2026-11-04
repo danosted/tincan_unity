@@ -68,7 +68,7 @@ change the plan's status line, then run `.\.tools\plans.ps1`.
 - [PR #19 integration with main](pr19-main-integration.md)
 - [Ship picker (temporary)](ship-picker-temporary.md)
 - [Spike: Unity Behavior as the authoring and live-debug layer for designed events](spike-unity-behavior-events.md) — (2026-09-28; approved same day, developer: "make a POC with unity behavior")
-- [Test assemblies: one per assembly under test](test-assemblies.md) — (2026-11-03): T0–T6 built, 1371/1371 green; open: `-Changed` (T5) and the compile-time comparison
+- [Test assemblies: one per assembly under test](test-assemblies.md) — (2026-11-04): T0–T6 built, 1371/1371 green, measured; `-Changed` dropped (see Measurements)
 - [Test range: controlled scenes for scenario runs](test-range.md)
 - [Tooling modules: split `.tools` scripts into modules with thin entry scripts](tools-modules.md) — (2026-10-02)
 - [Trust fixes (slice 3 of `architecture-review.md`: A3)](trust-fixes.md) — (2026-09-27)

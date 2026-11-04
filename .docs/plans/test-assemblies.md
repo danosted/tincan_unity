@@ -1,4 +1,4 @@
-Status: Done (2026-11-03): T0–T6 built, 1371/1371 green; open: `-Changed` (T5) and the compile-time comparison
+Status: Done (2026-11-04): T0–T6 built, 1371/1371 green, measured; `-Changed` dropped (see Measurements)
 
 # Test assemblies: one per assembly under test
 
@@ -105,9 +105,32 @@ Each slice ends with `verify.ps1 -UpTo Tests` green and the test count unchanged
   skip `Tests/` folders as code and read them as tests. `FeatureInstallerCatalog.IsCore` and `InputMapWriter` skip
   `*.Tests` assemblies too.
 - **T5.** `verify.ps1 -TestAssembly <a>[,<b>]` (one runner call per assembly; the runner's assembly filter matches by
-  part of the name). Open: `-Changed`.
+  part of the name). `-Changed` was dropped after measuring (below): each runner call costs about 10 s, so picking
+  the test assemblies a change can affect loses to the whole suite as soon as it picks more than about three.
 - **T6.** CODE_STANDARDS §7, CODE_MAP, TASK_GUIDES §7, TUTORIAL_NEW_FEATURE (step 1 creates the test assembly),
   FEATURE_INSTALLERS, README, AGENTS.md, the verify-feature skill, NETWORK_TEST_HARNESS, `.tools/README.md`.
 - **Left as is.** Each `X.Tests` references the whole of what `X` builds on (allowed by the rule) rather than only
-  what its tests touch; trim when one gets in the way. The compile-time gain is not measured yet: compare an edit to
-  one leaf feature against the T0 baseline.
+  what its tests touch; trim when one gets in the way.
+
+## Measurements (2026-11-04)
+`verify.ps1 -UpTo Compile` after a one-line comment edit, three runs each, old layout (`adf614f`) against new
+(`3688578`), same Editor. Seconds as the script reports them:
+
+| Edit | Old | New |
+|---|---|---|
+| none (refresh only) | 16 | 16 |
+| a leaf feature (`ShipPickerUseCase.cs`) | 23 | 22–23 |
+| a widely used feature (`ShipDesign.cs`) | 23 | 23 |
+| Core.Domain (`IInteractable.cs`) | 24–25 | 24 |
+| one test file (`ShipyardUseCaseTests.cs`) | 24 | 19 (23 on the first run) |
+
+Test runs on the new layout (`-UpTo Tests`, wall clock, compile 16 s included): whole suite 64 s; one test assembly
+30 s; three 48 s; six 71 s.
+
+What it says:
+- Compiling is not where the time goes. 16 s of every compile is the refresh and domain reload, and an edit adds about
+  7 s whatever it touches. The split saves about 5 s when you edit a test, and nothing measurable for code edits.
+- The structure is still worth having (overview, the one-way rule in tests, a feature that owns its tests); it is not
+  a speed change. Speed work belongs to the fixed cost: Enter Play Mode options, fewer `[InitializeOnLoad]` hooks, a
+  smaller refresh.
+- `-TestAssembly` pays for one or two assemblies (30 s for one, against 64 s for everything). For more, run the suite.

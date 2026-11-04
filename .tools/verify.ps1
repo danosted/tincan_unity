@@ -34,6 +34,7 @@ Optional EditMode filter (for example "ScenarioRunner"). Omit to run the whole s
 .PARAMETER TestAssembly
 Run only these test assemblies (comma-separated, for example TinCan.Features.Shipyard.Tests,TinCan.Ship.Tests).
 A name matches by part, so TinCan.Features.Airship.Fuel also runs Fuel.Minigame's tests. Not with -TestFilter.
+Each assembly is its own test-runner call (about 10 s), so for more than two or three the whole suite is faster.
 
 .PARAMETER SaveDirtyScenes
 If an open scene is marked modified, save it instead of stopping. Unity otherwise shows a blocking

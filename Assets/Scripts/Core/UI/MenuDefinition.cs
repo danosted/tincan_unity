@@ -27,7 +27,13 @@ namespace TinCan.Core.UI
         /// <summary>Generated: a number in a range (the row's Min, Max and Step).</summary>
         Slider,
         /// <summary>Generated: one of the row's Options; invoking it moves to the next one.</summary>
-        Choice
+        Choice,
+        /// <summary>
+        /// Placeholder in a definition: expands to the rows of the <see cref="IMenuRowSource"/> named by
+        /// <see cref="MenuItemDefinition.RowSource"/> (the Join menu's games on this network), under the row's label as
+        /// a heading, kept live while the menu is open.
+        /// </summary>
+        Rows
     }
 
     /// <summary>
@@ -45,6 +51,8 @@ namespace TinCan.Core.UI
         public string DefaultValue;
         [Tooltip("Settings rows: which settings page this row expands to.")]
         public SettingGroup SettingsGroup;
+        [Tooltip("Rows rows: the IMenuRowSource (by SourceId) whose rows this placeholder shows.")]
+        public string RowSource;
     }
 
     /// <summary>

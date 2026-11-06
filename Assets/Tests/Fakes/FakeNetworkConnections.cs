@@ -8,6 +8,7 @@ namespace TinCan.Tests.Fakes
     public sealed class FakeNetworkConnections : INetworkConnections
     {
         public byte[] Payload { get; private set; } = Array.Empty<byte>();
+        public ushort ListenPort { get; set; } = 7777;
         public Func<ConnectionRequest, ConnectionDecision>? Approval { get; set; }
 
         public event Action<ulong>? ClientConnected;

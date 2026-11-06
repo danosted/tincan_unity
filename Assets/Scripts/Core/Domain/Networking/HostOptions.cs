@@ -14,13 +14,16 @@ namespace TinCan.Core.Domain.Networking
         public readonly string ListenAddress;
         /// <summary>The port to listen on (dedicated only; 0 keeps the transport's own).</summary>
         public readonly ushort Port;
+        /// <summary>The game's name in other players' lists; empty picks one ("Ada's game", or a server's default).</summary>
+        public readonly string Name;
 
-        public HostOptions(int maxPlayers = DefaultMaxPlayers, bool dedicated = false, string listenAddress = "", ushort port = 0)
+        public HostOptions(int maxPlayers = DefaultMaxPlayers, bool dedicated = false, string listenAddress = "", ushort port = 0, string name = "")
         {
             MaxPlayers = maxPlayers > 0 ? maxPlayers : DefaultMaxPlayers;
             Dedicated = dedicated;
             ListenAddress = listenAddress;
             Port = port;
+            Name = name;
         }
 
         public static HostOptions Default => new(DefaultMaxPlayers);

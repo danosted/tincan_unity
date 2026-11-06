@@ -93,6 +93,12 @@ Player objects are never NGO's: approval sets `CreatePlayerObject = false` and `
 on connect, as above. Every peer must run the same build, the dedicated server image included (rebuild it with
 `.tools/build.ps1` after a version change).
 
+**LAN discovery** (`Network/Infrastructure/Session/LanDiscoveryService.cs`): while a peer serves a game (host or
+dedicated server) it answers UDP queries on port 47777 with the game's name, players, game port and version. The Join
+menu broadcasts a query about once a second while its list of games is on screen (and asks `127.0.0.1` too, for a game
+on this machine). The existing per-program firewall rules allow it. A dedicated server in a Podman container answers
+only with host networking: broadcasts do not cross the default container network.
+
 The flags are parsed by `Core/UI/CommandLineSessionBootstrap.cs`. `0.0.0.0` accepts players from other machines;
 `127.0.0.1` only from this one. The transport is UDP: allow the port through the host's firewall for LAN play.
 

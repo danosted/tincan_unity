@@ -41,9 +41,16 @@ namespace TinCan.Core.UI.Commands
 
             if (!ushort.TryParse(context.GetValue(PortItemId), out var port) || port == 0) port = DefaultPort;
 
-            var target = new JoinTarget(address.Trim(), port);
-            context.Menus.SetValue(StatusItemId, ConnectingMessage(target));
-            JoinAsync(context.Menus, target).Forget();
+            Join(context.Menus, new JoinTarget(address.Trim(), port));
+        }
+
+        /// <summary>Joins <paramref name="target"/>, saying so on the menu's status line (also used by the list of LAN games).</summary>
+        public void Join(IMenuSystem menus, JoinTarget target)
+        {
+            if (_session.IsActive) return;
+
+            menus.SetValue(StatusItemId, ConnectingMessage(target));
+            JoinAsync(menus, target).Forget();
         }
 
         public void Dispose()

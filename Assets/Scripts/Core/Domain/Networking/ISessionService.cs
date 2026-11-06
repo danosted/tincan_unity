@@ -24,6 +24,9 @@ namespace TinCan.Core.Domain.Networking
         /// </summary>
         SessionEnd? LastEnd { get; }
 
+        /// <summary>The game this peer serves (name, player cap) while it is the host or a dedicated server; else null.</summary>
+        HostedGame? Hosted { get; }
+
         event Action<SessionPlayer>? PlayerJoined;
         event Action<SessionPlayer>? PlayerLeft;
         event Action<SessionEnd>? Ended;

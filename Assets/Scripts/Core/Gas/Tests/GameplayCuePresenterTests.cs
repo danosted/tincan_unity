@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using NUnit.Framework;
+using TinCan.Core.Domain.Audio;
 using TinCan.Core.Gas.Cues;
 using UnityEngine;
 using TinCan.Tests.Fakes;
@@ -117,6 +118,22 @@ namespace TinCan.Core.Gas.Tests
 
             Assert.DoesNotThrow(() => headless.ShowHudText("Part repaired", string.Empty, 1f));
             Assert.DoesNotThrow(headless.Tick);
+        }
+
+        [Test]
+        public void PlaySound_GoesThroughTheAudioPlayer_AndIsSkippedWithoutOne()
+        {
+            var clip = AudioClip.Create("Bang", 10, 1, 44100, false);
+            var audio = new RecordingAudioPlayer();
+            var presenter = new GameplayCuePresenter(_time, _hud, audio);
+            var silent = new GameplayCuePresenter(_time);
+
+            presenter.PlaySound(clip, AudioChannel.World, Vector3.one, 0.5f);
+            presenter.PlaySound(clip, AudioChannel.Ui, null, 1f);
+
+            Assert.That(audio.Played, Is.EqualTo(new[] { "Bang World 3D 0.5", "Bang Ui 2D 1" }));
+            Assert.DoesNotThrow(() => silent.PlaySound(clip, AudioChannel.World, Vector3.zero, 1f));
+            Object.DestroyImmediate(clip);
         }
     }
 }

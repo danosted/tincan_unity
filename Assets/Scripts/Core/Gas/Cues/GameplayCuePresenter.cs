@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Audio;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -26,6 +27,7 @@ namespace TinCan.Core.Gas.Cues
 
         private readonly ITimeService _time;
         private readonly IHudValues? _hud;
+        private readonly IAudioPlayer? _audio;
         private readonly Dictionary<GameObject, Stack<GameObject>> _free = new();
         private readonly Dictionary<GameplayCueInstanceKey, Live> _held = new();
         private readonly List<Live> _timed = new();
@@ -35,12 +37,14 @@ namespace TinCan.Core.Gas.Cues
         private Transform? _poolRoot;
         private float _now;
 
-        // The HUD is a core service (TinCan.UI's installer always loads); tests may pass none.
+        // The HUD and the audio player are core services (TinCan.UI's and TinCan.Audio's installers always load); tests
+        // may pass none, and then sounds and HUD text are skipped.
         [Inject]
-        public GameplayCuePresenter(ITimeService time, IHudValues? hud = null)
+        public GameplayCuePresenter(ITimeService time, IHudValues? hud = null, IAudioPlayer? audio = null)
         {
             _time = time;
             _hud = hud;
+            _audio = audio;
         }
 
         public int HeldCount => _held.Count;
@@ -77,7 +81,8 @@ namespace TinCan.Core.Gas.Cues
             foreach (var key in _releasing) Release(key);
         }
 
-        public void PlaySound(AudioClip clip, Vector3 position, float volume) => AudioSource.PlayClipAtPoint(clip, position, volume);
+        public void PlaySound(AudioClip clip, AudioChannel channel, Vector3? position, float volume) =>
+            _audio?.PlayOneShot(clip, channel, position, volume);
 
         public void ShowHudText(string key, string text, float seconds)
         {

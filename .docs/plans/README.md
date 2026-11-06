@@ -6,7 +6,7 @@ change the plan's status line, then run `.\.tools\plans.ps1`.
 ## Approved (27)
 
 - [Architecture sweep: where TinCan meets its vision, where it doesn't, and what to do](architecture-review.md) — (2026-09-27; roadmap slices are planned and approved one at a time)
-- [Audio: a mixer, channels, a pooled one-shot player and volume settings](audio-mixer.md) — (2026-10-31); third in [core-systems-roadmap.md](core-systems-roadmap.md)
+- [Audio: a mixer, channels, a pooled one-shot player and volume settings](audio-mixer.md) — (2026-10-31); S1 done 2026-11-06, with an audio lab (see Progress); third in [core-systems-roadmap.md](core-systems-roadmap.md)
 - [Cannon + sky hazards](cannon-and-hazards.md)
 - [Core systems roadmap](core-systems-roadmap.md) — (2026-10-31)
 - [Crewmates you can read: a body that moves, holds and works](crew-animation.md) — (2026-10-31: S1 and S2 with a placeholder body; S3 asks again); sixth in [core-systems-roadmap.md](core-systems-roadmap.md)

@@ -13,6 +13,7 @@ TinCan.App                     composition root and overlay views (sees everythi
     TinCan.Input               actions, contexts, reader and router, rebinding (the only Input System user)
     TinCan.Items, TinCan.UI
     TinCan.Settings            player settings (store, values, the core installer)
+    TinCan.Audio               the mixer config, the one-shot pool (IAudioPlayer), the core installer
     TinCan.Ship                the airship itself and Fixtures/
     TinCan.Interaction
     TinCan.Humanoid            movement, input state, look, targeter, attribute set
@@ -67,6 +68,7 @@ Both can be unit-tested directly.
 | `TinCan.Core.Domain` | `Assets/Scripts/Core/Domain/TinCan.Core.Domain.asmdef` | Contracts, registries, `SimulationUseCase`, `ISimulationTickable`, the GAS vocabulary, `FeatureInstaller`. | NGO runtime, VContainer, UniTask |
 | `TinCan.Targeting`, `TinCan.Possession`, `TinCan.Entities` | in `Core/Targeting/`, `Core/Possession/`, `Core/Entities/` | Core systems with no core dependency: the targeting query, possession (authority and camera responders), `EntityNetworkMediator`. | Core.Domain, NGO, VContainer |
 | `TinCan.Settings` | `Core/Settings/` | Player settings: `PlayerSettingsUseCase` (`IPlayerSettings`, contract and `SettingDefinition` in `Core.Domain/Settings/`), `SettingValueProcessor`, `SettingsCatalog`, the PlayerPrefs and defaults-only stores, the core `SettingsFeatureInstaller`. | Core.Domain, VContainer |
+| `TinCan.Audio` | `Core/Audio/` | Sound: `AudioOneShotPool` (`IAudioPlayer` and `AudioChannel` in `Core.Domain/Audio/`; a fixed pool of sources, each routed to its channel's mixer group, the oldest cut off by `AudioVoiceProcessor`), `SilentAudioPlayer` (batch mode), `VolumeToDecibelsProcessor`, `AudioConfig`, the core `AudioFeatureInstaller`. | Core.Domain, VContainer |
 | `TinCan.RandomStreams` | `Core/RandomStreams/` | `RandomSource` behind `Core.Domain`'s `IRandomSource` (one named stream per system; `-seed <n>` makes them repeatable) and its core installer. | Core.Domain, VContainer |
 | `TinCan.Gas` | `Core/Gas/TinCan.Gas.asmdef` | Abilities, effects, attributes, tags, cues (`Cues/`, with `[MovedFrom]` on the cue actions), `ActorAbilityGrantUseCase`, the tag and cue installers. | Core.Domain, Targeting, VContainer |
 | `TinCan.Humanoid` | `Core/Humanoid/TinCan.Humanoid.asmdef` | Humanoid movement and prediction, `HumanoidInputState`, `HumanoidAttributeSet`, `HumanoidTargeter`, `LookView` (the player's look; a camera rig places its camera), `ParentLocalSpaceVolume`. | Core.Domain, Gas, NGO, VContainer |
@@ -112,6 +114,7 @@ Both can be unit-tested directly.
 |---|---|---|
 | `Assets/Resources/Installers/` | TinCan > Features > *X* Feature Installer | One `FeatureInstaller` asset per feature. This is what turns a feature on. |
 | `Assets/Settings/` | TinCan > Airship / Environment > *X* Config | `*Config` tunables (`FuelConfig`, `FlyingCanConfig`, `CloudBoundaryConfig`, `CloudVisualProfile`), URP assets, `UI/DefaultPanelSettings`. |
+| `Assets/Audio/` | TinCan > Audio > Audio Config | `TinCanMixer.mixer` (Master > World, Ui, Ambience, Music, Voice; each volume exposed as `Vol_<Group>`), `AudioConfig` (the group for each channel, pool size, 3D rolloff), clips (`Cues/`). |
 | `Assets/Settings/Fixtures/` | TinCan > Features > Ship Fixture | `ShipFixtureDefinition` assets (prefab + ship-local pose). |
 | `Assets/Interactions/` | TinCan > Interactions > Interaction Definition | `IA_*` assets: which handler runs when you press E on a target. |
 | `Assets/Abilities/AbilityDefinitions/` | TinCan > Abilities > Ability Definition | `GA_*` abilities. |
@@ -171,6 +174,7 @@ Both can be unit-tested directly.
 | An item (id, held visual, granted abilities) | `Core/Items/ItemDefinition.cs` (`ITEM_*` assets, positive unique `Id`), looked up through `ItemCatalog`. |
 | A key, and who hears it | [`INPUT.md`](INPUT.md) and the generated [`INPUT_MAP.md`](INPUT_MAP.md): keys in `Assets/Input/TinCanControls.inputactions`, contexts in `Assets/Input/Contexts/`, the runtime in `Core/Input/`. |
 | Starting abilities | A feature's: its installer, as `ActorAbilityGrant`s (`Core/Gas/ActorAbilityGrant.cs`), granted by `ActorAbilityGrantUseCase`. Core only (sprint): `_startingAbilities` on `NetworkPlayer.prefab` (`HumanoidPlayer`) and `Airship_Prefab.prefab` (`AirshipNetworkMediator`). Abilities that come from a held item (for example `GA_SwingNet` from the net) belong on the `ITEM_*` asset. |
+| A sound (one-shot, loop, which mixer group) | One-shots: `IAudioPlayer.PlayOneShot` (`Core/Domain/Audio/`) or a cue's `PlaySoundCueAction` (its `Channel`). Loops: an `AudioSource` in the feature's prefab, its Output set to a group of `Assets/Audio/TinCanMixer.mixer` (checked by `PrefabAudioSources_HaveAnOutputGroup`). The group for each channel: `Assets/Audio/AudioConfig`. To hear every channel and move its volume: **TinCan > Dev > Audio > Build Audio Lab**, then Play `Scenes/Lab/Lab_Audio` (`DevTools/AudioLab/AudioLabView.cs`). Plan: [`plans/audio-mixer.md`](plans/audio-mixer.md). |
 | A HUD number | `IHudValues` (`Core/Domain/Hud/IHudValues.cs`) written by a `*Presenter`; rendered by `App/Views/HudOverlayView.cs`. |
 | A bar over something showing a GAS attribute (health while repairing, later stamina, shields, reload) | `Core/Gas/Views/AttributeBarView.cs` on `Assets/Prefabs/UI/AttributeBar.prefab`: drop the prefab under the actor and pick the attribute and its max attribute (or a fixed max). Hidden while full unless told otherwise; faces the local view camera. First use: one bar per damage point in `ShipDamageSockets.prefab`. |
 | A menu or menu row | `Assets/UI/Menus/*.asset`; commands in `Core/UI/Commands/`; see `UI_FRAMEWORK.md`. |

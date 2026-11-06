@@ -183,5 +183,9 @@ Packages/Library/
 /Assets/Art/Clouds/
 /Assets/Art/Clouds.meta
 
+# The audio lab's sound bites: written by TinCan > Dev > Audio > Build Audio Lab (its scene is under Scenes/Lab above).
+/Assets/Audio/Lab/
+/Assets/Audio/Lab.meta
+
 # Reference images from other works stay local (ART_DIRECTION, "References": links and our own paintovers only).
 /.docs/art/samples/

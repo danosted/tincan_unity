@@ -1,4 +1,4 @@
-Status: Approved (2026-10-31); third in [core-systems-roadmap.md](core-systems-roadmap.md)
+Status: Approved (2026-10-31); S1 done 2026-11-06, with an audio lab (see Progress); third in [core-systems-roadmap.md](core-systems-roadmap.md)
 
 # Audio: a mixer, channels, a pooled one-shot player and volume settings
 
@@ -60,6 +60,47 @@ A dedicated server and batch-mode bots play nothing: the installer registers a s
 ## Decisions (developer, 2026-10-31: the recommended options)
 1. **The group list as above.** A machinery group under `World` waits until there are machinery sounds to duck.
 2. **One rolloff curve for every `World` sound**, set in `AudioConfig`. A cue can get its own curve when one needs it.
+
+## Progress
+**S1 (done 2026-11-06; EditMode suite green; `RepairLoop` passes solo and host + client):**
+- `TinCan.Audio` (`Core/Audio/`) is a core system: its installer loads in every scene, no profile lists it.
+  `AudioOneShotPool` builds its sources on the first sound, under one `AudioOneShotPool` root (kept across scenes).
+  The voice choice is a pure `AudioVoiceProcessor` (a finished voice first, else the oldest), so it is tested without
+  audio. Doppler is off on the pool's sources: the ship moves under every sound.
+- 3D or 2D is the caller's choice: a position means 3D. `PlaySoundCueAction` gets a `Channel` (default `World`), and
+  World and Ambience play at the target, the others in 2D. Its pitch jitter is in `IAudioPlayer` but not on the cue action yet.
+- `GameplayCuePresenter` takes `IAudioPlayer` (optional, like the HUD); without one, sounds are skipped.
+  `AudioSource.PlayClipAtPoint` is gone.
+- Unity has no public API for creating a mixer, so `TinCanMixer.mixer` was made once through the Editor's internal
+  `AudioMixerController` (groups and exposed `Vol_*` parameters). To change it, open it in the Audio Mixer window.
+- `AudioConfig.asset` and `Resources/Installers/AudioFeatureInstaller.asset` are new. Both loop prefabs (`CueFX_HissLoop`,
+  `CueFX_RepairLoop`) play through `World`. The rule `PrefabAudioSources_HaveAnOutputGroup` (`ArchitectureRulesTests`)
+  keeps it that way.
+- Tests: `TinCan.Audio.Tests` (voice choice, pool reuse, routing and 2D/3D, jitter range, shipped config and mixer,
+  the batch-mode switch), plus the presenter and cue-action cases in `TinCan.Gas.Tests`.
+- `VolumeToDecibelsProcessor` (S2's) was built early, for the lab's sliders. S2 still needs the binder and the
+  Audio settings page.
+
+**The audio lab (2026-11-06, developer's request).** **TinCan > Dev > Audio > Build Audio Lab** writes
+`Assets/Scenes/Lab/Lab_Audio` and its sound bites in `Assets/Audio/Lab/`. Both are generated and gitignored, like the
+cloud lab. Press Play.
+- The bites are made in code (`DevTools/Editor/AudioLabSynth.cs`), so no recorded audio is needed. These are
+  placeholders for testing the mixer, not game sounds:
+  - Ui: a click and a confirm.
+  - World: a thunk, a metal clang, and a two-second engine loop.
+  - Ambience: an eight-second wind loop.
+  - Music: an eight-second arpeggio loop.
+  - Voice: a hummed "hm?".
+  
+  The loops wrap without a click (`AudioLabSynthTests`).
+- The scene is bare: no network, no features. `AudioLabView` (`DevTools/AudioLab/`) builds the real `AudioOneShotPool`
+  from the shipped `AudioConfig` and mixer, and its panel on its own `UiLayers` (the Dev layer). The panel has:
+  - World one-shots at three emitters (near left, mid right, 55 m ahead), one with pitch jitter.
+  - A 40-clang burst, to hear voices being stolen.
+  - The engine loop circling the listener.
+  - The Ui, Ambience, Music and Voice bites.
+  - A slider for each group's `Vol_*` (dB from the processor). On exit the sliders' changes are cleared, back to the
+    authored levels.
 
 ## Verification
 - EditMode suite green, plus the new tests and the prefab output-group check.

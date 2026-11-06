@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using TinCan.Core.Domain.Audio;
 using TinCan.Core.Gas.Cues;
 using UnityEngine;
 
@@ -29,7 +30,8 @@ namespace TinCan.Tests.Fakes
 
         public void ReleaseActor(Guid actorId) => Calls.Add("release actor");
 
-        public void PlaySound(AudioClip clip, Vector3 position, float volume) => Calls.Add($"sound {clip.name} {volume}");
+        public void PlaySound(AudioClip clip, AudioChannel channel, Vector3? position, float volume) =>
+            Calls.Add($"sound {clip.name} {channel} {(position.HasValue ? "3D" : "2D")} {volume}");
 
         public void ShowHudText(string key, string text, float seconds) => Calls.Add($"hud {key} {seconds}");
     }

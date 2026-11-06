@@ -3,6 +3,8 @@
     "rootNamespace": "TinCan.DevTools",
     "references": [
         "TinCan.Core.Domain",
+        "TinCan.Audio",
+        "TinCan.RandomStreams",
         "TinCan.Features.CloudBoundary",
         "TinCan.Features.Atmosphere",
         "TinCan.Gas",

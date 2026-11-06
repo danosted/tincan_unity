@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f4d47ada07e3d848ab3f5e53b170d71, type: 3}
+  m_Name: AudioConfig
+  m_EditorClassIdentifier: TinCan.Audio::TinCan.Core.Audio.AudioConfig
+  Mixer: {fileID: 24100000, guid: c14745ce156266845ace123b2030b89c, type: 2}
+  World: {fileID: -5243926126395811521, guid: c14745ce156266845ace123b2030b89c, type: 2}
+  Ui: {fileID: 589630998006661686, guid: c14745ce156266845ace123b2030b89c, type: 2}
+  Ambience: {fileID: -8096275680961054458, guid: c14745ce156266845ace123b2030b89c, type: 2}
+  Music: {fileID: 1305821720178727721, guid: c14745ce156266845ace123b2030b89c, type: 2}
+  Voice: {fileID: -6649023166808873314, guid: c14745ce156266845ace123b2030b89c, type: 2}
+  PoolSize: 24
+  Rolloff: 0
+  MinDistance: 2
+  MaxDistance: 60

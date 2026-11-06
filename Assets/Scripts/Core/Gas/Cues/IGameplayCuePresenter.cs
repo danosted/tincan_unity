@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using TinCan.Core.Domain.Audio;
 using UnityEngine;
 
 namespace TinCan.Core.Gas.Cues
@@ -21,7 +22,8 @@ namespace TinCan.Core.Gas.Cues
         /// <summary>Returns everything held for an actor to the pool (the actor is despawning).</summary>
         void ReleaseActor(Guid actorId);
 
-        void PlaySound(AudioClip clip, Vector3 position, float volume);
+        /// <summary>A one-shot through <paramref name="channel"/>'s mixer group: 3D at <paramref name="position"/>, or 2D when it is null.</summary>
+        void PlaySound(AudioClip clip, AudioChannel channel, Vector3? position, float volume);
 
         /// <summary>Shows a HUD line under <paramref name="key"/> for <paramref name="seconds"/>; showing it again restarts the time.</summary>
         void ShowHudText(string key, string text, float seconds);

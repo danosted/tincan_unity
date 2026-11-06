@@ -1,6 +1,7 @@
 #nullable enable
 using NUnit.Framework;
 using TinCan.Core.Domain.Abilities.Tags;
+using TinCan.Core.Domain.Audio;
 using TinCan.Core.Domain.Cues;
 using TinCan.Core.Gas.Cues;
 using TinCan.Core.Gas.Cues.Actions;
@@ -73,14 +74,26 @@ namespace TinCan.Core.Gas.Tests
         }
 
         [Test]
-        public void PlaySound_PlaysTheClipAtTheTarget()
+        public void PlaySound_PlaysTheClipAtTheTarget_OnTheWorldChannelByDefault()
         {
             var clip = AudioClip.Create("Bang", 10, 1, 44100, false);
             var action = new PlaySoundCueAction { Clip = clip, Volume = 0.5f };
 
             action.Run(Event(_target.transform), Context(action, GameplayCueEventKind.Execute));
 
-            Assert.That(_presenter.Calls, Is.EqualTo(new[] { "sound Bang 0.5" }));
+            Assert.That(_presenter.Calls, Is.EqualTo(new[] { "sound Bang World 3D 0.5" }));
+            Object.DestroyImmediate(clip);
+        }
+
+        [Test]
+        public void PlaySound_OnTheUiChannel_PlaysIn2D()
+        {
+            var clip = AudioClip.Create("Ding", 10, 1, 44100, false);
+            var action = new PlaySoundCueAction { Clip = clip, Channel = AudioChannel.Ui };
+
+            action.Run(Event(_target.transform), Context(action, GameplayCueEventKind.Execute));
+
+            Assert.That(_presenter.Calls, Is.EqualTo(new[] { "sound Ding Ui 2D 1" }));
             Object.DestroyImmediate(clip);
         }
 

@@ -1,0 +1,17 @@
+{
+    "name": "TinCan.Audio",
+    "rootNamespace": "TinCan.Core.Audio",
+    "references": [
+        "TinCan.Core.Domain",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

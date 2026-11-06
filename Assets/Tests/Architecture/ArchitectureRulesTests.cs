@@ -265,6 +265,28 @@ namespace TinCan.Tests.Architecture
         }
 
         [Test]
+        public void PrefabAudioSources_HaveAnOutputGroup()
+        {
+            var offenders = new List<string>();
+            foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:Prefab", new[] { "Assets" }))
+            {
+                var path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (prefab == null) continue;
+
+                foreach (var source in prefab.GetComponentsInChildren<AudioSource>(true))
+                {
+                    if (source.outputAudioMixerGroup == null) offenders.Add($"{path} ({source.name})");
+                }
+            }
+
+            Assert.That(offenders, Is.Empty,
+                "Every AudioSource in a prefab plays through a mixer group (World, Ui, Ambience, ...), so it can be "
+                + "balanced and turned down; one-shots go through IAudioPlayer instead (.docs/plans/audio-mixer.md). "
+                + "Set its Output:\n  " + string.Join("\n  ", offenders));
+        }
+
+        [Test]
         public void OnlyEntitiesRegister_AndOnlyEntityIdsMakeIds()
         {
             var registering = Sources("Scripts")

@@ -13,7 +13,8 @@ namespace TinCan.Core.UI
     /// values and Back act on it alone, so Back never falls into another feature's menu. Cancel reaches it through the
     /// input contexts (MenuBackInputHandler, OpenMenuInputHandler). A <see cref="MenuItemKind.Bindings"/> row expands into
     /// one row per key the player can change (<see cref="IInputBindings"/>); invoking one waits for the new key. A
-    /// <see cref="MenuItemKind.Settings"/> row expands into the player settings of its group (<see cref="MenuSettingsRows"/>).
+    /// <see cref="MenuItemKind.Settings"/> row expands into the player settings of its group (<see cref="MenuSettingsRows"/>),
+    /// and a <see cref="MenuItemKind.Rows"/> row into the rows of its <see cref="IMenuRowSource"/>, live while shown.
     /// Pure C# apart from the ScriptableObject definitions it is handed.
     /// </summary>
     public class MenuUseCase : IMenuSystem
@@ -27,6 +28,9 @@ namespace TinCan.Core.UI
         private readonly Dictionary<string, string> _values = new();
         private readonly Dictionary<string, InputBindingSlot> _bindingRows = new();
         private readonly MenuSettingsRows? _settingRows;
+        private readonly Dictionary<string, IMenuRowSource> _sources = new();
+        private readonly Dictionary<string, (IMenuRowSource Source, string Key)> _sourceRows = new();
+        private HashSet<IMenuRowSource> _shownSources = new();
         private MenuSnapshot? _current;
         private int _sequence;
         private OpenRequest? _focusedRequest;
@@ -37,12 +41,20 @@ namespace TinCan.Core.UI
 
         public MenuUseCase(IMenuCommandRegistry commands, IInputBindings? bindings) : this(commands, bindings, null) { }
 
+        public MenuUseCase(IMenuCommandRegistry commands, IInputBindings? bindings, IPlayerSettings? settings) : this(commands, bindings, settings, null) { }
+
         [Inject]
-        public MenuUseCase(IMenuCommandRegistry commands, IInputBindings? bindings, IPlayerSettings? settings)
+        public MenuUseCase(IMenuCommandRegistry commands, IInputBindings? bindings, IPlayerSettings? settings, IEnumerable<IMenuRowSource>? sources)
         {
             _commands = commands;
             _bindings = bindings;
             if (_bindings != null) _bindings.Changed += OnBindingsChanged;
+            foreach (var source in sources ?? Array.Empty<IMenuRowSource>())
+            {
+                _sources[source.SourceId] = source;
+                source.Changed += OnBindingsChanged;
+            }
+
             if (settings == null) return;
             _settingRows = new MenuSettingsRows(settings);
             settings.Changed += _ => OnBindingsChanged();
@@ -122,6 +134,12 @@ namespace TinCan.Core.UI
             }
 
             if (IsOpen && _settingRows != null && _settingRows.TryInvoke(itemId)) return;
+            if (IsOpen && _sourceRows.TryGetValue(itemId, out var sourceRow) && Top() is { } shown)
+            {
+                sourceRow.Source.Invoke(sourceRow.Key, new MenuContext(this, shown.Owner, shown.Stack[shown.Stack.Count - 1].MenuId, itemId));
+                return;
+            }
+
             if (!TryGetItem(itemId, out var request, out var menu, out var item)) return;
 
             switch (item.Kind)
@@ -272,9 +290,12 @@ namespace TinCan.Core.UI
             var top = Top();
             _bindingRows.Clear();
             _settingRows?.Clear();
+            _sourceRows.Clear();
+            var shown = new HashSet<IMenuRowSource>();
             if (top == null)
             {
                 _current = null;
+                UpdateShownSources(shown);
                 Changed?.Invoke();
                 return;
             }
@@ -295,6 +316,12 @@ namespace TinCan.Core.UI
                     continue;
                 }
 
+                if (item.Kind == MenuItemKind.Rows)
+                {
+                    AddSourceRows(item, rows, shown);
+                    continue;
+                }
+
                 _values.TryGetValue(ValueKey(menu.MenuId, item.ItemId), out var value);
                 if (item.Kind == MenuItemKind.Note)
                 {
@@ -306,7 +333,52 @@ namespace TinCan.Core.UI
             }
 
             _current = new MenuSnapshot(menu.MenuId, menu.Title, rows, top.Stack.Count > 1, top.Owner, top.Kind, top.Pinned, FocusIn(top, menu, rows));
+            UpdateShownSources(shown);
             Changed?.Invoke();
+        }
+
+        /// <summary>
+        /// A <see cref="MenuItemKind.Rows"/> placeholder: its label as a heading, then one row per source row (a row that
+        /// cannot be picked is a note), or the source's empty label. Row ids are <c>{placeholder}/{key}</c>.
+        /// </summary>
+        private void AddSourceRows(MenuItemDefinition item, List<MenuItemRow> rows, HashSet<IMenuRowSource> shown)
+        {
+            if (string.IsNullOrEmpty(item.RowSource) || !_sources.TryGetValue(item.RowSource, out var source)) return;
+
+            shown.Add(source);
+            if (!string.IsNullOrEmpty(item.Label)) rows.Add(new MenuItemRow(item.ItemId + "/heading", item.Label, MenuItemKind.Note, string.Empty));
+
+            foreach (var row in source.Rows)
+            {
+                string rowId = $"{item.ItemId}/{row.Key}";
+                rows.Add(new MenuItemRow(rowId, row.Label, row.Enabled ? MenuItemKind.Command : MenuItemKind.Note, string.Empty));
+                if (row.Enabled) _sourceRows[rowId] = (source, row.Key);
+            }
+
+            if (source.Rows.Count == 0 && !string.IsNullOrEmpty(source.EmptyLabel))
+            {
+                rows.Add(new MenuItemRow(item.ItemId + "/empty", source.EmptyLabel, MenuItemKind.Note, string.Empty));
+            }
+        }
+
+        /// <summary>
+        /// Tells each source whether a menu on screen shows it. The set is swapped before any source hears, so a source
+        /// that raises Changed from SetShown rebuilds into the same set and changes nothing more.
+        /// </summary>
+        private void UpdateShownSources(HashSet<IMenuRowSource> shown)
+        {
+            if (shown.SetEquals(_shownSources)) return;
+
+            var before = _shownSources;
+            _shownSources = shown;
+            foreach (var source in before)
+            {
+                if (!shown.Contains(source)) source.SetShown(false);
+            }
+            foreach (var source in shown)
+            {
+                if (!before.Contains(source)) source.SetShown(true);
+            }
         }
 
         /// <summary>

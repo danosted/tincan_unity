@@ -27,6 +27,15 @@ namespace TinCan.Network.Infrastructure
         public event Action<ulong> ClientConnected;
         public event Action<ulong, string> ClientDisconnected;
 
+        public ushort ListenPort
+        {
+            get
+            {
+                var transport = _manager != null ? _manager.GetComponent<UnityTransport>() : null;
+                return transport != null ? transport.ConnectionData.Port : (ushort)0;
+            }
+        }
+
         public void SetConnectionPayload(byte[] payload)
         {
             if (_manager != null) _manager.NetworkConfig.ConnectionData = payload ?? Array.Empty<byte>();

@@ -30,8 +30,9 @@ Create via **Assets > Create > TinCan > UI > Menu Definition**. Fields:
 |---|---|
 | `ItemId` | Unique within the menu. Used by `Invoke`, `SetValue`, `GetValue` and by commands to read sibling values. |
 | `Label` | Display text. |
-| `Kind` | `Command`, `TextField`, `Toggle`, `Submenu`, `Back`; placeholders `Bindings` (the key rows) and `Settings` (a settings page). `Binding`, `Note`, `Slider` and `Choice` rows are generated, never authored. |
+| `Kind` | `Command`, `TextField`, `Toggle`, `Submenu`, `Back`, `Note` (a line of text, or a hidden status line); placeholders `Bindings` (the key rows), `Settings` (a settings page) and `Rows` (rows from an `IMenuRowSource`). `Binding`, `Slider` and `Choice` rows are generated, never authored. |
 | `SettingsGroup` | For `Settings` rows: which group's settings the row expands to. |
+| `RowSource` | For `Rows` rows: the `SourceId` of the `IMenuRowSource` whose rows it shows. |
 | `CommandId` | For `Command` rows: the id an `IMenuCommand` declares. |
 | `Submenu` | For `Submenu` rows: another `MenuDefinition` to push. |
 | `DefaultValue` | Initial value of `TextField` / `Toggle` rows (toggles use `"True"` / `"False"`). |
@@ -154,6 +155,13 @@ Back. A `Note` row in the definition shows a line of text (a refusal's reason). 
 **A status line in an authored menu** is a `Note` row with an empty label: hidden until a command sets its value with
 `IMenuSystem.SetValue`, then the value is its text (`MenuUseCase.AddNoteRow`). Example: `Menu_Join`'s `status` row,
 written by `JoinGameMenuCommand` ("Connecting to ...", then the host's refusal).
+
+**Rows that change while the menu is open** come from an `IMenuRowSource` (`Core/UI/IMenuRowSource.cs`), registered
+with `.As<IMenuRowSource>()`. An authored `Rows` row names it by `RowSource` and expands to its label as a heading, one
+row per `MenuSourceRow` (a row that cannot be picked is a note), or the source's `EmptyLabel`. Row ids are
+`{placeholder}/{key}`, so focus stays on a row as the list changes. `MenuUseCase` rebuilds on the source's `Changed`,
+passes a picked row to `Invoke`, and calls `SetShown` as the row comes on and off screen, so a source works only while
+seen. Example: `Menu_Join`'s `games` row and `LanGamesRowSource` (LAN discovery browses only while the list shows).
 
 ## Showing a HUD value
 

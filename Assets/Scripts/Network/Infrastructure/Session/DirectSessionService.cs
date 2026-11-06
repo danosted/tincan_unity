@@ -21,6 +21,7 @@ namespace TinCan.Network.Infrastructure.Session
         public const string PlayerNameSettingKey = "player.name";
         public const string DefaultListenAddress = "0.0.0.0";
         public const string HostFailedMessage = "Could not start the game. Is another game using the port?";
+        public const string DefaultServerName = "TinCan server";
 
         public static string UnreachableMessage(JoinTarget target) => $"Could not reach {target}.";
 
@@ -35,6 +36,7 @@ namespace TinCan.Network.Infrastructure.Session
         private readonly Dictionary<ulong, string> _approved = new();
         private readonly List<SessionPlayer> _players = new();
         private int _maxPlayers = HostOptions.DefaultMaxPlayers;
+        private string _gameName = string.Empty;
         private bool _running;
 
         // A join waiting for the host's answer.
@@ -54,6 +56,7 @@ namespace TinCan.Network.Infrastructure.Session
         public bool IsActive => _network.IsActive;
         public IReadOnlyList<SessionPlayer> Players => _players;
         public SessionEnd? LastEnd { get; private set; }
+        public HostedGame? Hosted => _network.IsServer && _network.IsActive ? new HostedGame(_gameName, _maxPlayers) : null;
 
         public event Action<SessionPlayer>? PlayerJoined;
         public event Action<SessionPlayer>? PlayerLeft;
@@ -81,6 +84,7 @@ namespace TinCan.Network.Infrastructure.Session
 
             Begin();
             _maxPlayers = options.MaxPlayers;
+            _gameName = GameName(options);
             if (options.Dedicated)
             {
                 if (options.Port != 0)
@@ -162,6 +166,12 @@ namespace TinCan.Network.Infrastructure.Session
             _running = true;
             _connections.SetConnectionPayload(new ConnectionPayload(_protocolVersion, LocalName()).Encode());
         }
+
+        /// <summary>The name others see in their game list: the one asked for, a server's default, or "Ada's game".</summary>
+        public string GameName(HostOptions options) =>
+            !string.IsNullOrWhiteSpace(options.Name) ? options.Name.Trim()
+            : options.Dedicated ? DefaultServerName
+            : $"{ConnectionPayload.CleanName(LocalName())}'s game";
 
         private string LocalName() =>
             _settings.Has(PlayerNameSettingKey) ? _settings.GetString(PlayerNameSettingKey) : ConnectionPayload.DefaultName;

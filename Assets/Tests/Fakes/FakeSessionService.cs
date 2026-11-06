@@ -19,6 +19,7 @@ namespace TinCan.Tests.Fakes
         public bool IsActive { get; set; }
         public IReadOnlyList<SessionPlayer> Players => _players;
         public SessionEnd? LastEnd { get; set; }
+        public HostedGame? Hosted { get; set; }
         public int HostCalls { get; private set; }
         public int JoinCalls { get; private set; }
         public JoinTarget? LastJoin { get; private set; }

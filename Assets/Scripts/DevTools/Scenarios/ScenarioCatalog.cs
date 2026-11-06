@@ -115,6 +115,29 @@ namespace TinCan.DevTools.Scenarios
             builder => builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
         /// <summary>
+        /// LAN discovery: the host answers discovery while it serves the game, and the subject's peer (the client in host
+        /// + client, the host itself solo) browses and finds a game of its own version on the game port, by broadcast or
+        /// loopback. Plan: hosting-and-joining.md (S2).
+        /// </summary>
+        public static readonly ScenarioEntry LanDiscovery = new(
+            new Scenario.Builder("LanDiscovery")
+                .InScene(TestScenes.Core)
+                .Describe("Host serves -> the subject's peer browses the LAN -> finds a game of its version on port 7777.")
+                .Timeout(60f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("LanServing", 5f))
+                .Act(s => s
+                    .Do("BrowseLan")
+                    .WaitUntil("LanGameFound", 10f, "7777")
+                    .Do("StopBrowsingLan")
+                    .Checkpoint("found"))
+                .Assert(s => s
+                    .Expect("LanServing"))
+                .Build(),
+            builder => builder.Register<SessionScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        /// <summary>
         /// Ship damage end to end, without the repair tool: the server breaks part 0 near the spawn. The subject sees the
         /// marker, the ship's damaged tag and the HUD line. The server sees the fuel leak (even though nobody drives),
         /// then restores the part, and both sides see the leak, tag, marker and HUD line go away.
@@ -1638,7 +1661,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

@@ -15,7 +15,7 @@ change the plan's status line, then run `.\.tools\plans.ps1`.
 - [Gameplay cues: composable, tag-identified, contributed by features](gameplay-cues.md)
 - [Grappling hook](grapple-hook.md)
 - [Immersive piloting: swappable camera rigs and the helm as a station](helm-station.md) — (2026-10-03; replaces the parked 2026-09-29 "possession stays" plan)
-- [Hosting and joining without a vendor's servers](hosting-and-joining.md) — (2026-10-31); S1 done 2026-11-03 (see Progress); last in [core-systems-roadmap.md](core-systems-roadmap.md)
+- [Hosting and joining without a vendor's servers](hosting-and-joining.md) — (2026-10-31); S1 done 2026-11-03, S2 done 2026-11-06 (see Progress); paused after S2 (developer, 2026-11-06): S3 and S4 wait until internet play is needed; last in [core-systems-roadmap.md](core-systems-roadmap.md)
 - [Responsive humanoid movement: client prediction + server reconciliation](humanoid-prediction-reconciliation.md)
 - [Input latency: client time lead and the server input queue](input-queue-lead.md)
 - [Interaction targeting that follows your look, and an outline on the target](interaction-targeting.md) — (2026-10-03)

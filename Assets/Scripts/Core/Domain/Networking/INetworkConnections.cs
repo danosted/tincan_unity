@@ -13,6 +13,9 @@ namespace TinCan.Core.Domain.Networking
         /// <summary>Bytes the next StartClient (or StartHost, for the host's own client) sends with its connection request.</summary>
         void SetConnectionPayload(byte[] payload);
 
+        /// <summary>The game port this peer listens on (or the next host will), for discovery to hand out.</summary>
+        ushort ListenPort { get; }
+
         /// <summary>
         /// Asked on the server about every connecting client, the host's own client included. Null approves everyone.
         /// </summary>

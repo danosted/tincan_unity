@@ -1,4 +1,4 @@
-Status: Approved (2026-10-31); S1 done 2026-11-03 (see Progress); last in [core-systems-roadmap.md](core-systems-roadmap.md)
+Status: Approved (2026-10-31); S1 done 2026-11-03, S2 done 2026-11-06 (see Progress); paused after S2 (developer, 2026-11-06): S3 and S4 wait until internet play is needed; last in [core-systems-roadmap.md](core-systems-roadmap.md)
 
 # Hosting and joining without a vendor's servers
 
@@ -131,6 +131,28 @@ rejoins as a new client and boards like any late joiner.
   [crew-pings-and-markers.md](crew-pings-and-markers.md), which reads `ISessionService.Players` on the server.
 - A running session that drops (removed with a reason, or the connection lost) opens the main menu with the reason on
   top. "Host left" still reads "Connection lost." (S4, Drops).
+
+**Paused after S2 (developer, 2026-11-06).** For the MVP, joining by address and LAN discovery are enough. S3
+(port mapping, address codes), S4 (our server) and a central game registry (an HTTP API on a VPS that hosts register
+with and the Join menu lists from; raised 2026-11-06) wait until internet play is needed. The registry would replace
+address codes, not port mapping.
+
+**S2 (done 2026-11-06; EditMode suite green, 1404/1404; `LanDiscovery` passes solo and host + client):**
+- `ILanDiscovery` (Core.Domain) is its own seam beside `ISessionService`: `LanDiscoveryService` answers queries while
+  `ISessionService.Hosted` is set (host or dedicated server), and browses while asked. UDP 47777, polled each frame
+  through `IDatagramSockets` (no threads); a query goes to the broadcast address and to loopback, and a random host id
+  per session keeps a host heard both ways as one game. A game not heard from for 3.5 s is dropped.
+- The reply carries name, version, game port, players, player cap and a password flag (always false until a password
+  exists). The game name is `HostOptions.Name`, else "Ada's game" from the player name, or "TinCan server" for a
+  dedicated server (its `-servername` flag is S4).
+- The Join menu lists the games live through a new menu placeholder, `MenuItemKind.Rows`, filled by an
+  `IMenuRowSource` (developer's choice, 2026-11-04, over a submenu built in code). `LanGamesRowSource` browses only
+  while the list is on screen; picking a game joins it like Connect (status line and all). A game of another version
+  or a full one is listed but cannot be picked.
+- Scenario `LanDiscovery` (Test_Core): the host serves, the subject's peer browses and finds a game of its version on
+  7777.
+- A dedicated server in the Podman container is not found by broadcast on the default network (needs host
+  networking); noted in `Network_Initialization_Flow.md`.
 
 ## Verification
 - EditMode suite green, plus the new tests. `verify.ps1 -All` after S1 (asked for first): joining by address unchanged

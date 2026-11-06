@@ -34,6 +34,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "CoreBoot (Host + Client, Lag100)")]
         public static void CoreBootDuo() => RunDuo("CoreBoot", "Lag100");
 
+        [MenuItem(Root + "LanDiscovery (Host)")]
+        public static void LanDiscoverySolo() => RunSolo("LanDiscovery");
+
+        [MenuItem(Root + "LanDiscovery (Host + Client, Lag100)")]
+        public static void LanDiscoveryDuo() => RunDuo("LanDiscovery", "Lag100");
+
         [MenuItem(Root + "ShipDamage (Host)")]
         public static void ShipDamageSolo() => RunSolo("ShipDamage");
 

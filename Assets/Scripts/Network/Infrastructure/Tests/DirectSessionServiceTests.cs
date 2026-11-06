@@ -64,6 +64,34 @@ namespace TinCan.Network.Infrastructure.Tests
             Assert.That(start.Kind, Is.EqualTo(SessionStartKind.AlreadyActive));
         }
 
+        [TestCase("", false, "Ada's game")]
+        [TestCase("  Deck crew  ", false, "Deck crew")]
+        [TestCase("", true, DirectSessionService.DefaultServerName)]
+        public async Task Hosting_NamesTheGame_ForOtherPlayersLists(string name, bool dedicated, string expected)
+        {
+            var settings = new FakePlayerSettings();
+            settings.Set(DirectSessionService.PlayerNameSettingKey, "Ada");
+            var network = new FakeSessionNetworkService { IsActive = false, IsServer = true, IsClient = !dedicated };
+            var session = FakeSessions.Direct(network, settings: settings);
+
+            await session.HostAsync(new HostOptions(maxPlayers: 4, dedicated: dedicated, name: name), default);
+
+            Assert.That(session.Hosted!.Value.Name, Is.EqualTo(expected));
+            Assert.That(session.Hosted.Value.MaxPlayers, Is.EqualTo(4));
+        }
+
+        [Test]
+        public void Hosted_IsNull_OnAClientAndOffline()
+        {
+            var network = new FakeSessionNetworkService { IsActive = false, IsClient = true };
+            var session = FakeSessions.Direct(network);
+            Assert.That(session.Hosted, Is.Null);
+
+            _ = session.JoinAsync(new JoinTarget("10.0.0.5", 7777), default);
+
+            Assert.That(session.Hosted, Is.Null);
+        }
+
         [Test]
         public void WithoutANameSetting_SendsTheDefaultName()
         {

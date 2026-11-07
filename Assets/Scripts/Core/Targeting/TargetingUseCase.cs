@@ -30,11 +30,15 @@ namespace TinCan.Core.Targeting
         public readonly Vector3 Point;
         public readonly float Distance;
 
-        public SegmentHit(ITargetable? target, Vector3 point, float distance)
+        /// <summary>The collider the segment hit (null only from a fake), so a caller can tell whose it is.</summary>
+        public readonly Collider? Collider;
+
+        public SegmentHit(ITargetable? target, Vector3 point, float distance, Collider? collider = null)
         {
             Target = target;
             Point = point;
             Distance = distance;
+            Collider = collider;
         }
     }
 
@@ -144,12 +148,12 @@ namespace TinCan.Core.Targeting
                 if (targetable == null)
                 {
                     if (collider.isTrigger) continue;
-                    hit = new SegmentHit(null, point, _hits[i].distance);
+                    hit = new SegmentHit(null, point, _hits[i].distance, collider);
                     ended = true;
                 }
                 else if (Accepts(targetable, definition))
                 {
-                    hit = new SegmentHit(targetable, point, _hits[i].distance);
+                    hit = new SegmentHit(targetable, point, _hits[i].distance, collider);
                     ended = true;
                 }
             }

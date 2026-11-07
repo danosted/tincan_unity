@@ -1,5 +1,6 @@
 #nullable enable
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Abilities;
 using UnityEngine;
 
 namespace TinCan.Features.Weapons.Cannon
@@ -37,8 +38,11 @@ namespace TinCan.Features.Weapons.Cannon
         Transform? PitchPivot { get; }
         Transform? Muzzle { get; }
 
-        /// <summary>The ship this cannon is mounted on, whose colliders its shots pass through.</summary>
+        /// <summary>The ship this cannon is mounted on. A shot that hits its colliders is a misfire and damages it.</summary>
         Transform? ShipRoot { get; }
+
+        /// <summary>The ability controller of the ship this cannon is mounted on (its health), or null when unmounted.</summary>
+        IAbilityControllerBase? ShipController { get; }
 
         /// <summary>Barrel angles in degrees, base frame (elevation positive up); written by the server.</summary>
         float Yaw { get; }

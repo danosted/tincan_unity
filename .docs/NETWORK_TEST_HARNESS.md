@@ -258,7 +258,7 @@ move the subject.
 | `Test_Core` | nothing (core and the base features only) | CoreBoot, LanDiscovery |
 | `Test_ShipDamage` | Fuel, ShipDamage | ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack |
 | `Test_NetCatch` | Fuel, FlyingCan | NetCatch, EquipCycle (its items belong to those features) |
-| `Test_Cannon` | Stations, Cannon, SkyHazards | CannonShot, HazardStrike |
+| `Test_Cannon` | Stations, Cannon, SkyHazards | CannonShot, HazardStrike, CannonMisfire |
 | `Test_Voyage` | Fuel, ShipDamage, Stations, Cannon, SkyHazards, Voyage, SkyIslands | VoyageLoop, LateJoinBoarding, IslandsPerVoyage, IslandRam |
 | `Test_Helm` | Stations, Helm (the test ship has a quarterdeck at the airship's height for the helm) | HelmSteer |
 | `Test_Shipyard` | Stations, Helm, ShipDesigns, Shipyard, ShipSockets, Cannon (its stations only as fittings); the ship is `ModularShip_Prefab` (no geometry), built from the starter design (ShipStairs, GalleonLoadout and FrameStories switch it to the galleon, which brings its loadout; FrameDeck to the raft). Offline, the main menu has a Shipyard row | DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, MountFitting, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace |

@@ -397,13 +397,13 @@ namespace TinCan.DevTools.Scenarios
         /// body: State.Occupying.Cannon, which turns the Gunner input context on), aims the barrel along its rest
         /// direction, and the server puts a target on the arc the barrel now points along. One Fire press shoots; the
         /// server's per-tick sweep hits the target and shoots it down, and the subject's peer drew the ball. Then the mouse
-        /// swings the barrel to its yaw limit (held there, not wrapped) while the body keeps facing where it was, and Leave
-        /// steps away. Plans: cannon-and-hazards.md, input-contexts.md.
+        /// swings the turret past its back (the yaw wraps) while the body keeps facing where it was, and Leave steps away.
+        /// Plans: cannon-and-hazards.md, input-contexts.md, hazards-and-boons.md (C1).
         /// </summary>
         public static readonly ScenarioEntry CannonShot = new(
             new Scenario.Builder("CannonShot")
                 .InScene(TestScenes.Cannon)
-                .Describe("Man the cannon -> target on the barrel's arc -> Fire -> target shot down, ball drawn -> aim to the limit, body still -> Leave.")
+                .Describe("Man the cannon -> target on the barrel's arc -> Fire -> target shot down, ball drawn -> turn past the back, body still -> Leave.")
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
@@ -427,12 +427,17 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("BallsShown", 5f, "1")
                     .WaitUntil("HazardsVisible", 10f, "0")
                     .Checkpoint("shot-down")
-                    // The Gunner context: the mouse swings the barrel to its limit (never wrapping) and the body holds still.
+                    // A turret: an aim past the back wraps (190 is -170), and the server's barrel follows it there. The
+                    // mouse sweep per frame depends on frame rate, so the mouse wrap itself is an EditMode test
+                    // (GunnerAimUseCaseTests); here the mouse swings the barrel and the body holds still.
                     .Do("RecordSubjectFacing")
+                    .Do("AimCannonAt", "190 0")
+                    .Expect("GunnerAimYaw", "-170")
+                    .WaitUntil("CannonYaw", 5f, "-170")
+                    .Checkpoint("aimed-past-the-back")
                     .Hold(1f, ScriptedAction.GunnerAimRight)
-                    .Expect("GunnerAimYaw", "105")
                     .Expect("SubjectFacingHeld")
-                    .Checkpoint("aimed-to-limit")
+                    .Do("AimCannon", "0")
                     .Hold(0.3f, ScriptedAction.GunnerLeave)
                     .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Cannon"))
                 .Assert(s => s
@@ -466,6 +471,48 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("HazardHits", 30f, "1")
                     .WaitUntil("ShipHealthBelow", 5f, "1000")
                     .WaitUntil("HazardsVisible", 5f, "0"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<CannonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>
+        /// A misfire: the subject mans the starboard cannon, turns the turret inboard and down at its own deck (yaw 180,
+        /// the lowest elevation), and fires. The ball hits our own ship (the deck or the port cannon) and the ship loses
+        /// health on every peer (GE_CannonballHit, applied to the ship). Plan: hazards-and-boons.md (C1).
+        /// </summary>
+        public static readonly ScenarioEntry CannonMisfire = new(
+            new Scenario.Builder("CannonMisfire")
+                .InScene(TestScenes.Cannon)
+                .Describe("Man the cannon -> turn it inboard at our own deck -> Fire -> the ball hits our ship -> ship health drops on every peer.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("HazardField", "off")
+                    .Do("PlaceSubjectAtCannon"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtCannon", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceCannon")
+                    .WaitUntil("InteractTargetIs", 5f, "CannonStation")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Cannon")
+                    .WaitUntil("CannonManned", 5f)
+                    .Do("AimCannonAt", "180 -15")
+                    .Wait(0.5f, "the barrel turns inboard")
+                    .Checkpoint("aimed-at-own-deck")
+                    .Hold(0.3f, ScriptedAction.GunnerFire)
+                    .WaitUntil("BallsShown", 5f, "1")
+                    .WaitUntil("ShipHealthBelow", 10f, "1000")
+                    .Checkpoint("misfire-seen")
+                    .Hold(0.3f, ScriptedAction.GunnerLeave)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Cannon"))
+                .Assert(s => s
+                    .WaitUntil("ShipHealthBelow", 60f, "1000")
+                    .WaitUntil("CannonFree", 30f))
                 .Build(),
             builder =>
             {
@@ -1661,7 +1708,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

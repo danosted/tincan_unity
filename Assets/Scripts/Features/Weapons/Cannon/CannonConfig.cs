@@ -15,7 +15,7 @@ namespace TinCan.Features.Weapons.Cannon
         public GameplayInput? FireInput;
         [Tooltip("Granted to the occupant by the station; its cooldown is the reload (GA_FireCannon, EndsImmediately).")]
         public AbilityDefinition? FireAbility;
-        [Tooltip("Applied to what a ball hits (GE_CannonballHit: Instant, Health -damage).")]
+        [Tooltip("Applied to what a ball hits, the cannon's own ship included (a misfire) (GE_CannonballHit: Instant, Health -damage).")]
         public GameplayEffectDefinition? HitEffect;
         [Tooltip("The sweep a ball makes each tick: radius and tag filters (TD_CannonballSweep).")]
         public TargetingDefinition? Sweep;
@@ -27,8 +27,8 @@ namespace TinCan.Features.Weapons.Cannon
         [Min(1f)] public float MaxRange = 400f;
 
         [Header("Aim (degrees, from the cannon's rest direction)")]
-        [Tooltip("Either way from the rest direction. Past 90 a broadside cannon swings across the bow, where hazards come from.")]
-        [Range(0f, 180f)] public float YawLimit = 105f;
+        [Tooltip("Either way from the rest direction. 180: the barrel turns all the way round (a turret), and its yaw wraps.")]
+        [Range(0f, 180f)] public float YawLimit = CannonAimLimits.FullTurn;
         [Range(-90f, 0f)] public float MinElevation = -15f;
         [Range(0f, 90f)] public float MaxElevation = 40f;
         [Tooltip("Degrees the barrel turns per mouse count while manning it (the Gunner context's Aim).")]

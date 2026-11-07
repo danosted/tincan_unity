@@ -21,6 +21,14 @@ MonoBehaviour:
   RemoveDistance: 260
   SpawnInterval: 6
   SpawnIntervalScalePerExtraPlayer: 0.8
+  ZonesEnabled: 1
+  OutsideZoneScale: 0.35
+  ZoneSpacing: 900
+  ZoneRadius: {x: 220, y: 400}
+  ZoneLateralSpread: 250
+  ZoneHalfHeight: {x: 50, y: 110}
+  ZoneAltitudeJitter: 40
+  ZoneKeepClear: 300
   DriftSpeed: 4
   ContactRadius: 1.5
   ImpactEffect: {fileID: 11400000, guid: 1f7cffd1f743b7e47a6ea2f0bbd14577, type: 2}

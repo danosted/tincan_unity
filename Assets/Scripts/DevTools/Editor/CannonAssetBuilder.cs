@@ -43,7 +43,8 @@ namespace TinCan.DevTools.Editor
         // A pair of broadsides on the foredeck (y = -1.815 in ship space on the airship's FloorFront and the test ship's
         // Foredeck), mirrored about the centreline x = 1. At z 17 the deck is clear between the front mast (ends z 16.2)
         // and the bow fencing, for x -2..4 (overlap-checked against the airship, 2026-09-30); the seats face inboard.
-        // Hazards come from ahead, so CannonConfig.YawLimit lets each barrel swing past 90 deg across the bow.
+        // They look like turrets, so they turn all the way round (CannonConfig.YawLimit 180, playtest 2026-11-07); a ball
+        // that hits our own ship is a misfire (plan: hazards-and-boons.md, C1).
         private static readonly Vector3 StarboardCannonLocalPosition = new(3.9f, -1.815f, 17f);
         private static readonly Vector3 StarboardCannonLocalEuler = new(0f, 90f, 0f);
         private static readonly Vector3 PortCannonLocalPosition = new(-1.9f, -1.815f, 17f);
@@ -138,7 +139,7 @@ namespace TinCan.DevTools.Editor
                 config.HitEffect = hit;
                 config.Sweep = sweep;
                 config.BallMaterial = Material("M_CannonIron", new Color(0.18f, 0.18f, 0.2f)); // an asset, so builds include its shader
-                config.YawLimit = 105f;
+                config.YawLimit = CannonAimLimits.FullTurn;
             });
 
             // Prefabs and the fixtures

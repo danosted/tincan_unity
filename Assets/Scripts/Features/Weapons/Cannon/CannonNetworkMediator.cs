@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Entities;
 using TinCan.Core.Gas;
 using TinCan.Core.Humanoid;
@@ -52,6 +53,9 @@ namespace TinCan.Features.Weapons.Cannon
         public Transform? Seat { get; private set; }
         public Camera? ViewCamera { get; private set; }
         public Transform? ShipRoot => this != null ? transform.parent : null; // fixtures are parented to the ship root
+
+        public IAbilityControllerBase? ShipController =>
+            ShipRoot != null && ShipRoot.TryGetComponent(out IShipState ship) ? ship.Controller : null;
 
         public float Yaw => _yaw.Value;
         public float Elevation => _elevation.Value;

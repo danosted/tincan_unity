@@ -117,6 +117,29 @@ namespace TinCan.Features.Weapons.Cannon.Tests
         }
 
         [Test]
+        public void ClampAim_FullTurn_WrapsTheYaw_AndStillLimitsElevation()
+        {
+            var limits = new CannonAimLimits(CannonAimLimits.FullTurn, minElevation: -10f, maxElevation: 45f);
+
+            Assert.That(limits.TurnsFully, Is.True);
+            Assert.That(_aim.ClampAim(new Vector2(170f, 20f), limits).Yaw, Is.EqualTo(170f).Within(Tolerance));
+            Assert.That(_aim.ClampAim(new Vector2(190f, 20f), limits).Yaw, Is.EqualTo(-170f).Within(Tolerance));
+            Assert.That(_aim.ClampAim(new Vector2(-400f, 20f), limits).Yaw, Is.EqualTo(-40f).Within(Tolerance));
+            Assert.That(_aim.ClampAim(new Vector2(0f, 80f), limits).Elevation, Is.EqualTo(45f).Within(Tolerance));
+        }
+
+        [Test]
+        public void Steer_FullTurn_KeepsTurning_PastTheBack()
+        {
+            var limits = new CannonAimLimits(CannonAimLimits.FullTurn, minElevation: -10f, maxElevation: 45f);
+            var aim = new Vector2(170f, 0f);
+
+            aim = _aim.Steer(aim, new Vector2(40f, 0f), 0.5f, limits);
+
+            Assert.That(aim.x, Is.EqualTo(-170f).Within(Tolerance), "190 deg wraps to -170: the barrel keeps turning");
+        }
+
+        [Test]
         public void BaseVelocity_IsTheShipsTravel()
         {
             var rotation = Quaternion.Euler(0f, 40f, 0f);

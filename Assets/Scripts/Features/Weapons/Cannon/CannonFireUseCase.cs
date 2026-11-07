@@ -25,18 +25,23 @@ namespace TinCan.Features.Weapons.Cannon
         }
     }
 
-    /// <summary>Server: a cannonball ended its flight, on a target (<see cref="Target"/> set) or on something solid.</summary>
+    /// <summary>
+    /// Server: a cannonball ended its flight, on a target (<see cref="Target"/> set) or on something solid.
+    /// <see cref="OwnShip"/>: it hit the ship its cannon is mounted on (a misfire).
+    /// </summary>
     public readonly struct CannonballHitEvent
     {
         public readonly int ShotId;
         public readonly string Target;
         public readonly bool Damaged;
+        public readonly bool OwnShip;
 
-        public CannonballHitEvent(int shotId, string target, bool damaged)
+        public CannonballHitEvent(int shotId, string target, bool damaged, bool ownShip = false)
         {
             ShotId = shotId;
             Target = target;
             Damaged = damaged;
+            OwnShip = ownShip;
         }
     }
 
@@ -46,8 +51,9 @@ namespace TinCan.Features.Weapons.Cannon
     /// barrel angles, and on the tick their fire input is first pressed it activates the fire ability; the ability's
     /// cooldown is the reload. A shot is an arc,
     /// not an object: each tick its newest piece is swept through targeting (<see cref="ITargetingService.TryAcquireSegment"/>),
-    /// passing the cannon's own ship and players. A hit applies the hit effect to the target's controller. Every peer
-    /// hears of the shot twice (fired, ended) and draws it itself (<see cref="CannonShotPresenter"/>).
+    /// passing the cannon that fired it and players. A hit applies the hit effect to the target's controller; a hit on
+    /// the cannon's own ship is a misfire and applies it to the ship. Every peer hears of the
+    /// shot twice (fired, ended) and draws it itself (<see cref="CannonShotPresenter"/>).
     /// </summary>
     public class CannonFireUseCase : ISimulationTickable
     {
@@ -78,7 +84,7 @@ namespace TinCan.Features.Weapons.Cannon
         private readonly Dictionary<Guid, bool> _wasPressed = new();
         private readonly Dictionary<Guid, (Vector3 Position, Quaternion Rotation)> _lastBase = new();
         private readonly Func<Collider, bool> _ignore;
-        private Transform? _sweepingShip;
+        private Transform? _sweepingCannon;
         private int _nextShotId;
 
         public CannonFireUseCase(
@@ -184,7 +190,7 @@ namespace TinCan.Features.Weapons.Cannon
                 var shot = _shots[i];
                 var (from, to) = _balls.SegmentAt(shot.Arc, tick, tickRate);
 
-                _sweepingShip = shot.ShipRoot;
+                _sweepingCannon = shot.Cannon.Base;
                 if (_config.Sweep != null && _targeting.TryAcquireSegment(from, to, _config.Sweep, _ignore, out var hit))
                 {
                     Hit(shot, hit);
@@ -196,11 +202,17 @@ namespace TinCan.Features.Weapons.Cannon
                 }
             }
 
-            _sweepingShip = null;
+            _sweepingCannon = null;
         }
 
         private void Hit(Shot shot, SegmentHit hit)
         {
+            if (shot.ShipRoot != null && hit.Collider != null && hit.Collider.transform.IsChildOf(shot.ShipRoot))
+            {
+                Misfire(shot);
+                return;
+            }
+
             var controller = hit.Target?.Controller;
             bool damaged = controller != null && _config.HitEffect != null;
             if (damaged) _abilities.ApplyEffect(controller!, _config.HitEffect!);
@@ -217,9 +229,21 @@ namespace TinCan.Features.Weapons.Cannon
             if (shot.Cannon is not Component component || component != null) shot.Cannon.ServerShotEnded(shot.Id, point);
         }
 
-        // A shot passes its own ship and players (no friendly fire).
+        // The ball hit the ship its cannon stands on. The hull is not a target, so the hit effect goes to the ship's
+        // controller directly.
+        private void Misfire(Shot shot)
+        {
+            var ship = shot.Cannon.ShipController;
+            bool damaged = ship != null && _config.HitEffect != null;
+            if (damaged) _abilities.ApplyEffect(ship!, _config.HitEffect!);
+
+            _events.Publish(new CannonballHitEvent(shot.Id, "own ship", damaged, ownShip: true));
+            _events.LogInfo(LogSource, $"Shot {shot.Id} hit its own ship.");
+        }
+
+        // A shot passes the cannon that fired it (it starts inside it) and players. Its own ship it hits: a misfire.
         private bool Ignores(Collider collider) =>
-            (_sweepingShip != null && collider.transform.IsChildOf(_sweepingShip)) ||
+            (_sweepingCannon != null && collider.transform.IsChildOf(_sweepingCannon)) ||
             collider.GetComponentInParent<IHumanoidCharacterView>() != null;
     }
 }

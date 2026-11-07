@@ -30,6 +30,7 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             public Transform? PitchPivot => null;
             public Transform? Muzzle => null;
             public Transform? ShipRoot => null;
+            public TinCan.Core.Domain.Abilities.IAbilityControllerBase? ShipController => null;
             public float Yaw { get; set; }
             public float Elevation { get; set; }
             public ulong? OccupantClientId { get; set; }
@@ -127,6 +128,18 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             for (int frame = 0; frame < 60; frame++) _useCase.Tick();
 
             Assert.That(_useCase.LocalAim!.Value.Aim.x, Is.EqualTo(60f).Within(1e-4f));
+        }
+
+        [Test]
+        public void FullTurn_LongSweep_WrapsPastTheBack_AndStaysWithinOneTurn()
+        {
+            _config.YawLimit = CannonAimLimits.FullTurn;
+            _contexts.Live.Add(_controls);
+            _input.Vectors[_controls.Aim!] = new Vector2(40f, 0f); // 20 deg a frame at 0.5 deg per count
+
+            for (int frame = 0; frame < 9; frame++) _useCase.Tick(); // from 12, nine frames of 20 deg: 192
+
+            Assert.That(_useCase.LocalAim!.Value.Aim.x, Is.EqualTo(-168f).Within(1e-3f), "192 deg is -168: past the back, wrapped");
         }
 
         [Test]

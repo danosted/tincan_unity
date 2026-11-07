@@ -47,7 +47,7 @@ Feedback from the first voyage playtest, and what changed.
 - Whether the brightened marker reads clearly enough; the repair reach from behind the eye.
 
 ## Playtest (developer, 2026-11-07)
-Everything above works as it was meant to at the time. Two things want a rework (not planned yet):
+Everything above works as it was meant to at the time. Two things want a rework (planned in [hazards-and-boons.md](hazards-and-boons.md)):
 - **Sky hazards feel a bit annoying.** They do what this pass asked for, but the hazard itself needs rethinking, not
   more tuning of pace or field size.
 - **The cannon's swing limit does not match how it looks.** The cannons look like turrets that should turn a full

@@ -20,7 +20,7 @@ MonoBehaviour:
   Gravity: 9.81
   MaxLifetime: 6
   MaxRange: 400
-  YawLimit: 105
+  YawLimit: 180
   MinElevation: -15
   MaxElevation: 40
   AimSensitivity: 0.3

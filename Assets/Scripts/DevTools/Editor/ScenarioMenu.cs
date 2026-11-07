@@ -250,6 +250,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "HazardStrike (Host + Client, Lag100)")]
         public static void HazardStrikeDuo() => RunDuo("HazardStrike", "Lag100");
 
+        [MenuItem(Root + "CannonMisfire (Host)")]
+        public static void CannonMisfireSolo() => RunSolo("CannonMisfire");
+
+        [MenuItem(Root + "CannonMisfire (Host + Client, Lag100)")]
+        public static void CannonMisfireDuo() => RunDuo("CannonMisfire", "Lag100");
+
         [MenuItem(Root + "VoyageLoop (Host)")]
         public static void VoyageLoopSolo() => RunSolo("VoyageLoop");
 

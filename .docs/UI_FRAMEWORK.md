@@ -264,7 +264,7 @@ reached through Settings > Controls > Key bindings.
 ## Settings menu (player settings)
 
 Main menu > **Settings** (`Menu_Settings`) has one page per settings group (`Menu_Settings_Controls`,
-`Menu_Settings_View`). A page's `Settings` row expands at snapshot time (`MenuSettingsRows`) into one row per
+`Menu_Settings_View`, `Menu_Settings_Audio`). A page's `Settings` row expands at snapshot time (`MenuSettingsRows`) into one row per
 `SettingDefinition` of its group loaded in this scene: a slider becomes a `Slider` row (it carries `Min`, `Max`,
 `Step`), a toggle a `Toggle`, a choice a `Choice` row (it carries its `Options`; the view draws `<` and `>`), text a
 `TextField`. Then **Reset to defaults** for that page. The rows read and write `IPlayerSettings` directly (not the

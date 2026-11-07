@@ -13,3 +13,9 @@ MonoBehaviour:
   m_Name: AudioFeatureInstaller
   m_EditorClassIdentifier: TinCan.Audio::TinCan.Core.Audio.AudioFeatureInstaller
   _config: {fileID: 11400000, guid: 0f41deff5b690d0459666fa5253aacc3, type: 2}
+  _volumes:
+  - {fileID: 11400000, guid: 08235f9c370d047429b1c20dea7e4ad2, type: 2}
+  - {fileID: 11400000, guid: 33d34f3922dbf4b4c9a2e1e4c0afb4cf, type: 2}
+  - {fileID: 11400000, guid: 2902fa98b5c56ec43ab18b5f8a4e3a36, type: 2}
+  - {fileID: 11400000, guid: bd9cb0ec7dd85bb44b6fc96a2fb14a64, type: 2}
+  - {fileID: 11400000, guid: e0a91af60774dc04ba4fa72881035fa3, type: 2}

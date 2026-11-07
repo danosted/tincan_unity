@@ -22,6 +22,7 @@ MonoBehaviour:
     Submenu: {fileID: 0}
     DefaultValue: 
     SettingsGroup: 1
+    RowSource: 
   - ItemId: back
     Label: Back
     Kind: 4
@@ -29,3 +30,4 @@ MonoBehaviour:
     Submenu: {fileID: 0}
     DefaultValue: 
     SettingsGroup: 0
+    RowSource: 

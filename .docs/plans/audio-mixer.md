@@ -1,4 +1,4 @@
-Status: Approved (2026-10-31); S1 done 2026-11-06, with an audio lab (see Progress); third in [core-systems-roadmap.md](core-systems-roadmap.md)
+Status: Approved (2026-10-31); S1 done 2026-11-06, with an audio lab; S2 done 2026-11-07 (see Progress); "Later" is open; third in [core-systems-roadmap.md](core-systems-roadmap.md)
 
 # Audio: a mixer, channels, a pooled one-shot player and volume settings
 
@@ -101,6 +101,24 @@ cloud lab. Press Play.
   - The Ui, Ambience, Music and Voice bites.
   - A slider for each group's `Vol_*` (dB from the processor). On exit the sliders' changes are cleared, back to the
     authored levels.
+
+**S2 (done 2026-11-07; EditMode 1447/1447 green):**
+- Settings > **Audio** (`Menu_Settings_Audio`): Master, World, Interface, Ambience and Music volume, sliders 0..1 in
+  steps of 0.05, default 1. Voice has no slider until there is voice. The definitions
+  (`Settings/PlayerSettings/Setting_Volume*`) are contributed by `AudioFeatureInstaller` (`IExtension<SettingDefinition>`),
+  not listed on the settings installer, so a volume exists where audio is. Built by **TinCan > Dev > Settings > Build
+  Assets**.
+- `AudioVolumeBinder` (registered with the pool, so not in batch mode) sets each `Vol_*` on a tick, never at
+  construction: `SetFloat` during `Awake` is ignored. A change applies on the next tick, so a dragged slider sets the
+  mixer once a frame. The mixer sits behind `IAudioMixerLevels` (`AudioMixerLevels` over the real one) for tests.
+- **Where it differs:** 1 is the group's authored level, not 0 dB. The binder reads each level before its first set and
+  puts the slider's curve below it, so a group later authored at -6 dB stays balanced at full volume. 0 is still -80 dB.
+  Every group is authored at 0 dB today, so it is the same for now.
+- When the scope ends the levels are cleared back to the authored ones (in the Editor an override would outlive Play
+  mode and spoil the next read).
+- Tests: `AudioVolumeBinderTests` (nothing before the first tick, every volume on it, below the authored level, 0
+  silent, a change on the next tick, other keys ignored, a key with no definition left alone, no settings service,
+  dispose clears, the installer's contribution, the shipped installer's five volumes).
 
 ## Verification
 - EditMode suite green, plus the new tests and the prefab output-group check.

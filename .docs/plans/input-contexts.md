@@ -1,4 +1,4 @@
-Status: Done (2026-09-30; built unattended in one pass, awaiting the developer's review and playtest)
+Status: Done (2026-09-30; built unattended in one pass; playtested OK by the developer 2026-11-07)
 
 # Input contexts, routed commands and rebinding
 

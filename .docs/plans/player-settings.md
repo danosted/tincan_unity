@@ -87,8 +87,8 @@ A launch argument `-defaultsettings` (read through `LaunchArguments`) makes the 
   without a change) and by `perf.ps1`.
 - The menu: `MenuItemKind.Settings` (placeholder with `SettingsGroup`), generated `Slider` and `Choice` rows
   (`MenuItemRow` carries `Min`, `Max`, `Step`, `Options`), `MenuSettingsRows`, `Menu_Settings` with Controls (look
-  settings, then Key bindings) and View pages; the main menu's Controls row became Settings. Audio, Graphics and
-  Player pages come with S3 and the audio plan.
+  settings, then Key bindings) and View pages; the main menu's Controls row became Settings. Graphics and Player
+  pages come with S3. The Audio page came with audio S2 (2026-11-07, [audio-mixer.md](audio-mixer.md)).
 - View tests use `com.unity.ui.test-framework` (UI plan U3): `MenuOverlayViewClickTests`.
 - Assets: **TinCan > Dev > Settings > Build Assets** (`DevTools/Editor/SettingsAssetBuilder.cs`).
 

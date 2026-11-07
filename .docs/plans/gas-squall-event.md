@@ -1,4 +1,4 @@
-Status: Done (2026-10-31: built; EditMode and scenarios green; human playtest pending)
+Status: Done (2026-10-31: built; EditMode and scenarios green; playtested OK by the developer 2026-11-07)
 
 # Gas squall: gas pockets in the event, on the chart, and breaking what's in the sockets
 
@@ -140,3 +140,6 @@ All six slices are in code, with assets from **TinCan > Dev > Gas Squall > Build
 - **The scenario** `GasSquallEvent` runs in `cheesed_scene` (no `scene_main` yet). It moves one pocket onto the ship
   (the real touch rule sets it off), checks the breaks beside fittings and the chart on the subject, then disperses the
   rest of the field (`DisperseGasField`), restores the breaks and expects success.
+
+## Playtest (developer, 2026-11-07)
+Works as intended; no changes asked for. The burst effect on a pocket is still an open art task.

@@ -22,7 +22,7 @@ plan; this file only fixes the order and the reasons. Each plan's slices are sti
 8. **[hosting-and-joining.md](hosting-and-joining.md), last.** Joining by address works for playtests now. No
    vendor's online infrastructure: connection approval, LAN discovery, router port mapping and address codes, and our
    own dedicated server as the fallback. Built ahead of its turn up to S2 (approval, LAN discovery), then paused
-   (developer, 2026-11-06): S3 and S4 wait until internet play is needed. Next is audio (step 3).
+   (developer, 2026-11-06): S3 and S4 wait until internet play is needed. Audio S1 (2026-11-06) and S2 (2026-11-07) are done; next is pings (step 4).
 
 ## Dependencies between the plans
 - Settings S2, pings and hosting build their screens on UI U1 and U2.

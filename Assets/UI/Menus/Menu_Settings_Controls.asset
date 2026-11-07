@@ -22,6 +22,7 @@ MonoBehaviour:
     Submenu: {fileID: 0}
     DefaultValue: 
     SettingsGroup: 0
+    RowSource: 
   - ItemId: keys
     Label: Key bindings
     Kind: 3
@@ -29,6 +30,7 @@ MonoBehaviour:
     Submenu: {fileID: 11400000, guid: 3fa08c49629d3664987fef0e1a2d740f, type: 2}
     DefaultValue: 
     SettingsGroup: 0
+    RowSource: 
   - ItemId: back
     Label: Back
     Kind: 4
@@ -36,3 +38,4 @@ MonoBehaviour:
     Submenu: {fileID: 0}
     DefaultValue: 
     SettingsGroup: 0
+    RowSource: 

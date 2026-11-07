@@ -29,6 +29,9 @@ MonoBehaviour:
   ImpactCooldown: 1.5
   StreamRadius: 1000
   MaxBuildsPerFrame: 2
+  LandmarkMinRadius: 70
+  LandmarkDiscoverRadius: 450
+  LandmarkCorridor: 1500
   MainVisual:
     Segments: 48
     TopRings: 6

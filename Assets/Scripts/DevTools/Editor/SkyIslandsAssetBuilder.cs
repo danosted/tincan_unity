@@ -35,6 +35,7 @@ namespace TinCan.DevTools.Editor
             var material = Material();
             var health = Load<GameplayAttribute>(Attributes + "Attr_Health.asset");
             var maxHealth = Load<GameplayAttribute>(Attributes + "Attr_MaxHealth.asset");
+            var hitCue = Asset<GameplayTag>("Assets/Abilities/Tags/Cue.Hit.asset", _ => { }); // GCN_Hit (CannonAssetBuilder) blinks whatever was hit
             var impact = Asset<GameplayEffectDefinition>(ImpactPath, effect =>
             {
                 effect.DurationType = DurationType.Instant;
@@ -43,6 +44,7 @@ namespace TinCan.DevTools.Editor
                 {
                     new() { Attribute = health, Operation = ModifierOp.Add, Value = -80f, ClampMaxAttribute = maxHealth }
                 };
+                effect.Cues = new List<GameplayTag> { hitCue };
             });
 
             var config = Asset<SkyIslandConfig>(ConfigPath, islands =>

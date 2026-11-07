@@ -109,6 +109,17 @@ namespace TinCan.Core.Gas.Tests
             Assert.That(_presenter.Calls, Is.EqualTo(new[] { "hud Part repaired 2" }));
         }
 
+        [Test]
+        public void FlashTarget_FlashesTheTarget_AndSkipsAMissingOne()
+        {
+            var action = new FlashTargetCueAction { Seconds = 0.3f };
+
+            action.Run(Event(_target.transform), Context(action, GameplayCueEventKind.Execute));
+            action.Run(Event(null), Context(action, GameplayCueEventKind.Execute));
+
+            Assert.That(_presenter.Calls, Is.EqualTo(new[] { "flash Target 0.3" }));
+        }
+
         private GameplayCueEvent Event(Transform? target) => new(_cue, target, _controller, GameplayCuePeerRole.Server);
 
         private GameplayCueActionContext Context(GameplayCueAction action, GameplayCueEventKind phase) =>

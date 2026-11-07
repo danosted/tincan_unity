@@ -12,3 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 090e5bc562dfd024487d4603df53e0c8, type: 3}
   m_Name: GameplayCuesFeatureInstaller
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Abilities.Cues.GameplayCuesFeatureInstaller
+  _cueNotifies:
+  - {fileID: 11400000, guid: b0511192fd2eb0c4b83a6d803b541b15, type: 2}

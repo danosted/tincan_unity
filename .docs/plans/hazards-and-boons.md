@@ -20,6 +20,13 @@ Status: Approved (2026-11-07)
   - **Rerun (2026-11-07):** `CannonShot` and `CannonMisfire` pass solo and host + client. The misfire reached the ship
     as an own-ship hit (`CannonballHitEvent` with `OwnShip=True`, health 1000 to 975 on every peer, with the separate
     -25 effect since removed). C1 still needs a human playtest.
+  - **Hit cue (2026-11-07, developer's ask):** whatever takes a hit blinks red and plays `cue_bang`: the ship, a
+    hazard, later comets. The hit effects (`GE_CannonballHit`, `GE_HazardImpact`, `GE_IslandImpact`) carry the burst
+    cue `Cue.Hit`; `GCN_Hit` (on the core cues installer, as the cue is shared) runs the new generic
+    `FlashTargetCueAction` (the presenter blinks the target actor's own renderers, not a nested actor's) and a
+    `PlaySoundCueAction`. A first, ship-only presenter was replaced by this (developer: a generic presentation that
+    any actor gets). A kind of actor that should react differently gets a more specific cue tag on its effect.
+    `CannonMisfire` expects exactly one `Cue.Hit` burst on each peer.
 
 ## Why
 The playtest on 2026-11-07 ([playtest-2026-09-30-tuning.md](playtest-2026-09-30-tuning.md), "Playtest") found two

@@ -507,6 +507,7 @@ namespace TinCan.DevTools.Scenarios
                     .Hold(0.3f, ScriptedAction.GunnerFire)
                     .WaitUntil("BallsShown", 5f, "1")
                     .WaitUntil("ShipHealthBelow", 10f, "1000")
+                    .WaitUntil("CueCount", 3f, "Cue.Hit:Execute:1")
                     .Checkpoint("misfire-seen")
                     .Hold(0.3f, ScriptedAction.GunnerLeave)
                     .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Cannon"))

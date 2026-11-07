@@ -7,6 +7,8 @@ using TinCan.Core.Domain.Abilities.Inputs;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Domain.Features;
 using TinCan.Core.Gas;
+using TinCan.Core.Gas.Cues;
+using TinCan.Core.Gas.Cues.Actions;
 using TinCan.Core.Entities;
 using TinCan.Core.Interaction;
 using TinCan.Features.SkyHazards;
@@ -59,6 +61,7 @@ namespace TinCan.DevTools.Editor
             var reloading = Tag("State.Cannon.Reloading");
             var fireTag = Tag("Ability.Cannon.Fire");
             var occupyTag = Tag("Ability.Occupy.Cannon");
+            var hitCue = Tag("Cue.Hit"); // a burst on whatever was hit: GCN_Hit blinks it and bangs
 
             // Effects
             var health = Load<GameplayAttribute>(Attributes + "Attr_Health.asset");
@@ -91,6 +94,7 @@ namespace TinCan.DevTools.Editor
                 {
                     new() { Attribute = health, Operation = ModifierOp.Add, Value = -100f, ClampMaxAttribute = maxHealth }
                 };
+                effect.Cues = new List<GameplayTag> { hitCue };
             });
 
             var impact = Asset<GameplayEffectDefinition>(Effects + "GE_HazardImpact.asset", effect =>
@@ -101,7 +105,24 @@ namespace TinCan.DevTools.Editor
                 {
                     new() { Attribute = health, Operation = ModifierOp.Add, Value = -50f, ClampMaxAttribute = maxHealth }
                 };
+                effect.Cues = new List<GameplayTag> { hitCue };
             });
+
+            // Whatever takes a hit (ship, hazard, island-scraped hull) blinks red and bangs; shared, so on the core cues installer.
+            var hitNotify = Asset<GameplayCueNotify>("Assets/Abilities/Cues/GCN_Hit.asset", notify =>
+            {
+                var serialized = new SerializedObject(notify);
+                serialized.FindProperty("_cue").objectReferenceValue = hitCue;
+                var onExecute = serialized.FindProperty("_onExecute");
+                onExecute.arraySize = 2;
+                onExecute.GetArrayElementAtIndex(0).managedReferenceValue = new FlashTargetCueAction();
+                onExecute.GetArrayElementAtIndex(1).managedReferenceValue = new PlaySoundCueAction
+                {
+                    Clip = Load<AudioClip>("Assets/Audio/Cues/cue_bang.wav")
+                };
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            });
+            AddUnique(Load<GameplayCuesFeatureInstaller>(Installers + "GameplayCuesFeatureInstaller.asset"), "_cueNotifies", new Object[] { hitNotify });
 
             // Abilities
             var occupyAbility = Asset<AbilityDefinition>(Abilities + "GA_OccupyCannon.asset", ability =>

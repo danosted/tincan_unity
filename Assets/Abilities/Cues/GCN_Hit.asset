@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0c8fb8095534604c8350b93c97960de, type: 3}
+  m_Name: GCN_Hit
+  m_EditorClassIdentifier: TinCan.Gas::TinCan.Core.Gas.Cues.GameplayCueNotify
+  _cue: {fileID: 11400000, guid: 040724e5bbb6dcc438cf538011e229c7, type: 2}
+  _onExecute:
+  - rid: 1094555198362746931
+  - rid: 1094555198362746932
+  _onActive: []
+  _onRemoved: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 1094555198362746931
+      type: {class: FlashTargetCueAction, ns: TinCan.Core.Gas.Cues.Actions, asm: TinCan.Gas}
+      data:
+        Color: {r: 1, g: 0.1, b: 0.05, a: 0.6}
+        Seconds: 0.4
+    - rid: 1094555198362746932
+      type: {class: PlaySoundCueAction, ns: TinCan.Core.Gas.Cues.Actions, asm: TinCan.Gas}
+      data:
+        Clip: {fileID: 8300000, guid: 0ef2da735ce13a04bbf62a9b5562e852, type: 3}
+        Volume: 1
+        Channel: 0

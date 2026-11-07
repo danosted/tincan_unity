@@ -20,4 +20,5 @@ MonoBehaviour:
     Value: -50
     ClampMaxAttribute: {fileID: 11400000, guid: 83839a02dfc640d40b46055a7a50bf6f, type: 2}
   GrantedTags: []
-  Cues: []
+  Cues:
+  - {fileID: 11400000, guid: 040724e5bbb6dcc438cf538011e229c7, type: 2}

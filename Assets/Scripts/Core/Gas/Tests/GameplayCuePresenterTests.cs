@@ -38,6 +38,87 @@ namespace TinCan.Core.Gas.Tests
         }
 
         [Test]
+        public void Flash_BlinksTheTargetsRenderers_ThenGivesTheirColourBack()
+        {
+            var (renderer, material) = Hull(_target.transform);
+            _time.DeltaTime = 0.12f;
+
+            _presenter.Flash(_target.transform, _actor, Color.red, 0.4f);
+            Assert.That(ColorOf(renderer, material), Is.EqualTo(Color.red), "first blink at once");
+
+            _presenter.Tick(); // 0.12: second quarter, off
+            Assert.That(ColorOf(renderer, material), Is.EqualTo(Color.white));
+            _presenter.Tick(); // 0.24: third quarter, on
+            Assert.That(ColorOf(renderer, material), Is.EqualTo(Color.red));
+            _presenter.Tick(); // 0.36: fourth quarter, off
+            _presenter.Tick(); // 0.48: done
+            Assert.That(_presenter.FlashingCount, Is.EqualTo(0));
+            var block = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(block);
+            Assert.That(block.isEmpty, Is.True, "it had no block, so it gets none back");
+            Object.DestroyImmediate(material);
+        }
+
+        [Test]
+        public void Flash_AgainWhileFlashing_Restarts_AndKeepsTheOwnColour()
+        {
+            var (renderer, material) = Hull(_target.transform);
+            _time.DeltaTime = 0.3f;
+
+            _presenter.Flash(_target.transform, _actor, new Color(1f, 0f, 0f, 0.5f), 0.4f);
+            _presenter.Tick(); // 0.3
+            _presenter.Flash(_target.transform, _actor, new Color(1f, 0f, 0f, 0.5f), 0.4f);
+            Assert.That(ColorOf(renderer, material), Is.EqualTo(new Color(1f, 0.5f, 0.5f, 1f)), "half way toward red");
+            _presenter.Tick(); // 0.3 after the restart: still flashing
+            Assert.That(_presenter.FlashingCount, Is.EqualTo(1));
+            _presenter.Tick();
+            Assert.That(_presenter.FlashingCount, Is.EqualTo(0));
+            Object.DestroyImmediate(material);
+        }
+
+        [Test]
+        public void ReleaseActor_EndsItsFlash()
+        {
+            var (renderer, material) = Hull(_target.transform);
+            _presenter.Flash(_target.transform, _actor, Color.red, 1f);
+
+            _presenter.ReleaseActor(_actor);
+
+            Assert.That(_presenter.FlashingCount, Is.EqualTo(0));
+            Assert.That(ColorOf(renderer, material), Is.Not.EqualTo(Color.red));
+            Object.DestroyImmediate(material);
+        }
+
+        [TestCase(0f, 1f)]
+        [TestCase(0.09f, 1f)]
+        [TestCase(0.11f, 0f)]
+        [TestCase(0.21f, 1f)]
+        [TestCase(0.31f, 0f)]
+        [TestCase(0.4f, 0f)]
+        [TestCase(-0.1f, 0f)]
+        public void FlashAmount_BlinksTwice(float elapsed, float expected) =>
+            Assert.That(GameplayCuePresenter.FlashAmount(elapsed, 0.4f), Is.EqualTo(expected));
+
+        private static (MeshRenderer Renderer, Material Material) Hull(Transform parent)
+        {
+            var hull = new GameObject("Hull");
+            hull.transform.SetParent(parent, false);
+            hull.AddComponent<MeshFilter>();
+            var renderer = hull.AddComponent<MeshRenderer>();
+            var material = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard")) { color = Color.white };
+            renderer.sharedMaterial = material;
+            return (renderer, material);
+        }
+
+        private static Color ColorOf(Renderer renderer, Material material)
+        {
+            var block = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(block);
+            int id = material.HasProperty("_BaseColor") ? Shader.PropertyToID("_BaseColor") : Shader.PropertyToID("_Color");
+            return block.isEmpty ? material.GetColor(id) : block.GetColor(id);
+        }
+
+        [Test]
         public void Timed_SitsUnderTheTarget_ThenReturnsToThePoolAndIsReused()
         {
             _presenter.SpawnTimed(_prefab, _target.transform, Vector3.up, 1.5f);

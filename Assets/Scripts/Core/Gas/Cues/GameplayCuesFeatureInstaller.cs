@@ -1,4 +1,5 @@
 #nullable enable
+using System.Collections.Generic;
 using TinCan.Core.Domain.Features;
 using UnityEngine;
 using VContainer;
@@ -14,8 +15,11 @@ namespace TinCan.Core.Gas.Cues
     /// See .docs/plans/gameplay-cues.md.
     /// </summary>
     [CreateAssetMenu(fileName = "GameplayCuesFeatureInstaller", menuName = "TinCan/Features/Gameplay Cues Installer")]
-    public class GameplayCuesFeatureInstaller : FeatureInstaller
+    public class GameplayCuesFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<GameplayCueNotify>
     {
+        [Tooltip("Notifies for cues several features share (GCN_Hit: whatever takes a hit blinks and bangs).")]
+        [SerializeField] private List<GameplayCueNotify> _cueNotifies = new();
+
         // Right after the tag registry: other features' effects fire cues from their first tick.
         public override int Order => -19;
 
@@ -29,5 +33,7 @@ namespace TinCan.Core.Gas.Cues
                 .As<IGameplayCuePlayer>().As<IGameplayCueFeed>().As<ITickable>().As<IInitializable>();
             builder.Register<GameplayCueDispatcher>(Lifetime.Singleton).As<IGameplayCueDispatcher>();
         }
+
+        IEnumerable<GameplayCueNotify> FeatureInstaller.IExtension<GameplayCueNotify>.Contributions => _cueNotifies;
     }
 }

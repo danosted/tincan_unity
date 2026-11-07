@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Audio;
 using UnityEngine;
 using VContainer;
@@ -25,7 +26,40 @@ namespace TinCan.Core.Gas.Cues
             public float ExpiresAt; // < 0: held until released
         }
 
+        // A renderer being flashed, with the colour it showed before, so the flash can give it back.
+        private readonly struct Tinted
+        {
+            public readonly Renderer Renderer;
+            public readonly int ColorId;
+            public readonly Color Own;
+            public readonly bool HadBlock;
+
+            public Tinted(Renderer renderer, int colorId, Color own, bool hadBlock)
+            {
+                Renderer = renderer;
+                ColorId = colorId;
+                Own = own;
+                HadBlock = hadBlock;
+            }
+        }
+
+        private sealed class Flashing
+        {
+            public readonly List<Tinted> Renderers = new();
+            public Color Color;
+            public float Seconds;
+            public float StartedAt;
+        }
+
+        /// <summary>How many times a flash blinks.</summary>
+        public const int FlashBlinks = 2;
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId = Shader.PropertyToID("_Color");
+
         private readonly ITimeService _time;
+        private readonly Dictionary<Guid, Flashing> _flashes = new();
+        private readonly List<Guid> _flashesDone = new();
+        private readonly MaterialPropertyBlock _block = new();
         private readonly IHudValues? _hud;
         private readonly IAudioPlayer? _audio;
         private readonly Dictionary<GameObject, Stack<GameObject>> _free = new();
@@ -49,6 +83,30 @@ namespace TinCan.Core.Gas.Cues
 
         public int HeldCount => _held.Count;
         public int TimedCount => _timed.Count;
+        public int FlashingCount => _flashes.Count;
+
+        /// <summary>How far toward the flash colour, 0 or 1, <paramref name="elapsed"/> seconds into a flash of <paramref name="seconds"/>.</summary>
+        public static float FlashAmount(float elapsed, float seconds)
+        {
+            if (seconds <= 0f || elapsed < 0f || elapsed >= seconds) return 0f;
+            return Mathf.FloorToInt(elapsed / seconds * FlashBlinks * 2) % 2 == 0 ? 1f : 0f;
+        }
+
+        public void Flash(Transform target, Guid actorId, Color color, float seconds)
+        {
+            if (target == null) return;
+
+            if (!_flashes.TryGetValue(actorId, out var flash))
+            {
+                flash = new Flashing();
+                CollectRenderers(target, actorId, flash.Renderers);
+                _flashes[actorId] = flash;
+            }
+            flash.Color = color;
+            flash.Seconds = Mathf.Max(0.01f, seconds);
+            flash.StartedAt = _now;
+            Paint(flash, 1f);
+        }
 
         public void SpawnTimed(GameObject prefab, Transform parent, Vector3 localOffset, float seconds)
         {
@@ -79,6 +137,8 @@ namespace TinCan.Core.Gas.Cues
                 if (key.ActorId == actorId) _releasing.Add(key);
             }
             foreach (var key in _releasing) Release(key);
+
+            if (_flashes.Remove(actorId, out var flash)) Restore(flash);
         }
 
         public void PlaySound(AudioClip clip, AudioChannel channel, Vector3? position, float volume) =>
@@ -102,6 +162,8 @@ namespace TinCan.Core.Gas.Cues
                 _timed.RemoveAt(i);
             }
 
+            TickFlashes();
+
             if (_hud == null || _hudExpiry.Count == 0) return;
             _expiredHud.Clear();
             foreach (var pair in _hudExpiry)
@@ -123,10 +185,81 @@ namespace TinCan.Core.Gas.Cues
             {
                 foreach (var instance in stack) Destroy(instance);
             }
+            foreach (var flash in _flashes.Values) Restore(flash);
             _held.Clear();
             _timed.Clear();
             _free.Clear();
+            _flashes.Clear();
             if (_poolRoot != null) Destroy(_poolRoot.gameObject);
+        }
+
+        private void TickFlashes()
+        {
+            if (_flashes.Count == 0) return;
+
+            _flashesDone.Clear();
+            foreach (var pair in _flashes)
+            {
+                var flash = pair.Value;
+                float elapsed = _now - flash.StartedAt;
+                if (elapsed >= flash.Seconds) _flashesDone.Add(pair.Key);
+                else Paint(flash, FlashAmount(elapsed, flash.Seconds));
+            }
+            foreach (var actorId in _flashesDone)
+            {
+                if (_flashes.Remove(actorId, out var flash)) Restore(flash);
+            }
+        }
+
+        // The actor's own mesh renderers (not a nested actor's, such as a player aboard a ship) and the colour each shows now.
+        private void CollectRenderers(Transform target, Guid actorId, List<Tinted> into)
+        {
+            foreach (var renderer in target.GetComponentsInChildren<Renderer>())
+            {
+                if (renderer is not (MeshRenderer or SkinnedMeshRenderer)) continue;
+                var owner = renderer.GetComponentInParent<IAbilityControllerBase>(true);
+                if (owner != null && owner.Id != actorId) continue;
+
+                var material = renderer.sharedMaterial;
+                if (material == null) continue;
+                int colorId = material.HasProperty(BaseColorId) ? BaseColorId : ColorId;
+                if (!material.HasProperty(colorId)) continue;
+
+                renderer.GetPropertyBlock(_block);
+                bool hadBlock = !_block.isEmpty;
+                var own = _block.HasColor(colorId) ? _block.GetColor(colorId) : material.GetColor(colorId);
+                into.Add(new Tinted(renderer, colorId, own, hadBlock));
+            }
+        }
+
+        private void Paint(Flashing flash, float amount)
+        {
+            var color = flash.Color;
+            amount *= color.a;
+            color.a = 1f;
+            foreach (var tinted in flash.Renderers)
+            {
+                if (tinted.Renderer == null) continue; // destroyed with its actor
+                tinted.Renderer.GetPropertyBlock(_block);
+                _block.SetColor(tinted.ColorId, Color.Lerp(tinted.Own, color, amount));
+                tinted.Renderer.SetPropertyBlock(_block);
+            }
+        }
+
+        private void Restore(Flashing flash)
+        {
+            foreach (var tinted in flash.Renderers)
+            {
+                if (tinted.Renderer == null) continue;
+                if (!tinted.HadBlock)
+                {
+                    tinted.Renderer.SetPropertyBlock(null);
+                    continue;
+                }
+                tinted.Renderer.GetPropertyBlock(_block);
+                _block.SetColor(tinted.ColorId, tinted.Own);
+                tinted.Renderer.SetPropertyBlock(_block);
+            }
         }
 
         private Live Take(GameObject prefab, Transform parent, Vector3 localOffset)

@@ -34,5 +34,7 @@ namespace TinCan.Tests.Fakes
             Calls.Add($"sound {clip.name} {channel} {(position.HasValue ? "3D" : "2D")} {volume}");
 
         public void ShowHudText(string key, string text, float seconds) => Calls.Add($"hud {key} {seconds}");
+
+        public void Flash(Transform target, Guid actorId, Color color, float seconds) => Calls.Add($"flash {target.name} {seconds}");
     }
 }

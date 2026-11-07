@@ -27,5 +27,12 @@ namespace TinCan.Core.Gas.Cues
 
         /// <summary>Shows a HUD line under <paramref name="key"/> for <paramref name="seconds"/>; showing it again restarts the time.</summary>
         void ShowHudText(string key, string text, float seconds);
+
+        /// <summary>
+        /// Blinks the renderers under <paramref name="target"/> that belong to actor <paramref name="actorId"/> (not a
+        /// nested actor's) toward <paramref name="color"/> (its alpha is how far) for <paramref name="seconds"/>, then gives
+        /// each its own colour back. A new flash on the same actor restarts it.
+        /// </summary>
+        void Flash(Transform target, Guid actorId, Color color, float seconds);
     }
 }

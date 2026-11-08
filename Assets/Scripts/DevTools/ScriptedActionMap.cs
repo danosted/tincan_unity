@@ -4,6 +4,7 @@ using TinCan.Core.Humanoid;
 using TinCan.Core.UI;
 using TinCan.Features.Helm;
 using TinCan.Features.Navigation;
+using TinCan.Features.SkillChecks;
 using TinCan.Features.Weapons.Cannon;
 using UnityEngine;
 using VContainer;
@@ -73,6 +74,7 @@ namespace TinCan.DevTools
                 ScriptedAction.MenuRight => (Get<MenuInputContext>()?.Navigate, Vector2.right),
                 ScriptedAction.MenuSubmit => (Get<MenuInputContext>()?.Submit, Vector2.right),
                 ScriptedAction.SwitchPossession => (Get<GlobalInputContext>()?.SwitchPossession, Vector2.right),
+                ScriptedAction.SkillCheckPress => (Get<SkillCheckInputContext>()?.Press, Vector2.right),
                 _ => (null, Vector2.zero),
             };
 

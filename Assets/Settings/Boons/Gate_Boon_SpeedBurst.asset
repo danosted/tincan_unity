@@ -16,6 +16,7 @@ MonoBehaviour:
   Radius: 10
   Actions:
   - rid: 1094555198362746939
+  - rid: 1094555198362746947
   references:
     version: 2
     RefIds:
@@ -23,3 +24,7 @@ MonoBehaviour:
       type: {class: ApplyEffectGateAction, ns: TinCan.Features.Gates.Actions, asm: TinCan.Features.Gates}
       data:
         Effect: {fileID: 11400000, guid: 9d6fbb2b631c4714fba668da832c59cf, type: 2}
+    - rid: 1094555198362746947
+      type: {class: ApplyEffectGateAction, ns: TinCan.Features.Gates.Actions, asm: TinCan.Features.Gates}
+      data:
+        Effect: {fileID: 11400000, guid: 1d3fcc1796f8b184fa00446249b8089b, type: 2}

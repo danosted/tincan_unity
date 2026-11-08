@@ -63,5 +63,9 @@ namespace TinCan.DevTools
         MenuLeft,
         MenuRight,
         MenuSubmit,
+
+        // Doing a skill check (SkillCheck context)
+        /// <summary>Press: grades the check against where the needle is.</summary>
+        SkillCheckPress,
     }
 }

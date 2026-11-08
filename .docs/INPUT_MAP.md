@@ -14,6 +14,7 @@ silences it; an action outside every live context reads as released.
 | 1000 | Context_Rebinding | waiting for a key | everything below | (routes only) | core (InputConfig) |
 | 950 | Context_DevTools | always | - | (routes only) | NetTestHarnessFeatureInstaller |
 | 900 | Context_Menu | a menu is open | everything below | MenuNavigationUseCase | core (InputConfig) |
+| 600 | Context_SkillCheck | WhileOpened | Context_Humanoid, Context_Camera | SkillCheckGaugePresenter, SkillCheckRunner | SkillChecksFeatureInstaller |
 | 500 | Context_Shipyard | WhileOpened | everything below | ShipyardUseCase | ShipyardFeatureInstaller |
 | 450 | Context_Leashed | possessed actor has State.Leashed | - | (routes only) | not loaded |
 | 400 | Context_Gunner | possessed actor has State.Occupying.Cannon | Context_Humanoid, Context_Camera | GunnerAimUseCase | CannonFeatureInstaller |
@@ -55,6 +56,14 @@ A menu is open: everything below is silent. Navigate (and WASD, except on a text
 | Pressing | Runs | Handled by |
 |---|---|---|
 | Global/Cancel | Command_MenuBack | MenuBackInputHandler |
+
+### Context_SkillCheck
+
+Doing a skill check (open while SkillCheckRunner runs one; contributed by the SkillChecks installer). Silences walking and looking: Press grades the check.
+
+| Action | Default keys | Meaning | Rebindable |
+|---|---|---|---|
+| SkillCheck/Press | `space` | During a skill check: press while the needle is in the band. | yes |
 
 ### Context_Shipyard
 

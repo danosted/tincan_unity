@@ -262,6 +262,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "BoonGate (Host + Client, Lag100)")]
         public static void BoonGateDuo() => RunDuo("BoonGate", "Lag100");
 
+        [MenuItem(Root + "EngineBoost (Host)")]
+        public static void EngineBoostSolo() => RunSolo("EngineBoost");
+
+        [MenuItem(Root + "EngineBoost (Host + Client, Lag100)")]
+        public static void EngineBoostDuo() => RunDuo("EngineBoost", "Lag100");
+
         [MenuItem(Root + "VoyageLoop (Host)")]
         public static void VoyageLoopSolo() => RunSolo("VoyageLoop");
 

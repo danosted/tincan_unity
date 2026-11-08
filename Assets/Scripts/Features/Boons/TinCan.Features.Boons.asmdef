@@ -4,7 +4,11 @@
     "references": [
         "TinCan.Core.Domain",
         "TinCan.Features.Gates",
+        "TinCan.Features.SkillChecks",
         "TinCan.Gas",
+        "TinCan.Interaction",
+        "TinCan.Ship",
+        "Unity.Netcode.Runtime",
         "VContainer"
     ],
     "includePlatforms": [],

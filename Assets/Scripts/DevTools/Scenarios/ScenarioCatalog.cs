@@ -702,6 +702,43 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<BoonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
         /// <summary>
+        /// The engine boost with real input (B3): the subject walks up to the engine telegraph and presses Interact, which
+        /// opens its skill check on the subject's peer (walking and looking go quiet). It presses while the needle is in
+        /// the Perfect part; the server takes that grade once and puts the Perfect boost on the ship, whose cue every peer
+        /// sees. Plan: hazards-and-boons.md (B3).
+        /// </summary>
+        public static readonly ScenarioEntry EngineBoost = new(
+            new Scenario.Builder("EngineBoost")
+                .InScene(TestScenes.Voyage)
+                .Describe("Walk to the engine telegraph -> Interact -> the gauge runs here -> press in the Perfect part -> the Perfect boost on every peer, graded once.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("PlaceSubjectNear", "EngineTelegraph"))
+                .Act(s => s
+                    .WaitUntil("SubjectNear", 45f, "EngineTelegraph")
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceObject", "EngineTelegraph")
+                    .WaitUntil("InteractTargetIs", 5f, "EngineTelegraph")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SkillCheckRunning", 10f)
+                    .Checkpoint("gauge-open")
+                    .WaitUntil("SkillCheckInPerfect", 5f)
+                    .Tap(ScriptedAction.SkillCheckPress)
+                    .WaitUntil("CueActive", 10f, "Cue.Boon.EnginePerfect"))
+                .Assert(s => s
+                    .WaitUntil("SkillChecksGraded", 30f, "Perfect:1")
+                    .WaitUntil("CueActive", 5f, "Cue.Boon.EnginePerfect")
+                    .Wait(1f, "no second grade")
+                    .Expect("SkillChecksGraded", "Perfect:1"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<SkillCheckScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+        /// <summary>
         /// The helm with real input: the subject walks up to the wheel and presses Interact to take it. It stays in its body
         /// on the helm seat (State.Occupying.Helm turns the Helmsman context on, which silences walking but not looking).
         /// Throttle and turn keys travel in its predicted input; the server moves and turns the ship from them. Leave lets go
@@ -1734,7 +1771,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

@@ -31,6 +31,7 @@
         "TinCan.Features.SkyIslands",
         "TinCan.Features.ShipDesigns",
         "TinCan.Features.Shipyard",
+        "TinCan.Features.SkillChecks",
         "TinCan.Features.ShipPicker",
         "TinCan.Features.ShipSockets",
         "TinCan.Features.GrappleHook",

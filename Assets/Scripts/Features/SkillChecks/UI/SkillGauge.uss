@@ -1,0 +1,59 @@
+.tc-skill-gauge {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 22%;
+    align-items: center;
+}
+
+.tc-skill-gauge__title {
+    font-size: var(--tc-font-l);
+    color: var(--tc-text);
+    margin-bottom: var(--tc-space-s);
+}
+
+.tc-skill-gauge__track {
+    width: 360px;
+    height: 24px;
+    background-color: var(--tc-surface-track);
+    border-color: var(--tc-border-strong);
+    border-width: 1px;
+    border-radius: var(--tc-radius-s);
+}
+
+.tc-skill-gauge__good {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background-color: var(--tc-fair);
+}
+
+.tc-skill-gauge__perfect {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background-color: var(--tc-good);
+}
+
+.tc-skill-gauge__needle {
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    width: 4px;
+    margin-left: -2px;
+    background-color: var(--tc-text);
+}
+
+.tc-skill-gauge__line {
+    font-size: var(--tc-font-l);
+    color: var(--tc-text);
+    margin-top: var(--tc-space-s);
+}
+
+.tc-skill-gauge__line--hit {
+    color: var(--tc-good);
+}
+
+.tc-skill-gauge__line--miss {
+    color: var(--tc-bad);
+}

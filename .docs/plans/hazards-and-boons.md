@@ -41,6 +41,13 @@ Status: Approved (2026-11-07)
   used up: its glow goes out on every peer. Gates are on the chart (`ChartObstacleKind.Boon`). Scenario `BoonGate`
   (Test_Voyage): the voyage lays gates, then one is put around the ship; the boon's cue shows on every peer and it is
   taken exactly once. Built by **TinCan > Dev > Boons > Build Assets**.
+- **B3 first slice built (2026-11-08); `EngineBoost` and `BoonGate` pass solo and host + client, awaiting a playtest:** the engine boost and the boost window
+  (see "Decided 2026-11-08" under B3). New assembly `TinCan.Features.SkillChecks`; the engine telegraph lives in
+  Boons. A new action `SkillCheck/Press` (Space) and context `Context_SkillCheck`. Scenario `EngineBoost` (Test_Voyage)
+  walks to the telegraph, presses Interact, then presses in the Perfect part and expects the Perfect boost's cue on
+  every peer and one Perfect on the server. Built by **TinCan > Dev > Boons > Build Assets**, then **TinCan > Dev >
+  Input > Build Assets**.
+  First run: the scenario held the press, which a pressed-this-frame read never sees; it taps it now.
 - **Gates split out of B1 (2026-11-08).** A boon gate is now a generic gate with a boon action (see "Gates" below).
   New assembly `TinCan.Features.Gates`: `GateDefinition`, `GateUseCase` (spots the pass, runs the actions, uses the
   gate up), `GateNetworkMediator`, `ApplyEffectGateAction`. Boons keeps the layout, the chart and the laying
@@ -145,6 +152,25 @@ into a voyage.
 ## B3: skill checks (short minigames that grade a boon)
 The developer's idea (2026-11-07): skill-based minigames decide how good a boon is. A boon becomes a short burst of
 skill, not a long chore.
+
+### Decided 2026-11-08: the first check is an engine boost, and a gate opens its window
+The developer: a check need not hang off a gate; something to do on the ship that chains can link later. Then: a boon
+gate fills a window in which the engine check gives an extra boost. This replaces the gate-opens-a-check and
+"who gets it" bullets below for the first slice.
+- **The engine telegraph** is a new ship part (a fixture on the old hull, the fitting `boon.engine_telegraph` for
+  designed ships). Press E on it: the pulsing gauge opens for you. Your keys play the check while it runs (its own
+  input context silences walking and looking), so there is no "steer or play" question.
+- **The grade gives the ship a boost:** Good a speed boost, Perfect a bigger one, Miss nothing. Then the telegraph
+  rests (a cooldown) before anyone can use it again.
+- **A gate opens a boost window:** passing a boon gate also puts `GE_Boon_BoostWindow` on the ship (a timed tag,
+  `State.Ship.BoostWindow`). A check finished while the ship has that tag adds the extra boost for its grade. The
+  check's definition holds that rule (`BonusTag`, bonus effects), since GAS effects cannot require a tag yet.
+- **Timing runs on the player's machine;** the server opens the check (and picks the band), the player's peer sends
+  the grade back, and the server takes it only for a check it opened for that player, in time.
+- **Built as:** `TinCan.Features.SkillChecks` (the definition, `PulsingGaugeProcessor`, the server use case, the
+  per-peer runner, its input context and gauge view, and a generic host mediator any networked object can carry).
+  Boons references it for the telegraph and the window. Scenario `EngineBoost` (Test_Voyage) opens the check for the
+  subject, presses in the band and expects the boost on every peer.
 
 ### The framework (built once, with the first kind)
 - **A check is data.** `SkillCheckDefinition`: its kind, difficulty, length, and which station runs it.

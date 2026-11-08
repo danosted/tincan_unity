@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0c8fb8095534604c8350b93c97960de, type: 3}
+  m_Name: GCN_Boon_BoostWindow
+  m_EditorClassIdentifier: TinCan.Gas::TinCan.Core.Gas.Cues.GameplayCueNotify
+  _cue: {fileID: 11400000, guid: 566810254d848944ba39259427d68d0a, type: 2}
+  _onExecute: []
+  _onActive:
+  - rid: 1094555198362746940
+  _onRemoved: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 1094555198362746940
+      type: {class: HudToastCueAction, ns: TinCan.Core.Gas.Cues.Actions, asm: TinCan.Gas}
+      data:
+        Text: 'Boost window: run the engine telegraph!'
+        Seconds: 5

@@ -68,6 +68,8 @@ See [INPUT_MAP.md](INPUT_MAP.md) for the full table. In short, from the top:
    forward climbs the rope. Interact opens the respawn choice (`OpenLeashMenuInputHandler`).
    **Navigator** (the `State.Occupying.Chart` tag; contributed by the Navigation installer) silences Humanoid and Camera:
    the mouse moves the chart cursor (`ChartNavigatorUseCase`); Leave (E) is the Interact bit.
+   **SkillCheck** (activation `WhileOpened`, opened by `SkillCheckRunner` while this player does a skill check;
+   contributed by the SkillChecks installer) silences Humanoid and Camera: Press (Space) grades the check.
 5. **FreeCamera** (possessing anything but your body).
 6. **Humanoid** (possessing your body): move, jump, sprint and the ability inputs.
 7. **Camera**: mouse look for whatever you control.

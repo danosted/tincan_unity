@@ -5,6 +5,7 @@
     "TinCan.Core.Domain",
     "TinCan.Features.Boons",
     "TinCan.Features.Gates",
+    "TinCan.Features.SkillChecks",
     "TinCan.Gas",
     "TinCan.Humanoid",
     "TinCan.Interaction",

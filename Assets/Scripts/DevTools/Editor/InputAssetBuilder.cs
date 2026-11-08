@@ -17,6 +17,7 @@ using TinCan.Features.Helm;
 using TinCan.Features.Navigation;
 using TinCan.Features.Respawn;
 using TinCan.Features.Shipyard;
+using TinCan.Features.SkillChecks;
 using TinCan.Features.Weapons.Cannon;
 using UnityEditor;
 using UnityEngine;
@@ -72,6 +73,7 @@ namespace TinCan.DevTools.Editor
             ["Navigator/Altitude"] = ("Waypoint Altitude", "Raise or lower the selected waypoint while held.", true),
             ["Navigator/Zoom"] = ("Chart Zoom", "Zoom the chart in or out.", false),
             ["Navigator/Leave"] = ("Leave Chart Table", "Step away from the chart table.", true),
+            ["SkillCheck/Press"] = ("Skill Check", "During a skill check: press while the needle is in the band.", true),
             ["FreeCamera/Move"] = ("Fly", "Fly the free camera (spectator, a dev tool: not in the Controls menu).", false),
             ["DevTools/ToggleNetOverlay"] = ("Net Overlay", "Show or hide the net harness readout.", false),
             ["Shipyard/Point"] = ("Shipyard Cursor", "Where the cursor points in the shipyard.", false),
@@ -228,6 +230,13 @@ namespace TinCan.DevTools.Editor
             });
             SetContents(navigator, new InputContext[] { humanoid, camera }, NoActions(), NoRoutes(),
                 "At the chart table (State.Occupying.Chart; contributed by the Navigation installer). Silences walking and looking: the mouse moves the chart cursor (ChartNavigatorUseCase). Leave is the Interact ability bit.");
+            var skillCheck = Context<SkillCheckInputContext>("Context_SkillCheck", c =>
+            {
+                c.Press = Id("SkillCheck/Press");
+                c.Configure(InputContextActivation.WhileOpened, 600);
+            });
+            SetContents(skillCheck, new InputContext[] { humanoid, camera }, NoActions(), NoRoutes(),
+                "Doing a skill check (open while SkillCheckRunner runs one; contributed by the SkillChecks installer). Silences walking and looking: Press grades the check.");
             var rebinding = Context<InputContext>("Context_Rebinding", c =>
             {
                 c.Configure(InputContextActivation.WhileRebinding, 1000, blocksAllLower: true);
@@ -254,13 +263,15 @@ namespace TinCan.DevTools.Editor
             SetField(Load<Object>(Installers + "CannonFeatureInstaller.asset"), "_controls", gunner);
             SetField(Load<Object>(Installers + "HelmFeatureInstaller.asset"), "_controls", helmsman);
             SetField(Load<Object>(Installers + "NetTestHarnessFeatureInstaller.asset"), "_controls", devTools);
+            var skillChecksInstaller = AssetDatabase.LoadAssetAtPath<Object>(Installers + "SkillChecksFeatureInstaller.asset");
+            if (skillChecksInstaller != null) SetField(skillChecksInstaller, "_controls", skillCheck);
             var shipyardInstaller = AssetDatabase.LoadAssetAtPath<Object>(Installers + "ShipyardFeatureInstaller.asset");
             if (shipyardInstaller != null) SetField(shipyardInstaller, "_controls", shipyard);
 
             BuildControlsMenu();
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[InputAssetBuilder] {ids.Count} actions, 11 contexts, 7 commands, 3 ability inputs and the Controls menu built.");
+            Debug.Log($"[InputAssetBuilder] {ids.Count} actions, 12 contexts, 7 commands, 3 ability inputs and the Controls menu built.");
         }
 
         /// <summary>Menu_Controls (one row per key, Reset, Back), reachable from Menu_Main (Settings > Controls > Key bindings).</summary>

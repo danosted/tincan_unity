@@ -15,3 +15,10 @@ MonoBehaviour:
   _config: {fileID: 11400000, guid: dfa3d51b44c40a84c82ed3b14ea2a2a8, type: 2}
   _cueNotifies:
   - {fileID: 11400000, guid: fddf11f90ea83ae448952c161534ee35, type: 2}
+  - {fileID: 11400000, guid: ce720c01ec14ea54c81b84037f1d5147, type: 2}
+  - {fileID: 11400000, guid: be0543d9d041e1a4684cacd5363a1bba, type: 2}
+  - {fileID: 11400000, guid: f03c955eb24f3e745b335df9d42d5055, type: 2}
+  - {fileID: 11400000, guid: b6853eff7453559479caa3b720d244a0, type: 2}
+  _telegraphFixture: {fileID: 11400000, guid: a1a90e075c31d03458982863d1f0a1cf, type: 2}
+  _fittings:
+  - {fileID: 11400000, guid: 9c49d6c287e45c341b20b5fb2b6c4ee6, type: 2}

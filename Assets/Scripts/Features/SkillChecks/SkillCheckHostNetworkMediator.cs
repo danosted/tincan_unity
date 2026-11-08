@@ -19,7 +19,7 @@ namespace TinCan.Features.SkillChecks
         [SerializeField] private SkillCheckDefinition? _check;
 
         private readonly List<SkillCheckResult> _results = new();
-        private SkillCheckOpening? _opened;
+        private int? _opened;
         private ActorIdentity? _identity;
 
         public Guid Id => (_identity ??= new ActorIdentity(this)).Id;
@@ -28,15 +28,15 @@ namespace TinCan.Features.SkillChecks
         public IAirshipView? Ship => transform.parent != null ? transform.parent.GetComponentInParent<IAirshipView>() : null;
         public SkillCheckDefinition? Definition => _check;
 
-        public void ServerOpen(ulong clientId, int checkId, float bandCenter)
+        public void ServerOpen(ulong clientId, int checkId)
         {
             if (!IsServer) return;
-            OpenRpc(checkId, bandCenter, RpcTarget.Single(clientId, RpcTargetUse.Temp));
+            OpenRpc(checkId, RpcTarget.Single(clientId, RpcTargetUse.Temp));
         }
 
-        public bool TryTakeOpened(out SkillCheckOpening opening)
+        public bool TryTakeOpened(out int checkId)
         {
-            opening = _opened ?? default;
+            checkId = _opened ?? 0;
             if (_opened == null) return false;
             _opened = null;
             return true;
@@ -56,7 +56,7 @@ namespace TinCan.Features.SkillChecks
         }
 
         [Rpc(SendTo.SpecifiedInParams)]
-        private void OpenRpc(int checkId, float bandCenter, RpcParams rpcParams) => _opened = new SkillCheckOpening(checkId, bandCenter);
+        private void OpenRpc(int checkId, RpcParams rpcParams) => _opened = checkId;
 
         [Rpc(SendTo.Server)]
         private void GradeRpc(int checkId, byte grade, RpcParams rpcParams = default) =>

@@ -74,6 +74,10 @@ namespace TinCan.DevTools.Editor
             ["Navigator/Zoom"] = ("Chart Zoom", "Zoom the chart in or out.", false),
             ["Navigator/Leave"] = ("Leave Chart Table", "Step away from the chart table.", true),
             ["SkillCheck/Press"] = ("Skill Check", "During a skill check: press while the needle is in the band.", true),
+            ["SkillCheck/Left"] = ("Combo Left", "During a button combo: the left step.", true),
+            ["SkillCheck/Right"] = ("Combo Right", "During a button combo: the right step.", true),
+            ["SkillCheck/Up"] = ("Combo Up", "During a button combo: the up step.", true),
+            ["SkillCheck/Down"] = ("Combo Down", "During a button combo: the down step.", true),
             ["FreeCamera/Move"] = ("Fly", "Fly the free camera (spectator, a dev tool: not in the Controls menu).", false),
             ["DevTools/ToggleNetOverlay"] = ("Net Overlay", "Show or hide the net harness readout.", false),
             ["Shipyard/Point"] = ("Shipyard Cursor", "Where the cursor points in the shipyard.", false),
@@ -233,10 +237,14 @@ namespace TinCan.DevTools.Editor
             var skillCheck = Context<SkillCheckInputContext>("Context_SkillCheck", c =>
             {
                 c.Press = Id("SkillCheck/Press");
+                c.Left = Id("SkillCheck/Left");
+                c.Right = Id("SkillCheck/Right");
+                c.Up = Id("SkillCheck/Up");
+                c.Down = Id("SkillCheck/Down");
                 c.Configure(InputContextActivation.WhileOpened, 600);
             });
             SetContents(skillCheck, new InputContext[] { humanoid, camera }, NoActions(), NoRoutes(),
-                "Doing a skill check (open while SkillCheckRunner runs one; contributed by the SkillChecks installer). Silences walking and looking: Press grades the check.");
+                "Doing a skill check (open while SkillCheckRunner runs one; contributed by the SkillChecks installer). Silences walking and looking: Press grades the pulsing gauge, the four directions play the button combo.");
             var rebinding = Context<InputContext>("Context_Rebinding", c =>
             {
                 c.Configure(InputContextActivation.WhileRebinding, 1000, blocksAllLower: true);

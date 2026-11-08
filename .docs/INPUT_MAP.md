@@ -14,7 +14,7 @@ silences it; an action outside every live context reads as released.
 | 1000 | Context_Rebinding | waiting for a key | everything below | (routes only) | core (InputConfig) |
 | 950 | Context_DevTools | always | - | (routes only) | NetTestHarnessFeatureInstaller |
 | 900 | Context_Menu | a menu is open | everything below | MenuNavigationUseCase | core (InputConfig) |
-| 600 | Context_SkillCheck | WhileOpened | Context_Humanoid, Context_Camera | SkillCheckGaugePresenter, SkillCheckRunner | SkillChecksFeatureInstaller |
+| 600 | Context_SkillCheck | WhileOpened | Context_Humanoid, Context_Camera | SkillCheckPresenter, SkillCheckRunner | SkillChecksFeatureInstaller |
 | 500 | Context_Shipyard | WhileOpened | everything below | ShipyardUseCase | ShipyardFeatureInstaller |
 | 450 | Context_Leashed | possessed actor has State.Leashed | - | (routes only) | not loaded |
 | 400 | Context_Gunner | possessed actor has State.Occupying.Cannon | Context_Humanoid, Context_Camera | GunnerAimUseCase | CannonFeatureInstaller |
@@ -59,11 +59,15 @@ A menu is open: everything below is silent. Navigate (and WASD, except on a text
 
 ### Context_SkillCheck
 
-Doing a skill check (open while SkillCheckRunner runs one; contributed by the SkillChecks installer). Silences walking and looking: Press grades the check.
+Doing a skill check (open while SkillCheckRunner runs one; contributed by the SkillChecks installer). Silences walking and looking: Press grades the pulsing gauge, the four directions play the button combo.
 
 | Action | Default keys | Meaning | Rebindable |
 |---|---|---|---|
 | SkillCheck/Press | `space` | During a skill check: press while the needle is in the band. | yes |
+| SkillCheck/Left | `leftArrow` / `a` / `<Gamepad>/dpad/left` | During a button combo: the left step. | yes |
+| SkillCheck/Right | `rightArrow` / `d` / `<Gamepad>/dpad/right` | During a button combo: the right step. | yes |
+| SkillCheck/Up | `upArrow` / `w` / `<Gamepad>/dpad/up` | During a button combo: the up step. | yes |
+| SkillCheck/Down | `downArrow` / `s` / `<Gamepad>/dpad/down` | During a button combo: the down step. | yes |
 
 ### Context_Shipyard
 

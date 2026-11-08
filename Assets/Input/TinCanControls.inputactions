@@ -218,10 +218,26 @@
             "name": "SkillCheck",
             "id": "7983240d-a5af-444c-a55e-81f45ef60833",
             "actions": [
-                { "name": "Press", "type": "Button", "id": "b4dd665d-cd35-4f5f-aa17-8ec0cfda2496", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false }
+                { "name": "Press", "type": "Button", "id": "b4dd665d-cd35-4f5f-aa17-8ec0cfda2496", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Left", "type": "Button", "id": "bf6bf2b3-7126-49a5-8349-37cc6b7bdb41", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Right", "type": "Button", "id": "de7531d5-9e46-4400-9f8c-0a9ec1091788", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Up", "type": "Button", "id": "3baabeec-b6ce-491c-9b8d-81eb28ecaa9f", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false },
+                { "name": "Down", "type": "Button", "id": "01abb2fe-e9dd-44f1-aa14-53450ceefc24", "expectedControlType": "Button", "processors": "", "interactions": "", "initialStateCheck": false }
             ],
             "bindings": [
-                { "name": "", "id": "0772a4b6-aebe-48b5-9718-4d327355f14f", "path": "<Keyboard>/space", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Press", "isComposite": false, "isPartOfComposite": false }
+                { "name": "", "id": "0772a4b6-aebe-48b5-9718-4d327355f14f", "path": "<Keyboard>/space", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Press", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "de26232d-bc59-444a-9981-baf503b18a4c", "path": "<Keyboard>/leftArrow", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Left", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "a7b94193-d72b-4577-8493-574d62c44277", "path": "<Keyboard>/a", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Left", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "ece64615-1567-4aa7-9d64-7372418230c3", "path": "<Gamepad>/dpad/left", "interactions": "", "processors": "", "groups": "Gamepad", "action": "Left", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "c289108a-702d-473c-aecf-745bde3feebe", "path": "<Keyboard>/rightArrow", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Right", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "e15525a8-b3dd-4018-b2e3-4a8cf99ad0d9", "path": "<Keyboard>/d", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Right", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "dad9f470-e060-4fa9-93b5-7243d9cf715f", "path": "<Gamepad>/dpad/right", "interactions": "", "processors": "", "groups": "Gamepad", "action": "Right", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "43693698-e242-43f9-9ee7-53bcdb03dc02", "path": "<Keyboard>/upArrow", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Up", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "9087990f-cdcb-4383-ae7e-0f87a425c2e1", "path": "<Keyboard>/w", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Up", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "7615ca48-d07e-4083-8fec-78c794fba43c", "path": "<Gamepad>/dpad/up", "interactions": "", "processors": "", "groups": "Gamepad", "action": "Up", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "2522a319-5652-45b8-bfe6-b12abae1e2dc", "path": "<Keyboard>/downArrow", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Down", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "c6ab4105-470f-4125-9042-a3bf78b8f885", "path": "<Keyboard>/s", "interactions": "", "processors": "", "groups": "Keyboard&Mouse", "action": "Down", "isComposite": false, "isPartOfComposite": false },
+                { "name": "", "id": "9f68571f-d9b2-454d-8ef2-0db8881726c9", "path": "<Gamepad>/dpad/down", "interactions": "", "processors": "", "groups": "Gamepad", "action": "Down", "isComposite": false, "isPartOfComposite": false }
             ]
         }
     ],

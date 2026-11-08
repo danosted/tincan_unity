@@ -14,11 +14,11 @@ namespace TinCan.Features.SkillChecks
         IAirshipView? Ship { get; }
         SkillCheckDefinition? Definition { get; }
 
-        /// <summary>Server: open the check on one player's peer.</summary>
-        void ServerOpen(ulong clientId, int checkId, float bandCenter);
+        /// <summary>Server: open the check on one player's peer (that peer lays it out: the band, the combo).</summary>
+        void ServerOpen(ulong clientId, int checkId);
 
-        /// <summary>This peer: the check the server opened for this player, once.</summary>
-        bool TryTakeOpened(out SkillCheckOpening opening);
+        /// <summary>This peer: the number of the check the server opened for this player, once.</summary>
+        bool TryTakeOpened(out int checkId);
 
         /// <summary>This peer: send the grade to the server.</summary>
         void SendGrade(int checkId, SkillCheckGrade grade);

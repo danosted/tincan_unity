@@ -10,7 +10,7 @@ using UnityEngine;
 namespace TinCan.Features.SkillChecks
 {
     /// <summary>
-    /// Application Layer, server only. Opens a host's check on one player's peer (picking where the band sits), then
+    /// Application Layer, server only. Opens a host's check on one player's peer, then
     /// takes the grade that peer sends back: only for a check it opened for that player, before the check's time and a
     /// grace for the round trip run out (then it is a Miss). The grade's effect goes on the host's ship, with the bonus
     /// effect if the ship carries the bonus tag. Whatever the grade, the host then rests for the check's cooldown. Co-op
@@ -42,8 +42,7 @@ namespace TinCan.Features.SkillChecks
         private readonly List<Open> _open = new();
         private readonly Dictionary<Guid, float> _restingUntil = new();
         private readonly int[] _counts = new int[3];
-        private readonly System.Random _random = new();
-        private int _nextCheckId;
+                private int _nextCheckId;
 
         public SkillCheckUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
             AbilitySystemUseCase abilities)
@@ -85,9 +84,7 @@ namespace TinCan.Features.SkillChecks
                 Deadline = _time.Time + definition.Seconds + GraceSeconds
             };
             _open.Add(open);
-            float half = definition.GoodWidth * 0.5f;
-            float center = Mathf.Lerp(Mathf.Max(half, 0.25f), Mathf.Min(1f - half, 0.75f), (float)_random.NextDouble());
-            host.ServerOpen(clientId, open.CheckId, center);
+            host.ServerOpen(clientId, open.CheckId);
             _events.LogInfo(LogSource, $"{definition.name} opened for client {clientId} (check {open.CheckId}).");
             return true;
         }

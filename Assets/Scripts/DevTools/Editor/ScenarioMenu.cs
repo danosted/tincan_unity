@@ -268,6 +268,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "EngineBoost (Host + Client, Lag100)")]
         public static void EngineBoostDuo() => RunDuo("EngineBoost", "Lag100");
 
+        [MenuItem(Root + "BoilerCombo (Host)")]
+        public static void BoilerComboSolo() => RunSolo("BoilerCombo");
+
+        [MenuItem(Root + "BoilerCombo (Host + Client, Lag100)")]
+        public static void BoilerComboDuo() => RunDuo("BoilerCombo", "Lag100");
+
         [MenuItem(Root + "VoyageLoop (Host)")]
         public static void VoyageLoopSolo() => RunSolo("VoyageLoop");
 

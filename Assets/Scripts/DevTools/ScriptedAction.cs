@@ -67,5 +67,11 @@ namespace TinCan.DevTools
         // Doing a skill check (SkillCheck context)
         /// <summary>Press: grades the check against where the needle is.</summary>
         SkillCheckPress,
+
+        /// <summary>The button combo's steps.</summary>
+        SkillCheckLeft,
+        SkillCheckRight,
+        SkillCheckUp,
+        SkillCheckDown,
     }
 }

@@ -13,10 +13,12 @@ MonoBehaviour:
   m_Name: SC_EngineBoost
   m_EditorClassIdentifier: TinCan.Features.SkillChecks::TinCan.Features.SkillChecks.SkillCheckDefinition
   Title: Engine boost
+  Kind: 0
   Seconds: 4
   Period: 1.6
   GoodWidth: 0.25
   PerfectWidth: 0.1
+  ComboLength: 4
   Cooldown: 20
   GoodEffect: {fileID: 11400000, guid: d9a918ddc39d89b4bb24f41c0bc2a1e5, type: 2}
   PerfectEffect: {fileID: 11400000, guid: f18d373f047aad24dbfc5198d43f706a, type: 2}

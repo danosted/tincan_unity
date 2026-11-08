@@ -7,7 +7,7 @@ using TinCan.Features.SkillChecks;
 namespace TinCan.Features.Boons
 {
     /// <summary>
-    /// Server: E on the engine telegraph opens its skill check for the player who pressed it. The check refuses (and
+    /// Server: E on an engine station (the telegraph, the boiler) opens its skill check for the player who pressed it. The check refuses (and
     /// says why in the log) while someone is doing it or while it rests.
     /// </summary>
     public sealed class StartEngineBoostInteractionHandler : IInteractionHandler
@@ -25,13 +25,13 @@ namespace TinCan.Features.Boons
 
         public void Handle(InteractionContext context)
         {
-            if (context.Target is not IEngineTelegraph telegraph) return;
+            if (context.Target is not IEngineStation station) return;
             if (context.Requester is not IPossessable { OwnerId: { } clientId }) return;
 
-            var check = telegraph.Check;
+            var check = station.Check;
             if (check == null)
             {
-                _events.LogWarning(LogSource, "The engine telegraph has no skill check host.");
+                _events.LogWarning(LogSource, "This engine station has no skill check host.");
                 return;
             }
 

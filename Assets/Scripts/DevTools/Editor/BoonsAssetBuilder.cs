@@ -38,6 +38,8 @@ namespace TinCan.DevTools.Editor
     /// <item>the engine telegraph (B3): its skill check <c>SC_EngineBoost</c> (Good <c>GE_Boon_EngineGood</c>, Perfect
     /// <c>GE_Boon_EnginePerfect</c>, inside a window also <c>GE_Boon_EngineExtra</c>, each with its cue and notify),
     /// <c>IA_EngineBoost</c>, the prefab, its fixture on the old hull and the fitting <c>boon.engine_telegraph</c>;</item>
+    /// <item>the boiler (B3, the button combo): <c>SC_BoilerStoke</c> (the same effects as the telegraph), its prefab,
+    /// fixture and the fitting <c>boon.boiler</c>, on the same interaction;</item>
     /// <item><c>BoonsConfig</c>, the Gates, SkillChecks and Boons installers, the chart's boon material, and the
     /// installers in Profile_FuelSandbox and Profile_Test_Voyage. Run TinCan > Dev > Input > Build Assets after, for the
     /// skill check's input context.</item>
@@ -48,6 +50,7 @@ namespace TinCan.DevTools.Editor
         private const string Tags = "Assets/Abilities/Tags/";
         private const string GatePrefab = "Assets/Prefabs/Boons/BoonGate.prefab";
         private const string TelegraphPrefab = "Assets/Prefabs/Boons/EngineTelegraph.prefab";
+        private const string BoilerPrefab = "Assets/Prefabs/Boons/Boiler.prefab";
         private const string Effects = "Assets/Abilities/Effects/";
         private const string Cues = "Assets/Abilities/Cues/";
         private const string Installers = "Assets/Resources/Installers/";
@@ -115,24 +118,44 @@ namespace TinCan.DevTools.Editor
                 serialized.FindProperty("_handlerTypeName").stringValue = typeof(StartEngineBoostInteractionHandler).AssemblyQualifiedName;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
             });
-            var telegraph = BuildTelegraphPrefab(check, interaction,
-                LitMaterial("Assets/Materials/Boons/M_EngineTelegraph.mat", new Color(0.72f, 0.55f, 0.25f)));
-            var fixture = Asset<ShipFixtureDefinition>("Assets/Settings/Fixtures/EngineTelegraphFixture.asset", definition =>
+            var brass = LitMaterial("Assets/Materials/Boons/M_EngineTelegraph.mat", new Color(0.72f, 0.55f, 0.25f));
+            var telegraph = BuildStationPrefab(TelegraphPrefab, check, interaction, root =>
             {
-                definition.Prefab = telegraph;
-                definition.LocalPosition = new Vector3(-3f, -3.49f, 5f);
-                definition.LocalEulerAngles = new Vector3(0f, 90f, 0f);
+                Part(root, PrimitiveType.Cylinder, "Post", new Vector3(0f, 0.55f, 0f), new Vector3(0.14f, 0.55f, 0.14f), Vector3.zero, brass);
+                Part(root, PrimitiveType.Cylinder, "Dial", new Vector3(0f, 1.25f, 0f), new Vector3(0.5f, 0.06f, 0.5f), new Vector3(90f, 0f, 0f), brass);
             });
-            var fitting = Asset<ShipFittingDefinition>("Assets/Settings/ShipFittings/FITTING_EngineTelegraph.asset", asset =>
+            var telegraphFixture = Fixture("EngineTelegraphFixture", telegraph, new Vector3(-3f, -3.49f, 5f), 90f);
+            var telegraphFitting = Fitting("FITTING_EngineTelegraph", "boon.engine_telegraph", "Engine telegraph", telegraph);
+
+            // The boiler: the button combo (B3, the second kind), the same boosts and window bonus as the telegraph.
+            var boilerCheck = Asset<SkillCheckDefinition>("Assets/Settings/Boons/SC_BoilerStoke.asset", definition =>
             {
-                var serialized = new SerializedObject(asset);
-                serialized.FindProperty("_fittingId").stringValue = "boon.engine_telegraph";
-                serialized.FindProperty("_displayName").stringValue = "Engine telegraph";
-                serialized.FindProperty("_prefab").objectReferenceValue = telegraph;
-                serialized.ApplyModifiedPropertiesWithoutUndo();
+                definition.Title = "Stoke the boiler";
+                definition.Kind = SkillCheckKind.Combo;
+                definition.Seconds = 5f;
+                definition.ComboLength = 4;
+                definition.GoodEffect = engineGood;
+                definition.PerfectEffect = enginePerfect;
+                definition.BonusTag = windowTag;
+                definition.BonusEffect = engineExtra;
             });
+            var iron = LitMaterial("Assets/Materials/Boons/M_Boiler.mat", new Color(0.22f, 0.22f, 0.24f));
+            var valve = LitMaterial("Assets/Materials/Boons/M_BoilerValve.mat", new Color(0.65f, 0.12f, 0.08f));
+            var boiler = BuildStationPrefab(BoilerPrefab, boilerCheck, interaction, root =>
+            {
+                Part(root, PrimitiveType.Cylinder, "Drum", new Vector3(0f, 0.5f, 0f), new Vector3(0.7f, 0.5f, 0.7f), Vector3.zero, iron);
+                Part(root, PrimitiveType.Cylinder, "Pipe", new Vector3(0f, 1.2f, 0f), new Vector3(0.12f, 0.2f, 0.12f), Vector3.zero, iron);
+                Part(root, PrimitiveType.Cylinder, "Valve", new Vector3(0f, 1.4f, 0f), new Vector3(0.4f, 0.03f, 0.4f), Vector3.zero, valve);
+            });
+            var boilerFixture = Fixture("BoilerFixture", boiler, new Vector3(5.5f, -3.49f, 5f), -90f);
+            var boilerFitting = Fitting("FITTING_Boiler", "boon.boiler", "Boiler", boiler);
+
             var skillChecks = Asset<SkillChecksFeatureInstaller>(Installers + "SkillChecksFeatureInstaller.asset", asset =>
-                AddUnique(asset, "_styles", new Object[] { Load<StyleSheet>("Assets/Scripts/Features/SkillChecks/UI/SkillGauge.uss") }));
+                AddUnique(asset, "_styles", new Object[]
+                {
+                    Load<StyleSheet>("Assets/Scripts/Features/SkillChecks/UI/SkillGauge.uss"),
+                    Load<StyleSheet>("Assets/Scripts/Features/SkillChecks/UI/SkillCombo.uss")
+                }));
 
             var glow = Material("Assets/Materials/Boons/M_BoonGate.mat", new Color(1f, 0.8f, 0.25f, 0.35f));
             var gate = Asset<GateDefinition>("Assets/Settings/Boons/Gate_Boon_SpeedBurst.asset", definition =>
@@ -153,8 +176,8 @@ namespace TinCan.DevTools.Editor
             {
                 SetField(boons, "_config", config);
                 AddUnique(boons, "_cueNotifies", notifies);
-                SetField(boons, "_telegraphFixture", fixture);
-                AddUnique(boons, "_fittings", new Object[] { fitting });
+                AddUnique(boons, "_fixtures", new Object[] { telegraphFixture, boilerFixture });
+                AddUnique(boons, "_fittings", new Object[] { telegraphFitting, boilerFitting });
             });
 
             var navigation = Load<NavigationConfig>("Assets/Settings/Navigation/NavigationConfig.asset");
@@ -202,24 +225,43 @@ namespace TinCan.DevTools.Editor
                 serialized.ApplyModifiedPropertiesWithoutUndo();
             });
 
+        /// <summary>An engine station's fixture on the old hull: its prefab, where it stands and which way it turns.</summary>
+        private static ShipFixtureDefinition Fixture(string name, GameObject prefab, Vector3 position, float yaw) =>
+            Asset<ShipFixtureDefinition>("Assets/Settings/Fixtures/" + name + ".asset", definition =>
+            {
+                definition.Prefab = prefab;
+                definition.LocalPosition = position;
+                definition.LocalEulerAngles = new Vector3(0f, yaw, 0f);
+            });
+
+        /// <summary>An engine station's socket fitting, for designed ships.</summary>
+        private static ShipFittingDefinition Fitting(string name, string id, string displayName, GameObject prefab) =>
+            Asset<ShipFittingDefinition>("Assets/Settings/ShipFittings/" + name + ".asset", asset =>
+            {
+                var serialized = new SerializedObject(asset);
+                serialized.FindProperty("_fittingId").stringValue = id;
+                serialized.FindProperty("_displayName").stringValue = displayName;
+                serialized.FindProperty("_prefab").objectReferenceValue = prefab;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            });
+
         /// <summary>
-        /// The engine telegraph: a NetworkObject with its entity, skill check host and telegraph mediators; a brass post
-        /// with a dial on top (visuals without colliders) and a trigger at chest height for the interaction ray. Its pivot
-        /// is at its base, so it stands on a deck or a socket.
+        /// An engine station (the telegraph, the boiler): a NetworkObject with its entity, skill check host and station
+        /// mediators; its look (visuals without colliders, from <paramref name="parts"/>) and a trigger at chest height for
+        /// the interaction ray. Its pivot is at its base, so it stands on a deck or a socket. Made once; delete the prefab
+        /// to rebuild it.
         /// </summary>
-        private static GameObject BuildTelegraphPrefab(SkillCheckDefinition check, InteractionDefinition interaction, Material brass)
+        private static GameObject BuildStationPrefab(string path, SkillCheckDefinition check, InteractionDefinition interaction, Action<GameObject> parts)
         {
-            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(TelegraphPrefab);
+            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (existing != null) return existing;
 
-            var root = new GameObject("EngineTelegraph");
+            var root = new GameObject(Path.GetFileNameWithoutExtension(path));
             root.AddComponent<NetworkObject>();
             root.AddComponent<EntityNetworkMediator>();
             SetField(root.AddComponent<SkillCheckHostNetworkMediator>(), "_check", check);
-            SetField(root.AddComponent<EngineTelegraphNetworkMediator>(), "_interactionDefinition", interaction);
-
-            Part(root, PrimitiveType.Cylinder, "Post", new Vector3(0f, 0.55f, 0f), new Vector3(0.14f, 0.55f, 0.14f), Vector3.zero, brass);
-            Part(root, PrimitiveType.Cylinder, "Dial", new Vector3(0f, 1.25f, 0f), new Vector3(0.5f, 0.06f, 0.5f), new Vector3(90f, 0f, 0f), brass);
+            SetField(root.AddComponent<EngineStationNetworkMediator>(), "_interactionDefinition", interaction);
+            parts(root);
 
             var volume = new GameObject("InteractVolume");
             volume.transform.SetParent(root.transform, false);
@@ -228,8 +270,8 @@ namespace TinCan.DevTools.Editor
             box.isTrigger = true;
             box.size = new Vector3(0.6f, 1.6f, 0.6f);
 
-            EnsureFolder(TelegraphPrefab);
-            var prefab = PrefabUtility.SaveAsPrefabAsset(root, TelegraphPrefab);
+            EnsureFolder(path);
+            var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);
             return prefab;
         }

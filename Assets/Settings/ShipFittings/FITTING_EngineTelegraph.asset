@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Ship::TinCan.Core.Ship.Sockets.ShipFittingDefinition
   _fittingId: boon.engine_telegraph
   _displayName: Engine telegraph
-  _prefab: {fileID: 3378382179553770804, guid: 8cb71dee1555fba4db602ca0ab8bc7b4, type: 3}
+  _prefab: {fileID: 8721467892886005052, guid: 8cb71dee1555fba4db602ca0ab8bc7b4, type: 3}

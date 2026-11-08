@@ -12,22 +12,23 @@ using VContainer.Unity;
 namespace TinCan.Features.SkillChecks
 {
     /// <summary>
-    /// Skill checks: short minigames on a ship part that grade a boost (the pulsing gauge first). The server opens a
+    /// Skill checks: short minigames on a ship part that grade a boost (the pulsing gauge and the button combo). The server opens a
     /// check on a player's peer and applies what its grade gives; the peer runs it in its own input context and draws
-    /// the gauge. A part runs checks through <see cref="SkillCheckHostNetworkMediator"/>; what starts one (pressing E on
-    /// the engine telegraph) belongs to the feature that owns the part. Plan: .docs/plans/hazards-and-boons.md (B3).
+    /// it. A part runs checks through <see cref="SkillCheckHostNetworkMediator"/>; what starts one (pressing E on
+    /// an engine station) belongs to the feature that owns the part. Plan: .docs/plans/hazards-and-boons.md (B3).
     /// </summary>
     [CreateAssetMenu(fileName = "SkillChecksFeatureInstaller", menuName = "TinCan/Features/Skill Checks Feature Installer")]
     public class SkillChecksFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<InputContext>, FeatureInstaller.IExtension<StyleSheet>
     {
         [Tooltip("The skill check context (built by TinCan > Dev > Input > Build Assets).")]
         [SerializeField] private SkillCheckInputContext? _controls;
-        [Tooltip("SkillGauge.uss.")]
+        [Tooltip("SkillGauge.uss and SkillCombo.uss.")]
         [SerializeField] private List<StyleSheet> _styles = new();
 
         public override void Install(IContainerBuilder builder)
         {
             builder.Register<PulsingGaugeProcessor>(Lifetime.Transient);
+            builder.Register<ComboProcessor>(Lifetime.Transient);
             builder.Register<SkillCheckUseCase>(Lifetime.Singleton).As<ISkillChecks>().As<ISimulationTickable>();
 
             if (_controls == null)
@@ -38,7 +39,7 @@ namespace TinCan.Features.SkillChecks
 
             builder.RegisterInstance(_controls);
             builder.Register<SkillCheckRunner>(Lifetime.Singleton).As<ISkillCheckRunner>().As<ITickable>();
-            builder.Register<SkillCheckGaugePresenter>(Lifetime.Singleton).As<ITickable>();
+            builder.Register<SkillCheckPresenter>(Lifetime.Singleton).As<ITickable>();
         }
 
         IEnumerable<InputContext> FeatureInstaller.IExtension<InputContext>.Contributions

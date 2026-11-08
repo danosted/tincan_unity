@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c09b5765edc578479b81815a2f36133, type: 3}
   m_Name: EngineTelegraphFixture
   m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Features.ShipFixtureDefinition
-  Prefab: {fileID: 3378382179553770804, guid: 8cb71dee1555fba4db602ca0ab8bc7b4, type: 3}
+  Prefab: {fileID: 8721467892886005052, guid: 8cb71dee1555fba4db602ca0ab8bc7b4, type: 3}
   LocalPosition: {x: -3, y: -3.49, z: 5}
   LocalEulerAngles: {x: 0, y: 90, z: 0}

@@ -48,6 +48,14 @@ Status: Approved (2026-11-07)
   every peer and one Perfect on the server. Built by **TinCan > Dev > Boons > Build Assets**, then **TinCan > Dev >
   Input > Build Assets**.
   First run: the scenario held the press, which a pressed-this-frame read never sees; it taps it now.
+- **B3 combo built (2026-11-08), awaiting its play run and a playtest:** the second kind, on a second engine station,
+  the boiler (a fixture on the old hull at starboard, the fitting `boon.boiler`; `SC_BoilerStoke`, the same boosts
+  and window bonus as the telegraph). `ComboProcessor`: four directions in order in 5 s; a wrong one restarts the row
+  (it counts as the first step if it is one); no slip is Perfect, finished at all is Good. New actions
+  `SkillCheck/Left`, `Right`, `Up`, `Down` (the arrows or WASD, the d-pad). The check's layout (the band, the row)
+  is now picked on the player's peer, not the server, which only opens the check by its number. The telegraph's
+  mediator became `EngineStationNetworkMediator`, shared by both stations. Scenario `BoilerCombo` (Test_Voyage):
+  a right step, a wrong one, then the whole row: one Good and the Good boost's cue on every peer.
 - **Gates split out of B1 (2026-11-08).** A boon gate is now a generic gate with a boon action (see "Gates" below).
   New assembly `TinCan.Features.Gates`: `GateDefinition`, `GateUseCase` (spots the pass, runs the actions, uses the
   gate up), `GateNetworkMediator`, `ApplyEffectGateAction`. Boons keeps the layout, the chart and the laying
@@ -165,8 +173,8 @@ gate fills a window in which the engine check gives an extra boost. This replace
 - **A gate opens a boost window:** passing a boon gate also puts `GE_Boon_BoostWindow` on the ship (a timed tag,
   `State.Ship.BoostWindow`). A check finished while the ship has that tag adds the extra boost for its grade. The
   check's definition holds that rule (`BonusTag`, bonus effects), since GAS effects cannot require a tag yet.
-- **Timing runs on the player's machine;** the server opens the check (and picks the band), the player's peer sends
-  the grade back, and the server takes it only for a check it opened for that player, in time.
+- **Timing runs on the player's machine;** the server opens the check, the player's peer lays it out (the band,
+  the combo's row) and sends the grade back, and the server takes it only for a check it opened for that player, in time.
 - **Built as:** `TinCan.Features.SkillChecks` (the definition, `PulsingGaugeProcessor`, the server use case, the
   per-peer runner, its input context and gauge view, and a generic host mediator any networked object can carry).
   Boons references it for the telegraph and the window. Scenario `EngineBoost` (Test_Voyage) opens the check for the

@@ -16,8 +16,9 @@ namespace TinCan.Features.Boons
     /// <list type="bullet">
     /// <item>Boon gates (the Gates feature), laid off the route from the voyage seed and on the navigator's chart: each
     /// gives a GAS boon when the ship flies through, and opens the boost window.</item>
-    /// <item>The engine telegraph (a ship fixture, and the boon.engine_telegraph fitting): press E for its skill check
-    /// (the SkillChecks feature), whose grade gives a speed boost, more inside a boost window.</item>
+    /// <item>The engine stations (ship fixtures, and the boon.engine_telegraph and boon.boiler fittings): press E for
+    /// their skill check (the SkillChecks feature: the telegraph's pulsing gauge, the boiler's button combo), whose
+    /// grade gives a speed boost, more inside a boost window.</item>
     /// </list>
     /// What a boon looks and sounds like is its effect's cue (the notifies listed here). Needs the Gates and SkillChecks
     /// installers in the same profile. Plan: .docs/plans/hazards-and-boons.md (B1, B3).
@@ -29,9 +30,9 @@ namespace TinCan.Features.Boons
         [SerializeField] private BoonsConfig? _config;
         [Tooltip("What taking a boon looks and sounds like (GCN_Boon_*).")]
         [SerializeField] private List<GameplayCueNotify> _cueNotifies = new();
-        [Tooltip("The engine telegraph on the old hull (EngineTelegraphFixture).")]
-        [SerializeField] private ShipFixtureDefinition? _telegraphFixture;
-        [Tooltip("Socket fittings: the engine telegraph (boon.engine_telegraph).")]
+        [Tooltip("The engine stations on the old hull (EngineTelegraphFixture, BoilerFixture).")]
+        [SerializeField] private List<ShipFixtureDefinition> _fixtures = new();
+        [Tooltip("Socket fittings: the engine stations (boon.engine_telegraph, boon.boiler).")]
         [SerializeField] private List<ShipFittingDefinition> _fittings = new();
 
         public override void Install(IContainerBuilder builder)
@@ -55,7 +56,10 @@ namespace TinCan.Features.Boons
         {
             get
             {
-                if (_telegraphFixture != null && _telegraphFixture.Prefab != null) yield return _telegraphFixture.Prefab;
+                foreach (var fixture in _fixtures)
+                {
+                    if (fixture != null && fixture.Prefab != null) yield return fixture.Prefab;
+                }
                 foreach (var fitting in _fittings)
                 {
                     if (fitting != null && fitting.Prefab != null) yield return fitting.Prefab;
@@ -71,13 +75,7 @@ namespace TinCan.Features.Boons
 
         IEnumerable<GameplayCueNotify> FeatureInstaller.IExtension<GameplayCueNotify>.Contributions => _cueNotifies;
 
-        IEnumerable<ShipFixtureDefinition> FeatureInstaller.IExtension<ShipFixtureDefinition>.Contributions
-        {
-            get
-            {
-                if (_telegraphFixture != null) yield return _telegraphFixture;
-            }
-        }
+        IEnumerable<ShipFixtureDefinition> FeatureInstaller.IExtension<ShipFixtureDefinition>.Contributions => _fixtures;
 
         IEnumerable<ShipFittingDefinition> FeatureInstaller.IExtension<ShipFittingDefinition>.Contributions => _fittings;
     }

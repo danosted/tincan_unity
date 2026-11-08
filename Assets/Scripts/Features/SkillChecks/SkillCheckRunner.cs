@@ -1,4 +1,6 @@
 #nullable enable
+using System;
+using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Input;
 using VContainer.Unity;
@@ -7,13 +9,17 @@ namespace TinCan.Features.SkillChecks
 {
     /// <summary>
     /// This peer, per frame: runs the check the server opened for this player. It opens the skill check input context
-    /// (walking and looking go quiet), moves the needle on local time, grades the first Press against the band, or
-    /// gives a Miss when time runs out, and sends the grade to the server. The grade then shows for a moment.
+    /// (walking and looking go quiet) and lays the check out here (the gauge's band, or the combo's directions; co-op
+    /// trusts the peer). The pulsing gauge grades the first Press against the band; the combo grades once its last
+    /// direction is pressed. Time running out is a Miss. The grade goes to the server and shows for a moment.
     /// </summary>
     public sealed class SkillCheckRunner : ITickable, ISkillCheckRunner
     {
         /// <summary>Seconds the grade shows after a check.</summary>
         public const float ShowSeconds = 1.2f;
+
+        private static readonly ComboDirection[] AllDirections =
+            { ComboDirection.Left, ComboDirection.Right, ComboDirection.Up, ComboDirection.Down };
 
         private readonly IActorRegistry _actors;
         private readonly IInputReader _input;
@@ -21,13 +27,16 @@ namespace TinCan.Features.SkillChecks
         private readonly SkillCheckInputContext _controls;
         private readonly ITimeService _time;
         private readonly PulsingGaugeProcessor _gauge;
+        private readonly ComboProcessor _combo;
+        private readonly Random _random = new();
         private ISkillCheckHost? _host;
         private int _checkId;
         private float _elapsed;
         private float _showLeft;
+        private int _wrongPresses;
 
         public SkillCheckRunner(IActorRegistry actors, IInputReader input, IInputContextSwitch contexts, SkillCheckInputContext controls,
-            ITimeService time, PulsingGaugeProcessor gauge)
+            ITimeService time, PulsingGaugeProcessor gauge, ComboProcessor combo)
         {
             _actors = actors;
             _input = input;
@@ -35,12 +44,15 @@ namespace TinCan.Features.SkillChecks
             _controls = controls;
             _time = time;
             _gauge = gauge;
+            _combo = combo;
         }
 
         public bool IsRunning => _host != null;
         public SkillCheckDefinition? Definition { get; private set; }
         public float Needle { get; private set; }
         public PulsingGaugeBand Band { get; private set; }
+        public IReadOnlyList<ComboDirection> Combo { get; private set; } = Array.Empty<ComboDirection>();
+        public int ComboDone { get; private set; }
         public float SecondsLeft => Definition != null && IsRunning ? Definition.Seconds - _elapsed : 0f;
         public SkillCheckGrade? Shown { get; private set; }
 
@@ -61,21 +73,45 @@ namespace TinCan.Features.SkillChecks
             }
 
             _elapsed += _time.DeltaTime;
+            if (definition.Kind == SkillCheckKind.Combo) TickCombo();
+            else TickGauge(definition);
+            if (_host != null && _elapsed >= definition.Seconds) Finish(SkillCheckGrade.Miss);
+        }
+
+        private void TickGauge(SkillCheckDefinition definition)
+        {
             Needle = _gauge.Needle(_elapsed, definition.Period);
             if (_input.WasPressedThisFrame(_controls.Press)) Finish(_gauge.Grade(Needle, Band));
-            else if (_elapsed >= definition.Seconds) Finish(SkillCheckGrade.Miss);
+        }
+
+        private void TickCombo()
+        {
+            foreach (var direction in AllDirections)
+            {
+                if (!_input.WasPressedThisFrame(_controls.For(direction))) continue;
+
+                ComboDone = _combo.Advance(Combo, ComboDone, direction, out bool wrong);
+                if (wrong) _wrongPresses++;
+                if (ComboDone >= Combo.Count) Finish(_combo.Grade(true, _wrongPresses));
+                return; // one press a frame
+            }
         }
 
         private void TryBegin()
         {
             foreach (var host in _actors.GetActors<ISkillCheckHost>())
             {
-                if (!host.TryTakeOpened(out var opening) || host.Definition == null) continue;
+                if (!host.TryTakeOpened(out int checkId) || host.Definition == null) continue;
 
                 _host = host;
-                _checkId = opening.CheckId;
-                Definition = host.Definition;
-                Band = new PulsingGaugeBand(opening.BandCenter, Definition.GoodWidth, Definition.PerfectWidth);
+                _checkId = checkId;
+                var definition = Definition = host.Definition;
+                Band = _gauge.Band(_random, definition.GoodWidth, definition.PerfectWidth);
+                Combo = definition.Kind == SkillCheckKind.Combo
+                    ? _combo.Sequence(_random, definition.ComboLength)
+                    : Array.Empty<ComboDirection>();
+                ComboDone = 0;
+                _wrongPresses = 0;
                 _elapsed = 0f;
                 Needle = 0f;
                 Shown = null;

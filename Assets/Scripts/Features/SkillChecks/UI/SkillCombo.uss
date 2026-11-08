@@ -1,0 +1,54 @@
+.tc-skill-combo {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 22%;
+    align-items: center;
+}
+
+.tc-skill-combo__title {
+    font-size: var(--tc-font-l);
+    color: var(--tc-text);
+    margin-bottom: var(--tc-space-s);
+}
+
+.tc-skill-combo__row {
+    flex-direction: row;
+}
+
+.tc-skill-combo__step {
+    width: 56px;
+    height: 56px;
+    margin-left: 4px;
+    margin-right: 4px;
+    font-size: var(--tc-font-title);
+    -unity-text-align: middle-center;
+    color: var(--tc-text);
+    background-color: var(--tc-surface-track);
+    border-color: var(--tc-border-strong);
+    border-width: 1px;
+    border-radius: var(--tc-radius-s);
+}
+
+.tc-skill-combo__step--next {
+    border-color: var(--tc-text);
+    border-width: 3px;
+}
+
+.tc-skill-combo__step--done {
+    background-color: var(--tc-good);
+}
+
+.tc-skill-combo__line {
+    font-size: var(--tc-font-l);
+    color: var(--tc-text);
+    margin-top: var(--tc-space-s);
+}
+
+.tc-skill-combo__line--hit {
+    color: var(--tc-good);
+}
+
+.tc-skill-combo__line--miss {
+    color: var(--tc-bad);
+}

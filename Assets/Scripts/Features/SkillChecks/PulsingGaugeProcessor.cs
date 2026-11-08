@@ -9,6 +9,14 @@ namespace TinCan.Features.SkillChecks
     /// </summary>
     public class PulsingGaugeProcessor
     {
+        /// <summary>A band somewhere in the gauge's middle half (never past its ends), so where to press changes each time.</summary>
+        public PulsingGaugeBand Band(System.Random random, float goodWidth, float perfectWidth)
+        {
+            float half = goodWidth * 0.5f;
+            float center = Mathf.Lerp(Mathf.Max(half, 0.25f), Mathf.Min(1f - half, 0.75f), (float)random.NextDouble());
+            return new PulsingGaugeBand(center, goodWidth, perfectWidth);
+        }
+
         /// <summary>The needle, 0 to 1, after this many seconds (it starts at 0 and turns at 1).</summary>
         public float Needle(float elapsed, float period)
         {

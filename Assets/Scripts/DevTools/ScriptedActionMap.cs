@@ -75,6 +75,10 @@ namespace TinCan.DevTools
                 ScriptedAction.MenuSubmit => (Get<MenuInputContext>()?.Submit, Vector2.right),
                 ScriptedAction.SwitchPossession => (Get<GlobalInputContext>()?.SwitchPossession, Vector2.right),
                 ScriptedAction.SkillCheckPress => (Get<SkillCheckInputContext>()?.Press, Vector2.right),
+                ScriptedAction.SkillCheckLeft => (Get<SkillCheckInputContext>()?.Left, Vector2.right),
+                ScriptedAction.SkillCheckRight => (Get<SkillCheckInputContext>()?.Right, Vector2.right),
+                ScriptedAction.SkillCheckUp => (Get<SkillCheckInputContext>()?.Up, Vector2.right),
+                ScriptedAction.SkillCheckDown => (Get<SkillCheckInputContext>()?.Down, Vector2.right),
                 _ => (null, Vector2.zero),
             };
 

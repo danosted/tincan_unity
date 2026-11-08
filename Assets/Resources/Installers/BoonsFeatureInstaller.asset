@@ -19,6 +19,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: be0543d9d041e1a4684cacd5363a1bba, type: 2}
   - {fileID: 11400000, guid: f03c955eb24f3e745b335df9d42d5055, type: 2}
   - {fileID: 11400000, guid: b6853eff7453559479caa3b720d244a0, type: 2}
-  _telegraphFixture: {fileID: 11400000, guid: a1a90e075c31d03458982863d1f0a1cf, type: 2}
+  _fixtures:
+  - {fileID: 11400000, guid: a1a90e075c31d03458982863d1f0a1cf, type: 2}
+  - {fileID: 11400000, guid: 2ad648a51caa03a40bfb7f57daf5f0c7, type: 2}
   _fittings:
   - {fileID: 11400000, guid: 9c49d6c287e45c341b20b5fb2b6c4ee6, type: 2}
+  - {fileID: 11400000, guid: aeb5320c256f4824a99ecf6622325909, type: 2}

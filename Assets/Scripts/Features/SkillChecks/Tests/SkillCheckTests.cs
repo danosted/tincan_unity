@@ -29,16 +29,16 @@ namespace TinCan.Features.SkillChecks.Tests
             public bool IsSimulating { get; set; } = true;
             public IAirshipView? Ship { get; set; }
             public SkillCheckDefinition? Definition { get; set; }
-            public List<(ulong Client, int CheckId, float Band)> Opened { get; } = new();
+            public List<(ulong Client, int CheckId)> Opened { get; } = new();
             public List<(int CheckId, SkillCheckGrade Grade)> Sent { get; } = new();
             public List<SkillCheckResult> Incoming { get; } = new();
-            public SkillCheckOpening? Pending;
+            public int? Pending;
 
-            public void ServerOpen(ulong clientId, int checkId, float bandCenter) => Opened.Add((clientId, checkId, bandCenter));
+            public void ServerOpen(ulong clientId, int checkId) => Opened.Add((clientId, checkId));
 
-            public bool TryTakeOpened(out SkillCheckOpening opening)
+            public bool TryTakeOpened(out int checkId)
             {
-                opening = Pending ?? default;
+                checkId = Pending ?? 0;
                 bool had = Pending != null;
                 Pending = null;
                 return had;
@@ -75,6 +75,7 @@ namespace TinCan.Features.SkillChecks.Tests
 
         private readonly List<Object> _assets = new();
         private readonly PulsingGaugeProcessor _gauge = new();
+        private readonly ComboProcessor _combo = new();
         private FakeActorRegistry _actors = null!;
         private FakeTimeService _time = null!;
         private RecordingPublisher _events = null!;
@@ -139,13 +140,55 @@ namespace TinCan.Features.SkillChecks.Tests
         }
 
         [Test]
-        public void Open_SendsTheCheckToThatPlayer_WithTheBandInsideTheGauge()
+        public void Band_SitsInTheGaugesMiddleHalf_NeverPastItsEnds()
+        {
+            var random = new System.Random(1);
+            for (int i = 0; i < 50; i++)
+            {
+                Assert.That(_gauge.Band(random, 0.25f, 0.1f).Center, Is.InRange(0.25f, 0.75f));
+                Assert.That(_gauge.Band(random, 0.8f, 0.1f).Center, Is.InRange(0.4f, 0.6f), "a wide band stays inside");
+            }
+        }
+
+        [Test]
+        public void Combo_IsARowOfDirections_NeverTheSameTwiceInARow()
+        {
+            var random = new System.Random(3);
+            for (int i = 0; i < 50; i++)
+            {
+                var sequence = _combo.Sequence(random, 5);
+                Assert.That(sequence, Has.Length.EqualTo(5));
+                for (int step = 1; step < sequence.Length; step++) Assert.That(sequence[step], Is.Not.EqualTo(sequence[step - 1]));
+            }
+        }
+
+        [Test]
+        public void Combo_ARightPressMovesOn_AWrongOneRestarts_CountingAFreshStart()
+        {
+            var row = new[] { ComboDirection.Up, ComboDirection.Left, ComboDirection.Down };
+
+            Assert.That(_combo.Advance(row, 0, ComboDirection.Up, out bool wrong), Is.EqualTo(1));
+            Assert.That(wrong, Is.False);
+            Assert.That(_combo.Advance(row, 2, ComboDirection.Right, out wrong), Is.Zero, "restarts");
+            Assert.That(wrong, Is.True);
+            Assert.That(_combo.Advance(row, 2, ComboDirection.Up, out wrong), Is.EqualTo(1), "wrong here, but the row's first step");
+            Assert.That(wrong, Is.True);
+        }
+
+        [Test]
+        public void Combo_Grade_PerfectWithoutASlip_GoodWithOne_MissUnfinished()
+        {
+            Assert.That(_combo.Grade(true, 0), Is.EqualTo(SkillCheckGrade.Perfect));
+            Assert.That(_combo.Grade(true, 2), Is.EqualTo(SkillCheckGrade.Good));
+            Assert.That(_combo.Grade(false, 0), Is.EqualTo(SkillCheckGrade.Miss));
+        }
+
+        [Test]
+        public void Open_SendsTheCheckToThatPlayer()
         {
             Assert.That(UseCase().TryOpen(_host, Player), Is.True);
 
-            var opened = _host.Opened.Single();
-            Assert.That(opened.Client, Is.EqualTo(Player));
-            Assert.That(opened.Band, Is.InRange(_check.GoodWidth * 0.5f, 1f - _check.GoodWidth * 0.5f));
+            Assert.That(_host.Opened.Single().Client, Is.EqualTo(Player));
         }
 
         [Test]
@@ -234,13 +277,13 @@ namespace TinCan.Features.SkillChecks.Tests
         {
             var (runner, input, contexts, controls) = Runner();
             _check.Period = 2f;
-            _host.Pending = new SkillCheckOpening(5, 0.5f);
+            _host.Pending = 5;
 
             runner.Tick();
             Assert.That(runner.IsRunning, Is.True);
             Assert.That(contexts.IsOpen(controls), Is.True, "walking and looking go quiet");
 
-            _time.DeltaTime = 0.5f; // the needle reaches the middle
+            _time.DeltaTime = runner.Band.Center; // the needle sweeps 0 to 1 in a second: it reaches the band's middle
             input.Triggered.Add(controls.Press!);
             runner.Tick();
 
@@ -254,7 +297,7 @@ namespace TinCan.Features.SkillChecks.Tests
         public void Runner_WithoutAPress_SendsAMiss_WhenTimeRunsOut()
         {
             var (runner, _, contexts, controls) = Runner();
-            _host.Pending = new SkillCheckOpening(9, 0.5f);
+            _host.Pending = 9;
             runner.Tick();
 
             _time.DeltaTime = 1f;
@@ -267,13 +310,50 @@ namespace TinCan.Features.SkillChecks.Tests
             Assert.That(runner.Shown, Is.Null, "the grade shows only for a moment");
         }
 
+        [Test]
+        public void Runner_PlaysACombo_AWrongStepRestartsIt_AndFinishedItIsAGood()
+        {
+            var (runner, input, contexts, controls) = Runner();
+            _check.Kind = SkillCheckKind.Combo;
+            _check.ComboLength = 3;
+            _host.Pending = 4;
+            runner.Tick();
+            Assert.That(runner.Combo.Count, Is.EqualTo(3));
+            Assert.That(contexts.IsOpen(controls), Is.True);
+
+            _time.DeltaTime = 0.1f;
+            Press(runner.Combo[0]);
+            Assert.That(runner.ComboDone, Is.EqualTo(1));
+
+            var wrong = Enumerable.Range(0, 4).Select(i => (ComboDirection)i).First(d => d != runner.Combo[1] && d != runner.Combo[0]);
+            Press(wrong);
+            Assert.That(runner.ComboDone, Is.Zero, "restarted, not failed");
+            Assert.That(runner.IsRunning, Is.True);
+
+            foreach (var step in runner.Combo.ToArray()) Press(step);
+
+            Assert.That(_host.Sent, Is.EqualTo(new[] { (4, SkillCheckGrade.Good) }));
+            Assert.That(contexts.IsOpen(controls), Is.False);
+
+            void Press(ComboDirection direction)
+            {
+                input.Triggered.Add(controls.For(direction)!);
+                runner.Tick();
+                input.Triggered.Clear();
+            }
+        }
+
         private (SkillCheckRunner Runner, FakeInputReader Input, FakeContextSwitch Contexts, SkillCheckInputContext Controls) Runner()
         {
             var controls = Create<SkillCheckInputContext>("Context_SkillCheck");
             controls.Press = Create<InputActionId>("SkillCheck.Press");
+            controls.Left = Create<InputActionId>("SkillCheck.Left");
+            controls.Right = Create<InputActionId>("SkillCheck.Right");
+            controls.Up = Create<InputActionId>("SkillCheck.Up");
+            controls.Down = Create<InputActionId>("SkillCheck.Down");
             var input = new FakeInputReader();
             var contexts = new FakeContextSwitch();
-            return (new SkillCheckRunner(_actors, input, contexts, controls, _time, _gauge), input, contexts, controls);
+            return (new SkillCheckRunner(_actors, input, contexts, controls, _time, _gauge, _combo), input, contexts, controls);
         }
 
         private SkillCheckUseCase UseCase()

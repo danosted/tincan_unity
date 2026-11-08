@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace TinCan.Features.Boons.Tests
 {
-    /// <summary><see cref="StartEngineBoostInteractionHandler"/>: E on the engine telegraph opens its check for the player who pressed it. Plan: hazards-and-boons.md (B3).</summary>
+    /// <summary><see cref="StartEngineBoostInteractionHandler"/>: E on an engine station opens its check for the player who pressed it. Plan: hazards-and-boons.md (B3).</summary>
     public class StartEngineBoostInteractionHandlerTests
     {
         private sealed class Player : IPossessable
@@ -30,17 +30,17 @@ namespace TinCan.Features.Boons.Tests
             public bool IsSimulating => true;
             public IAirshipView? Ship => null;
             public SkillCheckDefinition? Definition => null;
-            public void ServerOpen(ulong clientId, int checkId, float bandCenter) { }
-            public bool TryTakeOpened(out SkillCheckOpening opening)
+            public void ServerOpen(ulong clientId, int checkId) { }
+            public bool TryTakeOpened(out int checkId)
             {
-                opening = default;
+                checkId = 0;
                 return false;
             }
             public void SendGrade(int checkId, SkillCheckGrade grade) { }
             public IReadOnlyList<SkillCheckResult> TakeResults() => Array.Empty<SkillCheckResult>();
         }
 
-        private sealed class Telegraph : IEngineTelegraph
+        private sealed class Station : IEngineStation
         {
             public ISkillCheckHost? Check { get; set; }
         }
@@ -75,10 +75,10 @@ namespace TinCan.Features.Boons.Tests
         public void TearDown() => UnityEngine.Object.DestroyImmediate(_definition);
 
         [Test]
-        public void E_OnTheTelegraph_OpensItsCheck_ForThePlayerWhoPressed()
+        public void E_OnAStation_OpensItsCheck_ForThePlayerWhoPressed()
         {
             var host = new Host();
-            Handle(new Player { OwnerId = 3 }, new Telegraph { Check = host });
+            Handle(new Player { OwnerId = 3 }, new Station { Check = host });
 
             Assert.That(_checks.Opened, Is.EqualTo(new[] { ((ISkillCheckHost)host, 3UL) }));
         }
@@ -86,8 +86,8 @@ namespace TinCan.Features.Boons.Tests
         [Test]
         public void NoOwner_OrNoHost_OpensNothing()
         {
-            Handle(new Player(), new Telegraph { Check = new Host() });
-            Handle(new Player { OwnerId = 3 }, new Telegraph());
+            Handle(new Player(), new Station { Check = new Host() });
+            Handle(new Player { OwnerId = 3 }, new Station());
 
             Assert.That(_checks.Opened, Is.Empty);
         }

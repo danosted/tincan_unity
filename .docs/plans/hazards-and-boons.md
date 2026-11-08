@@ -27,6 +27,24 @@ Status: Approved (2026-11-07)
     `PlaySoundCueAction`. A first, ship-only presenter was replaced by this (developer: a generic presentation that
     any actor gets). A kind of actor that should react differently gets a more specific cue tag on its effect.
     `CannonMisfire` expects exactly one `Cue.Hit` burst on each peer.
+- **H0 built (2026-11-07); its scenarios pass solo and host + client (2026-11-08).** Deleted `SkyHazardFieldProcessor` and `HazardDriftProcessor`
+  with their tests, the field, drift and outside-zone fields on `SkyHazardConfig`, `ISkyHazards.FieldEnabled`,
+  `FieldScale` and `SpawnAt`'s `drifts`, and `IShipContactQuery.Center` (only homing used it). `SkyHazardUseCase` now
+  only spawns on demand, counts shot-down hazards and applies contact damage; `SetSessionActive` does nothing.
+  Scenarios: the `HazardField` command is gone. `HazardStrike` now puts a still hazard on the deck
+  (`SpawnHazardOnDeck`, a ray down onto the ship's own colliders) instead of letting one home in. `ChartHazards` no
+  longer checks the field's thinning. Zones and the chart stay, with nothing spawned in them until H1.
+- **B1 built (2026-11-07); `BoonGate` passes solo and host + client (2026-11-08), awaiting a playtest.** New assembly `TinCan.Features.Boons`. A voyage
+  lays a gate every 700 m, 120-220 m to one side of the straight route (`BoonGateLayoutProcessor`, from the seed on
+  every peer), skipping rock. The server spawns a networked gate at each (`BoonGateNetworkMediator`, a glowing sphere,
+  10 m reach, no collider). When the ship's body is inside one, `GE_Boon_SpeedBurst` goes on the ship and the gate is
+  used up: its glow goes out on every peer. Gates are on the chart (`ChartObstacleKind.Boon`). Scenario `BoonGate`
+  (Test_Voyage): the voyage lays gates, then one is put around the ship; the boon's cue shows on every peer and it is
+  taken exactly once. Built by **TinCan > Dev > Boons > Build Assets**.
+- **Gates split out of B1 (2026-11-08).** A boon gate is now a generic gate with a boon action (see "Gates" below).
+  New assembly `TinCan.Features.Gates`: `GateDefinition`, `GateUseCase` (spots the pass, runs the actions, uses the
+  gate up), `GateNetworkMediator`, `ApplyEffectGateAction`. Boons keeps the layout, the chart and the laying
+  (`BoonGateUseCase` through `IGates`); `BoonsConfig.Gates` lists the boon gates (`Gate_Boon_SpeedBurst`).
 
 ## Why
 The playtest on 2026-11-07 ([playtest-2026-09-30-tuning.md](playtest-2026-09-30-tuning.md), "Playtest") found two
@@ -93,8 +111,10 @@ into a voyage.
 - **A boon gate is a place in the sky.** It is a ring or a glowing patch that the ship has to steer through. When the
   ship's hull passes through it, the server applies the gate's GAS effect and the gate is used up (or recharges, set
   per gate).
-- **A boon is data.** `BoonDefinition`: a `GameplayEffectDefinition`, who gets it (the ship, or every crew member
-  aboard), a cue tag, and a name for the HUD. The first boons are open question 4.
+- **A boon is data:** a `GameplayEffectDefinition` on the ship, given by a gate's `ApplyEffectGateAction`; the boon
+  gates are listed in `BoonsConfig.Gates`. Its cue says what
+  happened (sound, HUD line), so no separate `BoonDefinition` was needed (built 2026-11-07). A boon for every crew
+  member aboard waits until one is wanted. The first boon is a speed burst (open question 4, decided).
 - **Placement** comes from the voyage seed, like zones: off the straight route, so going for a boon is a steering
   choice. It respects `IWorldObstacleQuery` and shows on the chart (a new `ChartObstacleKind.Boon`).
 - **Assembly:** `TinCan.Features.Boons`, its own installer and test assembly, plus a row in the CODE_MAP feature
@@ -103,6 +123,17 @@ into a voyage.
   for the same seed.
 - **Scenario:** `BoonGate` places a gate in front of the test ship, flies through it, and expects the effect on
   every peer.
+
+## Gates: what a gate does is data
+- **A gate is a place in the sky the ship passes through** (`TinCan.Features.Gates`). It knows its look (prefab), its
+  reach and what passing through does: a `GateDefinition` with a list of `GateAction`s, picked by type in the
+  Inspector like a cue's actions. The server runs them once, then the gate is used up and goes dark on every peer.
+- **Who lays gates is another feature's business.** Boons lays them along the route from the seed; a warp would lay
+  linked pairs. The layout, and the chart mark that comes with it, stay with that feature.
+- **Kinds are actions.** A boon gate is `ApplyEffectGateAction`. B3's gate that opens a skill check, idea 10's gate
+  that bursts into orbs, or a warp gate are new actions on new definitions; the gate itself does not change. A warp is
+  its own slice: teleporting the airship has to snap its movement, carry the crew and move the voyage's progress.
+- **Actions run on the server only.** What players see and hear stays in GAS cues.
 
 ## B2: shooting gives boons
 - A hazard or comet can carry a `BoonDefinition`. When a cannonball destroys it, the server applies the boon (to the
@@ -245,7 +276,8 @@ be playtested early. B2, the parry and the skill shots need H1.
 3. **Where does entropy come from?** Choose between a route profile (calm start, wild middle, calm approach), a value
    that rises with time aloft, one driven by the crew's state (leaks, fuel), set by events (`DesignedEvents`), or a
    mix of these.
-4. **First boons.** Candidates: a burst of speed, a hull repair, gas or fuel, a faster cannon reload for a while.
+4. ~~First boons~~ Decided 2026-11-07: a speed burst first (8 s, flight speed x1.6). Hull, fuel and reload stay
+   candidates. A gate is used up once taken (no recharge).
 5. **Zones:** do comets keep the hazard zones (thick regions on the chart), or does entropy replace zones entirely?
 6. **Does every boon go through a skill check?** Either every gate and boon comet opens a check, or some boons are
    free (fly through, get it) and only the better ones ask for skill.

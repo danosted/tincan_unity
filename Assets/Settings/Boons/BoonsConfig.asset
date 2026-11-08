@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51d298c8a7b619c47b5ecb5aa0193f06, type: 3}
+  m_Name: BoonsConfig
+  m_EditorClassIdentifier: TinCan.Features.Boons::TinCan.Features.Boons.BoonsConfig
+  Gates:
+  - {fileID: 11400000, guid: 446dd95ed32c3704e80d4b6fa8dd9431, type: 2}
+  Spacing: 700
+  LateralOffset: {x: 120, y: 220}
+  AltitudeJitter: 30
+  KeepClear: 250

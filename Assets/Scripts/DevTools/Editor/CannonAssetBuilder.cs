@@ -114,6 +114,11 @@ namespace TinCan.DevTools.Editor
                 var serialized = new SerializedObject(notify);
                 serialized.FindProperty("_cue").objectReferenceValue = hitCue;
                 var onExecute = serialized.FindProperty("_onExecute");
+                if (onExecute.arraySize > 0) // made already: keep its actions (and any tuning in the Inspector)
+                {
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                    return;
+                }
                 onExecute.arraySize = 2;
                 onExecute.GetArrayElementAtIndex(0).managedReferenceValue = new FlashTargetCueAction();
                 onExecute.GetArrayElementAtIndex(1).managedReferenceValue = new PlaySoundCueAction
@@ -183,17 +188,7 @@ namespace TinCan.DevTools.Editor
             var hazardConfig = Asset<SkyHazardConfig>("Assets/Settings/SkyHazards/SkyHazardConfig.asset", config =>
             {
                 config.Prefab = hazard;
-                config.FieldEnabled = true;
-                // First tuning for the voyage (first-voyage.md V1): a hazard every 6 s, homing at 4 m/s, 20 unanswered hits
-                // sink a 1000-health ship. Playtest 2026-09-30: they come from ahead of the bow, 90-170 m out, and each
-                // player beyond the first adds two to the field and spawns them 20% sooner.
-                config.MaxAlive = 4;
-                config.MaxAlivePerExtraPlayer = 2;
-                config.SpawnInterval = 6f;
-                config.SpawnIntervalScalePerExtraPlayer = 0.8f;
-                config.FieldMin = new Vector3(-45f, -10f, 90f);
-                config.FieldMax = new Vector3(45f, 25f, 170f);
-                config.DriftSpeed = 4f;
+                // Hazards appear only on demand since H0 (hazards-and-boons.md): no field around the ship, no homing.
                 config.ContactRadius = 1.5f;
                 config.ImpactEffect = impact;
             });

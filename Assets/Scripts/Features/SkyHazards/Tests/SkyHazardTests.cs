@@ -16,23 +16,11 @@ using TinCan.Tests.Fakes;
 namespace TinCan.Features.SkyHazards.Tests
 {
     /// <summary>
-    /// <see cref="SkyHazardUseCase"/>, <see cref="SkyHazardFieldProcessor"/> and <see cref="HazardDriftProcessor"/>
-    /// (plans <c>cannon-and-hazards.md</c> S1 targets, <c>first-voyage.md</c> V1 drift and ship contact).
+    /// <see cref="SkyHazardUseCase"/>: hazards on demand, shot down, and ship contact (plans <c>cannon-and-hazards.md</c> S1,
+    /// <c>first-voyage.md</c> V1; the field and homing were removed in <c>hazards-and-boons.md</c> H0).
     /// </summary>
     public class SkyHazardTests
     {
-        private sealed class BlockingObstacle : IWorldObstacleQuery
-        {
-            public bool Blocked;
-            public int Asked;
-
-            public bool IsBlocked(Vector3 point, float radius)
-            {
-                Asked++;
-                return Blocked;
-            }
-        }
-
         /// <summary>A hazard with real health on its own controller, so "shot down" is read from GAS as in the game.</summary>
         private sealed class FakeHazard : ISkyHazard
         {
@@ -82,8 +70,6 @@ namespace TinCan.Features.SkyHazards.Tests
         private sealed class FakeContact : IShipContactQuery
         {
             public float Reach = 5f;
-            public Vector3 BodyOffset;
-            public Vector3 Center(IAirshipView ship) => ship.Transform.position + BodyOffset;
             public bool Touches(IAirshipView ship, Vector3 point, float radius) => Vector3.Distance(ship.Transform.position, point) <= Reach;
         }
 
@@ -93,8 +79,6 @@ namespace TinCan.Features.SkyHazards.Tests
             public void Publish<TEvent>(TEvent evt) => Events.Add(evt!);
         }
 
-        private readonly SkyHazardFieldProcessor _field = new();
-        private readonly HazardDriftProcessor _drift = new();
         private readonly List<Object> _assets = new();
         private FakeTimeService _time = null!;
         private FakeActorRegistry _actors = null!;
@@ -114,11 +98,7 @@ namespace TinCan.Features.SkyHazards.Tests
             _events = new RecordingPublisher();
             _contact = new FakeContact();
             _config = Create<SkyHazardConfig>("SkyHazardConfig");
-            _config.MaxAlive = 3;
-            _config.SpawnInterval = 1f;
             _config.DespawnDelay = 1f;
-            _config.RemoveDistance = 500f;
-            _config.DriftSpeed = 4f;
 
             _health = Create<HealthAttribute>("Attr_Health");
             var maxHealth = Create<MaxHealthAttribute>("Attr_MaxHealth");
@@ -150,9 +130,9 @@ namespace TinCan.Features.SkyHazards.Tests
         private float ShipHealth => _shipController.TryGetAttribute(_health, out var value) ? value.CurrentValue : -1f;
 
         [Test]
-        public void FieldOff_SpawnsNothingByItself()
+        public void NothingSpawnsByItself()
         {
-            var hazards = UseCase(fieldEnabled: false);
+            var hazards = UseCase();
 
             for (int i = 0; i < 20; i++) hazards.Tick();
 
@@ -160,76 +140,10 @@ namespace TinCan.Features.SkyHazards.Tests
         }
 
         [Test]
-        public void FieldOn_FillsUpToMaxAlive_OnePerInterval()
-        {
-            _config.DriftSpeed = 0f; // none reaches the ship and gets replaced
-            var hazards = UseCase(fieldEnabled: true);
-
-            hazards.Tick();
-            Assert.That(_spawner.Spawned, Has.Count.EqualTo(1));
-            hazards.Tick();
-            Assert.That(_spawner.Spawned, Has.Count.EqualTo(1), "waits for the interval");
-
-            for (int i = 0; i < 20; i++) hazards.Tick();
-            Assert.That(_spawner.Spawned, Has.Count.EqualTo(3));
-            Assert.That(hazards.Alive, Has.Count.EqualTo(3));
-        }
-
-        [Test]
-        public void FieldOn_NeverSpawnsInsideAnObstacle_AndTriesAgainSoon()
-        {
-            _config.DriftSpeed = 0f;
-            var rock = new BlockingObstacle { Blocked = true };
-            var hazards = UseCase(fieldEnabled: true, rock);
-
-            for (int i = 0; i < 10; i++) hazards.Tick();
-            Assert.That(_spawner.Spawned, Is.Empty, "every spot is inside rock");
-            Assert.That(rock.Asked, Is.GreaterThan(1), "it keeps trying");
-
-            rock.Blocked = false;
-            hazards.Tick();
-            Assert.That(_spawner.Spawned, Has.Count.EqualTo(1), "the next free spot");
-        }
-
-        [Test]
-        public void FieldOn_ABiggerCrew_KeepsMoreHazards()
-        {
-            _config.DriftSpeed = 0f;
-            _config.MaxAlivePerExtraPlayer = 2;
-            var movement = new FakeHumanoidMovementView("Player");
-            try
-            {
-                _actors.Register(new FakeHumanoidCharacterView(movement));
-                _actors.Register(new FakeHumanoidCharacterView(movement));
-                var hazards = UseCase(fieldEnabled: true);
-
-                for (int i = 0; i < 40; i++) hazards.Tick();
-
-                Assert.That(hazards.Alive, Has.Count.EqualTo(5), "3 for the first player, 2 more for the second");
-            }
-            finally
-            {
-                movement.Destroy();
-            }
-        }
-
-        [Test]
-        public void ForCrew_EachExtraPlayer_RaisesTheLimit_AndShortensTheInterval()
-        {
-            var scaling = new SkyHazardCrewScaling(maxAlive: 4, maxAlivePerExtraPlayer: 2, spawnInterval: 6f, spawnIntervalScalePerExtraPlayer: 0.5f);
-
-            Assert.That(_field.ForCrew(1, scaling), Is.EqualTo((4, 6f)));
-            Assert.That(_field.ForCrew(0, scaling), Is.EqualTo((4, 6f)), "an empty ship counts as one player");
-            var (maxAlive, interval) = _field.ForCrew(3, scaling);
-            Assert.That(maxAlive, Is.EqualTo(8));
-            Assert.That(interval, Is.EqualTo(1.5f).Within(1e-4f));
-        }
-
-        [Test]
         public void ShotDown_IsCounted_ThenDespawnedAfterTheDelay()
         {
-            var hazards = UseCase(fieldEnabled: false);
-            var hazard = (FakeHazard)hazards.SpawnAt(Vector3.zero)!;
+            var hazards = UseCase();
+            var hazard = (FakeHazard)hazards.SpawnAt(new Vector3(40f, 0f, 0f))!;
 
             hazard.ShootDown();
             hazards.Tick();
@@ -244,140 +158,37 @@ namespace TinCan.Features.SkyHazards.Tests
         }
 
         [Test]
-        public void FarBehind_IsRemoved_WhileTheFieldIsOn()
-        {
-            var hazards = UseCase(fieldEnabled: true);
-            var far = hazards.SpawnAt(new Vector3(0f, 0f, -1000f))!;
-
-            hazards.Tick();
-
-            Assert.That(_spawner.Despawned, Has.Member(far));
-            Assert.That(hazards.Alive, Has.No.Member(far));
-        }
-
-        [Test]
-        public void SpawnPoint_IsAheadOfTheShip_LevelWithTheHorizon()
-        {
-            var shape = new SkyHazardFieldShape(new Vector3(-20f, 0f, 50f), new Vector3(20f, 10f, 100f));
-            var pitchedAndTurned = Quaternion.Euler(-30f, 90f, 0f); // nose up 30 deg, heading +X
-
-            Vector3 point = _field.SpawnPoint(new Vector3(0f, 100f, 0f), pitchedAndTurned, shape, lateral01: 0.5f, height01: 0f, ahead01: 0f);
-
-            Assert.That(Vector3.Distance(point, new Vector3(50f, 100f, 0f)), Is.LessThan(1e-3f), "50 m along the heading, not up the pitched nose");
-        }
-
-        [Test]
-        public void SpawnPoint_SpreadsWithinTheBox_OnTheStarboardSide()
-        {
-            var shape = new SkyHazardFieldShape(new Vector3(30f, -5f, -20f), new Vector3(80f, 10f, 100f));
-
-            Vector3 low = _field.SpawnPoint(Vector3.zero, Quaternion.identity, shape, lateral01: 0f, height01: 0f, ahead01: 0f);
-            Vector3 high = _field.SpawnPoint(Vector3.zero, Quaternion.identity, shape, lateral01: 1f, height01: 1f, ahead01: 1f);
-
-            Assert.That(Vector3.Distance(low, new Vector3(30f, -5f, -20f)), Is.LessThan(1e-3f));
-            Assert.That(Vector3.Distance(high, new Vector3(80f, 10f, 100f)), Is.LessThan(1e-3f));
-        }
-
-        [Test]
-        public void TooFar_BeyondTheRemoveDistance()
-        {
-            Assert.That(_field.IsTooFar(Vector3.zero, new Vector3(0f, 0f, 99f), 100f), Is.False);
-            Assert.That(_field.IsTooFar(Vector3.zero, new Vector3(0f, 0f, 101f), 100f), Is.True);
-        }
-
-        [Test]
-        public void Drift_ClosesOnTheShip_AtItsSpeed_WithoutOvershooting()
-        {
-            Vector3 step = _drift.Step(new Vector3(10f, 0f, 0f), Vector3.zero, speed: 4f, deltaTime: 0.5f);
-            Assert.That(Vector3.Distance(step, new Vector3(8f, 0f, 0f)), Is.LessThan(1e-4f));
-
-            Assert.That(_drift.Step(new Vector3(1f, 0f, 0f), Vector3.zero, 4f, 0.5f), Is.EqualTo(Vector3.zero), "stops at the ship");
-            Assert.That(_drift.Step(new Vector3(10f, 0f, 0f), Vector3.zero, 0f, 0.5f), Is.EqualTo(new Vector3(10f, 0f, 0f)), "speed 0 hangs still");
-        }
-
-        [Test]
         public void Target_PlacedOnDemand_HangsStill()
         {
-            var hazards = UseCase(fieldEnabled: false);
+            var hazards = UseCase();
             var target = hazards.SpawnAt(new Vector3(40f, 0f, 0f))!;
 
             for (int i = 0; i < 10; i++) hazards.Tick();
 
             Assert.That(target.Transform!.position, Is.EqualTo(new Vector3(40f, 0f, 0f)));
-        }
-
-        [Test]
-        public void Drifting_HomesOnTheShip()
-        {
-            var hazards = UseCase(fieldEnabled: false);
-            var hazard = hazards.SpawnAt(new Vector3(40f, 0f, 0f), drifts: true)!;
-
-            hazards.Tick();
-
-            Assert.That(hazard.Transform!.position.x, Is.EqualTo(38f).Within(1e-4f), "4 m/s for half a second");
-        }
-
-        [Test]
-        public void Drifting_HomesOnTheShipsBody_NotItsPivot()
-        {
-            _contact.BodyOffset = new Vector3(0f, -4f, 0f); // the deck sits below the pivot, as on the test ship
-            _contact.Reach = 0f;
-            var hazards = UseCase(fieldEnabled: false);
-            var hazard = hazards.SpawnAt(new Vector3(0f, -4f, 40f), drifts: true)!;
-
-            hazards.Tick();
-
-            Assert.That(Vector3.Distance(hazard.Transform!.position, new Vector3(0f, -4f, 38f)), Is.LessThan(1e-4f), "straight at the body, level with it");
+            Assert.That(hazards.Alive, Has.Member(target));
         }
 
         [Test]
         public void ResetForSession_ClearsTheSky()
         {
-            var hazards = UseCase(fieldEnabled: false);
-            var drifting = hazards.SpawnAt(new Vector3(40f, 0f, 0f), drifts: true)!;
-            var target = hazards.SpawnAt(new Vector3(0f, 0f, 40f))!;
+            var hazards = UseCase();
+            var first = hazards.SpawnAt(new Vector3(40f, 0f, 0f))!;
+            var second = hazards.SpawnAt(new Vector3(0f, 0f, 40f))!;
 
             hazards.ResetForSession();
 
             Assert.That(hazards.Alive, Is.Empty);
-            Assert.That(_spawner.Despawned, Is.EquivalentTo(new[] { drifting, target }));
-        }
-
-        [Test]
-        public void SetSessionActive_RunsTheFieldOnlyWhileActive_AndOnlyWhereTheConfigAllowsIt()
-        {
-            var hazards = UseCase(fieldEnabled: true);
-
-            hazards.SetSessionActive(false);
-            Assert.That(hazards.FieldEnabled, Is.False);
-            hazards.SetSessionActive(true);
-            Assert.That(hazards.FieldEnabled, Is.True);
-
-            _config.FieldEnabled = false;
-            hazards.SetSessionActive(true);
-            Assert.That(hazards.FieldEnabled, Is.False);
-        }
-
-        [Test]
-        public void FieldHazards_Drift()
-        {
-            var hazards = UseCase(fieldEnabled: true);
-            hazards.Tick();
-            var hazard = _spawner.Spawned[0];
-            float before = Vector3.Distance(hazard.Transform!.position, Vector3.zero);
-
-            hazards.Tick();
-
-            Assert.That(Vector3.Distance(hazard.Transform!.position, Vector3.zero), Is.LessThan(before));
+            Assert.That(_spawner.Despawned, Is.EquivalentTo(new[] { first, second }));
         }
 
         [Test]
         public void Contact_HurtsTheShipOnce_CountsTheHit_AndRemovesTheHazard()
         {
-            var hazards = UseCase(fieldEnabled: false);
-            var hazard = hazards.SpawnAt(new Vector3(6f, 0f, 0f), drifts: true)!;
+            var hazards = UseCase();
+            var hazard = hazards.SpawnAt(new Vector3(4f, 0f, 0f))!; // inside the 5 m reach
 
-            hazards.Tick(); // 6 -> 4 m: inside the 5 m reach
+            hazards.Tick();
             hazards.Tick();
 
             Assert.That(ShipHealth, Is.EqualTo(900f).Within(1e-3f));
@@ -390,8 +201,8 @@ namespace TinCan.Features.SkyHazards.Tests
         [Test]
         public void ShotDown_NeverHitsTheShip()
         {
-            var hazards = UseCase(fieldEnabled: false);
-            var hazard = (FakeHazard)hazards.SpawnAt(new Vector3(1f, 0f, 0f), drifts: true)!;
+            var hazards = UseCase();
+            var hazard = (FakeHazard)hazards.SpawnAt(new Vector3(1f, 0f, 0f))!;
             hazard.ShootDown();
 
             hazards.Tick();
@@ -400,58 +211,10 @@ namespace TinCan.Features.SkyHazards.Tests
             Assert.That(ShipHealth, Is.EqualTo(1000f));
         }
 
-        private sealed class FakeSessionLayout : ISessionLayout
+        private SkyHazardUseCase UseCase()
         {
-            public System.Guid Id { get; } = System.Guid.NewGuid();
-            public bool IsSimulating => true;
-            public int LayoutSeed => 42;
-            public Vector3 Origin => Vector3.zero;
-            public Vector3 Destination => new(0f, 0f, 4000f);
-        }
-
-        [Test]
-        public void DuringAVoyage_OutsideEveryHazardZone_TheFieldThins()
-        {
-            _config.DriftSpeed = 0f;
-            _config.OutsideZoneScale = 0.35f;
-            _actors.Register(new FakeSessionLayout());
-            var hazards = UseCase(fieldEnabled: true, out _);
-
-            for (int i = 0; i < 40; i++) hazards.Tick();
-
-            Assert.That(hazards.FieldScale, Is.EqualTo(0.35f), "the ship starts clear of every zone");
-            Assert.That(_spawner.Spawned, Has.Count.EqualTo(1), "3 x 0.35, rounded");
-        }
-
-        [Test]
-        public void InsideAHazardZone_TheFieldIsWhole()
-        {
-            _config.DriftSpeed = 0f;
-            _actors.Register(new FakeSessionLayout());
-            var hazards = UseCase(fieldEnabled: true, out var zones);
-            _ship.Transform.position = zones.Zones[0].Center;
-
-            for (int i = 0; i < 40; i++) hazards.Tick();
-
-            Assert.That(hazards.FieldScale, Is.EqualTo(1f));
-            Assert.That(_spawner.Spawned, Has.Count.EqualTo(3));
-        }
-
-        private SkyHazardUseCase UseCase(bool fieldEnabled, out HazardZoneMap zones)
-        {
-            _config.FieldEnabled = fieldEnabled;
-            zones = new HazardZoneMap(_actors, new HazardZoneLayoutProcessor(), _config);
             var abilities = new AbilitySystemUseCase(new FakeAbilityRegistry(), _actors, _time, _events);
-            return new SkyHazardUseCase(new FakeNetworkService(), _actors, _time, _events, _spawner, _field, _drift, _contact,
-                abilities, _config, new System.Random(1), null, zones);
-        }
-
-        private SkyHazardUseCase UseCase(bool fieldEnabled, params IWorldObstacleQuery[] obstacles)
-        {
-            _config.FieldEnabled = fieldEnabled;
-            var abilities = new AbilitySystemUseCase(new FakeAbilityRegistry(), _actors, _time, _events);
-            return new SkyHazardUseCase(new FakeNetworkService(), _actors, _time, _events, _spawner, _field, _drift, _contact,
-                abilities, _config, new System.Random(1), obstacles);
+            return new SkyHazardUseCase(new FakeNetworkService(), _actors, _time, _events, _spawner, _contact, abilities, _config);
         }
 
         private T Create<T>(string name) where T : ScriptableObject

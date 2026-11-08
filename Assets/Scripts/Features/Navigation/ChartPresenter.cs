@@ -156,6 +156,7 @@ namespace TinCan.Features.Navigation
             private readonly Pool _rocks;
             private readonly Pool _hazards;
             private readonly Pool _gas;
+            private readonly Pool _boons;
             private readonly Pool _cursor;
             private readonly LineRenderer _route;
             private readonly LineRenderer _activeLeg;
@@ -171,6 +172,7 @@ namespace TinCan.Features.Navigation
                 _rocks = new Pool(_root, PrimitiveType.Cylinder, config.RockMaterial);
                 _hazards = new Pool(_root, PrimitiveType.Cylinder, config.HazardMaterial);
                 _gas = new Pool(_root, PrimitiveType.Sphere, config.GasMaterial);
+                _boons = new Pool(_root, PrimitiveType.Sphere, config.BoonMaterial);
                 _cursor = new Pool(_root, PrimitiveType.Cylinder, config.CursorMaterial);
                 _route = Line("Route", config.RouteMaterial, 0.008f);
                 _activeLeg = Line("ActiveLeg", config.ActiveLegMaterial, 0.016f);
@@ -181,6 +183,7 @@ namespace TinCan.Features.Navigation
             public int Rocks => _rocks.Used;
             public int Hazards => _hazards.Used;
             public int Gas => _gas.Used;
+            public int Boons => _boons.Used;
 
             public void Begin()
             {
@@ -191,6 +194,7 @@ namespace TinCan.Features.Navigation
                 _rocks.Begin();
                 _hazards.Begin();
                 _gas.Begin();
+                _boons.Begin();
                 _cursor.Begin();
             }
 
@@ -203,6 +207,7 @@ namespace TinCan.Features.Navigation
                 _rocks.End();
                 _hazards.End();
                 _gas.End();
+                _boons.End();
                 _cursor.End();
             }
 
@@ -229,6 +234,10 @@ namespace TinCan.Features.Navigation
                     case ChartObstacleKind.Gas:
                         float width = Mathf.Max(radius * 2f, MinGasMark);
                         _gas.Next(center, Quaternion.identity, new Vector3(width, Mathf.Max(height, MinGasMark), width));
+                        break;
+                    case ChartObstacleKind.Boon:
+                        float boon = Mathf.Max(radius * 2f, MinGasMark);
+                        _boons.Next(center, Quaternion.identity, Vector3.one * boon);
                         break;
                     case ChartObstacleKind.Hazard:
                         _hazards.Next(center, Quaternion.identity, new Vector3(radius * 2f, height * 0.5f, radius * 2f));

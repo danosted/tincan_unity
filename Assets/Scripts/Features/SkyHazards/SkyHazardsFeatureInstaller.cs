@@ -9,8 +9,8 @@ using VContainer;
 namespace TinCan.Features.SkyHazards
 {
     /// <summary>
-    /// Sky hazards: things in the sky with health that the cannon shoots down. With the field on, a few drift at the
-    /// ship and hurt it on contact; otherwise they appear only on demand (ISkyHazards.SpawnAt).
+    /// Sky hazards: things in the sky with health that the cannon shoots down. They appear only on demand
+    /// (ISkyHazards.SpawnAt: scenarios, events), hang still, and hurt the ship when it touches one.
     /// Plans: .docs/plans/cannon-and-hazards.md, .docs/plans/first-voyage.md (V1).
     /// </summary>
     [CreateAssetMenu(fileName = "SkyHazardsFeatureInstaller", menuName = "TinCan/Features/Sky Hazards Feature Installer")]
@@ -27,11 +27,9 @@ namespace TinCan.Features.SkyHazards
             }
 
             builder.RegisterInstance(_config);
-            builder.Register<SkyHazardFieldProcessor>(Lifetime.Transient);
             builder.Register<HazardZoneLayoutProcessor>(Lifetime.Transient);
             builder.Register<HazardZoneMap>(Lifetime.Singleton);
             builder.Register<SkyHazardChartSource>(Lifetime.Singleton).As<IChartSource>();
-            builder.Register<HazardDriftProcessor>(Lifetime.Transient);
             builder.Register<PhysicsShipContactQuery>(Lifetime.Singleton).As<IShipContactQuery>();
             builder.Register<SkyHazardSpawningService>(Lifetime.Singleton).As<ISkyHazardSpawner>();
             builder.Register<SkyHazardUseCase>(Lifetime.Singleton).As<ISkyHazards>().As<ISimulationTickable>().As<ISessionParticipant>();

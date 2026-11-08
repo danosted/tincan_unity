@@ -15,7 +15,7 @@ using UnityEngine;
 namespace TinCan.DevTools.Scenarios
 {
     /// <summary>
-    /// Scenario steps for the cannon and sky hazards. Commands: switch the hazard field (server), point the barrel along
+    /// Scenario steps for the cannon and sky hazards. Commands: put a hazard on the deck (server), point the barrel along
     /// the cannon's rest direction (subject peer, through the gunner's aim as the mouse would), and put a target on the
     /// arc the barrel points along now (server), so a shot with no further aiming hits it. Probes read replicated state
     /// on this peer: who mans the cannon, how many hazards exist, and how many balls this peer drew; the server also
@@ -60,12 +60,11 @@ namespace TinCan.DevTools.Scenarios
         {
             new ScenarioCommand("PlaceSubjectAtCannon", PlaceAtCannon),
             new ScenarioCommand("FaceCannon", FaceCannon),
-            new ScenarioCommand("HazardField", SetField),
             new ScenarioCommand("AimCannon", Aim),
             new ScenarioCommand("AimCannonAt", AimAt),
             new ScenarioCommand("RecordSubjectFacing", _ => RecordFacing()),
             new ScenarioCommand("SpawnTargetOnArc", SpawnOnArc),
-            new ScenarioCommand("SpawnDriftingHazard", SpawnDrifting)
+            new ScenarioCommand("SpawnHazardOnDeck", _ => SpawnOnDeck())
         };
 
         public IEnumerable<ScenarioProbe> Probes => new[]
@@ -120,17 +119,6 @@ namespace TinCan.DevTools.Scenarios
             float distance = Vector3.ProjectOnPlane(body.position - cannon.position, cannon.up).magnitude;
             string detail = $"{distance:0.00} m from the cannon";
             return Mathf.Abs(distance - StandBehind) <= NearTolerance ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
-        }
-
-        private ScenarioCheck SetField(string state)
-        {
-            if (!_network.IsServer) return ScenarioCheck.Fail("server-only command");
-            _hazards.FieldEnabled = state == "on";
-            foreach (var hazard in _hazards.Alive.ToArray())
-            {
-                if (hazard is Component component && component != null && component.TryGetComponent(out Unity.Netcode.NetworkObject netObj) && netObj.IsSpawned) netObj.Despawn();
-            }
-            return ScenarioCheck.Pass($"hazard field {state}, cleared");
         }
 
         /// <summary>Subject peer: points the barrel along the cannon's rest direction at this elevation, as the mouse would.</summary>
@@ -210,23 +198,46 @@ namespace TinCan.DevTools.Scenarios
         }
 
         /// <summary>
-        /// Server: a hazard this far off the ship's starboard side, homing on it. Hits from before this (the field runs
-        /// from the moment the host starts) no longer count toward <c>HazardHits</c>.
+        /// Server: a hazard resting on the top of the ship's solid body (found by a ray down onto its own colliders), so
+        /// the next tick counts it as contact. Hazards no longer drift (H0), so this is how a test brings one to the ship.
+        /// Hits from before this no longer count toward <c>HazardHits</c>.
         /// </summary>
-        private ScenarioCheck SpawnDrifting(string metres)
+        private ScenarioCheck SpawnOnDeck()
         {
             if (!_network.IsServer) return ScenarioCheck.Fail("server-only command");
             var ship = _actors.GetActors<IAirshipView>().FirstOrDefault(candidate => candidate.Transform != null);
             if (ship == null) return ScenarioCheck.Fail("no ship");
 
+            var root = (ship as Component)?.transform ?? ship.Transform;
+            Bounds? body = null;
+            foreach (var collider in root.GetComponentsInChildren<Collider>())
+            {
+                if (collider.isTrigger || !collider.enabled) continue;
+                if (body is { } bounds)
+                {
+                    bounds.Encapsulate(collider.bounds);
+                    body = bounds;
+                }
+                else body = collider.bounds;
+            }
+            if (body == null) return ScenarioCheck.Fail("the ship has no solid collider");
+
+            var from = new Vector3(body.Value.center.x, body.Value.max.y + 5f, body.Value.center.z);
+            var deck = Physics.RaycastAll(from, Vector3.down, body.Value.size.y + 10f, ~0, QueryTriggerInteraction.Ignore)
+                .Where(hit => hit.collider.transform.IsChildOf(root))
+                .OrderBy(hit => hit.distance)
+                .Select(hit => (RaycastHit?)hit)
+                .FirstOrDefault();
+            if (deck == null) return ScenarioCheck.Fail("no deck under the ship's middle");
+
             _hitsBeforeSpawn = _hazards.Hits;
-            var hazard = _hazards.SpawnAt(ship.Transform.position + ship.Transform.right * Parse(metres), drifts: true);
+            var hazard = _hazards.SpawnAt(deck.Value.point);
             return hazard != null
-                ? ScenarioCheck.Pass($"drifting hazard {metres} m to starboard")
+                ? ScenarioCheck.Pass($"hazard on the deck at {deck.Value.point}")
                 : ScenarioCheck.Fail("hazard spawn failed (no SkyHazardConfig prefab?)");
         }
 
-        /// <summary>Server: hits on the ship since the last SpawnDriftingHazard.</summary>
+        /// <summary>Server: hits on the ship since the last SpawnHazardOnDeck.</summary>
         private ScenarioCheck CheckHits(string count)
         {
             if (!_network.IsServer) return ScenarioCheck.Fail("server-only probe");

@@ -32,4 +32,5 @@ MonoBehaviour:
   RockMaterial: {fileID: 2100000, guid: c4fbaede96632a348bed1a44b759f87b, type: 2}
   HazardMaterial: {fileID: 2100000, guid: c376adc51effc32488382ad35fbb8c5a, type: 2}
   GasMaterial: {fileID: 2100000, guid: 602a3dc2e2ce6a246b473104f4e6b13d, type: 2}
+  BoonMaterial: {fileID: 2100000, guid: d54d91876cbfd774584e9f75c140a90f, type: 2}
   CursorMaterial: {fileID: 2100000, guid: 0a4be94ad023fa84491456b122ad5fc2, type: 2}

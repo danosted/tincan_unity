@@ -408,7 +408,6 @@ namespace TinCan.DevTools.Scenarios
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
                     .Wait(1.5f, "settle after spawn")
-                    .Do("HazardField", "off")
                     .Do("PlaceSubjectAtCannon"))
                 .Act(s => s
                     .WaitUntil("SubjectAtCannon", 45f)
@@ -457,13 +456,12 @@ namespace TinCan.DevTools.Scenarios
         public static readonly ScenarioEntry HazardStrike = new(
             new Scenario.Builder("HazardStrike")
                 .InScene(TestScenes.Cannon)
-                .Describe("A hazard drifts at the ship from starboard -> it hits -> the ship loses health on every peer, the hazard is gone.")
+                .Describe("A hazard on the deck -> it touches the ship -> the ship loses health on every peer, the hazard is gone.")
                 .Timeout(90f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
                     .Wait(1.5f, "settle after spawn")
-                    .Do("HazardField", "off")
-                    .Do("SpawnDriftingHazard", "30"))
+                    .Do("SpawnHazardOnDeck"))
                 .Act(s => s
                     .WaitUntil("ShipHealthBelow", 30f, "1000")
                     .Checkpoint("hit-seen"))
@@ -491,7 +489,6 @@ namespace TinCan.DevTools.Scenarios
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
                     .Wait(1.5f, "settle after spawn")
-                    .Do("HazardField", "off")
                     .Do("PlaceSubjectAtCannon"))
                 .Act(s => s
                     .WaitUntil("SubjectAtCannon", 45f)
@@ -673,6 +670,37 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<SkyIslandImpactScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
+        /// <summary>
+        /// Boon gates: a voyage lays gates off its route; the server then puts one around the ship, which takes its boon
+        /// (GE_Boon_SpeedBurst, a Duration effect on the ship) exactly once. The subject sees the boon's cue active and the
+        /// gate used. Plan: hazards-and-boons.md (B1).
+        /// </summary>
+        public static readonly ScenarioEntry BoonGate = new(
+            new Scenario.Builder("BoonGate")
+                .InScene(TestScenes.Voyage)
+                .Describe("Voyage -> gates laid off the route -> a gate around the ship -> the speed boon on every peer, the gate used, taken once.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("VoyageBegin")
+                    .WaitUntil("BoonGatesLaid", 5f, "1")
+                    .Do("SpawnBoonGateOnShip"))
+                .Act(s => s
+                    .WaitUntil("CueActive", 10f, "Cue.Boon.SpeedBurst")
+                    .WaitUntil("BoonGatesUsedHere", 5f, "1")
+                    .Checkpoint("boon-seen"))
+                .Assert(s => s
+                    .WaitUntil("BoonsTaken", 30f, "1")
+                    .WaitUntil("CueActive", 5f, "Cue.Boon.SpeedBurst")
+                    .Wait(1f, "the ship stays inside the used gate")
+                    .Expect("BoonsTaken", "1"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<BoonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
         /// <summary>
         /// The helm with real input: the subject walks up to the wheel and presses Interact to take it. It stays in its body
         /// on the helm seat (State.Occupying.Helm turns the Helmsman context on, which silences walking but not looking).
@@ -1481,14 +1509,13 @@ namespace TinCan.DevTools.Scenarios
 
         /// <summary>
         /// Hazard zones: a voyage lays them along its route from its seed. The subject at the chart table sees them as
-        /// hazard columns; the server's field is thinned where the ship starts (clear of every zone). Plan:
-        /// navigation-compass.md (S4).
+        /// hazard columns. Plan: navigation-compass.md (S4). (The server once thinned its hazard field outside the zones;
+        /// the field went in H0, hazards-and-boons.md.)
         /// </summary>
         public static readonly ScenarioEntry ChartHazards = new(
             new Scenario.Builder("ChartHazards")
                 .InScene(TestScenes.Navigation)
-                .Describe("Voyage -> hazard zones along the route on the subject's chart -> the server thins the field " +
-                          "outside them -> leave.")
+                .Describe("Voyage -> hazard zones along the route on the subject's chart -> leave.")
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
@@ -1509,7 +1536,6 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Chart"))
                 .Assert(s => s
                     .WaitUntil("ChartTableManned", 60f)
-                    .WaitUntil("HazardFieldScale", 5f, "0.35")
                     .WaitUntil("ChartTableFree", 30f))
                 .Build(),
             builder =>
@@ -1678,7 +1704,6 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("SubjectReady", 60f)
                     .Wait(2f, "settle after spawn; the design builds")
                     .WaitUntil("SocketFitted", 15f, "weapon.cannon")
-                    .Do("HazardField", "off")
                     .Do("PlaceSubjectAtCannon", "aft"))
                 .Act(s => s
                     .WaitUntil("SubjectAtCannon", 45f, "aft")
@@ -1709,7 +1734,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

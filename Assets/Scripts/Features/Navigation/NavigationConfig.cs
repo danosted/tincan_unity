@@ -60,6 +60,8 @@ namespace TinCan.Features.Navigation
         public Material? RockMaterial;
         public Material? HazardMaterial;
         public Material? GasMaterial;
+        [Tooltip("Boon gates on the chart (set by TinCan > Dev > Boons > Build Assets).")]
+        public Material? BoonMaterial;
         public Material? CursorMaterial;
     }
 }

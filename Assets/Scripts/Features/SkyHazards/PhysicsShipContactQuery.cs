@@ -1,5 +1,4 @@
 #nullable enable
-using System.Collections.Generic;
 using TinCan.Core.Ship;
 using UnityEngine;
 
@@ -12,27 +11,6 @@ namespace TinCan.Features.SkyHazards
     public sealed class PhysicsShipContactQuery : IShipContactQuery
     {
         private readonly Collider[] _hits = new Collider[32];
-        private readonly List<Collider> _shipColliders = new();
-
-        public Vector3 Center(IAirshipView ship)
-        {
-            var root = Root(ship);
-            if (root == null) return ship.Transform.position;
-
-            root.GetComponentsInChildren(_shipColliders);
-            Bounds? body = null;
-            foreach (var collider in _shipColliders)
-            {
-                if (collider.isTrigger || !collider.enabled) continue;
-                if (body is { } bounds)
-                {
-                    bounds.Encapsulate(collider.bounds);
-                    body = bounds;
-                }
-                else body = collider.bounds;
-            }
-            return body?.center ?? root.position;
-        }
 
         public bool Touches(IAirshipView ship, Vector3 point, float radius)
         {

@@ -14,6 +14,8 @@
         "TinCan.Possession",
         "TinCan.Ship",
         "TinCan.Targeting",
+        "TinCan.Features.Boons",
+        "TinCan.Features.Gates",
         "TinCan.Features.SkyHazards",
         "TinCan.Features.Stations",
         "TinCan.Features.Helm",

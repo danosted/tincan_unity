@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09bf0cd2fa7f6cb4d93ddaee0d342057, type: 3}
+  m_Name: GE_Boon_SpeedBurst
+  m_EditorClassIdentifier: TinCan.Gas::TinCan.Core.Gas.GameplayEffectDefinition
+  DurationType: 1
+  DurationSeconds: 8
+  Modifiers:
+  - Attribute: {fileID: 11400000, guid: dfba58bddba97f844a531ebee046cadd, type: 2}
+    Operation: 1
+    Value: 1.6
+    ClampMaxAttribute: {fileID: 0}
+  GrantedTags: []
+  Cues:
+  - {fileID: 11400000, guid: ac84938f4497d2c4f9c09ff8d5b445e5, type: 2}

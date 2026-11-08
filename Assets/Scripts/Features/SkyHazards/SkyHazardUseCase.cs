@@ -7,18 +7,15 @@ using TinCan.Core.Domain.Networking;
 using TinCan.Core.Gas;
 using TinCan.Core.Ship;
 using UnityEngine;
-using VContainer;
 
 namespace TinCan.Features.SkyHazards
 {
     /// <summary>
-    /// Application Layer, server only, after airship movement. Removes hazards that were shot down (after a short
-    /// delay, so their last health update reaches the clients first). Drifting hazards home on the first ship; any
-    /// hazard that touches it applies the impact effect to the ship (its health) and is removed. While the field is on,
-    /// it keeps a field of drifting hazards in a box ahead of the ship (never inside an obstacle such as island rock,
-    /// <see cref="IWorldObstacleQuery"/>), sized for the crew aboard (each extra player raises the limit and speeds up
-    /// spawning) and by where the ship is: during a voyage, outside its hazard zones (<see cref="HazardZoneMap"/>) the
-    /// field thins to <see cref="SkyHazardConfig.OutsideZoneScale"/>. Those left far behind are removed.
+    /// Application Layer, server only, after airship movement. Hazards appear only on demand (<see cref="SpawnAt"/>:
+    /// scenarios and events) and hang where they are put. Removes hazards that were shot down (after a short delay, so
+    /// their last health update reaches the clients first). Any hazard the ship touches applies the impact effect to the
+    /// ship (its health) and is removed. The field around the ship and homing were removed in H0
+    /// (.docs/plans/hazards-and-boons.md); comets (H1) are the next moving hazard.
     /// </summary>
     public class SkyHazardUseCase : ISimulationTickable, ISkyHazards, ISessionParticipant
     {
@@ -26,62 +23,34 @@ namespace TinCan.Features.SkyHazards
 
         private const string LogSource = "SkyHazards";
 
-        /// <summary>Seconds before trying again when a spawn point was inside an obstacle.</summary>
-        private const float BlockedRetry = 0.25f;
-
         private readonly INetworkService _network;
         private readonly IActorRegistry _actors;
         private readonly ITimeService _time;
         private readonly IEventPublisher _events;
         private readonly ISkyHazardSpawner _spawner;
-        private readonly SkyHazardFieldProcessor _field;
-        private readonly HazardDriftProcessor _drift;
         private readonly IShipContactQuery _contact;
         private readonly AbilitySystemUseCase _abilities;
         private readonly SkyHazardConfig _config;
-        private readonly System.Random _random;
-        private readonly IReadOnlyList<IWorldObstacleQuery> _obstacles;
-        private readonly HazardZoneMap? _zones;
         private readonly List<ISkyHazard> _alive = new();
-        private readonly HashSet<ISkyHazard> _drifting = new();
         private readonly Dictionary<ISkyHazard, float> _destroyedAt = new();
         private float _elapsed;
-        private float _nextSpawnAt;
-
-        [Inject]
-        public SkyHazardUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
-            ISkyHazardSpawner spawner, SkyHazardFieldProcessor field, HazardDriftProcessor drift, IShipContactQuery contact,
-            AbilitySystemUseCase abilities, SkyHazardConfig config, IRandomSource random,
-            IReadOnlyList<IWorldObstacleQuery> obstacles, HazardZoneMap zones)
-            : this(network, actors, time, events, spawner, field, drift, contact, abilities, config,
-                random.Create("SkyHazards"), obstacles, zones) { }
 
         public SkyHazardUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
-            ISkyHazardSpawner spawner, SkyHazardFieldProcessor field, HazardDriftProcessor drift, IShipContactQuery contact,
-            AbilitySystemUseCase abilities, SkyHazardConfig config, System.Random random,
-            IReadOnlyList<IWorldObstacleQuery>? obstacles = null, HazardZoneMap? zones = null)
+            ISkyHazardSpawner spawner, IShipContactQuery contact, AbilitySystemUseCase abilities, SkyHazardConfig config)
         {
             _network = network;
             _actors = actors;
             _time = time;
             _events = events;
             _spawner = spawner;
-            _field = field;
-            _drift = drift;
             _contact = contact;
             _abilities = abilities;
             _config = config;
-            _random = random;
-            _obstacles = obstacles ?? System.Array.Empty<IWorldObstacleQuery>();
-            _zones = zones;
-            FieldEnabled = config.FieldEnabled;
         }
 
         public IReadOnlyList<ISkyHazard> Alive => _alive;
         public int Destroyed { get; private set; }
         public int Hits { get; private set; }
-        public bool FieldEnabled { get; set; }
-        public float FieldScale { get; private set; } = 1f;
 
         /// <summary>Session start: every hazard leaves the sky.</summary>
         public void ResetForSession()
@@ -89,22 +58,19 @@ namespace TinCan.Features.SkyHazards
             if (!_network.IsServer) return;
             foreach (var hazard in _alive) _spawner.Despawn(hazard);
             _alive.Clear();
-            _drifting.Clear();
             _destroyedAt.Clear();
-            _nextSpawnAt = _elapsed;
         }
 
-        /// <summary>The field runs only while the session is underway, and only where the config switches it on.</summary>
-        public void SetSessionActive(bool active) => FieldEnabled = active && _config.FieldEnabled;
+        /// <summary>Nothing runs on its own, so the session's pressure starting or stopping changes nothing here.</summary>
+        public void SetSessionActive(bool active) { }
 
-        public ISkyHazard? SpawnAt(Vector3 position, bool drifts = false)
+        public ISkyHazard? SpawnAt(Vector3 position)
         {
             if (!_network.IsServer) return null;
             var hazard = _spawner.Spawn(position);
             if (hazard == null) return null;
 
             _alive.Add(hazard);
-            if (drifts) _drifting.Add(hazard);
             return hazard;
         }
 
@@ -114,39 +80,10 @@ namespace TinCan.Features.SkyHazards
             _elapsed += _time.DeltaTime;
 
             _alive.RemoveAll(hazard => hazard.Transform == null);
-            _drifting.RemoveWhere(hazard => hazard.Transform == null);
             RemoveDestroyed();
 
             var ship = _actors.GetActors<IAirshipView>().FirstOrDefault(candidate => candidate.IsSimulating && candidate.Transform != null);
-            if (ship == null) return;
-
-            DriftAndStrike(ship);
-            FieldScale = ZoneScale(ship.Transform.position);
-            if (!FieldEnabled) return;
-
-            RemoveDistant(ship.Transform.position);
-            var (crewMax, crewInterval) = _field.ForCrew(_actors.CrewCount(), _config.CrewScaling);
-            int maxAlive = Mathf.RoundToInt(crewMax * FieldScale);
-            float spawnInterval = crewInterval / Mathf.Max(FieldScale, 0.05f);
-            if (_alive.Count < maxAlive && _elapsed >= _nextSpawnAt)
-            {
-                var position = _field.SpawnPoint(ship.Transform.position, ship.Transform.rotation, _config.FieldShape,
-                    (float)_random.NextDouble(), (float)_random.NextDouble(), (float)_random.NextDouble());
-                if (IsBlocked(position))
-                {
-                    _nextSpawnAt = _elapsed + BlockedRetry;
-                    return;
-                }
-                SpawnAt(position, drifts: true);
-                _nextSpawnAt = _elapsed + spawnInterval;
-            }
-        }
-
-        /// <summary>1 inside a hazard zone or where there are none; the config's outside share elsewhere.</summary>
-        private float ZoneScale(Vector3 shipPosition)
-        {
-            if (_zones == null || _zones.Zones.Count == 0) return 1f;
-            return _zones.IsInside(shipPosition) ? 1f : _config.OutsideZoneScale;
+            if (ship != null) Strike(ship);
         }
 
         private void RemoveDestroyed()
@@ -169,65 +106,29 @@ namespace TinCan.Features.SkyHazards
                 if (_elapsed - at < _config.DespawnDelay) continue;
                 _destroyedAt.Remove(hazard);
                 _alive.RemoveAt(i);
-                _drifting.Remove(hazard);
                 _spawner.Despawn(hazard);
             }
         }
 
-        private void DriftAndStrike(IAirshipView ship)
+        // Every live hazard the ship touches hurts it once and is removed.
+        private void Strike(IAirshipView ship)
         {
-            Vector3? target = null;
             for (int i = _alive.Count - 1; i >= 0; i--)
             {
                 var hazard = _alive[i];
                 var transform = hazard.Transform;
                 if (IsShotDown(hazard) || transform == null) continue;
-
-                if (_drifting.Contains(hazard))
-                {
-                    target ??= _contact.Center(ship);
-                    transform.position = _drift.Step(transform.position, target.Value, _config.DriftSpeed, _time.DeltaTime);
-                }
-
                 if (!_contact.Touches(ship, transform.position, _config.ContactRadius)) continue;
 
-                Strike(ship);
+                Hits++;
+                var controller = (ship as IShipState)?.Controller;
+                if (controller != null && _config.ImpactEffect != null) _abilities.ApplyEffect(controller, _config.ImpactEffect);
+                _events.Publish(new SkyHazardHitShipEvent(ship.Id, Hits));
+                _events.LogInfo(LogSource, $"A hazard hit the ship ({Hits} so far).");
+
                 _alive.RemoveAt(i);
-                _drifting.Remove(hazard);
                 _spawner.Despawn(hazard);
             }
-        }
-
-        private void Strike(IAirshipView ship)
-        {
-            Hits++;
-            var controller = (ship as IShipState)?.Controller;
-            if (controller != null && _config.ImpactEffect != null) _abilities.ApplyEffect(controller, _config.ImpactEffect);
-
-            _events.Publish(new SkyHazardHitShipEvent(ship.Id, Hits));
-            _events.LogInfo(LogSource, $"A hazard hit the ship ({Hits} so far).");
-        }
-
-        private void RemoveDistant(Vector3 shipPosition)
-        {
-            for (int i = _alive.Count - 1; i >= 0; i--)
-            {
-                var hazard = _alive[i];
-                if (IsShotDown(hazard) || !_field.IsTooFar(shipPosition, hazard.Transform!.position, _config.RemoveDistance)) continue;
-                _alive.RemoveAt(i);
-                _drifting.Remove(hazard);
-                _spawner.Despawn(hazard);
-            }
-        }
-
-        /// <summary>Inside an obstacle (island rock), where a hazard could neither be seen nor shot.</summary>
-        private bool IsBlocked(Vector3 position)
-        {
-            foreach (var obstacle in _obstacles)
-            {
-                if (obstacle.IsBlocked(position, _config.ContactRadius * 2f)) return true;
-            }
-            return false;
         }
 
         private static bool IsShotDown(ISkyHazard hazard) => hazard.Controller.IsDepleted();

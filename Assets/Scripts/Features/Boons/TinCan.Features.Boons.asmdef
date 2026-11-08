@@ -1,0 +1,19 @@
+{
+    "name": "TinCan.Features.Boons",
+    "rootNamespace": "TinCan.Features.Boons",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Features.Gates",
+        "TinCan.Gas",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

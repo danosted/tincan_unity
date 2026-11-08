@@ -8,7 +8,6 @@ using TinCan.Core.Humanoid;
 using TinCan.Core.Ship;
 using TinCan.Features.Helm;
 using TinCan.Features.Navigation;
-using TinCan.Features.SkyHazards;
 using UnityEngine;
 using VContainer;
 
@@ -79,8 +78,7 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("ChartShowsPoints", argument => CheckChartCount(argument, counts => counts.Points, "points of interest")),
             new ScenarioProbe("ChartShowsHazards", argument => CheckChartCount(argument, counts => counts.Hazards, "hazard zones")),
             new ScenarioProbe("ChartShowsGas", argument => CheckChartCount(argument, counts => counts.Gas, "gas pockets")),
-            new ScenarioProbe("DiscoveredPoints", CheckDiscovered),
-            new ScenarioProbe("HazardFieldScale", CheckFieldScale)
+            new ScenarioProbe("DiscoveredPoints", CheckDiscovered)
         };
 
         /// <summary>Server: [a point off to starboard and up, the destination].</summary>
@@ -282,19 +280,6 @@ namespace TinCan.DevTools.Scenarios
             int discovered = Route()?.DiscoveredCount ?? 0;
             string detail = $"{discovered} discovered";
             return discovered >= int.Parse(atLeast, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
-        }
-
-        /// <summary>Server: the hazard field's strength where the ship is (1 inside a zone, the outside share elsewhere).</summary>
-        private ScenarioCheck CheckFieldScale(string expected)
-        {
-            if (!_network.IsServer) return ScenarioCheck.Fail("server-only probe");
-            var hazards = _resolver.ResolveOrDefault<ISkyHazards>();
-            if (hazards == null) return ScenarioCheck.Fail("no sky hazards in the profile");
-
-            string detail = $"field scale {hazards.FieldScale:0.##}";
-            return Mathf.Abs(hazards.FieldScale - float.Parse(expected, CultureInfo.InvariantCulture)) < 0.01f
-                ? ScenarioCheck.Pass(detail)
-                : ScenarioCheck.Fail(detail);
         }
 
         private CompassView? CompassView()

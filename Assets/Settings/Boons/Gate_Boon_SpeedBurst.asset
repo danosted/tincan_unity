@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 193ef9211e7260f4a8b362b672910cf4, type: 3}
+  m_Name: Gate_Boon_SpeedBurst
+  m_EditorClassIdentifier: TinCan.Features.Gates::TinCan.Features.Gates.GateDefinition
+  Prefab: {fileID: 3700613868651414753, guid: 31270fbcabd4fe741ad810f8684771a7, type: 3}
+  Radius: 10
+  Actions:
+  - rid: 1094555198362746939
+  references:
+    version: 2
+    RefIds:
+    - rid: 1094555198362746939
+      type: {class: ApplyEffectGateAction, ns: TinCan.Features.Gates.Actions, asm: TinCan.Features.Gates}
+      data:
+        Effect: {fileID: 11400000, guid: 9d6fbb2b631c4714fba668da832c59cf, type: 2}

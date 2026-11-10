@@ -15,6 +15,8 @@ namespace TinCan.Features.SkillChecks
     {
         [Tooltip("Shown over the check.")]
         public string Title = "Press in the band";
+        [Tooltip("The station that runs it, by name (a challenge's HUD line lists the lit stations).")]
+        public string Station = "Station";
         [Tooltip("The minigame: the pulsing gauge, or the button combo.")]
         public SkillCheckKind Kind = SkillCheckKind.PulsingGauge;
         [Tooltip("Seconds to finish before the check is a Miss.")]

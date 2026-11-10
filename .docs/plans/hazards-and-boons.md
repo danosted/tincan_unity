@@ -48,7 +48,7 @@ Status: Approved (2026-11-07)
   every peer and one Perfect on the server. Built by **TinCan > Dev > Boons > Build Assets**, then **TinCan > Dev >
   Input > Build Assets**.
   First run: the scenario held the press, which a pressed-this-frame read never sees; it taps it now.
-- **B3 combo built (2026-11-08), awaiting its play run and a playtest:** the second kind, on a second engine station,
+- **B3 combo built (2026-11-08); `BoilerCombo` passes solo and host + client (2026-11-10), awaiting a playtest:** the second kind, on a second engine station,
   the boiler (a fixture on the old hull at starboard, the fitting `boon.boiler`; `SC_BoilerStoke`, the same boosts
   and window bonus as the telegraph). `ComboProcessor`: four directions in order in 5 s; a wrong one restarts the row
   (it counts as the first step if it is one); no slip is Perfect, finished at all is Good. New actions
@@ -56,6 +56,23 @@ Status: Approved (2026-11-07)
   is now picked on the player's peer, not the server, which only opens the check by its number. The telegraph's
   mediator became `EngineStationNetworkMediator`, shared by both stations. Scenario `BoilerCombo` (Test_Voyage):
   a right step, a wrong one, then the whole row: one Good and the Good boost's cue on every peer.
+- **B4a built (2026-11-10); `ChallengeRelay`, `EngineBoost` and `BoilerCombo` pass solo and host + client, awaiting a playtest.** In `SkillChecks/Challenges/`.
+  `SkillChallengeDefinition` holds the step tree as `[SerializeReference]` `ChallengeStep`s (station, sequence, relay,
+  parallel, branch, escalate), a grade rule (worst or average), the seconds a lit station waits, and the effect per
+  grade. `SkillChallengeRun` is the pure step machine. `SkillChallengeUseCase` (server) runs one challenge at a time
+  on the ship with stations and replicates each station's lit state through its `SkillCheckHostNetworkMediator`.
+  `SkillCheckUseCase` asks it about every E press: a lit station does the step (no station boost, no rest); a relay
+  refuses the last step's player while the crew has others. An escalation's rounds add a level (`SkillCheckDifficulty`:
+  a narrower band, a faster needle, a longer combo) and reopen for the same player after 1.5 s. Encounters
+  (`SkillChallengeEncounterUseCase`): during an active session, a random challenge from `SkillChallengesConfig` every
+  120 s, the first at 60 s. The HUD line `Challenge` names it and its lit stations with their seconds. Four hand-made
+  challenges: `CH_EngineRelay`, `CH_FullSteam` (parallel), `CH_StokeHotter` (escalate), `CH_PushTheEngine` (branch).
+  Their effects: `GE_Challenge_Start` (instant, put on the ship at the start; its burst cue `Cue.Boon.ChallengeStart`
+  dings and shows a toast on every peer), `GE_Challenge_Good` (10 s, x1.3) and `GE_Challenge_Perfect` (12 s, x1.6). Built by **TinCan > Dev >
+  Boons > Build Assets**. Scenario `ChallengeRelay` (Test_Voyage): the host's own player does the telegraph step without
+  input, and the subject does the boiler's combo cleanly. One Perfect challenge, its cue on every peer. Not yet: a type
+  picker for steps in the Inspector (step fields can be edited, step types cannot be changed there); a mark on the lit
+  station itself (only the HUD line shows it).
 - **Gates split out of B1 (2026-11-08).** A boon gate is now a generic gate with a boon action (see "Gates" below).
   New assembly `TinCan.Features.Gates`: `GateDefinition`, `GateUseCase` (spots the pass, runs the actions, uses the
   gate up), `GateNetworkMediator`, `ApplyEffectGateAction`. Boons keeps the layout, the chart and the laying
@@ -221,6 +238,25 @@ Each kind is its own small slice. The first one is built together with the frame
 ## B4: challenges (orchestrating checks) and crew chains
 The developer's idea (2026-11-07): put checks together in different ways, and chain them between crew members.
 
+### Decided 2026-11-10: steps light up stations, encounters start challenges, repairs become checks
+The developer: challenges come up during an encounter at some interval; repairs should be checks or combos instead
+of a flat wait; and the crew chains checks across stations within a time frame (the engine for more speed, another
+station for more of something else). This replaces "who gets a step" and the relay's player picking below:
+- **A step lights up a station, not a player.** Whoever presses E on a lit station within the step's time does it
+  (a Miss if no one starts it in time). Nothing opens on a player's screen unasked. Relay: the next step must be done
+  by a different player than the step before (with one player aboard, the same one). Parallel: several stations lit
+  at once. Escalate: the same station again, harder each round, opened straight away for the player who did the last
+  round. A step at a station the ship lacks is skipped.
+- **Inside a challenge a step gives only its grade:** no station boost, no station rest. The challenge's grade (by its
+  rule: the worst step, or the average) gives the challenge's effect on the ship.
+- **B4a (first slice): all five combinators,** hand-made challenge assets (the step tree as `[SerializeReference]`
+  steps on the asset; the separate spec and `ISkillChallengeSource` wait until a second source is wanted), and an
+  encounter: during an active voyage the server starts a random challenge from `SkillChallengesConfig` at a plain
+  interval. Every peer's HUD shows the lit stations and the time left. Scenario `ChallengeRelay`.
+- **R1 comes right after B4a: repair as a check.** Fixing a broken part becomes a check, its grade deciding how much
+  it heals, instead of holding the tool for a flat time (a slice in this plan; it changes `ShipRepairUseCase`).
+- **Crew chains (B4b)** become the crew's own combos across stations, after G1.
+
 ### Challenges: checks put together as data
 - **A challenge is a small tree of steps** (`SkillChallengeDefinition`). Whatever starts a boon (a gate, a comet, an
   event) starts a challenge. A single check is the simplest challenge, so B3 becomes a challenge with one step.
@@ -296,8 +332,8 @@ bloated). So the plan fixes only the data model and keeps where it comes from op
   the relay falls back to the same player and the chain does not grow.)
 
 ## Order
-C1 → H0 → B1 → B3 (framework and pulsing gauge, then the combo) → B4 challenges (hand-made source) → G1 (GAS
-magnitude scale) → B4 chains (with their lab) → H1 (lab, then into the voyage) → B2 → B3 parry and skill shots → the other B3 kinds, one at a time, in whatever order playtests ask for.
+C1 → H0 → B1 → B3 (framework and pulsing gauge, then the combo) → B4a challenges (hand-made, started by an
+encounter interval) → R1 (repair as a check) → G1 (GAS magnitude scale) → B4b chains (with their lab) → H1 (lab, then into the voyage) → B2 → B3 parry and skill shots → the other B3 kinds, one at a time, in whatever order playtests ask for.
 C1 and H0 are clear and small. B1, the first checks and B4 do not depend on comets, so boons, challenges and chains can
 be playtested early. B2, the parry and the skill shots need H1.
 

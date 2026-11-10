@@ -274,6 +274,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "BoilerCombo (Host + Client, Lag100)")]
         public static void BoilerComboDuo() => RunDuo("BoilerCombo", "Lag100");
 
+        [MenuItem(Root + "ChallengeRelay (Host)")]
+        public static void ChallengeRelaySolo() => RunSolo("ChallengeRelay");
+
+        [MenuItem(Root + "ChallengeRelay (Host + Client, Lag100)")]
+        public static void ChallengeRelayDuo() => RunDuo("ChallengeRelay", "Lag100");
+
         [MenuItem(Root + "VoyageLoop (Host)")]
         public static void VoyageLoopSolo() => RunSolo("VoyageLoop");
 

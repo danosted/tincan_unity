@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab6260f5de2706343996b904c19fdc93, type: 3}
+  m_Name: SkillChallengesConfig
+  m_EditorClassIdentifier: TinCan.Features.SkillChecks::TinCan.Features.SkillChecks.Challenges.SkillChallengesConfig
+  FirstDelay: 60
+  Interval: 120
+  Challenges:
+  - {fileID: 11400000, guid: 2b169d0739707e7458744702ec0fa7e3, type: 2}
+  - {fileID: 11400000, guid: 73f27617cd2d9484eb96c4b616c2a570, type: 2}
+  - {fileID: 11400000, guid: 24d1c5dcbef4eee4c98482ff53c14daf, type: 2}
+  - {fileID: 11400000, guid: 0c84d61962762fc4f8b0d2cf7e39b765, type: 2}

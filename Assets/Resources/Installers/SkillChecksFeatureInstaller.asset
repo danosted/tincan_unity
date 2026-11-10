@@ -16,3 +16,4 @@ MonoBehaviour:
   _styles:
   - {fileID: 7433441132597879392, guid: 72c44e0bb3dfe2b4e87d4576ae302b30, type: 3}
   - {fileID: 7433441132597879392, guid: a7a5e349d4cf4d046bae9f3bdbbaab6c, type: 3}
+  _challenges: {fileID: 11400000, guid: 16389eb8c3f46374692a334bb38b5558, type: 2}

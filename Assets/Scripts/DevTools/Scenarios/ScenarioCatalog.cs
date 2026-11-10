@@ -781,6 +781,53 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<SkillCheckScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
         /// <summary>
+        /// A relay challenge (B4a): the server starts <c>CH_EngineRelay</c> (the engine telegraph, then the boiler, each by
+        /// a different player than the step before); its start cue fires once on every peer. The host's own player does the telegraph's step without input, which
+        /// lights the boiler on every peer. The subject (another player in host + client; alone, the same one) walks to it,
+        /// presses Interact and plays the combo without a slip: the step and so the challenge are Perfect, and the
+        /// challenge's Perfect effect goes on the ship, whose cue every peer sees. Plan: hazards-and-boons.md (B4a).
+        /// </summary>
+        public static readonly ScenarioEntry ChallengeRelay = new(
+            new Scenario.Builder("ChallengeRelay")
+                .InScene(TestScenes.Voyage)
+                .Describe("Start the engine relay -> the host does the telegraph -> the boiler lights on every peer -> the subject plays it clean -> the challenge is Perfect, its effect on every peer.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("StartChallenge", "CH_EngineRelay")
+                    .WaitUntil("CueCount", 5f, "Cue.Boon.ChallengeStart:Execute:1")
+                    .WaitUntil("ChallengeLit", 5f, "Engine telegraph")
+                    .Do("FinishChallengeStep", "SC_EngineBoost:Perfect")
+                    .Do("PlaceSubjectNear", "Boiler"))
+                .Act(s => s
+                    .WaitUntil("CueCount", 45f, "Cue.Boon.ChallengeStart:Execute:1")
+                    .WaitUntil("SubjectNear", 45f, "Boiler")
+                    .WaitUntil("ChallengeLit", 10f, "Boiler")
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceObject", "Boiler")
+                    .WaitUntil("InteractTargetIs", 5f, "Boiler")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SkillCheckRunning", 10f)
+                    .Checkpoint("relay-step")
+                    .Do("TapComboNext").Wait(0.2f, "step 1")
+                    .Do("TapComboNext").Wait(0.2f, "step 2")
+                    .Do("TapComboNext").Wait(0.2f, "step 3")
+                    .Do("TapComboNext").Wait(0.2f, "step 4")
+                    .WaitUntil("CueActive", 10f, "Cue.Boon.ChallengePerfect"))
+                .Assert(s => s
+                    .WaitUntil("ChallengesEnded", 40f, "Perfect:1")
+                    .WaitUntil("CueActive", 5f, "Cue.Boon.ChallengePerfect")
+                    .Wait(1f, "no second grade")
+                    .Expect("ChallengesEnded", "Perfect:1")
+                    .Expect("SkillChecksGraded", "Perfect:1"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<SkillCheckScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+        /// <summary>
         /// The helm with real input: the subject walks up to the wheel and presses Interact to take it. It stays in its body
         /// on the helm seat (State.Occupying.Helm turns the Helmsman context on, which silences walking but not looking).
         /// Throttle and turn keys travel in its predicted input; the server moves and turns the ship from them. Leave lets go
@@ -1813,7 +1860,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using TinCan.Core.Domain.Entities;
 using TinCan.Core.Ship;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -11,15 +12,21 @@ namespace TinCan.Features.SkillChecks
     /// <summary>
     /// Infrastructure Layer: the skill check exchange on a networked ship part (with an EntityNetworkMediator, which
     /// registers it as an actor). Two RPCs: the server opens a check on one player's peer, and that peer's grade comes
-    /// back as a result the server validates (<see cref="SkillCheckUseCase"/>). Holds no replicated state.
+    /// back as a result the server validates (<see cref="SkillCheckUseCase"/>). Replicates only whether a challenge
+    /// lights the station (its title and the seconds left), for every peer's HUD.
     /// </summary>
     public class SkillCheckHostNetworkMediator : NetworkBehaviour, ISkillCheckHost
     {
         [Tooltip("The check this part runs.")]
         [SerializeField] private SkillCheckDefinition? _check;
 
+        private readonly NetworkVariable<FixedString64Bytes> _litChallenge = new(default,
+            NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        private readonly NetworkVariable<int> _litSeconds = new(0,
+            NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
         private readonly List<SkillCheckResult> _results = new();
-        private int? _opened;
+        private (int CheckId, int Level)? _opened;
         private ActorIdentity? _identity;
 
         public Guid Id => (_identity ??= new ActorIdentity(this)).Id;
@@ -28,15 +35,18 @@ namespace TinCan.Features.SkillChecks
         public IAirshipView? Ship => transform.parent != null ? transform.parent.GetComponentInParent<IAirshipView>() : null;
         public SkillCheckDefinition? Definition => _check;
 
-        public void ServerOpen(ulong clientId, int checkId)
+        public string? LitChallenge => IsSpawned && _litChallenge.Value.Length > 0 ? _litChallenge.Value.ToString() : null;
+        public int LitSecondsLeft => _litSeconds.Value;
+
+        public void ServerOpen(ulong clientId, int checkId, int level)
         {
             if (!IsServer) return;
-            OpenRpc(checkId, RpcTarget.Single(clientId, RpcTargetUse.Temp));
+            OpenRpc(checkId, (byte)Math.Clamp(level, 0, byte.MaxValue), RpcTarget.Single(clientId, RpcTargetUse.Temp));
         }
 
-        public bool TryTakeOpened(out int checkId)
+        public bool TryTakeOpened(out int checkId, out int level)
         {
-            checkId = _opened ?? 0;
+            (checkId, level) = _opened ?? (0, 0);
             if (_opened == null) return false;
             _opened = null;
             return true;
@@ -55,8 +65,17 @@ namespace TinCan.Features.SkillChecks
             return taken;
         }
 
+        public void ServerShowLit(string? challenge, int secondsLeft)
+        {
+            if (!IsServer) return;
+            var title = new FixedString64Bytes();
+            if (challenge != null) title.CopyFromTruncated(challenge);
+            _litChallenge.Value = title; // NGO only sends a value that changed
+            _litSeconds.Value = challenge != null ? secondsLeft : 0;
+        }
+
         [Rpc(SendTo.SpecifiedInParams)]
-        private void OpenRpc(int checkId, RpcParams rpcParams) => _opened = checkId;
+        private void OpenRpc(int checkId, byte level, RpcParams rpcParams) => _opened = (checkId, level);
 
         [Rpc(SendTo.Server)]
         private void GradeRpc(int checkId, byte grade, RpcParams rpcParams = default) =>

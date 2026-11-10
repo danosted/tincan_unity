@@ -16,6 +16,7 @@ using TinCan.Features.Gates;
 using TinCan.Features.Gates.Actions;
 using TinCan.Features.Navigation;
 using TinCan.Features.SkillChecks;
+using TinCan.Features.SkillChecks.Challenges;
 using Unity.Netcode;
 using UnityEditor;
 using UnityEngine;
@@ -40,6 +41,11 @@ namespace TinCan.DevTools.Editor
     /// <c>IA_EngineBoost</c>, the prefab, its fixture on the old hull and the fitting <c>boon.engine_telegraph</c>;</item>
     /// <item>the boiler (B3, the button combo): <c>SC_BoilerStoke</c> (the same effects as the telegraph), its prefab,
     /// fixture and the fitting <c>boon.boiler</c>, on the same interaction;</item>
+    /// <item>the challenges (B4a): <c>CH_EngineRelay</c>, <c>CH_FullSteam</c>, <c>CH_StokeHotter</c> and
+    /// <c>CH_PushTheEngine</c> in <c>Settings/Boons/Challenges/</c> (a relay, both at once, an escalation, a branch),
+    /// their effects <c>GE_Challenge_Start</c> (instant: its burst cue tells the crew a challenge began),
+    /// <c>GE_Challenge_Good</c> and <c>GE_Challenge_Perfect</c> with cues and notifies, and
+    /// <c>SkillChallengesConfig</c> (the encounters' list) on the SkillChecks installer;</item>
     /// <item><c>BoonsConfig</c>, the Gates, SkillChecks and Boons installers, the chart's boon material, and the
     /// installers in Profile_FuelSandbox and Profile_Test_Voyage. Run TinCan > Dev > Input > Build Assets after, for the
     /// skill check's input context.</item>
@@ -107,6 +113,7 @@ namespace TinCan.DevTools.Editor
             var check = Asset<SkillCheckDefinition>("Assets/Settings/Boons/SC_EngineBoost.asset", definition =>
             {
                 definition.Title = "Engine boost";
+                definition.Station = "Engine telegraph";
                 definition.GoodEffect = engineGood;
                 definition.PerfectEffect = enginePerfect;
                 definition.BonusTag = windowTag;
@@ -131,6 +138,7 @@ namespace TinCan.DevTools.Editor
             var boilerCheck = Asset<SkillCheckDefinition>("Assets/Settings/Boons/SC_BoilerStoke.asset", definition =>
             {
                 definition.Title = "Stoke the boiler";
+                definition.Station = "Boiler";
                 definition.Kind = SkillCheckKind.Combo;
                 definition.Seconds = 5f;
                 definition.ComboLength = 4;
@@ -150,12 +158,55 @@ namespace TinCan.DevTools.Editor
             var boilerFixture = Fixture("BoilerFixture", boiler, new Vector3(5.5f, -3.49f, 5f), -90f);
             var boilerFitting = Fitting("FITTING_Boiler", "boon.boiler", "Boiler", boiler);
 
+            // Challenges (B4a): the engine stations put together, started by an encounter during a voyage.
+            var challengeStart = Asset<GameplayEffectDefinition>(Effects + "GE_Challenge_Start.asset", effect =>
+            {
+                effect.DurationType = DurationType.Instant; // its cue is a burst (Execute)
+                effect.GrantedTags = new List<GameplayTag>();
+                effect.Modifiers = new List<AttributeModifier>();
+                effect.Cues = new List<GameplayTag> { Cue("ChallengeStart") };
+            });
+            var challengeGood = Effect("GE_Challenge_Good", 10f, flightSpeed, 1.3f, Cue("ChallengeGood"));
+            var challengePerfect = Effect("GE_Challenge_Perfect", 12f, flightSpeed, 1.6f, Cue("ChallengePerfect"));
+            var challengeNotifies = new Object[]
+            {
+                Notify("ChallengeStart", Cue("ChallengeStart"), "cue_ding", "Challenge! Get to the lit stations (see the HUD).", 4f, onExecute: true),
+                Notify("ChallengeGood", Cue("ChallengeGood"), "cue_ding", "Challenge done: speed boost!", 3f),
+                Notify("ChallengePerfect", Cue("ChallengePerfect"), "cue_ding", "Perfect challenge: full steam!", 3f),
+            };
+            var challenges = new List<SkillChallengeDefinition>
+            {
+                Challenge("CH_EngineRelay", "Head wind: relay the engine", ChallengeGradeRule.Worst, challengeStart, challengeGood, challengePerfect,
+                    () => new RelayStep { Steps = { At(check), At(boilerCheck) } }),
+                Challenge("CH_FullSteam", "Full steam: both at once", ChallengeGradeRule.Average, challengeStart, challengeGood, challengePerfect,
+                    () => new ParallelStep { Steps = { At(check), At(boilerCheck) } }),
+                Challenge("CH_StokeHotter", "Stoke it hotter", ChallengeGradeRule.Worst, challengeStart, challengeGood, challengePerfect,
+                    () => new EscalateStep { Station = boilerCheck, PerfectAt = 3 }),
+                Challenge("CH_PushTheEngine", "Push the engine", ChallengeGradeRule.Average, challengeStart, challengeGood, challengePerfect,
+                    () => new BranchStep
+                    {
+                        First = At(check),
+                        OnPerfect = new EscalateStep { Station = boilerCheck, PerfectAt = 2 },
+                        OnGood = At(boilerCheck)
+                    }),
+            };
+            var encounters = Asset<SkillChallengesConfig>("Assets/Settings/Boons/SkillChallengesConfig.asset", config =>
+            {
+                foreach (var challenge in challenges)
+                {
+                    if (!config.Challenges.Contains(challenge)) config.Challenges.Add(challenge);
+                }
+            });
+
             var skillChecks = Asset<SkillChecksFeatureInstaller>(Installers + "SkillChecksFeatureInstaller.asset", asset =>
+            {
                 AddUnique(asset, "_styles", new Object[]
                 {
                     Load<StyleSheet>("Assets/Scripts/Features/SkillChecks/UI/SkillGauge.uss"),
                     Load<StyleSheet>("Assets/Scripts/Features/SkillChecks/UI/SkillCombo.uss")
-                }));
+                });
+                SetField(asset, "_challenges", encounters);
+            });
 
             var glow = Material("Assets/Materials/Boons/M_BoonGate.mat", new Color(1f, 0.8f, 0.25f, 0.35f));
             var gate = Asset<GateDefinition>("Assets/Settings/Boons/Gate_Boon_SpeedBurst.asset", definition =>
@@ -176,6 +227,7 @@ namespace TinCan.DevTools.Editor
             {
                 SetField(boons, "_config", config);
                 AddUnique(boons, "_cueNotifies", notifies);
+                AddUnique(boons, "_cueNotifies", challengeNotifies);
                 AddUnique(boons, "_fixtures", new Object[] { telegraphFixture, boilerFixture });
                 AddUnique(boons, "_fittings", new Object[] { telegraphFitting, boilerFitting });
             });
@@ -193,6 +245,22 @@ namespace TinCan.DevTools.Editor
 
         private static GameplayTag Cue(string name) => Asset<GameplayTag>(Tags + "Cue.Boon." + name + ".asset", _ => { });
 
+        private static StationStep At(SkillCheckDefinition station) => new() { Station = station };
+
+        /// <summary>A hand-made challenge (B4a). Its steps are made once; later runs keep them (and any tuning in the Inspector).</summary>
+        private static SkillChallengeDefinition Challenge(string name, string title, ChallengeGradeRule rule,
+            GameplayEffectDefinition start, GameplayEffectDefinition good, GameplayEffectDefinition perfect, Func<ChallengeStep> steps) =>
+            Asset<SkillChallengeDefinition>("Assets/Settings/Boons/Challenges/" + name + ".asset", challenge =>
+            {
+                if (challenge.StartEffect == null) challenge.StartEffect = start;
+                if (challenge.Root != null) return;
+                challenge.Title = title;
+                challenge.GradeRule = rule;
+                challenge.Root = steps();
+                challenge.GoodEffect = good;
+                challenge.PerfectEffect = perfect;
+            });
+
         /// <summary>A timed effect: the attribute times <paramref name="multiplier"/> (no modifier without one), its cue, the tags it grants.</summary>
         private static GameplayEffectDefinition Effect(string name, float seconds, GameplayAttribute? attribute, float multiplier,
             GameplayTag cue, params GameplayTag[] granted) =>
@@ -207,13 +275,16 @@ namespace TinCan.DevTools.Editor
                 effect.Cues = new List<GameplayTag> { cue };
             });
 
-        /// <summary>GCN_Boon_*: while the cue is active, a sound (if named) and a HUD line. Made once; later runs keep its actions.</summary>
-        private static GameplayCueNotify Notify(string name, GameplayTag cue, string? sound, string text, float seconds) =>
+        /// <summary>
+        /// GCN_Boon_*: while the cue is active (or, with <paramref name="onExecute"/>, when its burst fires), a sound (if
+        /// named) and a HUD line. Made once; later runs keep its actions.
+        /// </summary>
+        private static GameplayCueNotify Notify(string name, GameplayTag cue, string? sound, string text, float seconds, bool onExecute = false) =>
             Asset<GameplayCueNotify>(Cues + "GCN_Boon_" + name + ".asset", asset =>
             {
                 var serialized = new SerializedObject(asset);
                 serialized.FindProperty("_cue").objectReferenceValue = cue;
-                var onActive = serialized.FindProperty("_onActive");
+                var onActive = serialized.FindProperty(onExecute ? "_onExecute" : "_onActive");
                 if (onActive.arraySize == 0)
                 {
                     var actions = new List<GameplayCueAction>();

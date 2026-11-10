@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65b545b0fe507f247938993758afd5ba, type: 3}
+  m_Name: CH_EngineRelay
+  m_EditorClassIdentifier: TinCan.Features.SkillChecks::TinCan.Features.SkillChecks.Challenges.SkillChallengeDefinition
+  Title: 'Head wind: relay the engine'
+  StepSeconds: 25
+  GradeRule: 0
+  Root:
+    rid: 1094555268612620351
+  StartEffect: {fileID: 11400000, guid: 2c1460963ae757c48954c445b35f979b, type: 2}
+  GoodEffect: {fileID: 11400000, guid: e0ea906c078bf9f469fc75bd7423b596, type: 2}
+  PerfectEffect: {fileID: 11400000, guid: ac04a04562659304ca1e5a208434791b, type: 2}
+  references:
+    version: 2
+    RefIds:
+    - rid: 1094555268612620351
+      type: {class: RelayStep, ns: TinCan.Features.SkillChecks.Challenges, asm: TinCan.Features.SkillChecks}
+      data:
+        Steps:
+        - rid: 1094555268612620352
+        - rid: 1094555268612620353
+    - rid: 1094555268612620352
+      type: {class: StationStep, ns: TinCan.Features.SkillChecks.Challenges, asm: TinCan.Features.SkillChecks}
+      data:
+        Station: {fileID: 11400000, guid: e8a76ebe274c80d43824c54cea10649b, type: 2}
+    - rid: 1094555268612620353
+      type: {class: StationStep, ns: TinCan.Features.SkillChecks.Challenges, asm: TinCan.Features.SkillChecks}
+      data:
+        Station: {fileID: 11400000, guid: bddb14b90216fe74aa2c22e110a3d810, type: 2}

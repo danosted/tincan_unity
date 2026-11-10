@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: SC_EngineBoost
   m_EditorClassIdentifier: TinCan.Features.SkillChecks::TinCan.Features.SkillChecks.SkillCheckDefinition
   Title: Engine boost
+  Station: Engine telegraph
   Kind: 0
   Seconds: 4
   Period: 1.6

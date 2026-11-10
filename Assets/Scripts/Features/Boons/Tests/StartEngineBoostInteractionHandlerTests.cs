@@ -30,14 +30,18 @@ namespace TinCan.Features.Boons.Tests
             public bool IsSimulating => true;
             public IAirshipView? Ship => null;
             public SkillCheckDefinition? Definition => null;
-            public void ServerOpen(ulong clientId, int checkId) { }
-            public bool TryTakeOpened(out int checkId)
+            public void ServerOpen(ulong clientId, int checkId, int level) { }
+            public bool TryTakeOpened(out int checkId, out int level)
             {
                 checkId = 0;
+                level = 0;
                 return false;
             }
             public void SendGrade(int checkId, SkillCheckGrade grade) { }
             public IReadOnlyList<SkillCheckResult> TakeResults() => Array.Empty<SkillCheckResult>();
+            public void ServerShowLit(string? challenge, int secondsLeft) { }
+            public string? LitChallenge => null;
+            public int LitSecondsLeft => 0;
         }
 
         private sealed class Station : IEngineStation

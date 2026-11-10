@@ -6,6 +6,7 @@
         "TinCan.Gas",
         "TinCan.Ship",
         "TinCan.UI",
+        "Unity.Collections",
         "Unity.Netcode.Runtime",
         "VContainer"
     ],

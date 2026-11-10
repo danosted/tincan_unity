@@ -23,37 +23,6 @@ namespace TinCan.Features.SkillChecks.Tests
     /// </summary>
     public class SkillCheckTests
     {
-        private sealed class FakeHost : ISkillCheckHost
-        {
-            public Guid Id { get; } = Guid.NewGuid();
-            public bool IsSimulating { get; set; } = true;
-            public IAirshipView? Ship { get; set; }
-            public SkillCheckDefinition? Definition { get; set; }
-            public List<(ulong Client, int CheckId)> Opened { get; } = new();
-            public List<(int CheckId, SkillCheckGrade Grade)> Sent { get; } = new();
-            public List<SkillCheckResult> Incoming { get; } = new();
-            public int? Pending;
-
-            public void ServerOpen(ulong clientId, int checkId) => Opened.Add((clientId, checkId));
-
-            public bool TryTakeOpened(out int checkId)
-            {
-                checkId = Pending ?? 0;
-                bool had = Pending != null;
-                Pending = null;
-                return had;
-            }
-
-            public void SendGrade(int checkId, SkillCheckGrade grade) => Sent.Add((checkId, grade));
-
-            public IReadOnlyList<SkillCheckResult> TakeResults()
-            {
-                var taken = Incoming.ToArray();
-                Incoming.Clear();
-                return taken;
-            }
-        }
-
         private sealed class FakeContextSwitch : IInputContextSwitch
         {
             private readonly HashSet<InputContext> _open = new();
@@ -84,7 +53,7 @@ namespace TinCan.Features.SkillChecks.Tests
         private MoveSpeedAttribute _speed = null!;
         private GameplayTag _window = null!;
         private SkillCheckDefinition _check = null!;
-        private FakeHost _host = null!;
+        private FakeSkillCheckHost _host = null!;
 
         [SetUp]
         public void SetUp()
@@ -106,7 +75,7 @@ namespace TinCan.Features.SkillChecks.Tests
             _shipController = new FakeAbilityController();
             _shipController.SetAttribute(_speed, new AttributeValue(10f));
             _ship = new FakeAirshipView("Airship", _shipController);
-            _host = new FakeHost { Ship = _ship, Definition = _check };
+            _host = new FakeSkillCheckHost { Ship = _ship, Definition = _check };
             _actors.Register(_host);
         }
 
@@ -277,7 +246,7 @@ namespace TinCan.Features.SkillChecks.Tests
         {
             var (runner, input, contexts, controls) = Runner();
             _check.Period = 2f;
-            _host.Pending = 5;
+            _host.Pending = (5, 0);
 
             runner.Tick();
             Assert.That(runner.IsRunning, Is.True);
@@ -297,7 +266,7 @@ namespace TinCan.Features.SkillChecks.Tests
         public void Runner_WithoutAPress_SendsAMiss_WhenTimeRunsOut()
         {
             var (runner, _, contexts, controls) = Runner();
-            _host.Pending = 9;
+            _host.Pending = (9, 0);
             runner.Tick();
 
             _time.DeltaTime = 1f;
@@ -316,7 +285,7 @@ namespace TinCan.Features.SkillChecks.Tests
             var (runner, input, contexts, controls) = Runner();
             _check.Kind = SkillCheckKind.Combo;
             _check.ComboLength = 3;
-            _host.Pending = 4;
+            _host.Pending = (4, 0);
             runner.Tick();
             Assert.That(runner.Combo.Count, Is.EqualTo(3));
             Assert.That(contexts.IsOpen(controls), Is.True);
@@ -359,7 +328,9 @@ namespace TinCan.Features.SkillChecks.Tests
         private SkillCheckUseCase UseCase()
         {
             var abilities = new AbilitySystemUseCase(new FakeAbilityRegistry(), _actors, _time, _events);
-            return new SkillCheckUseCase(new FakeNetworkService(), _actors, _time, _events, abilities);
+            var network = new FakeNetworkService();
+            return new SkillCheckUseCase(network, _actors, _time, _events, abilities,
+                new Challenges.SkillChallengeUseCase(network, _actors, _time, _events, abilities));
         }
 
         /// <summary>An instant speed boost (so the attribute shows it at once).</summary>

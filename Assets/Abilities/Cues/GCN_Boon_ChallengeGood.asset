@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0c8fb8095534604c8350b93c97960de, type: 3}
+  m_Name: GCN_Boon_ChallengeGood
+  m_EditorClassIdentifier: TinCan.Gas::TinCan.Core.Gas.Cues.GameplayCueNotify
+  _cue: {fileID: 11400000, guid: dbc6b577b1f226b4197c3cf042352266, type: 2}
+  _onExecute: []
+  _onActive:
+  - rid: 1094555268612620339
+  - rid: 1094555268612620340
+  _onRemoved: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 1094555268612620339
+      type: {class: PlaySoundCueAction, ns: TinCan.Core.Gas.Cues.Actions, asm: TinCan.Gas}
+      data:
+        Clip: {fileID: 8300000, guid: caa357fa545f1174a8bf5bdae7cebed1, type: 3}
+        Volume: 1
+        Channel: 0
+    - rid: 1094555268612620340
+      type: {class: HudToastCueAction, ns: TinCan.Core.Gas.Cues.Actions, asm: TinCan.Gas}
+      data:
+        Text: 'Challenge done: speed boost!'
+        Seconds: 3

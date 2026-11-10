@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: SC_BoilerStoke
   m_EditorClassIdentifier: TinCan.Features.SkillChecks::TinCan.Features.SkillChecks.SkillCheckDefinition
   Title: Stoke the boiler
+  Station: Boiler
   Kind: 1
   Seconds: 5
   Period: 1.6

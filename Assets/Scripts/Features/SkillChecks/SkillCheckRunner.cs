@@ -10,7 +10,7 @@ namespace TinCan.Features.SkillChecks
     /// <summary>
     /// This peer, per frame: runs the check the server opened for this player. It opens the skill check input context
     /// (walking and looking go quiet) and lays the check out here (the gauge's band, or the combo's directions; co-op
-    /// trusts the peer). The pulsing gauge grades the first Press against the band; the combo grades once its last
+    /// trusts the peer), harder by the level it was opened at (a challenge's escalation). The pulsing gauge grades the first Press against the band; the combo grades once its last
     /// direction is pressed. Time running out is a Miss. The grade goes to the server and shows for a moment.
     /// </summary>
     public sealed class SkillCheckRunner : ITickable, ISkillCheckRunner
@@ -32,6 +32,7 @@ namespace TinCan.Features.SkillChecks
         private ISkillCheckHost? _host;
         private int _checkId;
         private float _elapsed;
+        private float _period;
         private float _showLeft;
         private int _wrongPresses;
 
@@ -74,13 +75,13 @@ namespace TinCan.Features.SkillChecks
 
             _elapsed += _time.DeltaTime;
             if (definition.Kind == SkillCheckKind.Combo) TickCombo();
-            else TickGauge(definition);
+            else TickGauge();
             if (_host != null && _elapsed >= definition.Seconds) Finish(SkillCheckGrade.Miss);
         }
 
-        private void TickGauge(SkillCheckDefinition definition)
+        private void TickGauge()
         {
-            Needle = _gauge.Needle(_elapsed, definition.Period);
+            Needle = _gauge.Needle(_elapsed, _period);
             if (_input.WasPressedThisFrame(_controls.Press)) Finish(_gauge.Grade(Needle, Band));
         }
 
@@ -101,14 +102,16 @@ namespace TinCan.Features.SkillChecks
         {
             foreach (var host in _actors.GetActors<ISkillCheckHost>())
             {
-                if (!host.TryTakeOpened(out int checkId) || host.Definition == null) continue;
+                if (!host.TryTakeOpened(out int checkId, out int level) || host.Definition == null) continue;
 
                 _host = host;
                 _checkId = checkId;
                 var definition = Definition = host.Definition;
-                Band = _gauge.Band(_random, definition.GoodWidth, definition.PerfectWidth);
+                _period = SkillCheckDifficulty.Period(definition.Period, level);
+                Band = _gauge.Band(_random, SkillCheckDifficulty.Width(definition.GoodWidth, level),
+                    SkillCheckDifficulty.Width(definition.PerfectWidth, level));
                 Combo = definition.Kind == SkillCheckKind.Combo
-                    ? _combo.Sequence(_random, definition.ComboLength)
+                    ? _combo.Sequence(_random, SkillCheckDifficulty.ComboLength(definition.ComboLength, level))
                     : Array.Empty<ComboDirection>();
                 ComboDone = 0;
                 _wrongPresses = 0;

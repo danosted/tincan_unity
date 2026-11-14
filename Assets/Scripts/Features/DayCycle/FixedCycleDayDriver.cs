@@ -14,7 +14,7 @@ namespace TinCan.Features.DayCycle
         [Tooltip("The hour at second 0. 7: the blue hour before sunrise at the default sun path.")]
         [Range(0f, 24f)] public float StartHour = 7f;
 
-        public float HourAt(double seconds) =>
-            (float)(StartHour + 24.0 * seconds / Math.Max(CycleSeconds, 1f));
+        public float HourAt(in DayClockInput input) =>
+            (float)(StartHour + 24.0 * input.Seconds / Math.Max(CycleSeconds, 1f));
     }
 }

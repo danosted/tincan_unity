@@ -10,6 +10,6 @@ namespace TinCan.Features.DayCycle
     {
         [Range(0f, 24f)] public float Hour = 12f;
 
-        public float HourAt(double seconds) => Hour;
+        public float HourAt(in DayClockInput input) => Hour;
     }
 }

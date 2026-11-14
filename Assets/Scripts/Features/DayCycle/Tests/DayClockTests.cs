@@ -38,12 +38,30 @@ namespace TinCan.Features.DayCycle.Tests
         }
 
         [Test]
+        public void Voyage_RunsDawnToDuskByProgress()
+        {
+            var clock = Clock(new VoyageDayDriver { CastOffHour = 7f, ArrivalHour = 17f });
+
+            Assert.That(clock.HourAt(new DayClockInput(999, sessionProgress: 0f)), Is.EqualTo(7f));
+            Assert.That(clock.HourAt(new DayClockInput(0, sessionProgress: 0.5f)), Is.EqualTo(12f));
+            Assert.That(clock.HourAt(new DayClockInput(0, sessionProgress: 1f)), Is.EqualTo(17f));
+        }
+
+        [Test]
+        public void Voyage_WithoutASession_StandsAtCastOff()
+        {
+            var clock = Clock(new VoyageDayDriver { CastOffHour = 7f, ArrivalHour = 17f });
+
+            Assert.That(clock.HourAt(123), Is.EqualTo(7f));
+        }
+
+        [Test]
         public void Config_WithoutADriver_StandsAtNoon()
         {
             var config = UnityEngine.ScriptableObject.CreateInstance<DayCycleConfig>();
             config.Driver = null;
 
-            Assert.That(config.ActiveDriver.HourAt(123), Is.EqualTo(12f));
+            Assert.That(config.ActiveDriver.HourAt(new DayClockInput(123)), Is.EqualTo(12f));
             UnityEngine.Object.DestroyImmediate(config);
         }
     }

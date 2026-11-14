@@ -48,9 +48,9 @@ and the sky follow the sun. Under that sky, the current (volumetric) and the new
    edited. In `Profile_Galleon`, `Profile_FuelSandbox` and `Profile_Test_Look` (Build Atmosphere adds it). Scenario
    `DayMoves` (`Test_Look`): solo and host + client pass; `LookApplies` now checks the sun against the frame's colour.
    Blue-hour keys darkened the stylized clouds a little more (night shade 0.85 at -8, 0.6 at -3).
-3. **D3, the voyage driver (decided 2026-11-14):** dawn to dusk by progress: cast-off is the blue hour before
+3. **D3, the voyage driver, done 2026-11-14:** dawn to dusk by progress: cast-off is the blue hour before
    sunrise, arrival the blue hour after sunset, the hour follows how far along the route the ship is; no night while
-   sailing.
+   sailing. `VoyageDayDriver` (cast-off 07:00, arrival 17:00, at cast-off without a voyage) reads `DayClockInput.SessionProgress`, which `DayCycleUseCase` fills from the optional `ISessionProgress` (`Core/Domain/`), implemented by Voyage's `VoyageSessionProgress` (the HUD meter's progress, forward only within a voyage). Pick **Voyage** as the config's driver to use it; the default stays the fixed cycle. Unit-tested; no play scenario of its own yet.
 4. **Later:** a moon and stars for the night, the weather owning the light ([`cloud-sea.md`](cloud-sea.md)).
 
 ## Open

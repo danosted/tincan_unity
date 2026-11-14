@@ -1,54 +1,58 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
 using TinCan.Core.Gas;
 using TinCan.Core.Humanoid;
 using TinCan.Core.Targeting;
+using TinCan.Features.SkillChecks;
 using UnityEngine;
 
 namespace TinCan.Features.Airship.Damage
 {
     /// <summary>
-    /// Application Layer, after humanoid movement; repairs on the server only. The repair ability only expresses intent: while a player
-    /// carries the repairing tag (GA_RepairShip, predicted from the held Primary input), this asks the targeting service
-    /// which broken part they aim at (the ability's TargetingDefinition, TD_RepairScan) and applies the repair effect
-    /// to it every RepairInterval, so the rate does not depend on the tick rate. When the part reaches full health,
-    /// ShipBreakageUseCase releases its breach on its next reconcile. Same shape as NetCatchUseCase: the ability sets a
-    /// tag window, the feature performs the world effect. On the local player's own peer it also runs that query every
-    /// tick while they hold the tool (<see cref="AimedTarget"/>), so what a press would repair can be shown beforehand.
+    /// Application Layer, after humanoid movement; repairs on the server only. The repair ability only expresses intent: when a player
+    /// starts carrying the repairing tag (GA_RepairShip, predicted from the held Primary input), this asks the targeting
+    /// service which broken part they aim at (the ability's TargetingDefinition, TD_RepairScan) and opens that part's
+    /// repair check for them (the <see cref="ISkillCheckHost"/> beside the part, SC_ShipRepair). One check per pull: the
+    /// grade's effect goes on the part itself (Perfect fixes it, Good heals half, a Miss nothing), and the player pulls
+    /// again until it is whole. When the part reaches full health, ShipBreakageUseCase releases its breach on its next
+    /// reconcile. On the local player's own peer it also runs that query every tick while they hold the tool
+    /// (<see cref="AimedTarget"/>), so what a pull would repair can be shown beforehand. Plan: hazards-and-boons.md (R1).
     /// </summary>
     public class ShipRepairUseCase : ISimulationTickable
     {
         public SimulationPhase Phase => SimulationPhase.AfterHumanoid;
 
+        private const string LogSource = "ShipRepair";
+
         private readonly INetworkService _network;
         private readonly IActorRegistry _actors;
-        private readonly ITimeService _time;
         private readonly IEventPublisher _events;
         private readonly AbilitySystemUseCase _abilities;
         private readonly ITargetingService _targeting;
+        private readonly ISkillChecks _checks;
         private readonly ShipDamageConfig _config;
-        private readonly Dictionary<Guid, (int Target, float Accumulated)> _progress = new();
+        // Players whose current pull already opened a check (or found the part busy): the next one needs a new pull.
+        private readonly HashSet<Guid> _pulled = new();
 
         public ShipRepairUseCase(
             INetworkService network,
             IActorRegistry actors,
-            ITimeService time,
             IEventPublisher events,
             AbilitySystemUseCase abilities,
             ITargetingService targeting,
+            ISkillChecks checks,
             ShipDamageConfig config)
         {
             _network = network;
             _actors = actors;
-            _time = time;
             _events = events;
             _abilities = abilities;
             _targeting = targeting;
+            _checks = checks;
             _config = config;
         }
 
@@ -60,7 +64,7 @@ namespace TinCan.Features.Airship.Damage
 
         /// <summary>
         /// On the local player's own peer (host or client): the broken part a repair would work on right now, while they
-        /// hold the repair tool, whether or not they are repairing. The same query the server runs on a press, so the
+        /// hold the repair tool, whether or not they are repairing. The same query the server runs on a pull, so the
         /// player can see what they aim at before they pull the trigger (<see cref="RepairAimHighlightPresenter"/>).
         /// </summary>
         public IShipDamagePoint? AimedTarget { get; private set; }
@@ -68,7 +72,7 @@ namespace TinCan.Features.Airship.Damage
         public void Tick()
         {
             var targeting = _config.RepairAbility?.Targeting;
-            if (_config.RepairingTag == null || _config.RepairEffect == null || targeting == null) return;
+            if (_config.RepairingTag == null || targeting == null) return;
 
             AimLocalPlayer(targeting);
             if (!_network.IsServer) return;
@@ -77,17 +81,16 @@ namespace TinCan.Features.Airship.Damage
             {
                 if (!player.HasTag(_config.RepairingTag))
                 {
-                    _progress.Remove(player.Id);
+                    _pulled.Remove(player.Id);
                     continue;
                 }
 
-                if (!_targeting.TryAcquire(new HumanoidTargeter(player), targeting, out var result) || result.Target is not IShipDamagePoint point)
-                {
-                    _progress.Remove(player.Id);
-                    continue;
-                }
+                // A pull that starts off target opens the check once the player turns to a broken part.
+                if (_pulled.Contains(player.Id)) continue;
+                if (!_targeting.TryAcquire(new HumanoidTargeter(player), targeting, out var result) || result.Target is not IShipDamagePoint point) continue;
 
-                Advance(player, point);
+                _pulled.Add(player.Id);
+                Open(player, point);
             }
         }
 
@@ -106,22 +109,17 @@ namespace TinCan.Features.Airship.Damage
             PredictedTarget = !_network.IsServer && repairing ? AimedTarget : null;
         }
 
-        private void Advance(IHumanoidCharacterView player, IShipDamagePoint point)
+        private void Open(IHumanoidCharacterView player, IShipDamagePoint point)
         {
-            // Switching parts restarts the interval, so a quick glance at another part cannot bank progress.
-            var progress = _progress.TryGetValue(player.Id, out var current) && current.Target == point.Index
-                ? current
-                : (Target: point.Index, Accumulated: 0f);
-
-            progress.Accumulated += _time.DeltaTime;
-            while (progress.Accumulated >= _config.RepairInterval && point.Controller.IsDamaged())
+            var host = point.Transform != null ? point.Transform.GetComponent<ISkillCheckHost>() : null;
+            if (host == null || point.Controller == null)
             {
-                progress.Accumulated -= _config.RepairInterval;
-                _abilities.ApplyEffect(point.Controller!, _config.RepairEffect!);
-                _events.Publish(new ShipPartRepairTickEvent(player.Id, point.Index));
+                _events.LogWarning(LogSource, $"Part {point.Index} has no repair check (SkillCheckHostNetworkMediator).");
+                return;
             }
 
-            _progress[player.Id] = progress;
+            if (player.OwnerId is not { } clientId) return;
+            _checks.TryOpen(host, clientId, point.Controller);
         }
     }
 }

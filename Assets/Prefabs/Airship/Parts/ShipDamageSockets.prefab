@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7348253731019575216}
   - component: {fileID: 733891723586495332}
   - component: {fileID: 8236003173242657885}
+  - component: {fileID: 3026609091231106800}
   m_Layer: 0
   m_Name: Socket_1
   m_TagString: Untagged
@@ -64,6 +65,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3026609091231106800
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3339711048054163117}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07c85160e41d93f4eb751a2fd80ce055, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features.SkillChecks::TinCan.Features.SkillChecks.SkillCheckHostNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
+  _check: {fileID: 11400000, guid: f25413132bdf8d04d8fae942dc154e14, type: 2}
 --- !u!1 &3409856509452850833
 GameObject:
   m_ObjectHideFlags: 0
@@ -75,6 +90,7 @@ GameObject:
   - component: {fileID: 8153369078377294612}
   - component: {fileID: 5281265260776627299}
   - component: {fileID: 8373027823288874596}
+  - component: {fileID: 3008443112438040395}
   m_Layer: 0
   m_Name: Socket_0
   m_TagString: Untagged
@@ -128,6 +144,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3008443112438040395
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3409856509452850833}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07c85160e41d93f4eb751a2fd80ce055, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features.SkillChecks::TinCan.Features.SkillChecks.SkillCheckHostNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
+  _check: {fileID: 11400000, guid: f25413132bdf8d04d8fae942dc154e14, type: 2}
 --- !u!1 &4395319698144419578
 GameObject:
   m_ObjectHideFlags: 0
@@ -347,6 +377,7 @@ GameObject:
   - component: {fileID: 3224364721819358342}
   - component: {fileID: 7846574923885732455}
   - component: {fileID: 2927198555043471977}
+  - component: {fileID: 3486387048883362230}
   m_Layer: 0
   m_Name: Socket_3
   m_TagString: Untagged
@@ -400,6 +431,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3486387048883362230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5230167246932614863}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07c85160e41d93f4eb751a2fd80ce055, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features.SkillChecks::TinCan.Features.SkillChecks.SkillCheckHostNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
+  _check: {fileID: 11400000, guid: f25413132bdf8d04d8fae942dc154e14, type: 2}
 --- !u!1 &5544835906332700893
 GameObject:
   m_ObjectHideFlags: 0
@@ -487,6 +532,7 @@ GameObject:
   - component: {fileID: 8172272707073104030}
   - component: {fileID: 1299243068544122704}
   - component: {fileID: 6846769137186484977}
+  - component: {fileID: 1992953665947389216}
   m_Layer: 0
   m_Name: Socket_4
   m_TagString: Untagged
@@ -540,6 +586,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1992953665947389216
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5605834859564849805}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07c85160e41d93f4eb751a2fd80ce055, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features.SkillChecks::TinCan.Features.SkillChecks.SkillCheckHostNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
+  _check: {fileID: 11400000, guid: f25413132bdf8d04d8fae942dc154e14, type: 2}
 --- !u!1 &6101566906347539697
 GameObject:
   m_ObjectHideFlags: 0
@@ -759,6 +819,7 @@ GameObject:
   - component: {fileID: 40120048885940463}
   - component: {fileID: 2000254800586363425}
   - component: {fileID: 1552831060193684508}
+  - component: {fileID: 7258734735691254347}
   m_Layer: 0
   m_Name: Socket_2
   m_TagString: Untagged
@@ -812,6 +873,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &7258734735691254347
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6665648649830468793}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07c85160e41d93f4eb751a2fd80ce055, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Features.SkillChecks::TinCan.Features.SkillChecks.SkillCheckHostNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
+  _check: {fileID: 11400000, guid: f25413132bdf8d04d8fae942dc154e14, type: 2}
 --- !u!1 &7771077548048845535
 GameObject:
   m_ObjectHideFlags: 0

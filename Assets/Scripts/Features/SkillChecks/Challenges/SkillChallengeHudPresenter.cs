@@ -15,13 +15,13 @@ namespace TinCan.Features.SkillChecks.Challenges
     {
         public const string HudKey = "Challenge";
 
-        private readonly IActorRegistry _actors;
+        private readonly SkillCheckHostRegistry _hosts;
         private readonly IHudValues _hud;
         private readonly List<string> _parts = new();
 
-        public SkillChallengeHudPresenter(IActorRegistry actors, IHudValues hud)
+        public SkillChallengeHudPresenter(SkillCheckHostRegistry hosts, IHudValues hud)
         {
-            _actors = actors;
+            _hosts = hosts;
             _hud = hud;
         }
 
@@ -29,7 +29,7 @@ namespace TinCan.Features.SkillChecks.Challenges
         {
             string? title = null;
             _parts.Clear();
-            foreach (var host in _actors.GetActors<ISkillCheckHost>())
+            foreach (var host in _hosts.All)
             {
                 var lit = host.LitChallenge;
                 if (lit == null || host.Definition == null) continue;

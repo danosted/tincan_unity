@@ -25,6 +25,8 @@ namespace TinCan.Tests.Fakes
         public bool IsPlayerCharacter { get; set; } = true;
         public HumanoidInputState InputState { get; set; }
         public ulong? PossessorId { get; private set; }
+        /// <summary>The owning client (the default reads a NetworkObject, which a fake has not); null unless a test sets it.</summary>
+        public ulong? OwnerId { get; set; }
         public IHumanoidMovementView Movement { get; }
         public ILookView Look { get; } = new FakeOrbitalLookView();
         public GameplayTagContainer ActiveTags => new(_tags);

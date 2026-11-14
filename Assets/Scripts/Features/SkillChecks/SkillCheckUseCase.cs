@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Domain.Networking;
 using TinCan.Core.Gas;
@@ -13,7 +14,8 @@ namespace TinCan.Features.SkillChecks
     /// <summary>
     /// Application Layer, server only. Opens a host's check on one player's peer, then
     /// takes the grade that peer sends back: only for a check it opened for that player, before the check's time and a
-    /// grace for the round trip run out (then it is a Miss). The grade's effect goes on the host's ship, with the bonus
+    /// grace for the round trip run out (then it is a Miss). The grade's effect goes on the host's ship (or on the target it was opened for: a broken
+    /// part's repair, plan R1), with the bonus
     /// effect if the ship carries the bonus tag. Whatever the grade, the host then rests for the check's cooldown. Co-op
     /// trusts the grade itself. A press on a station a challenge lights does the challenge's step instead
     /// (<see cref="SkillChallengeUseCase"/>): the grade goes to the challenge, with no effect and no rest, and an
@@ -35,12 +37,14 @@ namespace TinCan.Features.SkillChecks
             public ulong ClientId;
             public int CheckId;
             public float Deadline;
+            /// <summary>Where its grade's effect goes instead of the ship (a broken part), or null.</summary>
+            public IAbilityControllerBase? Target;
             /// <summary>The challenge step it does, or 0.</summary>
             public int StepId;
         }
 
         private readonly INetworkService _network;
-        private readonly IActorRegistry _actors;
+        private readonly SkillCheckHostRegistry _hosts;
         private readonly ITimeService _time;
         private readonly IEventPublisher _events;
         private readonly AbilitySystemUseCase _abilities;
@@ -50,11 +54,11 @@ namespace TinCan.Features.SkillChecks
         private readonly int[] _counts = new int[3];
         private int _nextCheckId;
 
-        public SkillCheckUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
+        public SkillCheckUseCase(INetworkService network, SkillCheckHostRegistry hosts, ITimeService time, IEventPublisher events,
             AbilitySystemUseCase abilities, SkillChallengeUseCase challenges)
         {
             _network = network;
-            _actors = actors;
+            _hosts = hosts;
             _time = time;
             _events = events;
             _abilities = abilities;
@@ -63,7 +67,7 @@ namespace TinCan.Features.SkillChecks
 
         public int Count(SkillCheckGrade grade) => _counts[(int)grade];
 
-        public bool TryOpen(ISkillCheckHost host, ulong clientId)
+        public bool TryOpen(ISkillCheckHost host, ulong clientId, IAbilityControllerBase? target = null)
         {
             if (!_network.IsServer) return false;
             var definition = host.Definition;
@@ -91,7 +95,7 @@ namespace TinCan.Features.SkillChecks
             var open = new Open
             {
                 Host = host, Definition = definition, ClientId = clientId, CheckId = ++_nextCheckId,
-                Deadline = _time.Time + definition.Seconds + GraceSeconds, StepId = stepId
+                Deadline = _time.Time + definition.Seconds + GraceSeconds, StepId = stepId, Target = target
             };
             _open.Add(open);
             host.ServerOpen(clientId, open.CheckId, level);
@@ -105,7 +109,7 @@ namespace TinCan.Features.SkillChecks
 
             foreach (var (host, clientId) in _challenges.DueHandOvers()) TryOpen(host, clientId);
 
-            foreach (var host in _actors.GetActors<ISkillCheckHost>())
+            foreach (var host in _hosts.All)
             {
                 foreach (var result in host.TakeResults())
                 {
@@ -140,7 +144,7 @@ namespace TinCan.Features.SkillChecks
             _restingUntil[open.Host.Id] = _time.Time + open.Definition.Cooldown;
 
             bool bonus = false;
-            var controller = (open.Host.Ship as IShipState)?.Controller;
+            var controller = open.Target ?? (open.Host.Ship as IShipState)?.Controller;
             var effect = open.Definition.EffectFor(grade);
             if (controller != null && effect != null)
             {

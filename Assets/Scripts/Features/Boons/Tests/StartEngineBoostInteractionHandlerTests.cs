@@ -52,7 +52,7 @@ namespace TinCan.Features.Boons.Tests
         private sealed class RecordingChecks : ISkillChecks
         {
             public List<(ISkillCheckHost Host, ulong Client)> Opened { get; } = new();
-            public bool TryOpen(ISkillCheckHost host, ulong clientId)
+            public bool TryOpen(ISkillCheckHost host, ulong clientId, TinCan.Core.Domain.Abilities.IAbilityControllerBase? target = null)
             {
                 Opened.Add((host, clientId));
                 return true;

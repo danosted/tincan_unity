@@ -24,7 +24,7 @@ namespace TinCan.DevTools.Scenarios
     public sealed class SkillCheckScenarioLibrary : IScenarioLibrary
     {
         private readonly INetworkService _network;
-        private readonly IActorRegistry _actors;
+        private readonly SkillCheckHostRegistry _hosts;
         private readonly ISkillCheckRunner _runner;
         private readonly ISkillChecks _checks;
         private readonly SkillChallengeUseCase _challenges;
@@ -32,11 +32,11 @@ namespace TinCan.DevTools.Scenarios
         private readonly ScriptedActionDriver _input;
         private float _lastOff = float.MaxValue;
 
-        public SkillCheckScenarioLibrary(INetworkService network, IActorRegistry actors, ISkillCheckRunner runner, ISkillChecks checks,
+        public SkillCheckScenarioLibrary(INetworkService network, SkillCheckHostRegistry hosts, ISkillCheckRunner runner, ISkillChecks checks,
             SkillChallengeUseCase challenges, SkillChallengesConfig encounters, ScriptedActionDriver input)
         {
             _network = network;
-            _actors = actors;
+            _hosts = hosts;
             _runner = runner;
             _checks = checks;
             _challenges = challenges;
@@ -75,7 +75,7 @@ namespace TinCan.DevTools.Scenarios
             var parts = arg.Split(':');
             if (parts.Length != 2 || !Enum.TryParse(parts[1], out SkillCheckGrade grade)) return ScenarioCheck.Fail($"expected Check:Grade, got '{arg}'");
 
-            var host = _actors.GetActors<ISkillCheckHost>().FirstOrDefault(candidate => candidate.Definition != null && candidate.Definition.name == parts[0]);
+            var host = _hosts.All.FirstOrDefault(candidate => candidate.Definition != null && candidate.Definition.name == parts[0]);
             if (host == null) return ScenarioCheck.Fail($"no station runs {parts[0]}");
             if (_challenges.TryClaim(host, _network.LocalClientId, out int stepId, out _) != ChallengeClaim.Claimed)
                 return ScenarioCheck.Fail($"{parts[0]} is not lit for client {_network.LocalClientId}");
@@ -86,7 +86,7 @@ namespace TinCan.DevTools.Scenarios
 
         private ScenarioCheck CheckLit(string station)
         {
-            var host = _actors.GetActors<ISkillCheckHost>().FirstOrDefault(candidate => candidate.Definition != null && candidate.Definition.Station == station);
+            var host = _hosts.All.FirstOrDefault(candidate => candidate.Definition != null && candidate.Definition.Station == station);
             if (host == null) return ScenarioCheck.Fail($"no station '{station}'");
             string detail = $"{station}: {host.LitChallenge ?? "not lit"}, {host.LitSecondsLeft} s";
             return host.LitChallenge != null && host.LitSecondsLeft >= 0 ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);

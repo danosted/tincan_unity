@@ -1,13 +1,16 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using NUnit.Framework;
+using TinCan.Core.Domain.Abilities;
 using TinCan.Core.Domain.Abilities.Tags;
 using TinCan.Core.Gas;
-using TinCan.Features.Airship.Damage;
+using TinCan.Core.Ship;
 using TinCan.Core.Targeting;
+using TinCan.Features.SkillChecks;
 using UnityEngine;
 using TinCan.Tests.Fakes;
+using Object = UnityEngine.Object;
 
 namespace TinCan.Features.Airship.Damage.Tests
 {
@@ -19,6 +22,34 @@ namespace TinCan.Features.Airship.Damage.Tests
             public void Publish<TEvent>(TEvent evt) => Events.Add(evt!);
         }
 
+        /// <summary>The checks the repair opens: which host, for whom, and where the grade's effect goes.</summary>
+        private sealed class RecordingChecks : ISkillChecks
+        {
+            public List<(ISkillCheckHost Host, ulong Client, IAbilityControllerBase? Target)> Opened { get; } = new();
+            public bool TryOpen(ISkillCheckHost host, ulong clientId, IAbilityControllerBase? target = null)
+            {
+                Opened.Add((host, clientId, target));
+                return true;
+            }
+            public int Count(SkillCheckGrade grade) => 0;
+        }
+
+        /// <summary>The repair check beside a part, as the prefab has it (the real one is a NetworkBehaviour).</summary>
+        private sealed class RepairHost : MonoBehaviour, ISkillCheckHost
+        {
+            public Guid Id { get; } = Guid.NewGuid();
+            public bool IsSimulating => true;
+            public IAirshipView? Ship => null;
+            public SkillCheckDefinition? Definition => null;
+            public void ServerOpen(ulong clientId, int checkId, int level) { }
+            public bool TryTakeOpened(out int checkId, out int level) { checkId = level = 0; return false; }
+            public void SendGrade(int checkId, SkillCheckGrade grade) { }
+            public IReadOnlyList<SkillCheckResult> TakeResults() => Array.Empty<SkillCheckResult>();
+            public void ServerShowLit(string? challenge, int secondsLeft) { }
+            public string? LitChallenge => null;
+            public int LitSecondsLeft => 0;
+        }
+
         private readonly List<Object> _assets = new();
         private FakeActorRegistry _actors = null!;
         private FakeTimeService _time = null!;
@@ -28,8 +59,10 @@ namespace TinCan.Features.Airship.Damage.Tests
         private GameplayTag _repairing = null!;
         private FakeAirshipView _airship = null!;
         private FakeShipDamagePoint[] _points = null!;
+        private RepairHost[] _hosts = null!;
         private FakeHumanoidMovementView _movement = null!;
         private FakeNetHumanoidView _player = null!;
+        private RecordingChecks _checks = null!;
         private ShipRepairUseCase _useCase = null!;
         private TargetableRegistry _targetables = null!;
         private GameplayTag _damaged = null!;
@@ -45,15 +78,9 @@ namespace TinCan.Features.Airship.Damage.Tests
             var health = Create<HealthAttribute>("Attr_Health");
             var maxHealth = Create<MaxHealthAttribute>("Attr_MaxHealth");
             _repairing = Create<GameplayTag>("State.Repairing");
-            var repair = Create<GameplayEffectDefinition>("GE_RepairTick");
-            repair.DurationType = DurationType.Instant;
-            repair.Modifiers = new List<AttributeModifier> { new() { Attribute = health, Operation = ModifierOp.Add, Value = 25f, ClampMaxAttribute = maxHealth } };
-            repair.GrantedTags = new List<GameplayTag>();
 
             _config = Create<ShipDamageConfig>("ShipDamageConfig");
             _config.RepairingTag = _repairing;
-            _config.RepairEffect = repair;
-            _config.RepairInterval = 0.25f;
             _damaged = Create<GameplayTag>("State.Damaged");
             var scan = Create<TargetingDefinition>("TD_RepairScan");
             scan.Source = AimSource.BodyForward;
@@ -71,6 +98,7 @@ namespace TinCan.Features.Airship.Damage.Tests
             _points = FakeShipDamage.AttachPoints(_airship.GameObject, 2, health, maxHealth);
             _points[0].transform.position = new Vector3(0f, 1f, 2f);
             _points[1].transform.position = new Vector3(0f, 1f, -2f);
+            _hosts = new[] { _points[0].gameObject.AddComponent<RepairHost>(), _points[1].gameObject.AddComponent<RepairHost>() };
             _targetables = new TargetableRegistry();
             foreach (var point in _points) _targetables.Register(point);
             _actors.Register(_airship);
@@ -78,10 +106,11 @@ namespace TinCan.Features.Airship.Damage.Tests
             _movement = new FakeHumanoidMovementView("Player");
             _movement.Transform.position = Vector3.zero;
             _movement.Transform.rotation = Quaternion.identity;
-            _player = new FakeNetHumanoidView(_movement);
+            _player = new FakeNetHumanoidView(_movement) { OwnerId = 7 };
             _actors.Register(_player);
 
-            _useCase = new ShipRepairUseCase(new FakeNetworkService(), _actors, _time, _events, _abilities, new TargetingUseCase(_targetables, new TargetingProcessor()), _config);
+            _checks = new RecordingChecks();
+            _useCase = UseCase(new FakeNetworkService());
         }
 
         [TearDown]
@@ -94,54 +123,83 @@ namespace TinCan.Features.Airship.Damage.Tests
         }
 
         [Test]
-        public void Repairing_AddsHealthEveryIntervalToThePartInFront()
+        public void APull_OpensThePartsCheck_ForThePlayer_WithThePartAsTheTarget()
         {
             Break(_points[0], 0f);
             _player.AddTag(_repairing);
 
             _useCase.Tick();
-            _useCase.Tick();
 
-            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0.5f).Within(0.001f), "Two intervals of +25 on a 100 max.");
-            Assert.That(_events.Events.OfType<ShipPartRepairTickEvent>().Count(), Is.EqualTo(2));
+            Assert.That(_checks.Opened, Has.Count.EqualTo(1));
+            Assert.That(_checks.Opened[0].Host, Is.SameAs(_hosts[0]));
+            Assert.That(_checks.Opened[0].Client, Is.EqualTo(7UL));
+            Assert.That(_checks.Opened[0].Target, Is.SameAs(_points[0].Controller), "The grade heals the part, not the ship.");
         }
 
         [Test]
-        public void RepairStopsAtFullHealth()
+        public void HoldingOn_OpensOneCheck_AndANewPullOpensTheNext()
         {
-            Break(_points[0], 0.9f);
+            Break(_points[0], 0f);
             _player.AddTag(_repairing);
 
             for (int i = 0; i < 5; i++) _useCase.Tick();
+            Assert.That(_checks.Opened, Has.Count.EqualTo(1), "One check per pull.");
 
-            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(1f));
-            Assert.That(_points[0].Controller.IsDamaged(), Is.False);
-            Assert.That(_events.Events.OfType<ShipPartRepairTickEvent>().Count(), Is.EqualTo(1), "No ticks on a repaired part.");
+            _player.RemoveTag(_repairing);
+            _useCase.Tick();
+            _player.AddTag(_repairing);
+            _useCase.Tick();
+            Assert.That(_checks.Opened, Has.Count.EqualTo(2));
         }
 
         [Test]
-        public void NotRepairing_DoesNothing()
+        public void APullOffTarget_OpensTheCheck_OnceThePlayerTurnsToTheBrokenPart()
+        {
+            Break(_points[0], 0f);
+            _movement.Transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+            _player.AddTag(_repairing);
+
+            _useCase.Tick();
+            Assert.That(_checks.Opened, Is.Empty, "Facing a healthy part.");
+
+            _movement.Transform.rotation = Quaternion.identity;
+            _useCase.Tick();
+            Assert.That(_checks.Opened, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void NotRepairing_OpensNothing()
         {
             Break(_points[0], 0f);
 
             _useCase.Tick();
 
-            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0f));
+            Assert.That(_checks.Opened, Is.Empty);
         }
 
         [Test]
-        public void OnAClient_PredictsTheLocalPlayersTarget_WithoutRepairing()
+        public void PartWithoutTheDamagedTag_IsNotTargeted()
+        {
+            _points[0].SetHealthFraction(0f);
+            _player.AddTag(_repairing);
+
+            _useCase.Tick();
+
+            Assert.That(_checks.Opened, Is.Empty, "TD_RepairScan requires State.Damaged on the target.");
+        }
+
+        [Test]
+        public void OnAClient_PredictsTheLocalPlayersTarget_WithoutOpening()
         {
             Break(_points[0], 0f);
             _player.AddTag(_repairing);
             _actors.LocalPlayer = _player;
-            var client = new ShipRepairUseCase(new ClientNetwork(), _actors, _time, _events, _abilities,
-                new TargetingUseCase(_targetables, new TargetingProcessor()), _config);
+            var client = UseCase(new ClientNetwork());
 
             client.Tick();
 
             Assert.That(client.PredictedTarget, Is.SameAs(_points[0]));
-            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0f), "Only the server applies repair effects.");
+            Assert.That(_checks.Opened, Is.Empty, "Only the server opens checks.");
 
             _player.RemoveTag(_repairing);
             client.Tick();
@@ -161,12 +219,15 @@ namespace TinCan.Features.Airship.Damage.Tests
             _useCase.Tick();
             Assert.That(_useCase.AimedTarget, Is.SameAs(_points[0]), "The part in front, with no repairing tag.");
             Assert.That(_useCase.PredictedTarget, Is.Null, "Not repairing, and the host predicts nothing.");
-            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0f), "Aiming repairs nothing.");
+            Assert.That(_checks.Opened, Is.Empty, "Aiming opens nothing.");
 
             _movement.Transform.rotation = Quaternion.Euler(0f, 180f, 0f);
             _useCase.Tick();
             Assert.That(_useCase.AimedTarget, Is.Null, "Turned toward a part that is not broken: nothing to aim at.");
         }
+
+        private ShipRepairUseCase UseCase(TinCan.Core.Domain.Networking.INetworkService network) =>
+            new(network, _actors, _events, _abilities, new TargetingUseCase(_targetables, new TargetingProcessor()), _checks, _config);
 
         private sealed class ClientNetwork : TinCan.Core.Domain.Networking.INetworkService
         {
@@ -183,59 +244,6 @@ namespace TinCan.Features.Airship.Damage.Tests
             public void StartServer() { }
             public void StartClient() { }
             public void Shutdown() { }
-        }
-
-        [Test]
-        public void PartWithoutTheDamagedTag_IsNotTargeted()
-        {
-            _points[0].SetHealthFraction(0f);
-            _player.AddTag(_repairing);
-
-            _useCase.Tick();
-
-            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0f), "TD_RepairScan requires State.Damaged on the target.");
-        }
-
-        [Test]
-        public void PartBehindThePlayer_IsNotRepaired()
-        {
-            Break(_points[1], 0f);
-            _player.AddTag(_repairing);
-
-            _useCase.Tick();
-
-            Assert.That(FakeShipDamage.HealthFraction(_points[1]), Is.EqualTo(0f));
-        }
-
-        [Test]
-        public void ShortTicks_AccumulateToOneInterval()
-        {
-            _time.DeltaTime = 0.1f;
-            Break(_points[0], 0f);
-            _player.AddTag(_repairing);
-
-            _useCase.Tick();
-            _useCase.Tick();
-            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0f), "0.2 s is less than one interval.");
-
-            _useCase.Tick();
-            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0.25f).Within(0.001f));
-        }
-
-        [Test]
-        public void StoppingResetsProgress()
-        {
-            _time.DeltaTime = 0.2f;
-            Break(_points[0], 0f);
-            _player.AddTag(_repairing);
-            _useCase.Tick();
-
-            _player.RemoveTag(_repairing);
-            _useCase.Tick();
-            _player.AddTag(_repairing);
-            _useCase.Tick();
-
-            Assert.That(FakeShipDamage.HealthFraction(_points[0]), Is.EqualTo(0f), "Banked progress is dropped when the player lets go.");
         }
 
         // In the game the breakage reconcile grants State.Damaged to a broken part; the repair scan filters on it.

@@ -73,6 +73,16 @@ Status: Approved (2026-11-07)
   input, and the subject does the boiler's combo cleanly. One Perfect challenge, its cue on every peer. Not yet: a type
   picker for steps in the Inspector (step fields can be edited, step types cannot be changed there); a mark on the lit
   station itself (only the HUD line shows it).
+- **R1 built (2026-11-10), verified 2026-11-14 (compile, all EditMode tests, `RepairLoop`, `ShipDamage`, `ShipDamageLateJoin`, `EngineBoost`, `BoilerCombo`, `ChallengeRelay` solo and host + client); awaiting a playtest.** A repair is a
+  skill check. Each broken point carries a `SkillCheckHostNetworkMediator` with `SC_ShipRepair` (the pulsing gauge,
+  no rest). A pull of the repair tool on a broken part opens its check for that player (`ShipRepairUseCase`, one check
+  per pull). The grade goes on the part (`ISkillChecks.TryOpen` takes a target): Perfect fixes it
+  (`GE_ShipPartRestore`), Good heals half (`GE_ShipPartRepairGood`, which was `GE_RepairTick`), a Miss nothing, and
+  the player can pull again at once (the developer: "a miss triggers a reset and can be retried"). The timed heal is
+  gone (`RepairEffect`, `RepairInterval`, `ShipPartRepairTickEvent`). Hosts are now found through
+  `SkillCheckHostRegistry` (a host adds itself while spawned), because a host beside a damage point is not its
+  entity's actor. `Profile_Test_ShipDamage` gains the SkillChecks installer. Built by **TinCan > Dev > Ship Damage >
+  Build Repair Check**. Scenario `RepairLoop`: pull, a Perfect, the part whole on both peers. Its host + client run found a core prediction gap: a predicted tag ended before the server showed it (a pull shorter than the round trip, here cut short by the check's input context) came back with the server's late copy, so the lagged client played the repairing cue twice. Fixed in `Core/Gas/ClientTagState.cs` (the late copy of a press the owner already let go is ignored until the server drops it, or the next press).
 - **Gates split out of B1 (2026-11-08).** A boon gate is now a generic gate with a boon action (see "Gates" below).
   New assembly `TinCan.Features.Gates`: `GateDefinition`, `GateUseCase` (spots the pass, runs the actions, uses the
   gate up), `GateNetworkMediator`, `ApplyEffectGateAction`. Boons keeps the layout, the chart and the laying

@@ -6,12 +6,13 @@ using TinCan.Core.Ship;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using VContainer;
 
 namespace TinCan.Features.SkillChecks
 {
     /// <summary>
-    /// Infrastructure Layer: the skill check exchange on a networked ship part (with an EntityNetworkMediator, which
-    /// registers it as an actor). Two RPCs: the server opens a check on one player's peer, and that peer's grade comes
+    /// Infrastructure Layer: the skill check exchange on a networked ship part (a station, or a breakable point for its
+    /// repair check). It adds itself to <see cref="SkillCheckHostRegistry"/> while spawned. Two RPCs: the server opens a check on one player's peer, and that peer's grade comes
     /// back as a result the server validates (<see cref="SkillCheckUseCase"/>). Replicates only whether a challenge
     /// lights the station (its title and the seconds left), for every peer's HUD.
     /// </summary>
@@ -28,6 +29,22 @@ namespace TinCan.Features.SkillChecks
         private readonly List<SkillCheckResult> _results = new();
         private (int CheckId, int Level)? _opened;
         private ActorIdentity? _identity;
+        private SkillCheckHostRegistry? _hosts;
+
+        [Inject]
+        public void Construct(SkillCheckHostRegistry hosts) => _hosts = hosts;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            _hosts?.Add(this);
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            _hosts?.Remove(this);
+            base.OnNetworkDespawn();
+        }
 
         public Guid Id => (_identity ??= new ActorIdentity(this)).Id;
         public bool IsSimulating => IsSpawned;

@@ -51,11 +51,6 @@ namespace TinCan.Features.Airship.Damage
         [Tooltip("Tag a player carries while the repair ability is active (granted by GA_RepairShip's active effect).")]
         public TinCan.Core.Domain.Abilities.Tags.GameplayTag? RepairingTag;
 
-        [Tooltip("Instant effect applied to the targeted part every RepairInterval while repairing (adds health, clamped to max).")]
-        public GameplayEffectDefinition? RepairEffect;
-
-        [Min(0.05f)] public float RepairInterval = 0.25f;
-
         [Tooltip("The repair tool's ability. Its TargetingDefinition (TD_RepairScan) decides which broken part a repairing player works on.")]
         public AbilityDefinition? RepairAbility;
 

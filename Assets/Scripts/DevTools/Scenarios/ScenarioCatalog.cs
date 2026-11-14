@@ -189,14 +189,14 @@ namespace TinCan.DevTools.Scenarios
 
         /// <summary>
         /// The whole repair loop with real input: the server breaks part 0, hands the subject the repair tool and stands it
-        /// next to the part (players share one spawn point, so the client would otherwise stand on the host's head). The subject gets GA_RepairShip granted locally, holds Primary, and the server —
-        /// seeing State.Repairing from the replicated input — repairs the part it faces until it is whole. Both sides
+        /// next to the part (players share one spawn point, so the client would otherwise stand on the host's head). The subject gets GA_RepairShip granted locally and pulls Primary; the server —
+        /// seeing State.Repairing from the replicated input — opens the faced part's repair check, and a Perfect makes it whole (R1). Both sides
         /// then see the part healthy, the marker gone and the leak stopped.
         /// </summary>
         public static readonly ScenarioEntry RepairLoop = new(
             new Scenario.Builder("RepairLoop")
                 .InScene(TestScenes.ShipDamage)
-                .Describe("Break part 0 -> give the repair tool -> hold Primary facing it -> part whole, leak stopped, on both peers.")
+                .Describe("Break part 0 -> give the repair tool -> pull Primary facing it -> Perfect repair check -> part whole, leak stopped, on both peers.")
                 .Timeout(90f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
@@ -213,8 +213,12 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("SubjectFacesPoint", 5f, "0")
                     .Expect("SubjectVisualShown", "Carry_RepairTool")
                     .Checkpoint("tool-ready")
-                    .Hold(6f, ScriptedAction.Primary)
-                    .WaitUntil("PointHealthy", 3f, "0")
+                    .Hold(0.4f, ScriptedAction.Primary)
+                    .WaitUntil("SkillCheckRunning", 10f)
+                    .Checkpoint("check-open")
+                    .WaitUntil("SkillCheckInPerfect", 5f)
+                    .Tap(ScriptedAction.SkillCheckPress)
+                    .WaitUntil("PointHealthy", 5f, "0")
                     .WaitUntil("MarkerHidden", 3f, "0")
                     .WaitUntil("SubjectLacksTag", 3f, "State.Repairing")
                     .WaitUntil("CueInactive", 3f, "Cue.Player.Repairing")
@@ -225,6 +229,7 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("SubjectHasTag", 15f, "State.Repairing")
                     .WaitUntil("CueActive", 3f, "Cue.Player.Repairing")
                     .WaitUntil("PointHealthy", 12f, "0")
+                    .WaitUntil("SkillChecksGraded", 3f, "Perfect:1")
                     .WaitUntil("LeakRateAtMost", 3f, "0")
                     .Expect("ShipLacksTag", "State.Ship.Damaged")
                     .Expect("PointLacksTag", "0:State.Damaged"))
@@ -233,6 +238,7 @@ namespace TinCan.DevTools.Scenarios
             {
                 builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
                 builder.Register<ShipDamageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<SkillCheckScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
         /// <summary>
@@ -1020,12 +1026,6 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<LookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
-        public static readonly ScenarioEntry MountFitting = new(            new Scenario.Builder("MountFitting")
-                .InScene(TestScenes.Shipyard)
-                .Describe("Face a free socket on the designed ship -> press Interact -> the fitting menu opens on the subject's peer only -> pick the cannon -> the server mounts it on that socket for every peer.")
-                .Timeout(120f)
-                .Arrange(s => s
-                    .WaitUntil("SubjectReady", 45f)
         public static readonly ScenarioEntry DayMoves = new(
             new Scenario.Builder("DayMoves")
                 .InScene(TestScenes.Look)
@@ -1049,6 +1049,12 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<DayCycleScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
+        public static readonly ScenarioEntry MountFitting = new(            new Scenario.Builder("MountFitting")
+                .InScene(TestScenes.Shipyard)
+                .Describe("Face a free socket on the designed ship -> press Interact -> the fitting menu opens on the subject's peer only -> pick the cannon -> the server mounts it on that socket for every peer.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
                     .WaitUntil("ShipDesignBuilt", 20f, "5")
                     .Wait(1.5f, "settle after spawn")
                     .Do("PlaceSubjectAtSocket"))

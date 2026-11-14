@@ -300,7 +300,7 @@ namespace TinCan.Features.SkillChecks.Tests
         {
             using var server = new Server(this);
             var hud = new HudUseCase();
-            var presenter = new SkillChallengeHudPresenter(server.Actors, hud);
+            var presenter = new SkillChallengeHudPresenter(server.Hosts, hud);
             var challenge = Challenge(new ParallelStep { Steps = { At(_telegraph), At(_boiler) } });
             challenge.Title = "Head wind";
             challenge.StepSeconds = 20f;
@@ -383,18 +383,19 @@ namespace TinCan.Features.SkillChecks.Tests
                 _ship = new FakeAirshipView("Airship", _controller);
                 Telegraph = new FakeSkillCheckHost { Ship = _ship, Definition = test._telegraph };
                 Boiler = new FakeSkillCheckHost { Ship = _ship, Definition = test._boiler };
-                Actors.Register(Telegraph);
-                Actors.Register(Boiler);
+                Hosts.Add(Telegraph);
+                Hosts.Add(Boiler);
                 for (int i = 0; i < crew; i++) Actors.Register(new FakeCrewMember());
 
                 var events = new FakeEventPublisher();
                 var network = new FakeNetworkService();
                 var abilities = new AbilitySystemUseCase(new FakeAbilityRegistry(), Actors, Time, events);
-                Challenges = new SkillChallengeUseCase(network, Actors, Time, events, abilities);
-                Checks = new SkillCheckUseCase(network, Actors, Time, events, abilities, Challenges);
+                Challenges = new SkillChallengeUseCase(network, Actors, Hosts, Time, events, abilities);
+                Checks = new SkillCheckUseCase(network, Hosts, Time, events, abilities, Challenges);
             }
 
             public FakeActorRegistry Actors { get; } = new();
+            public SkillCheckHostRegistry Hosts { get; } = new();
             public FakeTimeService Time { get; } = new();
             public FakeSkillCheckHost Telegraph { get; }
             public FakeSkillCheckHost Boiler { get; }

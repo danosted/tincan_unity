@@ -256,7 +256,7 @@ move the subject.
 | Area scene | Profile adds | Scenarios |
 |---|---|---|
 | `Test_Core` | nothing (core and the base features only) | CoreBoot, LanDiscovery |
-| `Test_ShipDamage` | Fuel, ShipDamage | ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack |
+| `Test_ShipDamage` | Fuel, ShipDamage, SkillChecks | ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack |
 | `Test_NetCatch` | Fuel, FlyingCan | NetCatch, EquipCycle (its items belong to those features) |
 | `Test_Cannon` | Stations, Cannon, SkyHazards | CannonShot, HazardStrike, CannonMisfire |
 | `Test_Voyage` | Fuel, ShipDamage, Stations, Cannon, SkyHazards, Voyage, SkyIslands, Gates, SkillChecks, Boons | VoyageLoop, LateJoinBoarding, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay |

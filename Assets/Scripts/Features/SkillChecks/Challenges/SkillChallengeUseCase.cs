@@ -25,6 +25,7 @@ namespace TinCan.Features.SkillChecks.Challenges
 
         private readonly INetworkService _network;
         private readonly IActorRegistry _actors;
+        private readonly SkillCheckHostRegistry _hosts;
         private readonly ITimeService _time;
         private readonly IEventPublisher _events;
         private readonly AbilitySystemUseCase _abilities;
@@ -32,11 +33,12 @@ namespace TinCan.Features.SkillChecks.Challenges
         private SkillChallengeRun? _run;
         private IAirshipView? _ship;
 
-        public SkillChallengeUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
+        public SkillChallengeUseCase(INetworkService network, IActorRegistry actors, SkillCheckHostRegistry hosts, ITimeService time, IEventPublisher events,
             AbilitySystemUseCase abilities)
         {
             _network = network;
             _actors = actors;
+            _hosts = hosts;
             _time = time;
             _events = events;
             _abilities = abilities;
@@ -159,7 +161,7 @@ namespace TinCan.Features.SkillChecks.Challenges
         /// <summary>Each host shows whether the running challenge lights it; hosts it does not light go out.</summary>
         private void ShowLit()
         {
-            foreach (var host in _actors.GetActors<ISkillCheckHost>())
+            foreach (var host in _hosts.All)
             {
                 ChallengeLitStep? lit = null;
                 if (_run != null && host.Definition != null && ReferenceEquals(host.Ship, _ship))
@@ -178,7 +180,7 @@ namespace TinCan.Features.SkillChecks.Challenges
 
         private IAirshipView? ShipWithStations()
         {
-            foreach (var host in _actors.GetActors<ISkillCheckHost>())
+            foreach (var host in _hosts.All)
             {
                 if (host.Ship != null && host.Definition != null) return host.Ship;
             }
@@ -187,7 +189,7 @@ namespace TinCan.Features.SkillChecks.Challenges
 
         private ISkillCheckHost? HostFor(IAirshipView ship, SkillCheckDefinition station)
         {
-            foreach (var host in _actors.GetActors<ISkillCheckHost>())
+            foreach (var host in _hosts.All)
             {
                 if (host.Definition == station && ReferenceEquals(host.Ship, ship)) return host;
             }

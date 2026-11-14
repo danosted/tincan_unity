@@ -21,7 +21,7 @@ namespace TinCan.Features.SkillChecks
         private static readonly ComboDirection[] AllDirections =
             { ComboDirection.Left, ComboDirection.Right, ComboDirection.Up, ComboDirection.Down };
 
-        private readonly IActorRegistry _actors;
+        private readonly SkillCheckHostRegistry _hosts;
         private readonly IInputReader _input;
         private readonly IInputContextSwitch _contexts;
         private readonly SkillCheckInputContext _controls;
@@ -36,10 +36,10 @@ namespace TinCan.Features.SkillChecks
         private float _showLeft;
         private int _wrongPresses;
 
-        public SkillCheckRunner(IActorRegistry actors, IInputReader input, IInputContextSwitch contexts, SkillCheckInputContext controls,
+        public SkillCheckRunner(SkillCheckHostRegistry hosts, IInputReader input, IInputContextSwitch contexts, SkillCheckInputContext controls,
             ITimeService time, PulsingGaugeProcessor gauge, ComboProcessor combo)
         {
-            _actors = actors;
+            _hosts = hosts;
             _input = input;
             _contexts = contexts;
             _controls = controls;
@@ -100,7 +100,7 @@ namespace TinCan.Features.SkillChecks
 
         private void TryBegin()
         {
-            foreach (var host in _actors.GetActors<ISkillCheckHost>())
+            foreach (var host in _hosts.All)
             {
                 if (!host.TryTakeOpened(out int checkId, out int level) || host.Definition == null) continue;
 

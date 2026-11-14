@@ -6,6 +6,7 @@
     "TinCan.Features.Airship.Damage",
     "TinCan.Features.DesignedEvents",
     "TinCan.Features.DesignedEvents.Tests",
+    "TinCan.Features.SkillChecks",
     "TinCan.Gas",
     "TinCan.Humanoid",
     "TinCan.Interaction",

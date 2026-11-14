@@ -9,6 +9,7 @@
         "TinCan.Ship",
         "TinCan.Targeting",
         "TinCan.Features.DesignedEvents",
+        "TinCan.Features.SkillChecks",
         "Unity.Netcode.Runtime",
         "VContainer"
     ],

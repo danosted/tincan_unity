@@ -46,6 +46,7 @@ namespace TinCan.Features.SkillChecks.Tests
         private readonly PulsingGaugeProcessor _gauge = new();
         private readonly ComboProcessor _combo = new();
         private FakeActorRegistry _actors = null!;
+        private SkillCheckHostRegistry _hosts = null!;
         private FakeTimeService _time = null!;
         private RecordingPublisher _events = null!;
         private FakeAbilityController _shipController = null!;
@@ -59,6 +60,7 @@ namespace TinCan.Features.SkillChecks.Tests
         public void SetUp()
         {
             _actors = new FakeActorRegistry();
+            _hosts = new SkillCheckHostRegistry();
             _time = new FakeTimeService();
             _events = new RecordingPublisher();
             _speed = Create<MoveSpeedAttribute>("Attr_FlightSpeed");
@@ -76,7 +78,7 @@ namespace TinCan.Features.SkillChecks.Tests
             _shipController.SetAttribute(_speed, new AttributeValue(10f));
             _ship = new FakeAirshipView("Airship", _shipController);
             _host = new FakeSkillCheckHost { Ship = _ship, Definition = _check };
-            _actors.Register(_host);
+            _hosts.Add(_host);
         }
 
         [TearDown]
@@ -177,6 +179,21 @@ namespace TinCan.Features.SkillChecks.Tests
 
             _time.Time += 21f;
             Assert.That(checks.TryOpen(_host, Player), Is.True, "rested");
+        }
+
+        [Test]
+        public void ACheckOpenedForATarget_GivesItsEffectThere_NotOnTheShip()
+        {
+            var part = new FakeAbilityController();
+            part.SetAttribute(_speed, new AttributeValue(0f));
+            var checks = UseCase();
+            checks.TryOpen(_host, Player, part);
+
+            _host.Answer(SkillCheckGrade.Perfect);
+            checks.Tick();
+
+            Assert.That(part.TryGetAttribute(_speed, out var value) ? value.CurrentValue : -1f, Is.EqualTo(3f).Within(1e-3f), "the Perfect effect, on the part");
+            Assert.That(ShipSpeed, Is.EqualTo(10f).Within(1e-3f), "the ship is untouched");
         }
 
         [Test]
@@ -322,15 +339,15 @@ namespace TinCan.Features.SkillChecks.Tests
             controls.Down = Create<InputActionId>("SkillCheck.Down");
             var input = new FakeInputReader();
             var contexts = new FakeContextSwitch();
-            return (new SkillCheckRunner(_actors, input, contexts, controls, _time, _gauge, _combo), input, contexts, controls);
+            return (new SkillCheckRunner(_hosts, input, contexts, controls, _time, _gauge, _combo), input, contexts, controls);
         }
 
         private SkillCheckUseCase UseCase()
         {
             var abilities = new AbilitySystemUseCase(new FakeAbilityRegistry(), _actors, _time, _events);
             var network = new FakeNetworkService();
-            return new SkillCheckUseCase(network, _actors, _time, _events, abilities,
-                new Challenges.SkillChallengeUseCase(network, _actors, _time, _events, abilities));
+            return new SkillCheckUseCase(network, _hosts, _time, _events, abilities,
+                new Challenges.SkillChallengeUseCase(network, _actors, _hosts, _time, _events, abilities));
         }
 
         /// <summary>An instant speed boost (so the attribute shows it at once).</summary>

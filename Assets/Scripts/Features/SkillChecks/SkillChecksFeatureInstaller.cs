@@ -32,6 +32,7 @@ namespace TinCan.Features.SkillChecks
 
         public override void Install(IContainerBuilder builder)
         {
+            builder.Register<SkillCheckHostRegistry>(Lifetime.Singleton);
             builder.Register<PulsingGaugeProcessor>(Lifetime.Transient);
             builder.Register<ComboProcessor>(Lifetime.Transient);
             builder.Register<SkillChallengeUseCase>(Lifetime.Singleton).AsSelf().As<ISkillChallenges>().As<ISimulationTickable>();

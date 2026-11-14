@@ -65,8 +65,9 @@ A single field answers "what is the cloud like here, now?" for the simulation, a
 - **holes** (where the field says "no cloud"),
 - the **current** (horizontal drift at a depth).
 
-It depends only on the world seed, the synced time (`ITimeService`) and the active weather. Every peer can then
-evaluate it without sending it over the network, and the server stays authoritative for what it does to ships.
+It depends only on the world seed, the synced time (`ITimeService`), the active weather and the server's list of holes
+(see "The drawn sea and its holes"). Every peer can then evaluate it without sending more than that list over the
+network, and the server stays authoritative for what it does to ships.
 
 The field is sampled the same way on the CPU and the GPU: the large shapes (height, holes, swell) come from a few
 low-frequency layers both sides compute or read from one shared texture. Fine detail (wisps, erosion) is visual only
@@ -113,6 +114,57 @@ designed now and built when the first observer exists.
 - A ship that runs out of lift over a hole falls. What it falls into depends on what is beneath the sea. That is an
   open question (below); the plan works with any answer, and a lower cloud layer is the cheapest to start with.
 
+### The drawn sea and its holes (developer, 2026-11-14)
+The volumetric clouds look wrong under the moving day ([`day-cycle.md`](day-cycle.md)), and making every cloud a
+3D mesh that looks painted from every side, under every light, is the hardest form of the problem. Each distance gets
+its own cheap layer instead:
+
+- **The sea is drawn like water, shaded like cloud.** A grid follows the camera, snapped to a fixed step so it never
+  swims, lifted by a few large, slow waves (rolling swells, not chop). It is shaded with the clouds' soft gradient
+  (cream lit tops, lilac troughs), fades toward the sky at grazing angles, and a slow scrolling noise adds the billowy
+  detail. It replaces the volumetric layer as the sea (phase 4) and the lab's static sea C.
+- **The server owns the holes.** A small replicated list (a `NetworkMediator`), each hole with a centre, a radius,
+  a drift, and an open and close time on the synced clock. Peers never get a hole per frame: each one works out where
+  a hole is and how open it is from the list and `ITimeService.Time`, so every peer sees the same hole at the same
+  moment. The weather, places and designed events ask the server for holes.
+- **The sea reacts to the holes.** The same short list goes to the shader as globals (fixed small maximum, about 16).
+  Around a hole the sea sinks into it, thins and dissolves, with a raised, lumpy rim and a slow swirl. As a hole opens,
+  drifts or closes, the sea flows to match. Nothing is baked, so the change is smooth. (This is the role of the
+  render-target-driven, procedural environments in Unreal, done here as a formula both sides share.)
+- **One formula, two readers.** The field query ([`CloudSurfaceQuery.cs`](../../Assets/Scripts/Features/CloudBoundary/CloudSurfaceQuery.cs),
+  later the phase 1 field) and the sea shader compute height and "is this a hole" from the same list and the same
+  low-frequency waves. Only visual detail (the noise, the rim lumps) is shader-only, and it never decides lift or a
+  fall. A test checks the C# and the HLSL formulas against fixed points.
+- **Clouds above are moving cards.** Soft, camera-facing cards shaded as if round, drifting with the wind, fading
+  where they meet the sea or a ship; a big cloud is a cluster of a few cards. Kept few (transparent overdraw and
+  sorting). Distant clouds are painted into the sky (`Shaders/PaintedSky.shader`), tinted by the day.
+- **Flying through is a camera effect.** Small soft white wisps near the camera, streaking with speed, faded in by
+  the depth `CloudSubmersionProcessor` already gives, on top of the existing whiteout fog. It is a particle effect, not
+  a full-screen filter.
+
+Order: the sea with holes first (biggest on screen, the only part that touches gameplay), then the cards, then the
+wisps. Each is tried in the cloud lab, then in `cheesed_scene`.
+
+**Step 1, the sea with holes (built 2026-11-14, not yet playtested):** went straight to the play scenes, because the
+holes are server state and the lab has no network. `CloudSeaFeatureInstaller` (in `Profile_FuelSandbox`, so
+`cheesed_scene`, and `Profile_Test_Look`) brings the CloudHolesState fixture, the ambient holes (a few at a time
+near the ship, random sizes from 25 to 180 m, each opening, drifting and closing over a minute or two, until the weather
+opens holes), and the sea drawn around the camera. The game's surface drops by `CloudBoundaryConfig.HoleDepth` (400 m)
+inside a hole, so a player who falls in drops that far before the existing character reset (or the overboard choice)
+takes them: bottomless, for now. Ships are not affected yet; they have no gravity (phase 2). The painted sky sinks into
+a dark void below the horizon, which is what a hole shows. The shared `CloudBoundaryConfig` is now **Swell** (developer,
+2026-11-14), so the game's surface and the drawn sea roll together in every scene that uses it: 20 m amplitude, a
+1 km longest wave, 3 m/s (the config's height amplitude, 1 / height frequency, swell speed). Code map: the Cloud boundary row. Scenario
+`CloudHoleOpens`.
+
+Seen (developer, 2026-11-14): the movement is right, but the sea reads as solid ground, not cloud. Added, visual only:
+**lumps** (billow noise heaps the surface into rounded mounds at two sizes, creases between them, cool hollows) and
+**shells** (`CloudSeaConfig.Shells`, 12 by default, 1.5 m apart on a 1.2 km grid: see-through layers above the surface,
+cut by one drifting fluff field at a rising threshold, so the tops are soft, fray and let the sun through). Set Shells to
+0, 8 or 16 to compare, and watch the cost in the profiler. The volumetric clouds are off in `cheesed_scene` (its
+`VolumetricCloudsVolume` is inactive) until the cloud cards replace them. Reference frames from the developer will be added to
+the look's references when there are some.
+
 ### Weather as tide
 A `WeatherState` asset holds what the weather sets:
 - **Sea:** base height, swell height, swell length and speed, hole coverage and size, density gradient with depth.
@@ -153,21 +205,24 @@ Every phase is one feature slice: an EditMode test for each processor and use ca
 3. **Depth bands.** Band evaluation replaces the emergency; the deep band does damage over time; falling through a
    hole replaces the old expiry. Submersion feel per band (extend `CloudSubmersionProcessor`). Characters sink slowly
    in cloud instead of being reset. Scenario: a ship crosses all bands and every peer agrees on the band.
-4. **The visible sea follows the field.** The volumetric layer becomes the sea: its top follows the field's height
-   and swell, holes are cut where the field says, and density and colour change with depth (a per-height tint in the
-   vendored shader). A thin, sparse upper layer stays for the sky. A first look can be had before phase 1 by moving
-   the layer below the ship in `CloudAtmosphereDirector` (bottom about -300, top about 0). Check by eye and with a
-   scene capture.
+4. **The visible sea follows the field.** The drawn sea ("The drawn sea and its holes") replaces the volumetric
+   layer: its swell is the field's, the server's holes open, drift and close in it, and the C# and shader formulas are
+   tested against each other. Then the moving cards and the fly-through wisps. Scenario: the server opens a hole and
+   host and client agree on its state and on the surface height at its rim. Check the look by eye and with a scene
+   capture.
 5. **Weather.** `WeatherState` assets, a weather director (host decides, peers blend from synced time), the sea, clouds,
    sun and fog driven from it. Scenario: host and client report the same weather blend at the same time.
 6. **Holes and currents in play.** Permanent wells and whirlpools as places, currents that move ships per band, the
    wake, the crew details. Stealth once an observer exists.
 
 ## Open questions (for the developer)
-1. **What lies beneath the sea?** The ground far below (a lost surface, ruins), a lower cloud layer, or a void.
-   This sets the tone of the world and what falling through a hole means.
+1. **What lies beneath the sea?** Decided for now (developer, 2026-11-14): nothing. It is bottomless, and falling
+   through a hole is death. A ship or character below the sea's floor is lost; the view below a hole fades to a deep
+   void colour. A lower layer or ground can come later.
 2. **What pays for open-air lift:** the engine's fuel, a separate gas, or both (gas for holding, fuel for climbing)?
-3. **How big is a hole?** A few ship lengths (a jump you plan) or kilometres (a region with its own play)?
+3. **How big is a hole?** Sizes vary; which sizes play well is part of designing the gameplay and still open
+   (developer, 2026-11-14). The holes and the drawn sea must therefore work from a few ship lengths up to kilometres
+   (the rim and swirl scale with the radius), and the sizes are set by whatever asks for a hole, never in the sea.
 4. **How far can a breach carry a ship?** That sets how wide a hole can be crossed on momentum alone, and so how much
    holes are about skill versus fuel.
 

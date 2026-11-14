@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2933fd83ce5974940b7f6d9ff3a9f638, type: 3}
   m_Name: CloudBoundaryConfig
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.CloudBoundary.CloudBoundaryConfig
-  _topology: 0
+  _topology: 3
   _worldSeed: 1
   _baseAltitude: 0
   _heightAmplitude: 20
@@ -22,3 +22,6 @@ MonoBehaviour:
   _emergencyDuration: 15
   _characterResetDepth: 10
   _fallbackRespawnOffset: {x: 0, y: 3, z: 0}
+  _swellSpeed: 3
+  _holeDepth: 400
+  _holeRim: 0.35

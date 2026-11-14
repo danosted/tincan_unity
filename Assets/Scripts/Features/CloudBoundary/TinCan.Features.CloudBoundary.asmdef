@@ -5,6 +5,7 @@
         "TinCan.Core.Domain",
         "TinCan.Humanoid",
         "TinCan.Ship",
+        "Unity.Netcode.Runtime",
         "VContainer"
     ],
     "includePlatforms": [],

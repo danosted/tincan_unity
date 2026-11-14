@@ -1,0 +1,23 @@
+// Runs the sea shader's formula (Shaders/Include/TinCanCloudSea.hlsl) on a list of points, for
+// CloudSeaFormulaParityTests to compare with the C# formula the game reads (CloudSeaFormula.cs).
+#pragma kernel Evaluate
+
+#include "Assets/Shaders/Include/TinCanCloudSea.hlsl"
+
+StructuredBuffer<float2> Points;
+RWStructuredBuffer<float2> Results; // x swell, y hole cut
+uint PointCount;
+float4 SwellParams; // x amplitude, y wavelength, z speed, w time
+float4 SwellOffset; // xy seed offset
+float4 Hole;        // xy centre, z radius now, w rim
+float HoleOpenness;
+
+[numthreads(64, 1, 1)]
+void Evaluate(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= PointCount) return;
+
+    float2 xz = Points[id.x];
+    float swell = TinCanCloudSwellAt(xz, SwellParams.w, SwellParams.x, SwellParams.y, SwellParams.z, SwellOffset.xy);
+    Results[id.x] = float2(swell, TinCanCloudHoleCutOne(xz, Hole, HoleOpenness));
+}

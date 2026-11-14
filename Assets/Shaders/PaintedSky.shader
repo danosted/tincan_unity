@@ -2,7 +2,8 @@
 // no texture, a gradient from the look's own air at the horizon (TinCanAtmosphere.hlsl's colours, warm toward the sun,
 // cool away) up to the zenith; opposite a low sun, the pink band of the belt of Venus above the darker horizon; a sun
 // disc with a wide soft halo that takes the sun's colour and strength, so it reddens, dims and goes out as it sets.
-// The zenith and the belt come from SkyShaderGlobals while a day runs; otherwise the material's colours.
+// The zenith and the belt come from SkyShaderGlobals while a day runs; otherwise the material's colours. Below the
+// horizon it sinks into a dark void (the bottomless sky under the cloud sea).
 Shader "TinCan/Environment/Painted Sky"
 {
     Properties
@@ -17,6 +18,8 @@ Shader "TinCan/Environment/Painted Sky"
         _BeltHeight ("Belt Height (up, 0..1)", Range(0, 0.5)) = 0.1
         _BeltWidth ("Belt Width", Range(0.01, 0.4)) = 0.09
         _BeltFocus ("Belt Focus (higher keeps it opposite the sun)", Range(0.5, 8)) = 2
+        _Void ("Void (below the horizon, seen down a hole in the cloud sea)", Color) = (0.12, 0.1, 0.2, 1)
+        _VoidDepth ("Void Depth (how far below the horizon it is fully dark, 0..1)", Range(0.05, 1)) = 0.45
     }
 
     SubShader
@@ -44,6 +47,8 @@ Shader "TinCan/Environment/Painted Sky"
                 half _BeltHeight;
                 half _BeltWidth;
                 half _BeltFocus;
+                half4 _Void;
+                half _VoidDepth;
             CBUFFER_END
 
             float _TinCanSkyOn;
@@ -98,6 +103,9 @@ Shader "TinCan/Environment/Painted Sky"
                 // The disc sinks behind the horizon instead of showing through the ground.
                 disc *= (half)smoothstep(-0.01, 0.004, direction.y);
                 colour += _MainLightColor.rgb * disc * _SunDiscBrightness;
+                // Below the horizon the sky has no bottom (plan .docs/plans/cloud-sea.md): the haze sinks into the void,
+                // which is what a hole in the cloud sea shows when looking down it.
+                colour = lerp(colour, _Void.rgb, (half)smoothstep(0.02, _VoidDepth, -direction.y));
                 return half4(colour, 1);
             }
             ENDHLSL

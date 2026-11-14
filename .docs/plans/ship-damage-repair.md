@@ -102,7 +102,7 @@ name it:
 - **Domain events** (`IEventPublisher`) cover logic, telemetry and tests. They never drive visuals directly.
 - **State cues** are looping and derive from replicated tags or attributes. A generic `TagCueView` (a list of
   `tag → GameObject/AudioSource/Animator bool`) toggles on `HasTag`. This covers the broken sphere and sparks
-  (`State.Damaged` on the point), the leak hiss (`State.Damaged` count > 0 on the ship), and the repair loop sound
+  (`State.Damaged` on the point), the leak hiss (`State.Damaged` on the point, so it sounds where the part broke), and the repair loop sound
   and tool animation (`State.Repairing`). It works on every peer and handles late join for free, because tags
   already replicate. It is also predicted for the owner, because effect tags are predicted.
 - **Burst cues** are one-shot: the break bang, the repair-complete ding, a HUD toast.

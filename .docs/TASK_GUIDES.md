@@ -137,7 +137,7 @@ presentation from domain events or from the gameplay code itself.
 1. **Name the cue:** a tag `Cue.<Area>.<Thing>` in `Assets/Abilities/Tags/`. Gameplay logic never reads `Cue.*` tags.
 2. **Hook it to an effect:** add the tag to the effect's `Cues` list.
    - Put it on the **Instant** effect of the moment for a one-shot burst (`GE_ShipPartBreak`: `Cue.Ship.Part.Break`).
-   - Put it on the **Infinite/Duration** effect that holds a state for a state cue (`GE_HullBreach`: `Cue.Ship.Leak`).
+   - Put it on the **Infinite/Duration** effect that holds a state for a state cue (`GE_ShipPartBroken`: `Cue.Ship.Part.Broken`).
      A state cue reaches late joiners and is predicted on the owner.
    - If no effect marks the moment, prefer adding one. A direct `IGameplayCueDispatcher.Execute` is the last resort.
 3. **Say what it does:**

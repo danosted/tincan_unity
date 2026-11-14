@@ -130,9 +130,8 @@ Also confirmed:
 
 | Cue tag | Kind | Source | Handlers |
 |---|---|---|---|
-| `Cue.Ship.Part.Broken` | state | `GE_ShipPartBroken` (Infinite, on the point) | on-object `ToggleObjectCueHandler` on each socket's `Marker` (the point stops toggling it itself); notify `OnActive`: sparks prefab; `OnRemoved`: ding + `HudToast "Part repaired"` |
+| `Cue.Ship.Part.Broken` | state | `GE_ShipPartBroken` (Infinite, on the point) | on-object `ToggleObjectCueHandler` on each socket's `Marker` (the point stops toggling it itself); notify `OnActive`: sparks prefab and the looping leak hiss, both parented to the point, so the hiss comes from the part that leaks; `OnRemoved`: ding + `HudToast "Part repaired"` |
 | `Cue.Ship.Part.Break` | burst | `GE_ShipPartBreak` (Instant) | notify `OnExecute`: spark burst + bang |
-| `Cue.Ship.Leak` | state | `GE_HullBreach` (on the ship) | notify `OnActive`: `SpawnPrefab` with a looping hiss, parented to the ship |
 | `Cue.Player.Repairing` | state | `GE_Repairing` (on the player, predicted) | notify `OnActive`: `SpawnPrefab` with a looping repair sound, parented to the player. No edit to `NetworkPlayer.prefab` is needed. |
 
 Crude assets are fine: primitive particles and placeholder clips.
@@ -206,11 +205,11 @@ reason to the edge (`Removed` versus `Teardown`) and skip actions on teardown.
     - no dispatcher is fine.
   - Action tests where they are pure (`HudToast` through a fake `IHudValues`).
 - **Scenarios, extended rather than new.** Probes `CueCount <cue> <event> <n>` and `CueActive <cue>` on each peer.
-  - `ShipDamage`: exactly one `Cue.Ship.Part.Break` Execute per peer. `Cue.Ship.Leak` is active while broken and
+  - `ShipDamage`: exactly one `Cue.Ship.Part.Break` Execute per peer. `Cue.Ship.Part.Broken` is active while broken and
     removed after.
   - `RepairLoop`: `Cue.Player.Repairing` is active while repairing, including on the predicting owner.
     `Cue.Ship.Part.Broken` Removed happens once per peer.
-  - Late join: a client joining after the break has `Cue.Ship.Part.Broken` and `Cue.Ship.Leak` active.
+  - Late join: a client joining after the break has `Cue.Ship.Part.Broken` active.
 - `.\.tools\verify.ps1 -Scenario ShipDamage` and `-Scenario RepairLoop`, solo and host + client. The other scenarios
   stay green.
 - **Human playtest:**

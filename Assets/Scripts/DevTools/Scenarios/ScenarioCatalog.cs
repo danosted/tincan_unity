@@ -1026,6 +1026,29 @@ namespace TinCan.DevTools.Scenarios
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
+        public static readonly ScenarioEntry DayMoves = new(
+            new Scenario.Builder("DayMoves")
+                .InScene(TestScenes.Look)
+                .Describe("Host and client spawn in the look's test area with the day running -> on each peer the sun shines from where the day says, at the frame's colour, under the painted sky -> a few seconds later it has turned.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("DayApplied", 15f))
+                .Act(s => s
+                    .WaitUntil("DayApplied", 45f)
+                    .Do("MarkSun")
+                    .Wait(3f, "the day moves on")
+                    .WaitUntil("SunMoved", 10f)
+                    .Expect("DayApplied")
+                    .Checkpoint("day"))
+                .Assert(s => s
+                    .Do("MarkSun")
+                    .Wait(3f, "the day moves on")
+                    .Expect("SunMoved")
+                    .Expect("DayApplied"))
+                .Build(),
+            builder => builder.Register<DayCycleScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
                     .WaitUntil("ShipDesignBuilt", 20f, "5")
                     .Wait(1.5f, "settle after spawn")
                     .Do("PlaceSubjectAtSocket"))
@@ -1860,7 +1883,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

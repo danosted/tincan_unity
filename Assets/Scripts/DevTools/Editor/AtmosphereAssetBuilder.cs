@@ -27,7 +27,8 @@ namespace TinCan.DevTools.Editor
         public const string LookPath = "Assets/Settings/Look/Look_GoldenAfternoon.asset";
         public const string PostPath = "Assets/Settings/Look/Look_GoldenAfternoon_Post.asset";
         public const string InstallerPath = "Assets/Resources/Installers/AtmosphereFeatureInstaller.asset";
-        public const string TestProfilePath = "Assets/Settings/FeatureProfiles/Test/Profile_Test_Look.asset";
+        public const string DayInstallerPath = "Assets/Resources/Installers/DayCycleFeatureInstaller.asset";
+        public const string TestProfilePath ="Assets/Settings/FeatureProfiles/Test/Profile_Test_Look.asset";
         private const string TestCoreProfilePath = "Assets/Settings/FeatureProfiles/Test/Profile_Test_Core.asset";
         public static readonly string[] PlayProfiles =
         {
@@ -40,6 +41,7 @@ namespace TinCan.DevTools.Editor
         {
             var palette = LookPalette.Load();
             var post = Post();
+            var sky = CloudLab.SkyMaterial(palette);
             var look = Asset<LookProfile>(LookPath, profile =>
             {
                 var settings = profile.Settings;
@@ -52,21 +54,30 @@ namespace TinCan.DevTools.Editor
                 settings.WhiteoutColour = palette["cloud"];
                 profile.Settings = settings;
                 profile.Post = post;
+                profile.Sky = sky;
                 // Made once, then left as tuned (empty the list in the Inspector to rebuild it).
                 if (profile.Day.Length == 0) profile.Day = DayKeys(palette, settings);
             });
-            Asset<DayCycleConfig>(CloudLabDay.ConfigPath, _ => { });
+            var dayConfig = Asset<DayCycleConfig>(CloudLabDay.ConfigPath, _ => { });
 
             var installer = Asset<AtmosphereFeatureInstaller>(InstallerPath, i => SetField(i, "_look", look));
-            foreach (var path in PlayProfiles) AddUnique(AssetDatabase.LoadAssetAtPath<FeatureProfile>(path), "_installers", installer);
+            var dayInstaller = Asset<DayCycleFeatureInstaller>(DayInstallerPath, i => SetField(i, "_config", dayConfig));
+            foreach (var path in PlayProfiles)
+            {
+                var profile = AssetDatabase.LoadAssetAtPath<FeatureProfile>(path);
+                AddUnique(profile, "_installers", installer);
+                AddUnique(profile, "_installers", dayInstaller);
+            }
+
             Asset<FeatureProfile>(TestProfilePath, profile =>
             {
                 AddUnique(profile, "_includes", AssetDatabase.LoadAssetAtPath<FeatureProfile>(TestCoreProfilePath));
                 AddUnique(profile, "_installers", installer);
+                AddUnique(profile, "_installers", dayInstaller);
             });
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[AtmosphereAssetBuilder] {look.name} built; {installer.name} in {string.Join(", ", PlayProfiles)}");
+            Debug.Log($"[AtmosphereAssetBuilder] {look.name} built; {installer.name} and {dayInstaller.name} in {string.Join(", ", PlayProfiles)}");
         }
 
         /// <summary>
@@ -100,7 +111,7 @@ namespace TinCan.DevTools.Editor
                     AmbientGround = plum * 0.35f,
                     SunwardFog = Color.Lerp(mulberry, tint, 0.45f) * 0.6f, AwayFog = Color.Lerp(tint, plum, 0.45f) * 0.45f,
                     SkyZenith = Color.Lerp(tint, ink, 0.65f), SkyBelt = Shade(mulberry, 0.15f),
-                    NightShade = Shade(tint * 0.6f, 0.75f),
+                    NightShade = Shade(tint * 0.6f, 0.85f),
                 },
                 new DayLightKey
                 {
@@ -109,7 +120,7 @@ namespace TinCan.DevTools.Editor
                     AmbientGround = Color.Lerp(plum, cloudShadow, 0.4f) * 0.45f,
                     SunwardFog = Color.Lerp(mulberry, orange, 0.55f) * 0.85f, AwayFog = Color.Lerp(tint, mulberry, 0.35f) * 0.6f,
                     SkyZenith = Color.Lerp(tint, sky, 0.25f) * 0.7f, SkyBelt = Shade(Color.Lerp(mulberry, canvas, 0.45f), 0.55f),
-                    NightShade = Shade(Color.Lerp(tint, mulberry, 0.3f), 0.45f),
+                    NightShade = Shade(Color.Lerp(tint, mulberry, 0.3f), 0.6f),
                 },
                 new DayLightKey
                 {

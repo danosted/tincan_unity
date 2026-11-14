@@ -1,7 +1,10 @@
 {
     "name": "TinCan.Features.DayCycle",
     "rootNamespace": "TinCan.Features.DayCycle",
-    "references": [],
+    "references": [
+        "TinCan.Core.Domain",
+        "VContainer"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

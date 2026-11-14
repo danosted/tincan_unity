@@ -30,6 +30,7 @@ namespace TinCan.Features.Atmosphere
             builder.RegisterInstance(_look);
             builder.RegisterInstance<ISurfaceStyle>(_look.ActiveSurface);
             builder.Register<AtmosphereProcessor>(Lifetime.Singleton);
+            builder.Register<DayLightProcessor>(Lifetime.Singleton);
             builder.Register<AtmospherePresenter>(Lifetime.Singleton).AsSelf().As<IAtmosphereOwner>().As<IStartable>().As<ILateTickable>();
         }
     }

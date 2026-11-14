@@ -112,6 +112,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "LookApplies (Host + Client, Lag100)")]
         public static void LookAppliesDuo() => RunDuo("LookApplies", "Lag100");
 
+        [MenuItem(Root + "DayMoves (Host)")]
+        public static void DayMovesSolo() => RunSolo("DayMoves");
+
+        [MenuItem(Root + "DayMoves (Host + Client, Lag100)")]
+        public static void DayMovesDuo() => RunDuo("DayMoves", "Lag100");
+
         [MenuItem(Root + "MountFitting (Host)")]
         public static void MountFittingSolo() => RunSolo("MountFitting");
 

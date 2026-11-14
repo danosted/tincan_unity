@@ -19,8 +19,11 @@ namespace TinCan.Features.Atmosphere
     /// and the sun's colour, intensity and angle. A global volume carries the look's post effects, and the local camera
     /// gets post-processing turned on. The look's shading and surface style go to the shaders too
     /// (<see cref="LookShaderGlobals"/>), every frame, so editing the profile or the style asset in Play shows at once.
+    /// When the scene runs a day (an <see cref="ISunSource"/>, the DayCycle feature) and the look has day keys, the sun
+    /// follows it and the look's light, the air and the painted sky (<see cref="LookProfile.Sky"/>,
+    /// <see cref="SkyShaderGlobals"/>) follow the sun's height (<see cref="DayLightProcessor"/>).
     /// Leaving restores the shaders' plain fog and the materials' own shading. Plans: .docs/plans/look-slice.md (L2),
-    /// .docs/plans/artstyle-pipeline-breakdown.md.
+    /// .docs/plans/artstyle-pipeline-breakdown.md, .docs/plans/day-cycle.md (D2).
     /// </summary>
     public sealed class AtmospherePresenter : IAtmosphereOwner, IStartable, ILateTickable, IDisposable
     {
@@ -30,18 +33,22 @@ namespace TinCan.Features.Atmosphere
         private readonly LookProfile _profile;
         private readonly ISurfaceStyle _surface;
         private readonly AtmosphereProcessor _processor;
+        private readonly DayLightProcessor _dayLight;
         private readonly ILocalViewCamera _view;
         private readonly IObjectResolver _resolver;
         private IViewSubmersion? _submersion;
+        private ISunSource? _day;
         private GameObject? _volume;
         private Light? _sun;
         private Camera? _postCamera;
 
-        public AtmospherePresenter(LookProfile profile, ISurfaceStyle surface, AtmosphereProcessor processor, ILocalViewCamera view, IObjectResolver resolver)
+        public AtmospherePresenter(LookProfile profile, ISurfaceStyle surface, AtmosphereProcessor processor, DayLightProcessor dayLight,
+            ILocalViewCamera view, IObjectResolver resolver)
         {
             _profile = profile;
             _surface = surface;
             _processor = processor;
+            _dayLight = dayLight;
             _view = view;
             _resolver = resolver;
         }
@@ -53,6 +60,9 @@ namespace TinCan.Features.Atmosphere
         {
             // Resolved here, not in the constructor: CloudBoundary's view asks for the owner while it is being injected.
             _resolver.TryResolve(out _submersion);
+            // The moving day (DayCycle), when the scene loads it; otherwise the look's fixed sun.
+            _resolver.TryResolve(out _day);
+            if (_profile.Sky != null) RenderSettings.skybox = _profile.Sky;
             // The scene's sun is the one its lighting settings name (Window > Rendering > Lighting > Sun Source).
             _sun = RenderSettings.sun;
             if (_sun == null)
@@ -83,10 +93,15 @@ namespace TinCan.Features.Atmosphere
         public void LateTick()
         {
             var look = _profile.Settings;
+            bool day = _day != null && _profile.Day.Length > 0;
+            var light = day ? _dayLight.Evaluate(_profile.Day, _day!.Elevation) : default;
+            if (day) look = _dayLight.Apply(look, light);
             var frame = _processor.Evaluate(look, _submersion?.Whiteout ?? 0f, _submersion?.LightMultiplier ?? 1f);
             Current = frame;
 
             AtmosphereShaderGlobals.Apply(frame, look);
+            SkyShaderGlobals.SetEnabled(day);
+            if (day) SkyShaderGlobals.Apply(light);
             LookShaderGlobals.Apply(_profile.Shading, _surface.Evaluate());
 
 
@@ -104,6 +119,7 @@ namespace TinCan.Features.Atmosphere
             {
                 _sun.color = frame.SunColour;
                 _sun.intensity = frame.SunIntensity;
+                if (_day != null) _sun.transform.rotation = SunRotation(_day.ToSun);
             }
 
             if (camera != null && camera != _postCamera)
@@ -113,10 +129,15 @@ namespace TinCan.Features.Atmosphere
             }
         }
 
+        /// <summary>A directional light's rotation shining from <paramref name="toSun"/> (its forward is the light's way).</summary>
+        public static Quaternion SunRotation(Vector3 toSun) =>
+            Quaternion.LookRotation(-toSun, Mathf.Abs(toSun.y) > 0.999f ? Vector3.forward : Vector3.up);
+
         public void Dispose()
         {
             AtmosphereShaderGlobals.SetEnabled(false);
             LookShaderGlobals.SetEnabled(false);
+            SkyShaderGlobals.SetEnabled(false);
             if (_volume != null) Object.Destroy(_volume);
         }
     }

@@ -270,7 +270,7 @@ namespace TinCan.DevTools.Editor
         }
 
         /// <summary>The painted sky (<c>TinCan/Environment/Painted Sky</c>), made only when missing.</summary>
-        private static Material SkyMaterial(LookPalette palette)
+        internal static Material SkyMaterial(LookPalette palette)
         {
             var existing = AssetDatabase.LoadAssetAtPath<Material>(SkyMaterialPath);
             if (existing != null) return existing;

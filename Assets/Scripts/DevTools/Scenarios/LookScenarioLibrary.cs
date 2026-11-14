@@ -61,7 +61,8 @@ namespace TinCan.DevTools.Scenarios
             if (sun == null) problems.Add("the scene names no sun");
             else
             {
-                if (!Near(sun.color, _look.Settings.SunColour)) problems.Add($"sun colour {sun.color}, look {_look.Settings.SunColour}");
+                // The frame's colour: the look's own, or the day's when a day runs.
+                if (!Near(sun.color, frame.SunColour)) problems.Add($"sun colour {sun.color}, frame {frame.SunColour}");
                 if (Mathf.Abs(sun.intensity - frame.SunIntensity) > Tolerance) problems.Add($"sun intensity {sun.intensity:0.###}, frame {frame.SunIntensity:0.###}");
             }
 

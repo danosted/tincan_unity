@@ -200,6 +200,8 @@ Shader "TinCan/Environment/Stylized Cloud"
                 // Silver lining: light scattered forward through the thin edges, seen when looking toward the sun.
                 half toward = pow(saturate(dot(-view, sun.direction)), _SilverFocus);
                 colour += sun.color * toward * smoothstep(0.4h, 1.0h, edge) * _SilverLining;
+                // The shadow colour is fixed, so a moving day darkens the cloud at night (nothing by day).
+                colour = TinCanNightShade(colour);
 
                 half facing = saturate(dot(normalize(lerp(puff, shape, _EdgeShape)), view));
                 half alpha = smoothstep(0.0h, _EdgeSoftness, facing) * _Opacity;

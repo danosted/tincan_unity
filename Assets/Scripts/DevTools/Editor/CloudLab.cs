@@ -17,7 +17,9 @@ namespace TinCan.DevTools.Editor
     /// post, and its air in the shader globals while the scene is open), a camera on the hero view (cruising height,
     /// the sun 45 degrees off ahead, so cloud rims and shadow sides both show), a 30 m ship stand-in and pillars at 250 m,
     /// 1 km and 2 km for scale and depth, the current volumetric clouds (off, to compare against) and "Clouds (new)", the
-    /// stylized clouds (<see cref="BuildClouds"/>). Rebuilding overwrites the scene. Plan: .docs/plans/look-slice.md ("The cloud lab").
+    /// stylized clouds (<see cref="BuildClouds"/>), under the painted sky (<see cref="SkyShader"/>). While the lab is open
+    /// the day runs (<see cref="CloudLabDay"/>): the sun, its light and the sky move. Rebuilding overwrites the scene.
+    /// Plans: .docs/plans/look-slice.md ("The cloud lab"), .docs/plans/day-cycle.md.
     /// </summary>
     [InitializeOnLoad]
     public static class CloudLab
@@ -25,7 +27,8 @@ namespace TinCan.DevTools.Editor
         public const string ScenePath = "Assets/Scenes/Lab/Lab_Clouds.unity";
         public const string CurrentCloudsProfilePath = "Assets/Settings/VolumetricCloudsTestProfile.asset";
         public const string CloudShader = "TinCan/Environment/Stylized Cloud";
-        public const string SkyShader = "TinCan/Dev/Cloud Lab Sky";
+        public const string SkyShader = "TinCan/Environment/Painted Sky";
+        public const string SkyMaterialPath = "Assets/Materials/Sky/M_PaintedSky.mat";
         public const string MeshFolder = "Assets/Art/Clouds/Lab/";
         public const string MaterialFolder = "Assets/Materials/Clouds/";
         public const string BandedCumulus = "M_CloudCumulus";
@@ -78,6 +81,8 @@ namespace TinCan.DevTools.Editor
             var frame = new AtmosphereProcessor().Evaluate(settings, whiteout: 0f, lightMultiplier: 1f);
 
             RenderSettings.sun = LookContactSheet.AddSun(scene, palette, look);
+            // The volumetric clouds' shadow pass writes the sun's cookie through URP's light data.
+            RenderSettings.sun.GetUniversalAdditionalLightData();
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = frame.AmbientSky;
             RenderSettings.ambientEquatorColor = frame.AmbientHorizon;
@@ -95,7 +100,7 @@ namespace TinCan.DevTools.Editor
             var view = Quaternion.Euler(0f, heading, 0f);
             var camera = new GameObject("Lab Camera").AddComponent<Camera>();
             camera.transform.SetPositionAndRotation(new Vector3(0f, ViewHeight, 0f), Quaternion.Euler(4f, heading, 0f));
-            // The lab sky (a gradient whose horizon is the air); the sheets switch to the plain colour for "before".
+            // The painted sky (its horizon is the air); the sheets switch to the plain colour for "before".
             RenderSettings.skybox = SkyMaterial(palette);
             camera.clearFlags = CameraClearFlags.Skybox;
             camera.backgroundColor = settings.AwayFog;
@@ -264,18 +269,17 @@ namespace TinCan.DevTools.Editor
             material.SetFloat("_MottleScale", mottleSize);
         }
 
-        /// <summary>The lab sky (<c>TinCan/Dev/Cloud Lab Sky</c>), made only when missing.</summary>
+        /// <summary>The painted sky (<c>TinCan/Environment/Painted Sky</c>), made only when missing.</summary>
         private static Material SkyMaterial(LookPalette palette)
         {
-            var path = MaterialFolder + "M_CloudLabSky.mat";
-            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(SkyMaterialPath);
             if (existing != null) return existing;
 
-            EnsureFolder(MaterialFolder);
-            var material = new Material(Shader.Find(SkyShader) ?? throw new InvalidOperationException($"no shader {SkyShader}")) { name = "M_CloudLabSky" };
+            EnsureFolder("Assets/Materials/Sky/");
+            var material = new Material(Shader.Find(SkyShader) ?? throw new InvalidOperationException($"no shader {SkyShader}")) { name = "M_PaintedSky" };
             material.SetColor("_Zenith", palette["sky"]);
             material.SetColor("_Horizon", palette["horizon-haze"]);
-            AssetDatabase.CreateAsset(material, path);
+            AssetDatabase.CreateAsset(material, SkyMaterialPath);
             return material;
         }
 
@@ -314,8 +318,9 @@ namespace TinCan.DevTools.Editor
             AssetDatabase.CreateFolder(parent, Path.GetFileName(path));
         }
 
-        /// <summary>The look's banded air in the shader globals while the lab is the active scene; off otherwise, so other
-        /// scenes in edit mode keep the plain fog they have.</summary>
+        /// <summary>The look's banded air and the day in the shader globals while the lab is the active scene
+        /// (<see cref="CloudLabDay"/>; without a day config, the look as it stands); off otherwise, so other scenes in edit
+        /// mode keep the plain fog they have.</summary>
         private static void ApplyAir()
         {
             // In play the Atmosphere feature owns the globals.
@@ -323,9 +328,11 @@ namespace TinCan.DevTools.Editor
             if (SceneManager.GetActiveScene().path != ScenePath)
             {
                 AtmosphereShaderGlobals.SetEnabled(false);
+                CloudLabDay.Off();
                 return;
             }
 
+            if (CloudLabDay.ApplyNow()) return;
             var look = AssetDatabase.LoadAssetAtPath<LookProfile>(AtmosphereAssetBuilder.LookPath);
             if (look == null) return;
             var settings = look.Settings;

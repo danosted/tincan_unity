@@ -40,8 +40,8 @@ namespace TinCan.DevTools.Editor
         public const string SweepFile = "cloud-sweep.png";
         public const string CumulusFile = "cloud-cumulus.png";
         public const string BetweenFile = "cloud-between.png";
-        private const int TileWidth = 640;
-        private const int TileHeight = 360;
+        internal const int TileWidth = 640;
+        internal const int TileHeight = 360;
         private const float HighViewHeight = 260f;
         private const float HighViewPitch = 22f;
         /// <summary>How far the close-up turns from straight broadside, so the lit side, the shadow side and the creases
@@ -339,14 +339,14 @@ namespace TinCan.DevTools.Editor
             AssetDatabase.LoadAssetAtPath<Material>(CloudLab.MaterialFolder + name + ".mat")
             ?? throw new InvalidOperationException($"no {name}: rebuild the cloud lab");
 
-        private static Texture2D Sheet(int columns, int rows, List<Object> temporary)
+        internal static Texture2D Sheet(int columns, int rows, List<Object> temporary)
         {
             var sheet = new Texture2D(TileWidth * columns, TileHeight * rows, TextureFormat.RGB24, false);
             temporary.Add(sheet);
             return sheet;
         }
 
-        private static void Tile(Camera camera, RenderTexture target, Texture2D sheet, int column, int row, int rows)
+        internal static void Tile(Camera camera, RenderTexture target, Texture2D sheet, int column, int row, int rows)
         {
             // The first render after a change can come out blank; a second one is cheap.
             camera.Render();
@@ -357,7 +357,7 @@ namespace TinCan.DevTools.Editor
             RenderTexture.active = null;
         }
 
-        private static string Write(Texture2D sheet, string folder, string file)
+        internal static string Write(Texture2D sheet, string folder, string file)
         {
             sheet.Apply();
             var path = Path.Combine(folder, file);

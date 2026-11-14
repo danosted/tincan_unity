@@ -81,7 +81,7 @@ Planned:
   bleed into the air.
 
 ### L3: the sky and the grading
-- `Shaders/PaintedSky.shader`: a skybox of palette bands (warm haze at the horizon to sky blue, mulberry bands at
+- `Shaders/PaintedSky.shader` (built 2026-11-14 with the moving day, [`day-cycle.md`](day-cycle.md); in the cloud lab, not yet in the play scenes): a skybox of palette bands (warm haze at the horizon to sky blue, mulberry bands at
   dusk), a sun disc with a large soft halo, no texture. Replaces `FS002_Day` in the three scenes.
 - A volume profile `Settings/Look/Look_GoldenAfternoon`: neutral tonemapping, split toning (warm highlights, plum
   shadows), shadows-midtones-highlights, the wide bloom, depth of field (Gaussian, starting beyond the play space,
@@ -142,8 +142,8 @@ though not finished.
 `.docs/art/samples/`, out of git, by the References rule). What the reference does: a sky gradient behind, one soft
 light gradient (no bands), warm grey shadows tinted by the sky, depth from soft creases between a few big lobes, small
 lumps only on the top outline, faint mottling, and a low-resolution softness over all of it. Built:
-- The lab sky, `Shaders/CloudLabSky.shader` (`TinCan/Dev/Cloud Lab Sky`, `Materials/Clouds/M_CloudLabSky`): a gradient
-  from the look's own air at the horizon up to the palette's sky, with a soft sun halo. A stand-in for L3, lab only.
+- The lab sky was a stand-in gradient (`CloudLabSky.shader`), replaced on 2026-11-14 by the painted sky and the moving day
+  of [`day-cycle.md`](day-cycle.md).
 - The soft materials `M_CloudSoft` and `M_CloudSeaSoft`: band softness 0.9 and wrap 0.45 (one gradient), a warm grey
   shadow between the palette's cloud shadow and canvas, soft edges. The banded `M_CloudCumulus` and `M_CloudSeaSurface`
   stay as the "before".

@@ -25,6 +25,10 @@ namespace TinCan.Features.Atmosphere
         [Tooltip("Post effects for this look, applied by a global volume while the look is active.")]
         public VolumeProfile? Post;
 
+        [Tooltip("The light and sky by the sun's height, for a moving day (plan .docs/plans/day-cycle.md); empty, the " +
+                 "look stays as its Settings.")]
+        public DayLightKey[] Day = System.Array.Empty<DayLightKey>();
+
         /// <summary>The surface style in play: the named one, or flat colour.</summary>
         public ISurfaceStyle ActiveSurface => Surface != null ? Surface : FlatSurfaceStyle.Instance;
     }

@@ -149,6 +149,23 @@ namespace TinCan.Core.Gas.Tests
             Assert.That(new ClientTagState().Has(child, registry), Is.False);
         }
 
+        [Test]
+        public void ClientTags_ALateCopyOfAShortPress_DoesNotMatchAParentQuery()
+        {
+            var parent = Create<GameplayTag>("State.Carrying");
+            var child = Create<GameplayTag>("State.Carrying.Net");
+            SetParent(child, parent);
+            var registry = new GameplayTagRegistry(new[] { parent, child });
+            var client = new ClientTagState();
+            client.AddPredicted(child.name);
+            client.RemovePredicted(child.name);
+
+            client.SetReplicated(new[] { child.name });
+
+            Assert.That(client.Has(parent, registry), Is.False);
+            Assert.That(client.Has(child, registry), Is.False);
+        }
+
         private GameplayEffectDefinition Effect(float seconds)
         {
             var effect = Create<GameplayEffectDefinition>("GE_Test");

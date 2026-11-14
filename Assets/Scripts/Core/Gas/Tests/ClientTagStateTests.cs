@@ -55,6 +55,37 @@ namespace TinCan.Core.Gas.Tests
         }
 
         [Test]
+        public void AShortPress_IsNotTurnedBackOnByTheServersLateCopy()
+        {
+            var state = new ClientTagState();
+            state.AddPredicted("State.Repairing");
+            state.RemovePredicted("State.Repairing"); // let go before the server showed it
+
+            state.SetReplicated(new[] { "State.Repairing" }); // the server's copy of that press, late
+
+            Assert.That(state.Has("State.Repairing"), Is.False);
+
+            state.SetReplicated(new string[0]); // the server lets go too
+            state.SetReplicated(new[] { "State.Repairing" }); // a later server-side tag is real again
+
+            Assert.That(state.Has("State.Repairing"), Is.True);
+        }
+
+        [Test]
+        public void ANewPress_TakesTheServersCopyAgain()
+        {
+            var state = new ClientTagState();
+            state.AddPredicted("State.Repairing");
+            state.RemovePredicted("State.Repairing");
+            state.SetReplicated(new[] { "State.Repairing" });
+
+            state.AddPredicted("State.Repairing");
+            state.RemovePredicted("State.Repairing"); // the server already shows it: it stays until the server ends it
+
+            Assert.That(state.Has("State.Repairing"), Is.True);
+        }
+
+        [Test]
         public void Clear_ForgetsEverything()
         {
             var state = new ClientTagState();

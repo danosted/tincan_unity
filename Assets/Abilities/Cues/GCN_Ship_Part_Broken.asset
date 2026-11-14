@@ -16,25 +16,33 @@ MonoBehaviour:
   _onExecute: []
   _onActive:
   - rid: 4526782338413363251
+  - rid: 1094555363467853876
   _onRemoved:
   - rid: 4526782338413363252
   - rid: 4526782338413363253
   references:
     version: 2
     RefIds:
+    - rid: 1094555363467853876
+      type: {class: SpawnPrefabCueAction, ns: TinCan.Core.Gas.Cues.Actions, asm: TinCan.Gas}
+      data:
+        Prefab: {fileID: 7516738013097618897, guid: 345a6b464a0519344ad12e38f9a6c02f, type: 3}
+        LocalOffset: {x: 0, y: 0, z: 0}
+        Lifetime: 2
     - rid: 4526782338413363251
-      type: {class: SpawnPrefabCueAction, ns: TinCan.Features.Abilities.Cues.Actions, asm: TinCan.Features}
+      type: {class: SpawnPrefabCueAction, ns: TinCan.Core.Gas.Cues.Actions, asm: TinCan.Gas}
       data:
         Prefab: {fileID: 5929576128090799873, guid: 22712194e0af7d64da8f380f4223b2c0, type: 3}
         LocalOffset: {x: 0, y: 0, z: 0}
         Lifetime: 2
     - rid: 4526782338413363252
-      type: {class: PlaySoundCueAction, ns: TinCan.Features.Abilities.Cues.Actions, asm: TinCan.Features}
+      type: {class: PlaySoundCueAction, ns: TinCan.Core.Gas.Cues.Actions, asm: TinCan.Gas}
       data:
         Clip: {fileID: 8300000, guid: caa357fa545f1174a8bf5bdae7cebed1, type: 3}
         Volume: 0.8
+        Channel: 0
     - rid: 4526782338413363253
-      type: {class: HudToastCueAction, ns: TinCan.Features.Abilities.Cues.Actions, asm: TinCan.Features}
+      type: {class: HudToastCueAction, ns: TinCan.Core.Gas.Cues.Actions, asm: TinCan.Gas}
       data:
         Text: Part repaired
         Seconds: 3

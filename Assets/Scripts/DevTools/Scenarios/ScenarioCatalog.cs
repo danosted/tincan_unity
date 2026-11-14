@@ -161,7 +161,6 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("PointHasTag", 3f, "0:State.Damaged")
                     .WaitUntil("HudShows", 3f, "Hull breaches")
                     .WaitUntil("CueActive", 3f, "Cue.Ship.Part.Broken")
-                    .WaitUntil("CueActive", 3f, "Cue.Ship.Leak")
                     .WaitUntil("CueCount", 3f, "Cue.Ship.Part.Break:Execute:1")
                     .Checkpoint("part-broken")
                     .WaitUntil("PointHealthy", 30f, "0")
@@ -169,7 +168,6 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("ShipLacksTag", 3f, "State.Ship.Damaged")
                     .WaitUntil("PointLacksTag", 3f, "0:State.Damaged")
                     .WaitUntil("HudHidden", 3f, "Hull breaches")
-                    .WaitUntil("CueInactive", 3f, "Cue.Ship.Leak")
                     .WaitUntil("CueCount", 3f, "Cue.Ship.Part.Broken:Removed:1")
                     .WaitUntil("HudShows", 3f, "Part repaired")
                     .Expect("CueCount", "Cue.Ship.Part.Break:Execute:1")
@@ -265,7 +263,6 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("PointHasTag", 3f, "0:State.Damaged")
                     .WaitUntil("ShipHasTag", 3f, "State.Ship.Damaged")
                     .WaitUntil("CueActive", 3f, "Cue.Ship.Part.Broken")
-                    .WaitUntil("CueActive", 3f, "Cue.Ship.Leak")
                     .Expect("EntitiesIdentified")
                     .Checkpoint("late-join-broken"))
                 .Assert(s => s

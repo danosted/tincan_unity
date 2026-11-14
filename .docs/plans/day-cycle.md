@@ -40,12 +40,18 @@ and the sky follow the sun. Under that sky, the current (volumetric) and the new
   stylized clouds, and the view away from the sun.
 
 ## Steps
-1. **D1 (this step, lab):** the parts above.
-2. **D2 (game):** an installer for the clock (driver from synced network time on every peer, nothing replicated),
-   the Atmosphere presenter taking the sun and the day's light from it, the painted sky in the play scenes, a
-   scenario. After the developer's picks from the sheet.
-3. **Later:** more drivers (the voyage: dawn at cast-off), a moon and stars for the night, the weather owning the
-   light ([`cloud-sea.md`](cloud-sea.md)).
+1. **D1 (lab), done 2026-11-14:** the parts above.
+2. **D2 (game), done 2026-11-14:** `DayCycleFeatureInstaller` registers `DayCycleUseCase`, the `ISunSource`
+   (`Core/Domain/Atmosphere/`), read on the shared clock (`ITimeService.Time`, the server's time once connected) on
+   every peer, nothing replicated. `AtmospherePresenter` resolves it optionally: the sun follows it, and the look's
+   light, the air and the painted sky follow its height; the look's `Sky` material becomes the skybox, so no scene is
+   edited. In `Profile_Galleon`, `Profile_FuelSandbox` and `Profile_Test_Look` (Build Atmosphere adds it). Scenario
+   `DayMoves` (`Test_Look`): solo and host + client pass; `LookApplies` now checks the sun against the frame's colour.
+   Blue-hour keys darkened the stylized clouds a little more (night shade 0.85 at -8, 0.6 at -3).
+3. **D3, the voyage driver (decided 2026-11-14):** dawn to dusk by progress: cast-off is the blue hour before
+   sunrise, arrival the blue hour after sunset, the hour follows how far along the route the ship is; no night while
+   sailing.
+4. **Later:** a moon and stars for the night, the weather owning the light ([`cloud-sea.md`](cloud-sea.md)).
 
 ## Open
 - The keys' colours, the sun path numbers, the cycle length: from the sheet and the running lab.

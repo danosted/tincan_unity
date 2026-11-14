@@ -2,7 +2,9 @@
   "name": "TinCan.Features.DayCycle.Tests",
   "rootNamespace": "TinCan.Features.DayCycle.Tests",
   "references": [
+    "TinCan.Core.Domain",
     "TinCan.Features.DayCycle",
+    "TinCan.Tests.Fakes",
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner"
   ],

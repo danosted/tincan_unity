@@ -36,6 +36,7 @@ MonoBehaviour:
     ShadowFill: 0.45
   Surface: {fileID: 0}
   Post: {fileID: 11400000, guid: 4cefbaa7e302a394fbce38d4dccbaf8f, type: 2}
+  Sky: {fileID: 2100000, guid: 3d8f2650fb80d7a4faf8f23cb468ee85, type: 2}
   Day:
   - Elevation: -16
     SunColour: {r: 0.8156863, g: 0.47843137, b: 0.1882353, a: 1}
@@ -58,7 +59,7 @@ MonoBehaviour:
     AwayFog: {r: 0.16164707, g: 0.13138235, b: 0.19826472, a: 0.45}
     SkyZenith: {r: 0.21686275, g: 0.20960785, b: 0.27784315, a: 1}
     SkyBelt: {r: 0.48235294, g: 0.23137255, b: 0.3529412, a: 0.15}
-    NightShade: {r: 0.24941178, g: 0.25882354, b: 0.36705884, a: 0.75}
+    NightShade: {r: 0.24941178, g: 0.25882354, b: 0.36705884, a: 0.85}
   - Elevation: -3
     SunColour: {r: 0.8156863, g: 0.47843137, b: 0.1882353, a: 1}
     SunIntensity: 0.15
@@ -69,7 +70,7 @@ MonoBehaviour:
     AwayFog: {r: 0.2634118, g: 0.21682355, b: 0.31270593, a: 0.6}
     SkyZenith: {r: 0.31637254, g: 0.3527451, b: 0.46941176, a: 0.7}
     SkyBelt: {r: 0.6711765, g: 0.5154902, b: 0.53294116, a: 0.55}
-    NightShade: {r: 0.4356863, g: 0.37137255, b: 0.53411764, a: 0.45}
+    NightShade: {r: 0.4356863, g: 0.37137255, b: 0.53411764, a: 0.6}
   - Elevation: 0
     SunColour: {r: 0.852549, g: 0.5827451, b: 0.35058823, a: 1}
     SunIntensity: 0.6

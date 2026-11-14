@@ -56,6 +56,15 @@ namespace TinCan.Features.Atmosphere.Tests
         }
 
         [Test]
+        public void TheSunLight_ShinesAwayFromTheSun_EvenStraightOverhead()
+        {
+            var low = new Vector3(0.3f, 0.1f, -0.9f).normalized;
+
+            Assert.That(Vector3.Dot(AtmospherePresenter.SunRotation(low) * Vector3.forward, -low), Is.EqualTo(1f).Within(1e-4f));
+            Assert.That(Vector3.Angle(AtmospherePresenter.SunRotation(Vector3.up) * Vector3.forward, Vector3.down), Is.LessThan(0.01f));
+        }
+
+        [Test]
         public void Apply_ReplacesTheLight_AndKeepsTheFogShape()
         {
             var look = LookSettings.Default;

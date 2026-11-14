@@ -118,6 +118,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "DayMoves (Host + Client, Lag100)")]
         public static void DayMovesDuo() => RunDuo("DayMoves", "Lag100");
 
+        [MenuItem(Root + "CloudHoleOpens (Host)")]
+        public static void CloudHoleOpensSolo() => RunSolo("CloudHoleOpens");
+
+        [MenuItem(Root + "CloudHoleOpens (Host + Client, Lag100)")]
+        public static void CloudHoleOpensDuo() => RunDuo("CloudHoleOpens", "Lag100");
+
         [MenuItem(Root + "MountFitting (Host)")]
         public static void MountFittingSolo() => RunSolo("MountFitting");
 

@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1809f463d704d542aee2763726e4e72, type: 3}
+  m_Name: CloudSeaFeatureInstaller
+  m_EditorClassIdentifier: TinCan.Features.CloudBoundary::TinCan.Features.CloudBoundary.CloudSeaFeatureInstaller
+  _config: {fileID: 11400000, guid: 696ccb9af3799924d98d4e0c1e99b357, type: 2}
+  _seaMaterial: {fileID: 2100000, guid: f264dc9dea308564a8bd59ce7211b1e2, type: 2}
+  _stateFixture: {fileID: 11400000, guid: a020dc1bb5bab444eaafc7e390bf968d, type: 2}

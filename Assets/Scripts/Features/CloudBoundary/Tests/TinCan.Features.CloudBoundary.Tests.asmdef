@@ -11,6 +11,7 @@
     "TinCan.Ship",
     "TinCan.Targeting",
     "TinCan.Tests.Fakes",
+    "Unity.Netcode.Runtime",
     "VContainer",
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner"

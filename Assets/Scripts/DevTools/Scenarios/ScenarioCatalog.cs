@@ -1046,6 +1046,26 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<DayCycleScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
+        // The drawn cloud sea's holes (.docs/plans/cloud-sea.md, "The drawn sea and its holes"): the server owns them,
+        // every peer works out the same hole from the replicated list and the shared clock, for the game and the shader.
+        public static readonly ScenarioEntry CloudHoleOpens = new(
+            new Scenario.Builder("CloudHoleOpens")
+                .InScene(TestScenes.Look)
+                .Describe("Host and client spawn in the look's test area -> the server opens a hole in the cloud sea beside the ship -> on each peer it is fully open, the cloud surface at its centre has dropped by the hole depth, and the sea shader has the holes.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Do("OpenScenarioHole")
+                    .WaitUntil("ScenarioHoleOpen", 10f))
+                .Act(s => s
+                    .WaitUntil("ScenarioHoleOpen", 45f)
+                    .Checkpoint("hole"))
+                .Assert(s => s
+                    .Wait(2f, "the subject checks its own peer")
+                    .Expect("ScenarioHoleOpen"))
+                .Build(),
+            builder => builder.Register<CloudSeaScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
         public static readonly ScenarioEntry MountFitting = new(            new Scenario.Builder("MountFitting")
                 .InScene(TestScenes.Shipyard)
                 .Describe("Face a free socket on the designed ship -> press Interact -> the fitting menu opens on the subject's peer only -> pick the cannon -> the server mounts it on that socket for every peer.")
@@ -1886,7 +1906,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

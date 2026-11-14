@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad67471c76c659c408818a9a7748f7e4, type: 3}
+  m_Name: CloudSeaConfig
+  m_EditorClassIdentifier: TinCan.Features.CloudBoundary::TinCan.Features.CloudBoundary.CloudSeaConfig
+  _gridSize: 3000
+  _gridStep: 10
+  _shells: 12
+  _shellSpacing: 1.5
+  _shellGridSize: 1200
+  _ambientHoles: 4
+  _ambientInterval: 8
+  _radius: {x: 25, y: 180}
+  _distance: {x: 200, y: 900}
+  _openSeconds: {x: 10, y: 20}
+  _lifeSeconds: {x: 40, y: 90}
+  _closeSeconds: {x: 10, y: 20}
+  _maxDrift: 3

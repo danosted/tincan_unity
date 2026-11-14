@@ -11,6 +11,15 @@ float4 _TinCanSunwardFog;
 float4 _TinCanAwayFog;
 float4 _TinCanFogParams; // x density at the base height (per m), y falloff (per m), z base height, w haze (per m)
 float4 _TinCanFogShape;  // x the most the fog may cover, y how tightly the sunward colour gathers around the sun
+// The day's night (plan .docs/plans/day-cycle.md): rgb what surfaces with fixed colours (the stylized clouds) darken
+// toward, a how far. 0 by day and when nothing sets it, so it changes nothing outside a moving day.
+float4 _TinCanNightShade;
+
+// A fixed-colour surface's colour in the dark of the day.
+half3 TinCanNightShade(half3 colour)
+{
+    return lerp(colour, colour * _TinCanNightShade.rgb, (half)_TinCanNightShade.a);
+}
 
 // How much of what lies at positionWS the air covers, 0..max, and the air's colour along that view.
 void TinCanAir(float3 positionWS, out half amount, out half3 colour)

@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_CloudLabSky
-  m_Shader: {fileID: 4800000, guid: d3c879bc68074b545a5d6aebac71fb11, type: 3}
+  m_Name: M_PaintedSky
+  m_Shader: {fileID: 4800000, guid: 43298ab409918db43aea98996d1e3dba, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -25,7 +25,12 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _BeltFocus: 2
+    - _BeltHeight: 0.1
+    - _BeltWidth: 0.09
     - _Falloff: 0.5
+    - _SunDisc: 1.4
+    - _SunDiscBrightness: 2.5
     - _SunHalo: 0.35
     - _SunHaloFocus: 24
     m_Colors:

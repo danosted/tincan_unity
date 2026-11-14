@@ -7,6 +7,7 @@
         "TinCan.Entities",
         "TinCan.Features.CloudBoundary",
         "TinCan.Features.Atmosphere",
+        "TinCan.Features.DayCycle",
         "TinCan.Gas",
         "TinCan.Interaction",
         "TinCan.Items",

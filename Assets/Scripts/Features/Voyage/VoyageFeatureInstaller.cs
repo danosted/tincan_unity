@@ -34,6 +34,7 @@ namespace TinCan.Features.Voyage
             builder.Register<VoyageRouteProcessor>(Lifetime.Transient);
             builder.Register<VoyageUseCase>(Lifetime.Singleton).As<IVoyage>().As<ISimulationTickable>();
             builder.Register<VoyageHudPresenter>(Lifetime.Singleton).As<ITickable>();
+            builder.Register<VoyageSessionProgress>(Lifetime.Singleton).As<ISessionProgress>();
             builder.Register<VoyageEndScreenPresenter>(Lifetime.Singleton).As<ITickable>();
             builder.Register<VoyageBeaconPresenter>(Lifetime.Singleton).As<ITickable>();
             builder.Register<RestartVoyageMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();

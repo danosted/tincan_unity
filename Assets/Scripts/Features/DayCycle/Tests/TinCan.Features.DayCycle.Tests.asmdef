@@ -5,6 +5,7 @@
     "TinCan.Core.Domain",
     "TinCan.Features.DayCycle",
     "TinCan.Tests.Fakes",
+    "VContainer",
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner"
   ],

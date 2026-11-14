@@ -24,10 +24,16 @@ namespace TinCan.Features.DayCycle
 
         public SunPath Path { get; set; }
 
-        /// <summary>The hour of the day at <paramref name="seconds"/>, 0..24.</summary>
-        public float HourAt(double seconds) => Mathf.Repeat(Driver.HourAt(seconds), 24f);
+        /// <summary>The hour of the day for <paramref name="input"/>, 0..24.</summary>
+        public float HourAt(in DayClockInput input) => Mathf.Repeat(Driver.HourAt(input), 24f);
 
-        /// <summary>Where the sun is at <paramref name="seconds"/>.</summary>
-        public SunPosition SunAt(double seconds) => _sunPath.Evaluate(Path, HourAt(seconds));
+        /// <summary>The hour of the day at <paramref name="seconds"/>, without a session.</summary>
+        public float HourAt(double seconds) => HourAt(new DayClockInput(seconds));
+
+        /// <summary>Where the sun is for <paramref name="input"/>.</summary>
+        public SunPosition SunAt(in DayClockInput input) => _sunPath.Evaluate(Path, HourAt(input));
+
+        /// <summary>Where the sun is at <paramref name="seconds"/>, without a session.</summary>
+        public SunPosition SunAt(double seconds) => SunAt(new DayClockInput(seconds));
     }
 }

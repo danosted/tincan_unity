@@ -18,8 +18,9 @@ namespace TinCan.Features.ShipDesigns
     /// <item>Stairs: a block per step, seen but not collided with, and a ramp under their nosings to walk on, collided
     /// with but not seen (the stairs part did the same); built with the story they stand in.</item>
     /// <item>Beams: a square prism <see cref="ShipFrameTuning.BeamWidth"/> wide along each edge, and a block at each node to
-    /// cover the joints. Floor beams hang just under the floor's top (no step to trip on, no z-fighting); posts are
-    /// centred on their line.</item>
+    /// cover the joints. Floor beams hang just under the floor's top (no step to trip on, no z-fighting), except under a
+    /// railing, where the beam (and its node blocks) rise a little over it as a kick board; posts are
+    /// centred on their line and stop just under the floor above (no z-fighting there either).</item>
     /// </list>
     /// The same frame always gives the same meshes. Unknown references are skipped (the validator reports them).
     /// </summary>
@@ -27,6 +28,11 @@ namespace TinCan.Features.ShipDesigns
     {
         /// <summary>How far under the floor's top the beams' tops sit.</summary>
         private const float BeamDrop = 0.01f;
+        /// <summary>
+        /// How far over the floor's top the beam under a railing rises, as a kick board. Hanging 1 cm under, its outer
+        /// half showed as a sub-pixel step against the plank edge that shimmered as the camera moved.
+        /// </summary>
+        private const float KickHeight = 0.05f;
         /// <summary>A node block is this much wider than a beam.</summary>
         private const float NodeBlockScale = 1.25f;
         /// <summary>Railing posts and rails: their width (m), and the most a span between posts may be (m).</summary>
@@ -51,12 +57,14 @@ namespace TinCan.Features.ShipDesigns
                 }
 
                 var beams = new ShipFrameMesh();
+                var kickedNodes = new HashSet<int>();
                 foreach (var edge in shape.Edges.Where(e => e.Story == story))
                 {
                     AddBeam(beams, edge, tuning);
                     if (edge.Edge.Railing) AddRailing(beams, edge, tuning);
+                    if (Kicked(edge)) kickedNodes.UnionWith(new[] { edge.Edge.A, edge.Edge.B });
                 }
-                foreach (var node in frame.Nodes.Where(n => n.Story == story)) AddNodeBlock(beams, frame.Position(node), tuning);
+                foreach (var node in frame.Nodes.Where(n => n.Story == story)) AddNodeBlock(beams, frame.Position(node), kickedNodes.Contains(node.Id), tuning);
 
                 var steps = new ShipFrameMesh();
                 var ramps = new ShipFrameMesh();
@@ -294,14 +302,26 @@ namespace TinCan.Features.ShipDesigns
             if (up.y < 0f) up = -up;
 
             float half = tuning.BeamWidth * 0.5f;
-            var offset = post ? Vector3.zero : Vector3.down * (half + BeamDrop);
-            AddBox(mesh, edge.From + offset, edge.To + offset, side * half, up * half, tuning.TextureMetres);
+            if (!post)
+            {
+                float beamTop = Kicked(edge) ? KickHeight : -BeamDrop;
+                var offset = Vector3.up * (beamTop - half);
+                AddBox(mesh, edge.From + offset, edge.To + offset, side * half, up * half, tuning.TextureMetres);
+                return;
+            }
+
+            // A post's top would sit flush with the floor above and flicker against it: it stops just under it.
+            var (bottom, top) = edge.From.y < edge.To.y ? (edge.From, edge.To) : (edge.To, edge.From);
+            AddBox(mesh, bottom, top + Vector3.down * BeamDrop, side * half, up * half, tuning.TextureMetres);
         }
 
-        private static void AddNodeBlock(ShipFrameMesh mesh, Vector3 node, ShipFrameTuning tuning)
+        /// <summary>A floor edge under a railing (not a gate, which is a way through): its beam is a kick board.</summary>
+        private static bool Kicked(ShipFrameShape.EdgeShape edge) => edge.Edge.Rail == ShipFrameRailing.Rail;
+
+        private static void AddNodeBlock(ShipFrameMesh mesh, Vector3 node, bool kicked, ShipFrameTuning tuning)
         {
             float half = tuning.BeamWidth * NodeBlockScale * 0.5f;
-            var centre = node + Vector3.down * (half + BeamDrop);
+            var centre = node + Vector3.up * ((kicked ? KickHeight : -BeamDrop) - half);
             AddBox(mesh, centre + Vector3.back * half, centre + Vector3.forward * half, Vector3.right * half, Vector3.up * half, tuning.TextureMetres);
         }
 

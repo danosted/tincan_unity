@@ -69,6 +69,31 @@ namespace TinCan.Features.ShipDesigns.Tests
         }
 
         [Test]
+        public void TheBeamUnderARailing_RisesOverTheFloor_AGateDoesNot()
+        {
+            var deck = ShipFrameTestDesigns.DeckFrame();
+            float FloorBeamTop(ShipFrameRailing rail)
+            {
+                var railed = deck.With(edges: deck.Edges.Select(e => e.Id == 6 ? e.WithRail(rail) : new ShipFrameEdge(e.Id, e.A, e.B)));
+                // Edge 6 ends at the drifted node 3 (2, -0.3, 2); past x = 2.05 there is only its corner block (no post, no beam 6).
+                return _processor.Build(railed, _tuning).Single().Beams.Vertices.Where(v => v.z > 1.9f && v.x > 2.05f && v.y < 0f).Max(v => v.y);
+            }
+
+            Assert.That(FloorBeamTop(ShipFrameRailing.Rail), Is.EqualTo(-0.25f).Within(1e-3f), "5 cm over the drifted corner");
+            Assert.That(FloorBeamTop(ShipFrameRailing.Gate), Is.EqualTo(-0.31f).Within(1e-3f), "a gate's corner still hangs under");
+        }
+
+        [Test]
+        public void Posts_StopJustUnderTheFloorAbove()
+        {
+            var frame = ShipFrameTestDesigns.TwoStoryBox();
+            var lower = _processor.Build(frame, _tuning)[0];
+            float upperFloor = ShipFrameUnits.ToMetres(frame.StoryFloor(1));
+
+            Assert.That(lower.Beams.Vertices.Max(v => v.y), Is.EqualTo(upperFloor - 0.01f).Within(1e-3f), "1 cm under, not flush");
+        }
+
+        [Test]
         public void AnOpenFace_HasNoPlanks_ButKeepsItsBeams()
         {
             var story = _processor.Build(ShipFrameTestDesigns.DeckFrame(ShipFrameFill.Open), _tuning).Single();

@@ -42,6 +42,7 @@ namespace TinCan.Features.Atmosphere
                 SkyZenith = Color.Lerp(from.SkyZenith, to.SkyZenith, t),
                 SkyBelt = Color.Lerp(from.SkyBelt, to.SkyBelt, t),
                 NightShade = Color.Lerp(from.NightShade, to.NightShade, t),
+                Stars = Mathf.Lerp(from.Stars, to.Stars, t),
             };
         }
 

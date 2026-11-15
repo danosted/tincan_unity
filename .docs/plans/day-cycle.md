@@ -51,7 +51,17 @@ and the sky follow the sun. Under that sky, the current (volumetric) and the new
 3. **D3, the voyage driver, done 2026-11-14:** dawn to dusk by progress: cast-off is the blue hour before
    sunrise, arrival the blue hour after sunset, the hour follows how far along the route the ship is; no night while
    sailing. `VoyageDayDriver` (cast-off 07:00, arrival 17:00, at cast-off without a voyage) reads `DayClockInput.SessionProgress`, which `DayCycleUseCase` fills from the optional `ISessionProgress` (`Core/Domain/`), implemented by Voyage's `VoyageSessionProgress` (the HUD meter's progress, forward only within a voyage). Pick **Voyage** as the config's driver to use it; the default stays the fixed cycle. Unit-tested; no play scenario of its own yet.
-4. **Later:** a moon and stars for the night, the weather owning the light ([`cloud-sea.md`](cloud-sea.md)).
+4. **D4, a starry sky after sunset (asked by the developer, 2026-11-14; built 2026-11-15, not yet playtested):** stars in the
+   painted sky (`Shaders/PaintedSky.shader`), no texture: a procedural star field on the sky's direction, so the
+   stars stay fixed to the sky and sit still while the camera turns. Small soft points in a few sizes and warmths, with
+   a faint twinkle, and a few bright ones. They fade in as the sun goes down through the blue hour (none above about
+   -4 degrees, all of them by about -12) and out again at dawn, from a value the day keys carry (`DayLightKey`, set
+   by `SkyShaderGlobals`), so the light and the stars are tuned in one place. They never show below the horizon (the
+   void) and are hidden by the cloud sea and the clouds like the sky. Optional, if it reads well: a faint milky band across
+   the sky, and the field turning slowly about the pole with the hour. Checked on the Day Sheet (midnight and blue-hour
+   columns) and in the live Game view with the fixed-hour driver; `DayMoves` asserts the stars' global (`_TinCanSkyStars`)
+   is the day's at the sun's height. Built: `DayLightKey.Stars` (Look_GoldenAfternoon: 1 at -16, 0.75 at -8, 0 from -3 up), two star layers in the sky (`_StarBrightness`, `_StarSize`, `_StarTwinkle`), no milky band or turning yet.
+5. **Later:** a moon, the weather owning the light ([`cloud-sea.md`](cloud-sea.md)).
 
 ## Open
 - The keys' colours, the sun path numbers, the cycle length: from the sheet and the running lab.

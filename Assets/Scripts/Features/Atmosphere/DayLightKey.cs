@@ -38,5 +38,8 @@ namespace TinCan.Features.Atmosphere
         [Header("Night")]
         [Tooltip("What surfaces with fixed colours (the stylized clouds) darken toward; alpha is how far (0 by day).")]
         public Color NightShade;
+
+        [Tooltip("How bright the stars in the painted sky are, 0 (none, by day) .. 1 (the full night sky).")]
+        [Range(0f, 1f)] public float Stars;
     }
 }

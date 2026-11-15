@@ -135,14 +135,14 @@ its own cheap layer instead:
   later the phase 1 field) and the sea shader compute height and "is this a hole" from the same list and the same
   low-frequency waves. Only visual detail (the noise, the rim lumps) is shader-only, and it never decides lift or a
   fall. A test checks the C# and the HLSL formulas against fixed points.
-- **Clouds above are moving cards.** Soft, camera-facing cards shaded as if round, drifting with the wind, fading
-  where they meet the sea or a ship; a big cloud is a cluster of a few cards. Kept few (transparent overdraw and
+- **Clouds above float and drift, drawn the sea's way** (first planned as cards; see step 2). One lumpy surface each, drifting with the wind, fading
+  at their outline and before the far plane. Kept few (transparent overdraw and
   sorting). Distant clouds are painted into the sky (`Shaders/PaintedSky.shader`), tinted by the day.
 - **Flying through is a camera effect.** Small soft white wisps near the camera, streaking with speed, faded in by
   the depth `CloudSubmersionProcessor` already gives, on top of the existing whiteout fog. It is a particle effect, not
   a full-screen filter.
 
-Order: the sea with holes first (biggest on screen, the only part that touches gameplay), then the cards, then the
+Order: the sea with holes first (biggest on screen, the only part that touches gameplay), then the clouds above, then the
 wisps. Each is tried in the cloud lab, then in `cheesed_scene`.
 
 **Step 1, the sea with holes (built 2026-11-14, not yet playtested):** went straight to the play scenes, because the
@@ -162,8 +162,50 @@ Seen (developer, 2026-11-14): the movement is right, but the sea reads as solid 
 **shells** (`CloudSeaConfig.Shells`, 12 by default, 1.5 m apart on a 1.2 km grid: see-through layers above the surface,
 cut by one drifting fluff field at a rising threshold, so the tops are soft, fray and let the sun through). Set Shells to
 0, 8 or 16 to compare, and watch the cost in the profiler. The volumetric clouds are off in `cheesed_scene` (its
-`VolumetricCloudsVolume` is inactive) until the cloud cards replace them. Reference frames from the developer will be added to
-the look's references when there are some.
+`VolumetricCloudsVolume` is inactive) until the clouds above replace them. Committed cb5192e.
+
+**Step 2, clouds above the sea: tried and removed (2026-11-15).** Two drawn versions were built and dropped before
+they were committed. First, camera-facing cards, which read as puffy snowflakes and blinked at the edge of the range.
+The blinking was the player camera's flat far plane (1000 m, `NetworkPlayer.prefab`) cutting clouds drawn out to
+3.5 km; the sea's surface now fades out by real distance before 95% of the far plane (`CloudSeaPresenter.FadeOut`).
+Second, one lumpy dome per cloud shaded with the sea's look, which the developer found awful. What stays from them:
+the sea's light lives in `Shaders/Include/TinCanCloudLook.hlsl`. The clouds above are now the volumetric clouds,
+painted with that look (below).
+
+**Trying (developer's idea, 2026-11-15): the volumetric clouds as the high sky.** In `cheesed_scene` only, the
+volumetric clouds are back on, but as a distant sky layer, not the local layer the ship flies through: Local Clouds
+off, bottom 1.5 km above the camera, 1.2 km thick, erosion 0.25 and no micro erosion (softer, less photographic),
+density 0.6, a 6 km coverage map. They use their own profile copy, `Settings/VolumetricCloudsSkyProfile`, so
+`drm_cloud_environment` and `Lab_Clouds` keep `VolumetricCloudsTestProfile`. Tuned on the scene's
+`CloudAtmosphereDirector`. To judge: whether they sit with the drawn sea in one style, how
+they layer with the sea near the horizon, and how they look at dusk and at night.
+Seen (developer, 2026-11-15): seams across the sky (the coverage map does not tile; it is cleared for the sky), clouds
+too dense and uniform, and undersides almost black. The black is physical lighting before dawn: no sun and almost no
+sky light. Chosen: shade them with the sea's look. The vendored shader
+(`ThirdParty/VolumetricCloudsURP/VolumetricClouds/VolumetricClouds.hlsl`, the block marked "TinCan: the painted
+look") now takes the march's sun term per unit of opacity through the sea's light bands and colours, the night shade
+and the air, when the director's Painted Look is on and the cloud sea publishes its look
+(`CloudSeaShaderGlobals.ApplyLook`). Elsewhere the clouds stay physical. Painted Light Gain on the director sets how
+much of each cloud reads as lit. Keep that block when updating the vendored package.
+Then (developer: better, but still too dense and uniform): the coverage generator's noise now repeats exactly per map,
+so a map tiles with no seam, and **TinCan > Features > Generate Sky Coverage Map** writes
+`Settings/CloudSkyCoverageMap.png` (about half open sky), tiled every 8 km over the sky. Density 0.3, Shape Factor
+0.85, a 600 m layer. The old `CloudCoverageMap.png` is unchanged until someone regenerates it.
+Then (developer: every cloud the same size, spread evenly; colour and light fine): the renderer cuts every cloud from
+one noise at one scale, so the variety has to come from the map. The sky map now spreads coverage over a wide range
+(about 29% open, 19% thick), varies the height limit (alpha, 0.3 to 1 of the layer: flat clouds beside towers) and
+the cloud type by region. Shape Factor 0.6 lets coverage set each cloud's size; the layer is 1 km.
+Then (developer: spread them in height, not on one plane; two volumetric systems at once?): the renderer reads one
+`VolumetricClouds` setting from the volume stack, so two layers would mean rewriting it to run two passes; not done.
+Instead a second TinCan block in the vendored `VolumetricCloudsUtilities.hlsl` ("TinCan: the height spread",
+`_TinCanCloudSpread`, the director's Height Spread): a cloud fills only that fraction of the layer, ending at its
+region's height limit, so clouds sit at different heights with their own bases. The layer is local again (parallax,
+the ship can fly into it) from 250 m to 2.5 km above the sea, spread 0.3, step cap 60 m so the march reaches about
+7.7 km.
+Then (developer: weird blobs; the shapes were fine before, only the height range was too narrow): seen from close by
+(local, 250 m) with 60 m steps the coarse shape noise reads as smeared blobs. Back to the sky layer and 30 m steps,
+from 1 km to 2.6 km, spread 0.55: each cloud about 880 m tall, close to the 1 km clouds that looked right, with bases
+from about 1 km to 1.7 km and tops from about 1.5 km to 2.6 km.
 
 ### Weather as tide
 A `WeatherState` asset holds what the weather sets:
@@ -207,7 +249,7 @@ Every phase is one feature slice: an EditMode test for each processor and use ca
    in cloud instead of being reset. Scenario: a ship crosses all bands and every peer agrees on the band.
 4. **The visible sea follows the field.** The drawn sea ("The drawn sea and its holes") replaces the volumetric
    layer: its swell is the field's, the server's holes open, drift and close in it, and the C# and shader formulas are
-   tested against each other. Then the moving cards and the fly-through wisps. Scenario: the server opens a hole and
+   tested against each other. Then the clouds above and the fly-through wisps. Scenario: the server opens a hole and
    host and client agree on its state and on the surface height at its rim. Check the look by eye and with a scene
    capture.
 5. **Weather.** `WeatherState` assets, a weather director (host decides, peers blend from synced time), the sea, clouds,

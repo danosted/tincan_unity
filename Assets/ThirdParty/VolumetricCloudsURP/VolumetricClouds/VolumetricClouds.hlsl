@@ -3,6 +3,11 @@
 
 #include "./VolumetricCloudsDefs.hlsl"
 #include "./VolumetricCloudsUtilities.hlsl"
+// TinCan: the painted look (see TraceVolumetricRay's end; plan .docs/plans/cloud-sea.md).
+#include "Assets/Shaders/Include/TinCanLighting.hlsl"
+#include "Assets/Shaders/Include/TinCanAtmosphere.hlsl"
+#include "Assets/Shaders/Include/TinCanCloudLook.hlsl"
+float4 _TinCanSkyCloudPainted; // CloudAtmosphereDirector: x on, y light gain
 
 CloudRay BuildCloudsRay(float2 screenUV, float depth, half3 invViewDirWS, bool isOccluded)
 {
@@ -172,6 +177,32 @@ VolumetricRayResult TraceVolumetricRay(CloudRay cloudRay)
                 float relativeHeight = EvaluateNormalizedCloudHeight(currentPositionPS);
 
                 Light sun = GetMainLight();
+
+                // TinCan: the painted look. Where the drawn cloud sea gives its look (_TinCanCloudLookOn) and the
+                // director asks for it, the cloud is shaded like the sea instead of physically: how much sun reached it
+                // (the march's sun term per unit of opacity, before the sun's colour) goes through the sea's light bands
+                // and colours (Shaders/Include/TinCanCloudLook.hlsl), then the night shade and the air, so the sky's
+                // clouds keep the sea's palette at every hour instead of going black when the sun is down.
+                half opacity = 1.0h - volumetricRay.transmittance;
+                if (_TinCanSkyCloudPainted.x > 0.5 && _TinCanCloudLookOn > 0.5 && opacity > 1e-3h)
+                {
+                    TinCanCloudLook look = TinCanCloudLookFromGlobals();
+                    half sunAmount = saturate(Luminance(volumetricRay.scattering) / opacity * PI * (half)_TinCanSkyCloudPainted.y);
+                    half ambientAmount = saturate(volumetricRay.ambient / opacity);
+                    half lit = TinCanBand(sunAmount * 2.0h - 1.0h, look.wrap, look.bandSoftness, look.bands);
+                    float3 view = -cloudRay.direction;
+                    // The underside and the occluded insides lean cool; the thin parts let the sun through. With the
+                    // height spread each cloud has its own base, so the layer's height says little: the occlusion
+                    // (lowest at a cloud's underside) decides alone.
+                    half hollow = _TinCanCloudSpread.x > 0.0
+                        ? saturate(1.0h - ambientAmount)
+                        : saturate((1.0h - (half)relativeHeight) * 0.6h + (1.0h - ambientAmount) * 0.4h);
+                    half3 colour = TinCanCloudShadeLit(look, lit, SampleSH(float3(0, 1, 0)), 0.0h, view, hollow, 1.0h - opacity);
+                    colour = TinCanNightShade(colour);
+                    float3 cloudWS = GetCameraPositionWS() + volumetricRay.meanDistance * cloudRay.direction;
+                    volumetricRay.scattering = TinCanAtmospherePremultiplied(half4(colour * opacity, opacity), cloudWS).rgb;
+                    return volumetricRay;
+                }
 
                 // Evaluate the sun color at the position
             #ifdef _PHYSICALLY_BASED_SUN

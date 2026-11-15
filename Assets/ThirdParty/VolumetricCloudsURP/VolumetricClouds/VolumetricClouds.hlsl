@@ -191,10 +191,10 @@ VolumetricRayResult TraceVolumetricRay(CloudRay cloudRay)
                     half ambientAmount = saturate(volumetricRay.ambient / opacity);
                     half lit = TinCanBand(sunAmount * 2.0h - 1.0h, look.wrap, look.bandSoftness, look.bands);
                     float3 view = -cloudRay.direction;
-                    // The underside and the occluded insides lean cool; the thin parts let the sun through. With the
-                    // height spread each cloud has its own base, so the layer's height says little: the occlusion
-                    // (lowest at a cloud's underside) decides alone.
-                    half hollow = _TinCanCloudSpread.x > 0.0
+                    // The underside and the occluded insides lean cool; the thin parts let the sun through. With height
+                    // tiers each cloud has its own floor, so the layer's height says little: the occlusion (lowest at a
+                    // cloud's base) decides alone.
+                    half hollow = (_TinCanCloudVariety.x > 1.5 || _TinCanCloudVariety.z > 0.0)
                         ? saturate(1.0h - ambientAmount)
                         : saturate((1.0h - (half)relativeHeight) * 0.6h + (1.0h - ambientAmount) * 0.4h);
                     half3 colour = TinCanCloudShadeLit(look, lit, SampleSH(float3(0, 1, 0)), 0.0h, view, hollow, 1.0h - opacity);

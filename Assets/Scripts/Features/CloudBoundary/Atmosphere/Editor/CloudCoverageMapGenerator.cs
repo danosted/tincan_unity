@@ -8,7 +8,8 @@ namespace TinCan.Features.CloudBoundary.Atmosphere.Editor
 {
     /// <summary>
     /// Procedurally generates the cloud coverage/type map consumed by VolumetricClouds.cloudMap:
-    /// R = coverage (how much cloud at this XZ position), G = rain/storm amount, B = cloud type
+    /// R = coverage (how much cloud at this XZ position), G = rain/storm amount (or, with the director's Opacity
+    /// Variation on, how opaque the clouds are), B = cloud type
     /// (selects a column in the type LUT, blending between the built-in presets), A = max cloud
     /// height (1 unless a height range is given). No paint tool available, so this is generated instead of
     /// hand-authored; re-run with a different seed/scale to get a different layout.
@@ -34,9 +35,10 @@ namespace TinCan.Features.CloudBoundary.Atmosphere.Editor
         public static void GenerateSky()
         {
             // Coverage over a wide range (thin regions give small scattered puffs, thick ones big merged heaps), a height
-            // limit that changes by region (flat clouds beside towers), and cloud types that differ region to region.
+            // limit that changes by region (flat clouds beside towers), and cloud types that differ region to region. Green
+            // over its full range: with the director's Opacity Variation on, it says how opaque a region's clouds are.
             Texture2D map = Generate(SkyOutputPath, coverageScale: 4f, coverageThreshold: 0.3f, coveragePower: 1f, typeScale: 3f,
-                seed: 271, contrast: 2.2f, heightScale: 6f, heightRange: new Vector2(0.3f, 1f));
+                rainScale: 5f, rainWeight: 1f, seed: 271, contrast: 2.2f, heightScale: 6f, heightRange: new Vector2(0.3f, 1f));
             Debug.Log($"[CloudCoverageMapGenerator] Sky coverage map at {SkyOutputPath} ({map.width}x{map.height}).");
         }
 
@@ -48,7 +50,7 @@ namespace TinCan.Features.CloudBoundary.Atmosphere.Editor
         /// <param name="rainScale">Noise cells across the map for the rain/storm channel.</param>
         /// <param name="rainWeight">0-1 cap on how strong the rain channel gets.</param>
         /// <param name="coverageThreshold">Raw fractal noise below this becomes open sky (0 coverage). Layered noise clusters around ~0.5, so values near 0.5 leave about half the sky open.</param>
-        /// <param name="contrast">Spreads the coverage and type noise away from 0.5 (1 leaves it as it is), so regions differ more.</param>
+        /// <param name="contrast">Spreads the coverage, rain and type noise away from 0.5 (1 leaves it as it is), so regions differ more.</param>
         /// <param name="heightScale">Noise cells across the map for the height limit (alpha).</param>
         /// <param name="heightRange">The height limit's range, as a fraction of the layer (alpha). Default (1, 1): every cloud may fill the layer.</param>
         /// <param name="coveragePower">Applied to coverage after the threshold remap (values &lt;1 push it up). The shader multiplies final density by coverage*coverage, so a coverage of e.g. 0.4 becomes only ~16% effective density - this compensates so "covered" regions actually read as covered instead of nearly invisible.</param>
@@ -88,7 +90,7 @@ namespace TinCan.Features.CloudBoundary.Atmosphere.Editor
 
                     float cloudType = Spread(FractalNoise(u, v, typeCells, seed + 1, octaves: 1));
 
-                    float rain = Mathf.Clamp01(FractalNoise(u, v, rainCells, seed + 2, octaves: 2) * rainWeight);
+                    float rain = Mathf.Clamp01(Spread(FractalNoise(u, v, rainCells, seed + 2, octaves: 2)) * rainWeight);
 
                     float maxHeight = Mathf.Lerp(height.x, height.y, Spread(FractalNoise(u, v, heightCells, seed + 3, octaves: 2)));
 

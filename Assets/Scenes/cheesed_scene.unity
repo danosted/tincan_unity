@@ -390,7 +390,7 @@ MonoBehaviour:
   _rendererFeature: {fileID: -3254320598164341664, guid: 957cfca5635937d48b5890845ef790a8, type: 2}
   _cloudsEnabled: 1
   _localClouds: 0
-  _densityMultiplier: 0.3
+  _densityMultiplier: 0.15
   _shapeFactor: 0.6
   _shapeScale: 30
   _erosionFactor: 0.25
@@ -399,7 +399,7 @@ MonoBehaviour:
   _microErosionEnabled: 0
   _microErosionFactor: 0.5
   _bottomAltitude: 1000
-  _altitudeRange: 1600
+  _altitudeRange: 2400
   _cloudMap: {fileID: 2800000, guid: 853fddc3668f5084bb165e92e32fa636, type: 3}
   _cloudMapTileSize: 8000
   _cloudMapOffset: {x: 0, y: 0}
@@ -428,7 +428,9 @@ MonoBehaviour:
   _sunColor: {r: 1, g: 1, b: 1, a: 1}
   _paintedLook: 1
   _paintedLightGain: 2.5
-  _heightSpread: 0.55
+  _heightTiers: 2
+  _heightJitter: 1
+  _opacityVariation: 0.6
 --- !u!4 &1562735720
 Transform:
   m_ObjectHideFlags: 0

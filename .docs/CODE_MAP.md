@@ -314,11 +314,12 @@ Coverage is in `Features/Airship/Fuel/Minigame/Tests/FlyingCanUseCaseTests.cs`, 
 
 ## Legacy, oddities and traps
 
-- **The vendored volumetric clouds carry two TinCan changes.** `ThirdParty/VolumetricCloudsURP/VolumetricClouds/VolumetricClouds.hlsl`
+- **The vendored volumetric clouds carry TinCan changes.** `ThirdParty/VolumetricCloudsURP/VolumetricClouds/VolumetricClouds.hlsl`
   has a block marked "TinCan: the painted look" that shades the clouds with the cloud sea's look
   (`Shaders/Include/TinCanCloudLook.hlsl`), switched by `CloudAtmosphereDirector`'s Painted Look. Keep it when updating
-  the package, and the block "TinCan: the height spread" in `VolumetricCloudsUtilities.hlsl` (the director's Height
-  Spread). A `CloudAtmosphereDirector` writes into its profile asset, which scenes can share: give a scene its own
+  the package, and the blocks "TinCan: the height tiers" and "TinCan: the opacity variation" in
+  `VolumetricCloudsUtilities.hlsl` (the director's Height Tiers, Height Jitter and Opacity Variation, global `_TinCanCloudVariety`).
+  A `CloudAtmosphereDirector` writes into its profile asset, which scenes can share: give a scene its own
   profile copy before tuning it (`cheesed_scene` uses `Settings/VolumetricCloudsSkyProfile`).
 
 - **A test-range scene only has what its profile loads.** A station, installer or service missing from a scenario usually

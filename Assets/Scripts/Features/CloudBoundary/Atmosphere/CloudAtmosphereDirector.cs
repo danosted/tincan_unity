@@ -131,12 +131,16 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
         [Tooltip("How strongly the sun's light inside the cloud counts toward the lit colour. Higher makes more of each cloud lit; lower more of it shadow.")]
         [Range(0.1f, 10f)] [SerializeField] private float _paintedLightGain = 2.5f;
 
-        [Header("Height Spread")]
-        [Tooltip("The fraction of the layer's thickness one cloud fills, ending at its region's height limit (the cloud map's alpha), so clouds sit at different heights through the layer. 0 off: every cloud rises from the layer's floor.")]
-        [Range(0f, 1f)] [SerializeField] private float _heightSpread;
+        [Header("Variety")]
+        [Tooltip("How many stacked bands of cloud the layer holds, each with its own flat floor and its own pattern from the cloud map: low, middle and high clouds. Each band is Altitude Range / (tiers + Height Jitter) thick. 1: one layer.")]
+        [Range(1, 4)] [SerializeField] private int _heightTiers = 1;
+        [Tooltip("How far the floors rise and fall across the sky, in bands (0..1.5): slowly, over kilometres, so each cloud keeps a flat base but distant clouds sit at different heights and no floor shows as a line at the horizon. Each band is Altitude Range / (tiers + this) thick, so a lifted floor stays in the layer. 0: the floors are flat planes.")]
+        [Range(0f, 1.5f)] [SerializeField] private float _heightJitter;
+        [Tooltip("How much clouds differ in opacity from region to region, from the cloud map's green channel (Generate Sky Coverage Map writes it). 0 off: every cloud is as opaque as Density says. 1: the faintest regions are clear air. Density still sets the overall opacity.")]
+        [Range(0f, 1f)] [SerializeField] private float _opacityVariation;
 
         private static readonly int PaintedId = Shader.PropertyToID("_TinCanSkyCloudPainted");
-        private static readonly int SpreadId = Shader.PropertyToID("_TinCanCloudSpread");
+        private static readonly int VarietyId = Shader.PropertyToID("_TinCanCloudVariety");
 
         private VolumetricClouds? _clouds;
         private bool _changed;
@@ -161,8 +165,8 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
         {
             // Read by the vendored cloud shader (VolumetricClouds.hlsl, "TinCan: painted look"): x on, y the light gain.
             Shader.SetGlobalVector(PaintedId, new Vector4(_paintedLook ? 1f : 0f, _paintedLightGain, 0f, 0f));
-            // Read by VolumetricCloudsUtilities.hlsl ("TinCan: the height spread").
-            Shader.SetGlobalVector(SpreadId, new Vector4(_heightSpread, 0f, 0f, 0f));
+            // Read by VolumetricCloudsUtilities.hlsl ("TinCan: the height tiers", "TinCan: the opacity variation").
+            Shader.SetGlobalVector(VarietyId, new Vector4(_heightTiers, _opacityVariation, _heightJitter, 0f));
             ApplyClouds(markDirty);
             ApplyRendererFeature(markDirty);
             ApplyLight(markDirty);

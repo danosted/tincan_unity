@@ -16,7 +16,8 @@ namespace TinCan.DevTools.Editor
     /// TinCan > Dev > Cloud Sea > Build Assets: creates (or re-applies) the drawn cloud sea's assets (plan
     /// .docs/plans/cloud-sea.md, "The drawn sea and its holes"):
     /// <list type="bullet">
-    /// <item>the config, and the sea material (made only when missing, so Inspector tuning survives a rebuild);</item>
+    /// <item>the configs (the sea, the wisps) and the sea and wisp materials (made only when missing, so Inspector tuning
+    /// survives a rebuild);</item>
     /// <item>the CloudHolesState prefab and its ship fixture;</item>
     /// <item>the installer, and the profiles that load it (the sandbox, so the Galleon and cheesed_scene, and Test_Look).</item>
     /// </list>
@@ -26,6 +27,8 @@ namespace TinCan.DevTools.Editor
     {
         public const string SeaShader = "TinCan/Environment/Cloud Sea Swell";
         public const string MaterialPath = "Assets/Materials/Clouds/M_CloudSeaSwell.mat";
+        public const string WispShader = "TinCan/Environment/Cloud Wisp";
+        public const string WispMaterialPath = "Assets/Materials/Clouds/M_CloudWisp.mat";
         private const string StatePrefab = "Assets/Prefabs/CloudSea/CloudHolesState.prefab";
         private const string Profiles = "Assets/Settings/FeatureProfiles/";
         private const string Installers = "Assets/Resources/Installers/";
@@ -34,7 +37,9 @@ namespace TinCan.DevTools.Editor
         public static void Build()
         {
             var config = Asset<CloudSeaConfig>("Assets/Settings/CloudSea/CloudSeaConfig.asset", _ => { });
-            var material = SeaMaterial();
+            var material = MaterialAt(MaterialPath, SeaShader);
+            var wisps = Asset<CloudWispsConfig>("Assets/Settings/CloudSea/CloudWispsConfig.asset", _ => { });
+            var wispMaterial = MaterialAt(WispMaterialPath, WispShader);
 
             var fixture = Asset<ShipFixtureDefinition>("Assets/Settings/Fixtures/CloudHolesStateFixture.asset", definition =>
             {
@@ -48,6 +53,8 @@ namespace TinCan.DevTools.Editor
                 SetField(sea, "_config", config);
                 SetField(sea, "_seaMaterial", material);
                 SetField(sea, "_stateFixture", fixture);
+                SetField(sea, "_wispsConfig", wisps);
+                SetField(sea, "_wispMaterial", wispMaterial);
             });
 
             AddUnique(Load<FeatureProfile>(Profiles + "Profile_FuelSandbox.asset"), "_installers", new Object[] { installer });
@@ -57,15 +64,15 @@ namespace TinCan.DevTools.Editor
             Debug.Log("[CloudSeaAssetBuilder] Cloud sea assets built.");
         }
 
-        private static Material SeaMaterial()
+        private static Material MaterialAt(string path, string shaderName)
         {
-            var material = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material != null) return material;
 
-            var shader = Shader.Find(SeaShader) ?? throw new InvalidOperationException($"Missing shader {SeaShader}.");
-            material = new Material(shader) { name = Path.GetFileNameWithoutExtension(MaterialPath) };
-            EnsureFolder(MaterialPath);
-            AssetDatabase.CreateAsset(material, MaterialPath);
+            var shader = Shader.Find(shaderName) ?? throw new InvalidOperationException($"Missing shader {shaderName}.");
+            material = new Material(shader) { name = Path.GetFileNameWithoutExtension(path) };
+            EnsureFolder(path);
+            AssetDatabase.CreateAsset(material, path);
             return material;
         }
 

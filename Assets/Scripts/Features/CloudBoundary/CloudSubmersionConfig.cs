@@ -9,6 +9,11 @@ namespace TinCan.Features.CloudBoundary
         [Tooltip("Vertical distance below the cloud surface over which submersion ramps from 0 to 1.")]
         [SerializeField, Min(1f)] private float _transitionDepth = 25f;
 
+        [Tooltip("How far above the cloud surface submersion starts, in metres: where the drawn cloud is seen to begin " +
+                 "(the drawn sea's heaps and fluff rise above the surface the game uses). Only the view's fog, light " +
+                 "and audio read it; the boundary and the holes do not. Plan .docs/plans/cloud-sea.md, step 3.")]
+        [SerializeField, Min(0f)] private float _surfaceLift = 15f;
+
         [Tooltip("Directional light intensity multiplier at full submersion (1 = unaffected).")]
         [SerializeField, Range(0f, 1f)] private float _minLightMultiplier = 0.18f;
 
@@ -25,6 +30,7 @@ namespace TinCan.Features.CloudBoundary
         [SerializeField] private Color _whiteoutFogColor = new(0.85f, 0.87f, 0.9f, 1f);
 
         public float TransitionDepth => _transitionDepth;
+        public float SurfaceLift => _surfaceLift;
         public float MinLightMultiplier => _minLightMultiplier;
         public float VapourGain => _vapourGain;
         public float AudioGain => _audioGain;

@@ -122,7 +122,8 @@ namespace TinCan.Features.CloudBoundary
 
             CacheBaseAtmosphere();
 
-            float surfaceHeight = _surfaceQuery.GetSurfaceHeight(cameraPosition.x, cameraPosition.z);
+            // Measured from where the drawn cloud is seen to begin, above the surface the game uses.
+            float surfaceHeight = _surfaceQuery.GetSurfaceHeight(cameraPosition.x, cameraPosition.z) + _submersionConfig.SurfaceLift;
             CurrentAtmosphere = _submersionProcessor.Evaluate(
                 surfaceHeight,
                 cameraPosition.y,

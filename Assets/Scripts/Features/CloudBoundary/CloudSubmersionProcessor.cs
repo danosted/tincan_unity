@@ -38,7 +38,8 @@ namespace TinCan.Features.CloudBoundary
         {
             float submersion = CalculateSubmersion(surfaceHeight, altitude, transitionDepth);
 
-            float whiteout = Mathf.Clamp01(submersion * submersion);
+            // Linear: the fog rises from the moment the view enters the cloud (it was squared, and felt late).
+            float whiteout = submersion;
             float vapourIntensity = Mathf.Clamp01(submersion * vapourGain);
             float lightMultiplier = Mathf.Lerp(1f, minLightMultiplier, whiteout);
             float audioMuffle = Mathf.Clamp01(submersion * audioGain);

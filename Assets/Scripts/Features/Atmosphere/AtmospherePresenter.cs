@@ -100,6 +100,7 @@ namespace TinCan.Features.Atmosphere
             Current = frame;
 
             AtmosphereShaderGlobals.Apply(frame, look);
+            AtmosphereShaderGlobals.ApplyWhiteout(_submersion?.Whiteout ?? 0f);
             SkyShaderGlobals.SetEnabled(day);
             if (day) SkyShaderGlobals.Apply(light);
             LookShaderGlobals.Apply(_profile.Shading, _surface.Evaluate());

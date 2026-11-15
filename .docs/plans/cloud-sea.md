@@ -231,6 +231,28 @@ Committed 4f04a08. Then (developer: likes it, but barely sees the clouds as loca
 sea at 0, and the lowest floors sat at 30 to 630 m. Now Bottom 10 m, 2 tiers, Height Jitter 0.3: bands about 1 km
 thick, the lowest floors between 10 and 320 m, so low clouds rise from below the ship to well above it.
 
+**Step 3, under the sea and the wisps (asked by the developer, 2026-11-15; built 2026-11-15, not yet playtested).** Being under the cloud sea did
+not match what you see, and there was no sense of speed. Today:
+- the submersion (fog, dimmed sun, muffled audio) is measured from the game's surface, the swell. The drawn heaps sit
+  up to about 14 m above it and the shells up to about 18 m, so you are visibly in the cloud tops before the game
+  counts you as submerged;
+- under the sea the painted sky is not fogged, and the sea is drawn one-sided, so you look up at a clear sky.
+
+What changes:
+- **Submersion starts where the cloud is seen:** `CloudSubmersionConfig.SurfaceLift` (15 m) raises the line it is
+  measured from, and it ramps over the same Transition Depth (25 m). This also moves the muffled audio and the dimmed
+  sun; the cloud boundary, the holes and falling are unchanged (they read the surface itself).
+- **Under means under:** the painted sky and the painted volumetric clouds fade to the air's colour as the whiteout
+  rises (global `_TinCanWhiteout`, set by the atmosphere), and the sea draws its underside, so just under the surface
+  you see a cloud ceiling, and deeper only fog.
+- **Wisps:** small soft streaks around the local camera (one particle system, world space, so they stream past and
+  stretch along the travel). Their intensity comes from speed and depth, depth weighing more: light streaks above the
+  sea when moving, denser once under, strongest just before full whiteout, then they fade into the fog. A burst when
+  crossing into the cloud. The rules are a pure `CloudWispsProcessor` with EditMode tests; `CloudWispsPresenter` draws
+  them, `CloudWispsConfig` holds the knobs, `Shaders/CloudWisp.shader` shades them with the sea's look. Presentation
+  only, never replicated. Judged in `cheesed_scene`: sailing high, skimming the surface, diving deep.
+- Not in this step: wisps inside the floating volumetric clouds (the game does not know where those are).
+
 ### Weather as tide
 A `WeatherState` asset holds what the weather sets:
 - **Sea:** base height, swell height, swell length and speed, hole coverage and size, density gradient with depth.

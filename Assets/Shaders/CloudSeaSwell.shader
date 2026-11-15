@@ -77,7 +77,7 @@ Shader "TinCan/Environment/Cloud Sea Swell"
             Blend One OneMinusSrcAlpha
             ZWrite [_ZWrite]
             ZTest LEqual
-            Cull Back
+            Cull Off // the underside shows only from below (Frag)
 
             HLSLPROGRAM
             #pragma vertex Vert
@@ -186,8 +186,13 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                 return output;
             }
 
-            half4 Frag(Varyings input) : SV_Target
+            half4 Frag(Varyings input, bool front : SV_IsFrontFace) : SV_Target
             {
+                // The underside (plan cloud-sea.md, step 3) only where the camera is below this point of the sea, so
+                // diving under shows a cloud ceiling, and from above nothing changes (no back of a hole's wall shows).
+                bool underside = !front;
+                if (underside && GetCameraPositionWS().y > input.positionWS.y) discard;
+
                 float2 xz = input.positionWS.xz;
                 float heaps = input.sea.x;
                 float cut = input.sea.y;
@@ -214,6 +219,12 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                 float3 view = GetWorldSpaceNormalizeViewDir(input.positionWS);
                 // Hollows between heaps and the swell's troughs lean cool; higher shells are the thin, sunlit tops.
                 half hollow = (half)saturate((1.0 - heaps) * 0.75 + (1.0 - input.sea.z) * 0.35) * (1.0h - (half)layer);
+                // Seen from below, the sea is the shadowed underside of a cloud: facing down, all hollow.
+                if (underside)
+                {
+                    normal = -normal;
+                    hollow = 1.0h;
+                }
                 TINCAN_CLOUD_LOOK(look)
                 half3 colour = TinCanCloudShade(look, normal, view, hollow, (half)layer);
 

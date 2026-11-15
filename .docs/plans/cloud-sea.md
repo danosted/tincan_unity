@@ -227,6 +227,9 @@ Trying (developer, 2026-11-15): the clouds local, so you feel submerged in them.
 settings read as blobs), 192 steps of 20 m (about 3.8 km of cloud per ray; empty sky is crossed in double steps). To
 judge: the look up close and inside a cloud, the frame time, and whether far clouds end in a visible line. Back to the
 sky version: Local off, Bottom 1000, Range 2400, 2 tiers, erosion 0.25, micro off, 128 steps of 30 m.
+Committed 4f04a08. Then (developer: likes it, but barely sees the clouds as local): the Galleon spawns at 40 m over a
+sea at 0, and the lowest floors sat at 30 to 630 m. Now Bottom 10 m, 2 tiers, Height Jitter 0.3: bands about 1 km
+thick, the lowest floors between 10 and 320 m, so low clouds rise from below the ship to well above it.
 
 ### Weather as tide
 A `WeatherState` asset holds what the weather sets:

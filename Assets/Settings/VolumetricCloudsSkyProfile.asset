@@ -32,7 +32,7 @@ MonoBehaviour:
     m_Value: 1
   localClouds:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   m_CloudPreset:
     m_OverrideState: 1
     m_Value: 4
@@ -82,7 +82,7 @@ MonoBehaviour:
     m_Value: 30
   erosionFactor:
     m_OverrideState: 1
-    m_Value: 0.25
+    m_Value: 0.6
   erosionScale:
     m_OverrideState: 1
     m_Value: 600
@@ -158,7 +158,7 @@ MonoBehaviour:
       m_RotationOrder: 4
   microErosion:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   microErosionFactor:
     m_OverrideState: 1
     m_Value: 0.5
@@ -167,7 +167,7 @@ MonoBehaviour:
     m_Value: 2000
   bottomAltitude:
     m_OverrideState: 1
-    m_Value: 1000
+    m_Value: 30
   altitudeRange:
     m_OverrideState: 1
     m_Value: 2400
@@ -228,7 +228,7 @@ MonoBehaviour:
     m_Value: 1
   maxStepSize:
     m_OverrideState: 1
-    m_Value: 30
+    m_Value: 20
   forwardEccentricity:
     m_OverrideState: 1
     m_Value: 0.4
@@ -258,7 +258,7 @@ MonoBehaviour:
     m_Value: 1
   numPrimarySteps:
     m_OverrideState: 1
-    m_Value: 128
+    m_Value: 192
   numLightSteps:
     m_OverrideState: 1
     m_Value: 8

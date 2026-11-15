@@ -12,5 +12,9 @@ namespace TinCan.Features.Boarding
         [Tooltip("Where a joining player lands, in ship-local space, when the ship has no AirshipRespawnPoint. " +
                  "Starts equal to CloudBoundaryConfig's fallback respawn offset, so both land players on the same spot.")]
         public Vector3 BoardingOffset = new(0f, 3f, 0f);
+
+        [Tooltip("How long a joining player waits for the ship's deck under the boarding spot (a ship built from a design " +
+                 "gets its hull a moment after it appears), in seconds. After that they board anyway.")]
+        [Min(0f)] public float MaxDeckWait = 5f;
     }
 }

@@ -221,6 +221,12 @@ Then (developer: the bands show as cut-off lines toward the horizon): the floors
 sky (the director's Height Jitter, global `_TinCanCloudVariety.z`): the map's alpha read at a fifth of its scale, so
 over kilometres, flat under one cloud but different from cloud to cloud, by up to that many bands. The layer holds
 tiers + jitter bands, so a lifted floor stays inside it. Set: 2 tiers, jitter 1, from 1 km to 3.4 km (800 m bands).
+Committed ecf0328 (the sky version).
+Trying (developer, 2026-11-15): the clouds local, so you feel submerged in them. Local on, from 30 m to 2.4 km, 3 tiers
+(600 m bands, the lowest at ship height), erosion 0.6 and micro erosion on (detail up close, where the smooth sky
+settings read as blobs), 192 steps of 20 m (about 3.8 km of cloud per ray; empty sky is crossed in double steps). To
+judge: the look up close and inside a cloud, the frame time, and whether far clouds end in a visible line. Back to the
+sky version: Local off, Bottom 1000, Range 2400, 2 tiers, erosion 0.25, micro off, 128 steps of 30 m.
 
 ### Weather as tide
 A `WeatherState` asset holds what the weather sets:

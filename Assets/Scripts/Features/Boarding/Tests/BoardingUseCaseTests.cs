@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
+using TinCan.Core.Domain;
 using TinCan.Core.Domain.Events;
 using TinCan.Core.Humanoid;
+using TinCan.Core.Ship;
 using TinCan.Features.Boarding;
 using UnityEngine;
 using TinCan.Tests.Fakes;
@@ -30,12 +32,29 @@ namespace TinCan.Features.Boarding.Tests
             public void Publish<TEvent>(TEvent evt) => Events.Add(evt!);
         }
 
+        private sealed class FakeDeckProbe : IShipDeckProbe
+        {
+            public bool HasDeck { get; set; } = true;
+            public bool HasDeckUnder(IAirshipView ship, Vector3 position) => HasDeck;
+        }
+
+        private sealed class FakeTime : ITimeService
+        {
+            public float Time { get; set; }
+            public float DeltaTime => 0.02f;
+            public float FixedDeltaTime => 0.02f;
+            public int Tick => 0;
+            public int TickRate => 50;
+        }
+
         private FakeActorRegistry _actors = null!;
         private FakeSessionNetworkService _network = null!;
         private RecordingRespawnService _respawn = null!;
         private RecordingPublisher _events = null!;
         private BoardingConfig _config = null!;
         private FakeAirshipView _ship = null!;
+        private FakeDeckProbe _deck = null!;
+        private FakeTime _time = null!;
         private readonly List<FakeHumanoidMovementView> _bodies = new();
 
         [SetUp]
@@ -49,6 +68,8 @@ namespace TinCan.Features.Boarding.Tests
             _config.BoardingOffset = new Vector3(0f, 3f, 0f);
             _ship = new FakeAirshipView("Airship");
             _ship.Transform.position = new Vector3(0f, 100f, 0f);
+            _deck = new FakeDeckProbe();
+            _time = new FakeTime();
         }
 
         [TearDown]
@@ -142,6 +163,46 @@ namespace TinCan.Features.Boarding.Tests
             Assert.That(_respawn.Resets.Count, Is.EqualTo(2));
         }
 
+        [Test]
+        public void AShipWithoutItsDeckYet_KeepsTheNewPlayerWaiting_UntilTheDeckIsThere()
+        {
+            _actors.Register(_ship);
+            _deck.HasDeck = false;
+            var player = Player();
+            var boarding = UseCase();
+
+            boarding.Tick();
+            _time.Time = 1f;
+            boarding.Tick();
+            Assert.That(_respawn.Resets, Is.Empty, "no deck under the boarding spot yet");
+
+            _deck.HasDeck = true;
+            boarding.Tick();
+            boarding.Tick();
+
+            Assert.That(_respawn.Resets.Select(reset => reset.Character), Is.EqualTo(new[] { player }));
+        }
+
+        [Test]
+        public void AShipThatNeverGetsADeck_BoardsThePlayerAnyway_AfterTheLongestWait()
+        {
+            _actors.Register(_ship);
+            _deck.HasDeck = false;
+            _config.MaxDeckWait = 5f;
+            Player();
+            var boarding = UseCase();
+
+            boarding.Tick();
+            _time.Time = 4.9f;
+            boarding.Tick();
+            Assert.That(_respawn.Resets, Is.Empty);
+
+            _time.Time = 5f;
+            boarding.Tick();
+
+            Assert.That(_respawn.Resets.Count, Is.EqualTo(1));
+        }
+
         private FakeHumanoidCharacterView Player()
         {
             var body = new FakeHumanoidMovementView("Player");
@@ -152,6 +213,6 @@ namespace TinCan.Features.Boarding.Tests
             return player;
         }
 
-        private BoardingUseCase UseCase() => new(_network, _actors, _respawn, _events, _config);
+        private BoardingUseCase UseCase() => new(_network, _actors, _respawn, _events, _config, _deck, _time);
     }
 }

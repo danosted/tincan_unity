@@ -24,6 +24,7 @@ namespace TinCan.Features.Boarding
             }
 
             builder.RegisterInstance(_config);
+            builder.Register<PhysicsShipDeckProbe>(Lifetime.Singleton).As<IShipDeckProbe>();
             builder.Register<BoardingUseCase>(Lifetime.Singleton).As<ISimulationTickable>();
         }
     }

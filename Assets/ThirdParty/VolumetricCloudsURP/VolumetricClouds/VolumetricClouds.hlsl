@@ -200,7 +200,7 @@ VolumetricRayResult TraceVolumetricRay(CloudRay cloudRay)
                     half3 colour = TinCanCloudShadeLit(look, lit, SampleSH(float3(0, 1, 0)), 0.0h, view, hollow, 1.0h - opacity);
                     colour = TinCanNightShade(colour);
                     float3 cloudWS = GetCameraPositionWS() + volumetricRay.meanDistance * cloudRay.direction;
-                    volumetricRay.scattering = TinCanAtmospherePremultiplied(half4(colour * opacity, opacity), cloudWS).rgb;
+                    volumetricRay.scattering = TinCanSkyAtmospherePremultiplied(half4(colour * opacity, opacity), cloudWS).rgb;
                     return volumetricRay;
                 }
 

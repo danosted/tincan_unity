@@ -102,6 +102,12 @@ A third, half-lit band is now an option (`_Bands` 3).
 Open: the band softness (the library's 0.35 reads as smooth shading; 0.02 to 0.1 reads as cel steps), and two or
 three bands.
 
+### The far edge (2026-11-15)
+Things about 1 km out (the player camera's far plane) blinked in and out as the view turned: the far plane is flat, the
+air is measured by distance, and the air covered only about 65% there. Scene surfaces now turn wholly into air between
+60% and 95% of the camera's far plane, which matches the painted sky's horizon; the raymarched sky clouds, which reach
+past the far plane, keep the old air. Where: `Shaders/Include/TinCanAtmosphere.hlsl` (the far edge, at the top).
+
 ### The cloud lab (2026-11-01)
 The volumetric clouds look too realistic for the style. **TinCan > Dev > Look > Build Cloud Lab**
 (`DevTools/Editor/CloudLab.cs`) writes `Scenes/Lab/Lab_Clouds.unity`, a bare scene for iterating on stylized clouds in

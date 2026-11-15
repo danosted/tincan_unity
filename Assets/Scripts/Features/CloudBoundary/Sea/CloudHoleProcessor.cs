@@ -26,12 +26,13 @@ namespace TinCan.Features.CloudBoundary
             hole.ClosesAt < CloudHole.Never && time >= hole.ClosesAt + hole.CloseSeconds;
 
         /// <summary>The hole's shape at <paramref name="time"/>: its open part grows with its openness, and its rim is
-        /// <paramref name="rimFraction"/> of its full radius (at least a metre).</summary>
+        /// <paramref name="rimFraction"/> of its full radius (at least a metre). A rift tears open along its length: its reach
+        /// grows with its openness too.</summary>
         public CloudHoleShape Shape(in CloudHole hole, float time, float rimFraction)
         {
             float openness = Openness(hole, time);
             float rim = Mathf.Max(hole.Radius * rimFraction, 1f);
-            return new CloudHoleShape(CentreAt(hole, time), hole.Radius * openness, rim, openness);
+            return new CloudHoleShape(CentreAt(hole, time), hole.Radius * openness, rim, openness, hole.Reach * openness, hole.Ragged);
         }
 
         private static float Ease(float elapsed, float seconds)

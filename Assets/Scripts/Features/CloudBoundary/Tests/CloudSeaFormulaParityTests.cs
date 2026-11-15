@@ -24,7 +24,7 @@ namespace TinCan.Features.CloudBoundary.Tests
 
             var swell = new CloudSwell(20f, 900f, 3f, CloudSwell.OffsetOf(12345));
             const float time = 1234.5f;
-            var hole = new CloudHoleShape(new Vector2(150f, -80f), 60f, 25f, 0.8f);
+            var hole = new CloudHoleShape(new Vector2(150f, -80f), 60f, 25f, 0.8f, new Vector2(-120f, 90f), 0.7f); // a ragged rift: the round hole is its special case
             var points = new Vector2[256];
             for (int i = 0; i < points.Length; i++) points[i] = new Vector2((i % 16) * 23.7f - 40f, (i / 16) * -19.3f + 30f);
 
@@ -41,6 +41,7 @@ namespace TinCan.Features.CloudBoundary.Tests
                 compute.SetVector("SwellOffset", new Vector4(swell.Offset.x, swell.Offset.y, 0f, 0f));
                 compute.SetVector("Hole", new Vector4(hole.Centre.x, hole.Centre.y, hole.Radius, hole.Rim));
                 compute.SetFloat("HoleOpenness", hole.Openness);
+                compute.SetVector("HoleReach", new Vector4(hole.Reach.x, hole.Reach.y, hole.Ragged, 0f));
                 compute.Dispatch(kernel, (points.Length + 63) / 64, 1, 1);
 
                 var results = new Vector2[points.Length];

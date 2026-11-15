@@ -60,5 +60,14 @@ namespace TinCan.Features.CloudBoundary.Tests
             Assert.That(half.Openness, Is.EqualTo(0.5f).Within(1e-4f));
             Assert.That(half.Centre, Is.EqualTo(new Vector2(20f, 20f)));
         }
+
+        [Test]
+        public void Shape_OfARift_TearsOpenAlongItsLength()
+        {
+            var rift = new CloudHole(Vector2.zero, 20f, openedAt: 0f, openSeconds: 10f, reach: new Vector2(0f, 300f));
+
+            Assert.That(_processor.Shape(rift, 5f, 0.35f).Reach.y, Is.EqualTo(150f).Within(0.01f), "half open, half its length");
+            Assert.That(_processor.Shape(rift, 10f, 0.35f).Reach, Is.EqualTo(new Vector2(0f, 300f)));
+        }
     }
 }

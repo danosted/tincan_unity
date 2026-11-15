@@ -40,6 +40,16 @@ namespace TinCan.Features.CloudBoundary
         [Tooltip("The fastest an ambient hole drifts, in metres per second.")]
         [SerializeField, Min(0f)] private float _maxDrift = 3f;
 
+        [Header("Rifts (long ambient holes)")]
+        [Tooltip("The share of ambient holes that open as rifts, long and narrow, instead of round. 0 opens none.")]
+        [SerializeField, Range(0f, 1f)] private float _riftChance = 0.5f;
+        [Tooltip("A rift's length end to end, in metres.")]
+        [SerializeField] private Vector2 _riftLength = new(400f, 1400f);
+        [Tooltip("A rift's half width (its radius across), in metres.")]
+        [SerializeField] private Vector2 _riftRadius = new(15f, 50f);
+        [Tooltip("How much a rift's width wanders along it: 0 straight edges, 1 from a quarter to twice its width.")]
+        [SerializeField] private Vector2 _riftRagged = new(0.4f, 0.8f);
+
         public float GridSize { get => _gridSize; set => _gridSize = value; }
         public float GridStep { get => _gridStep; set => _gridStep = value; }
         public int Shells { get => _shells; set => _shells = value; }
@@ -53,5 +63,9 @@ namespace TinCan.Features.CloudBoundary
         public Vector2 LifeSeconds { get => _lifeSeconds; set => _lifeSeconds = value; }
         public Vector2 CloseSeconds { get => _closeSeconds; set => _closeSeconds = value; }
         public float MaxDrift { get => _maxDrift; set => _maxDrift = value; }
+        public float RiftChance { get => _riftChance; set => _riftChance = value; }
+        public Vector2 RiftLength { get => _riftLength; set => _riftLength = value; }
+        public Vector2 RiftRadius { get => _riftRadius; set => _riftRadius = value; }
+        public Vector2 RiftRagged { get => _riftRagged; set => _riftRagged = value; }
     }
 }

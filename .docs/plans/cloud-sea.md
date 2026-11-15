@@ -94,6 +94,34 @@ makes the trade cheap. Think of skydiving, or the dive-and-pull-up of gliding in
   out of speed and lift over a hole (falling through). `CloudBoundaryProcessor` turns into the band and fall rules
   below.
 
+### Soaring and cloud shelves (developer, 2026-11-15)
+The best feeling today is soaring up into the sky, high above the sea. The movement keeps that as a state of its own:
+the reward of the dive, not a mode you switch on.
+
+- **The loop:** charge in the cloud (dive through it to build speed), launch (pull up out of the tops, the speed turns
+  into climb), soar (glide high above the sea), and come home to the cloud to charge again.
+- **Soaring is a glide with weight.** Nose down trades height for speed, nose up speed for height; level flight drifts
+  down slowly; banked turns are wide and sweeping. Too slow and the nose drops by itself: a soft stall that becomes a
+  dive and builds speed back, never a crash.
+- **Decided (developer, 2026-11-15):**
+  - soaring is earned: the height comes from speed built by diving, and fuel is a boost to climb or stretch a glide;
+  - the glide always sinks slowly, so every flight comes back to the cloud (fuel can hold height a while);
+  - the sky has a soft ceiling: high up the air thins and climbing gets weaker, so speed is not the only limit.
+- **Built as forces on today's movement** (approach A; decided by the developer, 2026-11-15): the core gets a hook the cloud feature
+  fills (a speed change and a vertical push each tick), the way `IAirshipPilotInput` is a hook. Where the feature is
+  not loaded (the test areas), ships fly exactly as today. A new movement model (mass, momentum, gravity from first
+  principles) is the later option, only if forces run out of room.
+- **Cloud shelves: places to land up high.** A few big, flat-topped clouds float above the sea. A shelf holds a ship
+  up the way the sea does (it is a small, high piece of cloud with the same lift), so a ship that slows over one
+  settles into its top and parks there. Leaving is a dive off its edge: the loop again.
+  - The server places them and replicates each once (position, size, top height, drift), like the holes, and they are
+    written into the volumetric clouds' coverage, so what you see is what you land on and every peer agrees. The rest
+    of the sky stays scenery you fly through.
+  - A shelf drifts with the wind and carries a parked ship with it, so the view slowly changes.
+  - A shelf lasts: it does not thin away under a parked ship.
+  - What it is for: planning the route (the chart and the sea ahead seen from high up) and enjoying the view.
+- Later: the camera and the sound at speed (a wider view, rushing wind) once the movement feels right.
+
 ### Depth bands
 Band edges are measured from the local surface, so they move with the swell.
 
@@ -231,7 +259,7 @@ Committed 4f04a08. Then (developer: likes it, but barely sees the clouds as loca
 sea at 0, and the lowest floors sat at 30 to 630 m. Now Bottom 10 m, 2 tiers, Height Jitter 0.3: bands about 1 km
 thick, the lowest floors between 10 and 320 m, so low clouds rise from below the ship to well above it.
 
-**Step 3, under the sea and the wisps (asked by the developer, 2026-11-15; built 2026-11-15, not yet playtested).** Being under the cloud sea did
+**Step 3, under the sea and the wisps (asked by the developer, 2026-11-15; built and playtested by the developer 2026-11-15; the fog onset made linear after the first play).** Being under the cloud sea did
 not match what you see, and there was no sense of speed. Today:
 - the submersion (fog, dimmed sun, muffled audio) is measured from the game's surface, the swell. The drawn heaps sit
   up to about 14 m above it and the shells up to about 18 m, so you are visibly in the cloud tops before the game
@@ -252,6 +280,19 @@ What changes:
   them, `CloudWispsConfig` holds the knobs, `Shaders/CloudWisp.shader` shades them with the sea's look. Presentation
   only, never replicated. Judged in `cheesed_scene`: sailing high, skimming the surface, diving deep.
 - Not in this step: wisps inside the floating volumetric clouds (the game does not know where those are).
+
+**Step 4, rifts (asked by the developer, 2026-11-15; built 2026-11-15, approved by the developer the same day).** Holes of other shapes than
+round: made by the game, starting with long rifts to see how they look. A rift is a hole open along a line: a
+`CloudHole.Reach` from its centre to one end (zero for a round hole), so the cut measures from the nearest point on
+the line and its ends are round. One formula still (`CloudSeaFormula.DistanceTo`, `TinCanCloudHoleDistance` in the
+HLSL; the parity test runs a rift), so the game and the drawn sea agree, and the lip follows the outline. A rift tears
+open along its length (its reach grows with its openness) and closes the same way. For now the ambient holes make
+them: `CloudSeaConfig.RiftChance` (0.5) of them open as rifts, `RiftLength` 400 to 1400 m end to end, `RiftRadius`
+15 to 50 m across, at a random angle, no part under a ship. Its edge is ragged: the width wanders along it
+(`CloudSeaFormula.RaggedWidth`, three waves out of step for each rift by its angle), by `RiftRagged` (0.4 to 0.8: 0
+straight, 1 from a quarter to twice its width), replicated with the rift and in the shared formula, so you fall where
+it looks open. Other shapes (bends, branching, free outlines) wait on how
+rifts look in play.
 
 ### Weather as tide
 A `WeatherState` asset holds what the weather sets:
@@ -290,6 +331,9 @@ Every phase is one feature slice: an EditMode test for each processor and use ca
    unchanged. Core gets a hook the feature implements, the way `IAirshipTuning` works, so `TinCan.Ship` never
    references a feature. Scenario: a ship dives through cloud and gains speed, breaches and rises above the surface,
    loses speed and sinks over a hole, and holds height over the hole while boosting.
+   Then soaring (the glide, the soft stall, the ceiling) and the cloud shelves ("Soaring and cloud shelves"): the
+   server's shelves drawn in the volumetric clouds, their lift, a parked ship drifting with its shelf. Scenarios: a ship
+   launches from a dive and soars; a ship lands on a shelf and host and client agree it rides the shelf's drift.
 3. **Depth bands.** Band evaluation replaces the emergency; the deep band does damage over time; falling through a
    hole replaces the old expiry. Submersion feel per band (extend `CloudSubmersionProcessor`). Characters sink slowly
    in cloud instead of being reset. Scenario: a ship crosses all bands and every peer agrees on the band.

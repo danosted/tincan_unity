@@ -14,9 +14,11 @@ namespace TinCan.Features.CloudBoundary
         private static readonly int Swell = Shader.PropertyToID("_TinCanCloudSwell");
         private static readonly int Holes = Shader.PropertyToID("_TinCanCloudHoles");
         private static readonly int HoleOpenness = Shader.PropertyToID("_TinCanCloudHoleOpenness");
+        private static readonly int HoleReach = Shader.PropertyToID("_TinCanCloudHoleReach");
         private static readonly int HoleCount = Shader.PropertyToID("_TinCanCloudHoleCount");
         private static readonly Vector4[] HoleBuffer = new Vector4[ICloudHoles.MaxHoles];
         private static readonly float[] OpennessBuffer = new float[ICloudHoles.MaxHoles];
+        private static readonly Vector4[] ReachBuffer = new Vector4[ICloudHoles.MaxHoles];
 
         /// <param name="fadeOut">Metres from the camera where the drawn surface has faded out.</param>
         public static void Apply(float time, float baseAltitude, in CloudSwell swell, IReadOnlyList<CloudHoleShape> holes, float fadeOut)
@@ -30,10 +32,12 @@ namespace TinCan.Features.CloudBoundary
                 CloudHoleShape hole = i < count ? holes[i] : default;
                 HoleBuffer[i] = new Vector4(hole.Centre.x, hole.Centre.y, hole.Radius, hole.Rim);
                 OpennessBuffer[i] = hole.Openness;
+                ReachBuffer[i] = new Vector4(hole.Reach.x, hole.Reach.y, hole.Ragged, 0f);
             }
 
             Shader.SetGlobalVectorArray(Holes, HoleBuffer);
             Shader.SetGlobalFloatArray(HoleOpenness, OpennessBuffer);
+            Shader.SetGlobalVectorArray(HoleReach, ReachBuffer);
             Shader.SetGlobalFloat(HoleCount, count);
         }
 

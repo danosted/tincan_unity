@@ -11,6 +11,7 @@ float4 SwellParams; // x amplitude, y wavelength, z speed, w time
 float4 SwellOffset; // xy seed offset
 float4 Hole;        // xy centre, z radius now, w rim
 float HoleOpenness;
+float4 HoleReach;   // xy from the centre to one end of a rift, z how ragged
 
 [numthreads(64, 1, 1)]
 void Evaluate(uint3 id : SV_DispatchThreadID)
@@ -19,5 +20,5 @@ void Evaluate(uint3 id : SV_DispatchThreadID)
 
     float2 xz = Points[id.x];
     float swell = TinCanCloudSwellAt(xz, SwellParams.w, SwellParams.x, SwellParams.y, SwellParams.z, SwellOffset.xy);
-    Results[id.x] = float2(swell, TinCanCloudHoleCutOne(xz, Hole, HoleOpenness));
+    Results[id.x] = float2(swell, TinCanCloudHoleCutOne(xz, Hole, HoleOpenness, HoleReach.xyz));
 }

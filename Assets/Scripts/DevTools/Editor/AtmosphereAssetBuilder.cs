@@ -95,14 +95,16 @@ namespace TinCan.DevTools.Editor
 
             return new[]
             {
+                // Night keeps the blue hour's purple (developer, 2026-11-15) instead of going to near black: the same
+                // light as -8, with the stars at full.
                 new DayLightKey
                 {
                     Elevation = -16f, SunColour = orange, SunIntensity = 0f,
-                    AmbientSky = Color.Lerp(tint, ink, 0.55f) * 0.25f, AmbientHorizon = Color.Lerp(tint, plum, 0.5f) * 0.2f,
-                    AmbientGround = Color.Lerp(plum, ink, 0.5f) * 0.2f,
-                    SunwardFog = Color.Lerp(plum, tint, 0.4f) * 0.35f, AwayFog = Color.Lerp(tint, ink, 0.6f) * 0.3f,
-                    SkyZenith = Color.Lerp(ink, tint, 0.15f), SkyBelt = Shade(plum, 0f),
-                    NightShade = Shade(Color.Lerp(tint, ink, 0.5f) * 0.35f, 0.92f), Stars = 1f,
+                    AmbientSky = tint * 0.35f, AmbientHorizon = Color.Lerp(tint, mulberry, 0.4f) * 0.32f,
+                    AmbientGround = plum * 0.35f,
+                    SunwardFog = Color.Lerp(mulberry, tint, 0.45f) * 0.6f, AwayFog = Color.Lerp(tint, plum, 0.45f) * 0.45f,
+                    SkyZenith = Color.Lerp(tint, ink, 0.65f), SkyBelt = Shade(mulberry, 0.15f),
+                    NightShade = Shade(tint * 0.6f, 0.85f), Stars = 1f,
                 },
                 new DayLightKey
                 {

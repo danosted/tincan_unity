@@ -61,6 +61,13 @@ and the sky follow the sun. Under that sky, the current (volumetric) and the new
    the sky, and the field turning slowly about the pole with the hour. Checked on the Day Sheet (midnight and blue-hour
    columns) and in the live Game view with the fixed-hour driver; `DayMoves` asserts the stars' global (`_TinCanSkyStars`)
    is the day's at the sun's height. Built: `DayLightKey.Stars` (Look_GoldenAfternoon: 1 at -16, 0.75 at -8, 0 from -3 up), two star layers in the sky (`_StarBrightness`, `_StarSize`, `_StarTwinkle`), no milky band or turning yet.
+   Seen (developer, 2026-11-15): flickering shadows, and the night felt endless (at 63° north in winter with a 300 s
+   cycle, about 3 min 20 s of each cycle is night or twilight; the day does loop). Now soft shadows are on in
+   `_MainURPAsset`, and night keeps the blue hour's purple: the -16° key has the -8° key's light, with the stars at
+   full. Tried and dropped: turning the sun in small steps so shadows hold still (the developer did not like the
+   stepping). The volumetric clouds still cast their shadows: their shadow map was fitted to the camera's view every
+   frame, so it moved with every turn and the shadows swam; it is now a fixed square snapped to whole texels (vendored
+   "TinCan: a stable shadow region"), and the shadows are softer (Shadow Opacity 0.6).
 5. **Later:** a moon, the weather owning the light ([`cloud-sea.md`](cloud-sea.md)).
 
 ## Open

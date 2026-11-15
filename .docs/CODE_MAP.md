@@ -318,7 +318,9 @@ Coverage is in `Features/Airship/Fuel/Minigame/Tests/FlyingCanUseCaseTests.cs`, 
   has a block marked "TinCan: the painted look" that shades the clouds with the cloud sea's look
   (`Shaders/Include/TinCanCloudLook.hlsl`), switched by `CloudAtmosphereDirector`'s Painted Look. Keep it when updating
   the package, and the blocks "TinCan: the height tiers" and "TinCan: the opacity variation" in
-  `VolumetricCloudsUtilities.hlsl` (the director's Height Tiers, Height Jitter and Opacity Variation, global `_TinCanCloudVariety`).
+  `VolumetricCloudsUtilities.hlsl` (the director's Height Tiers, Height Jitter and Opacity Variation, global `_TinCanCloudVariety`),
+  and "TinCan: a stable shadow region" in `VolumetricCloudsURP.cs` (the cloud shadow map is a fixed square around the
+  camera snapped to whole texels, not fitted to the view each frame, so cloud shadows do not swim).
   A `CloudAtmosphereDirector` writes into its profile asset, which scenes can share: give a scene its own
   profile copy before tuning it (`cheesed_scene` uses `Settings/VolumetricCloudsSkyProfile`).
 

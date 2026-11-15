@@ -1955,26 +1955,19 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
 
                 float3 cameraPos = camera.transform.position;
 
-                float perspectiveCorrectedShadowDistance = cloudsVolume.shadowDistance.value / cos(camera.fieldOfView * Mathf.Deg2Rad * 0.5f);
+                // TinCan: a stable shadow region (plan .docs/plans/cloud-sea.md). The vendored code fitted the region to
+                // the camera's frustum every frame, so each turn or step of the camera resized and moved it, every texel
+                // landed somewhere new, and the cloud shadows swam. Instead: a square of Shadow Distance around the
+                // camera, whatever way it looks, its centre snapped to whole texels in light space, so moving the camera
+                // does not slide them either. The cookie below is centred on the same snapped point.
+                float shadowRadius = cloudsVolume.shadowDistance.value;
+                float shadowTexel = 2.0f * shadowRadius / (int)cloudsVolume.shadowResolution.value;
+                Vector3 centerLightSpace = wsToLSMat.MultiplyPoint(cameraPos);
+                centerLightSpace.x = Mathf.Floor(centerLightSpace.x / shadowTexel) * shadowTexel;
+                centerLightSpace.y = Mathf.Floor(centerLightSpace.y / shadowTexel) * shadowTexel;
+                Bounds lightSpaceBounds = new Bounds(centerLightSpace, Vector3.one * (2.0f * shadowRadius));
+                float3 shadowCenter = lsToWSMat.MultiplyPoint(centerLightSpace);
 
-                camera.CalculateFrustumCorners(new Rect(0, 0, 1, 1), camera.farClipPlane, Camera.MonoOrStereoscopicEye.Mono, frustumCorners);
-
-                // Generate the light space bounds of the camera frustum
-                Bounds lightSpaceBounds = new Bounds();
-                lightSpaceBounds.SetMinMax(new Vector3(float.MaxValue, float.MaxValue, float.MaxValue), new Vector3(-float.MaxValue, -float.MaxValue, -float.MaxValue));
-                lightSpaceBounds.Encapsulate(wsToLSMat.MultiplyPoint(cameraPos));
-                for (int cornerIdx = 0; cornerIdx < 4; ++cornerIdx)
-                {
-                    Vector3 corner = frustumCorners[cornerIdx];
-                    float diag = corner.magnitude;
-                    corner = (corner / diag) * Mathf.Min(perspectiveCorrectedShadowDistance, diag);
-                    Vector3 posLightSpace = wsToLSMat.MultiplyPoint(float3(corner) + cameraPos);
-                    lightSpaceBounds.Encapsulate(posLightSpace);
-
-                    posLightSpace = wsToLSMat.MultiplyPoint(float3(-corner) + cameraPos);
-                    lightSpaceBounds.Encapsulate(posLightSpace);
-                }
-                
                 // Compute the four corners we need
                 float3 c0 = lsToWSMat.MultiplyPoint(lightSpaceBounds.center + new Vector3(-lightSpaceBounds.extents.x, -lightSpaceBounds.extents.y, lightSpaceBounds.extents.z));
                 float3 c1 = lsToWSMat.MultiplyPoint(lightSpaceBounds.center + new Vector3(lightSpaceBounds.extents.x, -lightSpaceBounds.extents.y, lightSpaceBounds.extents.z));
@@ -2045,7 +2038,7 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
 
                 Matrix4x4 cookieUVTransform = Matrix4x4.Scale(new Vector3(uvScale.x, uvScale.y, 1));
                 //cookieUVTransform.SetColumn(3, new Vector4(uvScale.x, uvScale.y, 0, 1));
-                lsToWSMat.SetColumn(3, float4(cameraPos, 1));
+                lsToWSMat.SetColumn(3, float4(shadowCenter, 1)); // TinCan: the snapped centre (was the camera)
                 Matrix4x4 cookieMatrix = s_DirLightProj * cookieUVTransform * lsToWSMat.inverse;
 
                 float cookieFormat = (float)GetLightCookieShaderFormat(cookieTextureFormat);

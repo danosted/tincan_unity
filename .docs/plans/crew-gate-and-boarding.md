@@ -109,5 +109,9 @@ player is the crew) keeps its current behavior.
   stations and racks; confirm in a playtest and tune `BoardingConfig`.
 - **Joining mid-voyage while the ship moves at speed.** The reset puts the character on a moving deck; the cloud reset
   does the same today, so it should hold, but it needs a human playtest at full throttle.
+- **Fixed later (2026-11-15): boarding before the deck exists.** A ship built from a design (the Galleon) gets its
+  hull a tick or more after it appears, so a player boarded at once was placed in empty air and ended under the deck
+  once the hull was built. Boarding now waits until the ship has a solid collider of its own under the boarding spot
+  (`IShipDeckProbe`, `PhysicsShipDeckProbe`), at most `BoardingConfig.MaxDeckWait` (5 s), then boards anyway.
 - **Out of scope:** the `-server` flag, headless presentation guards and the container build:
   [`dedicated-server-container.md`](dedicated-server-container.md).

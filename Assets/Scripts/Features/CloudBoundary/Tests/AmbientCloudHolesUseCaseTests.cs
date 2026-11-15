@@ -24,6 +24,7 @@ namespace TinCan.Features.CloudBoundary.Tests
             _config = ScriptableObject.CreateInstance<CloudSeaConfig>();
             _config.AmbientHoles = 2;
             _config.AmbientInterval = 5f;
+            _config.RiftChance = 0f;
             _actors = new FakeActorRegistry();
             _time = new FakeTimeService { Time = 10f };
             _state = new FakeCloudHoleState();
@@ -59,6 +60,32 @@ namespace TinCan.Features.CloudBoundary.Tests
             Assert.That(hole.Radius, Is.InRange(_config.Radius.x, _config.Radius.y));
             Assert.That(hole.OpenedAt, Is.EqualTo(10f));
             Assert.That(hole.ClosesAt, Is.GreaterThan(hole.OpenedAt + hole.OpenSeconds));
+        }
+
+        [Test]
+        public void Tick_OpensRifts_LongAndNarrow_WithNoEndUnderTheShip()
+        {
+            _config.RiftChance = 1f;
+            _config.AmbientHoles = 1;
+            var ship = new Vector2(1000f, -500f);
+
+            for (int i = 0; i < 20; i++)
+            {
+                while (_state.Holes.Count > 0) _state.ServerRemoveAt(0);
+                _ambient = new AmbientCloudHolesUseCase(new FakeNetworkService(), _actors, _time,
+                    new CloudHolesUseCase(new FakeNetworkService(), _actors, _time, new CloudHoleProcessor(), _boundary),
+                    new CloudHoleProcessor(), _config, new System.Random(i));
+                _ambient.Tick();
+
+                CloudHole rift = _state.Holes[0];
+                var shape = new CloudHoleShape(rift.Centre, rift.Radius, 0f, 1f, rift.Reach, rift.Ragged);
+                float widest = rift.Radius * (1f + rift.Ragged); // a ragged edge reaches out to this
+                float edge = CloudSeaFormula.DistanceTo(ship, shape) - widest * (1f + _boundary.HoleRim);
+                Assert.That(edge, Is.GreaterThanOrEqualTo(_config.Distance.x - 1f), "no part of the rift opens under the ship");
+                Assert.That(rift.Reach.magnitude * 2f, Is.InRange(_config.RiftLength.x, _config.RiftLength.y));
+                Assert.That(rift.Radius, Is.InRange(_config.RiftRadius.x, _config.RiftRadius.y));
+                Assert.That(rift.Ragged, Is.InRange(_config.RiftRagged.x, _config.RiftRagged.y));
+            }
         }
 
         [Test]

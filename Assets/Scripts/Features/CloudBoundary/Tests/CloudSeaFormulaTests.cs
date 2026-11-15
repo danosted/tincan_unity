@@ -65,6 +65,40 @@ namespace TinCan.Features.CloudBoundary.Tests
         }
 
         [Test]
+        public void HoleCut_OfARift_IsFullAlongItsLine_AndEndsRoundBeyondIt()
+        {
+            // Along x from -200 to 200, 20 m wide each side.
+            var holes = new[] { new CloudHoleShape(Vector2.zero, 20f, 10f, 1f, new Vector2(200f, 0f)) };
+
+            Assert.That(CloudSeaFormula.HoleCut(-180f, 0f, holes), Is.EqualTo(1f), "along its line");
+            Assert.That(CloudSeaFormula.HoleCut(150f, 19f, holes), Is.EqualTo(1f).Within(1e-3f), "inside its width");
+            Assert.That(CloudSeaFormula.HoleCut(150f, 25f, holes), Is.EqualTo(0.5f).Within(1e-3f), "half way across the rim");
+            Assert.That(CloudSeaFormula.HoleCut(0f, 31f, holes), Is.EqualTo(0f), "beside it");
+            Assert.That(CloudSeaFormula.HoleCut(225f, 0f, holes), Is.EqualTo(0.5f).Within(1e-3f), "its end is round");
+        }
+
+        [Test]
+        public void ARaggedRift_IsWiderAndNarrowerAlongItsLength_AndAStraightOneIsNot()
+        {
+            var straight = new CloudHoleShape(Vector2.zero, 30f, 10f, 1f, new Vector2(500f, 0f));
+            var ragged = new CloudHoleShape(Vector2.zero, 30f, 10f, 1f, new Vector2(500f, 0f), 0.8f);
+            float least = float.MaxValue, most = 0f;
+            for (int i = -10; i <= 10; i++)
+            {
+                Vector2 at = new(i * 50f, 0f);
+                Assert.That(CloudSeaFormula.EdgeRadius(at, straight, out _), Is.EqualTo(30f));
+                float radius = CloudSeaFormula.EdgeRadius(at, ragged, out _);
+                least = Mathf.Min(least, radius);
+                most = Mathf.Max(most, radius);
+            }
+
+            Assert.That(least, Is.LessThan(25f));
+            Assert.That(most, Is.GreaterThan(35f));
+            Assert.That(least, Is.GreaterThanOrEqualTo(30f * 0.25f), "never pinched shut");
+            Assert.That(most, Is.LessThanOrEqualTo(30f * 1.8f), "no wider than its raggedness allows");
+        }
+
+        [Test]
         public void Height_DropsByTheHoleDepth_InsideAHole()
         {
             var holes = new[] { new CloudHoleShape(Vector2.zero, 50f, 10f, 1f) };

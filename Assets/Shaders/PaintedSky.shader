@@ -62,6 +62,7 @@ Shader "TinCan/Environment/Painted Sky"
             float4 _TinCanSkyZenith;
             float4 _TinCanSkyBelt;
             float _TinCanSkyStars; // 0 by day .. 1 the full night sky, from the day's keys
+            float _TinCanWhiteout; // 0 in clear air .. 1 deep in the cloud (AtmosphereShaderGlobals.ApplyWhiteout)
 
             float StarHash(float3 p)
             {
@@ -157,6 +158,10 @@ Shader "TinCan/Environment/Painted Sky"
                 // Below the horizon the sky has no bottom (plan .docs/plans/cloud-sea.md): the haze sinks into the void,
                 // which is what a hole in the cloud sea shows when looking down it.
                 colour = lerp(colour, _Void.rgb, (half)smoothstep(0.02, _VoidDepth, -direction.y));
+                // Inside the cloud (plan cloud-sea.md, step 3) the sky goes to the air's colour, so under the cloud sea
+                // there is no clear sky to see.
+                if (_TinCanWhiteout > 0.0)
+                    colour = lerp(colour, lerp(_TinCanAwayFog.rgb, _TinCanSunwardFog.rgb, 0.35h), (half)_TinCanWhiteout);
                 return half4(colour, 1);
             }
             ENDHLSL

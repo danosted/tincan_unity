@@ -8,6 +8,7 @@
 #include "Assets/Shaders/Include/TinCanAtmosphere.hlsl"
 #include "Assets/Shaders/Include/TinCanCloudLook.hlsl"
 float4 _TinCanSkyCloudPainted; // CloudAtmosphereDirector: x on, y light gain
+float _TinCanWhiteout;          // AtmosphereShaderGlobals.ApplyWhiteout: 0 in clear air .. 1 deep in the cloud
 
 CloudRay BuildCloudsRay(float2 screenUV, float depth, half3 invViewDirWS, bool isOccluded)
 {
@@ -201,6 +202,9 @@ VolumetricRayResult TraceVolumetricRay(CloudRay cloudRay)
                     colour = TinCanNightShade(colour);
                     float3 cloudWS = GetCameraPositionWS() + volumetricRay.meanDistance * cloudRay.direction;
                     volumetricRay.scattering = TinCanSkyAtmospherePremultiplied(half4(colour * opacity, opacity), cloudWS).rgb;
+                    // Inside the cloud sea (plan cloud-sea.md, step 3) the sky's clouds fade into the air's colour, like the sky.
+                    volumetricRay.scattering = lerp(volumetricRay.scattering,
+                        lerp(_TinCanAwayFog.rgb, _TinCanSunwardFog.rgb, 0.35h) * opacity, (half)_TinCanWhiteout);
                     return volumetricRay;
                 }
 

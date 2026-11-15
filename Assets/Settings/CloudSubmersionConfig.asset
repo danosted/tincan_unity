@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: CloudSubmersionConfig
   m_EditorClassIdentifier: TinCan.Features::TinCan.Features.CloudBoundary.CloudSubmersionConfig
   _transitionDepth: 25
+  _surfaceLift: 15
   _minLightMultiplier: 0.18
   _vapourGain: 1.25
   _audioGain: 1.5

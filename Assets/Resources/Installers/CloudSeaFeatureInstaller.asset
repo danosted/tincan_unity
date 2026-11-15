@@ -15,3 +15,5 @@ MonoBehaviour:
   _config: {fileID: 11400000, guid: 696ccb9af3799924d98d4e0c1e99b357, type: 2}
   _seaMaterial: {fileID: 2100000, guid: f264dc9dea308564a8bd59ce7211b1e2, type: 2}
   _stateFixture: {fileID: 11400000, guid: a020dc1bb5bab444eaafc7e390bf968d, type: 2}
+  _wispsConfig: {fileID: 11400000, guid: fd144fb21b048994488ace3031791fec, type: 2}
+  _wispMaterial: {fileID: 2100000, guid: 4ca0c8b7aa6afc5408a532f87230af0b, type: 2}

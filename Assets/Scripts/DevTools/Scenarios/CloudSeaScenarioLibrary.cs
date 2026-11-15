@@ -12,7 +12,7 @@ namespace TinCan.DevTools.Scenarios
     /// Scenario steps for the drawn cloud sea and its holes (.docs/plans/cloud-sea.md, "The drawn sea and its holes").
     /// Command: OpenScenarioHole (server: opens a hole of a radius no ambient hole has, beside the first ship). Probe:
     /// ScenarioHoleOpen: on this peer that hole is fully open, the cloud surface at its centre has dropped by the hole
-    /// depth, and, where this peer has a view, the sea shader has been handed the holes.
+    /// depth below the swell there, and, where this peer has a view, the sea shader has been handed the holes.
     /// </summary>
     public sealed class CloudSeaScenarioLibrary : IScenarioLibrary
     {
@@ -74,9 +74,11 @@ namespace TinCan.DevTools.Scenarios
             CloudHoleShape hole = shapes[index];
             if (hole.Openness < 0.999f) return ScenarioCheck.Fail($"openness {hole.Openness:0.000}");
 
+            // The hole sinks the rolling surface by its depth: the swell at that point still moves it (up to its amplitude).
             float height = _surface.GetSurfaceHeight(hole.Centre.x, hole.Centre.y);
-            float expected = _boundary.BaseAltitude - _boundary.HoleDepth;
-            if (height > expected + 1f) return ScenarioCheck.Fail($"surface at the centre {height:0.0}, expected {expected:0.0}");
+            float expected = _boundary.BaseAltitude + CloudSeaFormula.Swell(hole.Centre.x, hole.Centre.y, _time.Time, _boundary.Swell)
+                - _boundary.HoleDepth;
+            if (Mathf.Abs(height - expected) > 1f) return ScenarioCheck.Fail($"surface at the centre {height:0.0}, expected {expected:0.0}");
 
             if (_view.Camera != null && Shader.GetGlobalFloat("_TinCanCloudHoleCount") < 1f)
                 return ScenarioCheck.Fail("the sea shader has no holes");

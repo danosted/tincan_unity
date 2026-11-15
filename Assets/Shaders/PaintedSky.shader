@@ -2,7 +2,8 @@
 // no texture, a gradient from the look's own air at the horizon (TinCanAtmosphere.hlsl's colours, warm toward the sun,
 // cool away) up to the zenith; opposite a low sun, the pink band of the belt of Venus above the darker horizon; a sun
 // disc with a wide soft halo that takes the sun's colour and strength, so it reddens, dims and goes out as it sets.
-// The zenith and the belt come from SkyShaderGlobals while a day runs; otherwise the material's colours. Below the
+// After sunset, procedural stars fixed to the sky, as bright as the day's keys say (_TinCanSkyStars).
+// The zenith, the belt and the stars come from SkyShaderGlobals while a day runs; otherwise the material's colours. Below the
 // horizon it sinks into a dark void (the bottomless sky under the cloud sea).
 Shader "TinCan/Environment/Painted Sky"
 {
@@ -20,6 +21,9 @@ Shader "TinCan/Environment/Painted Sky"
         _BeltFocus ("Belt Focus (higher keeps it opposite the sun)", Range(0.5, 8)) = 2
         _Void ("Void (below the horizon, seen down a hole in the cloud sea)", Color) = (0.12, 0.1, 0.2, 1)
         _VoidDepth ("Void Depth (how far below the horizon it is fully dark, 0..1)", Range(0.05, 1)) = 0.45
+        _StarBrightness ("Star Brightness (at night)", Range(0, 4)) = 1.5
+        _StarSize ("Star Size (pixels)", Range(0.3, 3)) = 1
+        _StarTwinkle ("Star Twinkle", Range(0, 1)) = 0.3
     }
 
     SubShader
@@ -49,11 +53,50 @@ Shader "TinCan/Environment/Painted Sky"
                 half _BeltFocus;
                 half4 _Void;
                 half _VoidDepth;
+                half _StarBrightness;
+                half _StarSize;
+                half _StarTwinkle;
             CBUFFER_END
 
             float _TinCanSkyOn;
             float4 _TinCanSkyZenith;
             float4 _TinCanSkyBelt;
+            float _TinCanSkyStars; // 0 by day .. 1 the full night sky, from the day's keys
+
+            float StarHash(float3 p)
+            {
+                p = frac(p * 0.1031);
+                p += dot(p, p.yzx + 33.33);
+                return frac((p.x + p.y) * p.z);
+            }
+
+            // One layer of stars, fixed to the sky's directions: the directions cut into a lattice of cells (scale cells
+            // to the radius), at most one star per cell. A pixel sees only its own cell's star, so a star sits at least
+            // 0.2 of a cell from the cell's faces and its light is gone well before them (radius at most 0.06 of a cell);
+            // anything wider would be cut square at the cell edge. Each is a soft point a pixel or two across, with its
+            // own warmth, brightness and slow twinkle.
+            half3 StarLayer(float3 direction, float scale, float chance, float size)
+            {
+                float3 p = direction * scale;
+                float pixel = max(length(fwidth(p)), 1e-5); // before any early return, so the gradient is defined
+                float3 cell = floor(p);
+                float pick = StarHash(cell);
+                if (pick > chance) return 0;
+
+                float3 at = cell + 0.5 + (float3(StarHash(cell + 1.7), StarHash(cell + 2.3), StarHash(cell + 3.1)) - 0.5) * 0.5;
+                float3 star = normalize(at) * scale;
+                float3 inCell = star - cell;
+                if (any(inCell < 0.2) || any(inCell > 0.8)) return 0;
+
+                float radius = min(size * _StarSize * pixel * lerp(0.7, 1.3, StarHash(cell + 4.9)), 0.06);
+                float d = distance(p, star);
+                half shine = (half)exp(-pow(d / radius, 2.0));
+                float own = StarHash(cell + 5.3);
+                half bright = (half)lerp(0.25, 1.0, own * own * own);
+                half twinkle = 1.0h - _StarTwinkle * (half)(0.5 + 0.5 * sin(_Time.y * lerp(1.5, 4.0, own) + pick * 40.0));
+                half3 warmth = lerp(half3(0.75, 0.84, 1.0), half3(1.0, 0.86, 0.68), (half)StarHash(cell + 6.7));
+                return warmth * shine * bright * twinkle;
+            }
 
             struct Varyings
             {
@@ -94,6 +137,14 @@ Shader "TinCan/Environment/Painted Sky"
                     half away = (half)pow(saturate(dot(flatView, -flatSun) * 0.5 + 0.5), _BeltFocus);
                     half band = (half)exp(-pow((direction.y - _BeltHeight) / _BeltWidth, 2.0));
                     colour = lerp(colour, (half3)_TinCanSkyBelt.rgb, saturate((half)_TinCanSkyBelt.a * away * band));
+
+                    // The stars after sunset (plan day-cycle.md D4): many faint ones and a few bright, lost in the haze
+                    // low down and never below the horizon.
+                    if (_TinCanSkyStars > 0.001)
+                    {
+                        half3 stars = StarLayer(direction, 110.0, 0.4, 1.0) + StarLayer(direction, 38.0, 0.12, 1.7) * 1.6h;
+                        colour += stars * (half)(_TinCanSkyStars * smoothstep(0.02, 0.3, direction.y)) * _StarBrightness;
+                    }
                 }
 
                 float towardSun = dot(direction, toSun);

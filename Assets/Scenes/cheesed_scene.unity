@@ -385,23 +385,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86ad3cd820bca1440910e2fd0c150079, type: 3}
   m_Name: 
   m_EditorClassIdentifier: TinCan.Features.CloudBoundary.Atmosphere::TinCan.Features.CloudBoundary.Atmosphere.CloudAtmosphereDirector
-  _cloudsProfile: {fileID: 11400000, guid: 5af436c5aae9f4942b5453b389fa361b, type: 2}
+  _cloudsProfile: {fileID: 11400000, guid: 6ad78e246e06787459a6d489f4d1eafc, type: 2}
   _sunLight: {fileID: 1051261781}
   _rendererFeature: {fileID: -3254320598164341664, guid: 957cfca5635937d48b5890845ef790a8, type: 2}
   _cloudsEnabled: 1
-  _localClouds: 1
-  _densityMultiplier: 1
-  _shapeFactor: 0.701
-  _shapeScale: 88.3
-  _erosionFactor: 0.6
+  _localClouds: 0
+  _densityMultiplier: 0.3
+  _shapeFactor: 0.6
+  _shapeScale: 30
+  _erosionFactor: 0.25
   _erosionScale: 600
   _microErosionScale: 2000
-  _microErosionEnabled: 1
+  _microErosionEnabled: 0
   _microErosionFactor: 0.5
-  _bottomAltitude: 6.41
-  _altitudeRange: 400
-  _cloudMap: {fileID: 2800000, guid: 7ebc9b0fc07a1514688bfa6c48f4d24c, type: 3}
-  _cloudMapTileSize: 1000
+  _bottomAltitude: 1000
+  _altitudeRange: 1600
+  _cloudMap: {fileID: 2800000, guid: 853fddc3668f5084bb165e92e32fa636, type: 3}
+  _cloudMapTileSize: 8000
   _cloudMapOffset: {x: 0, y: 0}
   _cloudMapSpeedMultiplier: 0.5
   _globalSpeed: 22.6
@@ -411,21 +411,24 @@ MonoBehaviour:
   _verticalShapeWindSpeed: 3
   _verticalErosionWindSpeed: 8
   _altitudeDistortion: 0.095
-  _ambientLightProbeDimmer: 1.3
+  _ambientLightProbeDimmer: 3
   _sunLightDimmer: 1.49
-  _multiScattering: 0.8
-  _powderEffectIntensity: 0.15
-  _erosionOcclusion: 0.1
+  _multiScattering: 1
+  _powderEffectIntensity: 0
+  _erosionOcclusion: 0
   _forwardEccentricity: 0.4
   _backwardEccentricity: 0.5
   _numPrimarySteps: 128
   _numLightSteps: 8
-  _maxStepSize: 15
+  _maxStepSize: 30
   _resolutionScale: 0.75
   _upscaleMode: 0
   _temporalAccumulationFactor: 0.85
   _sunIntensity: 1.53
   _sunColor: {r: 1, g: 1, b: 1, a: 1}
+  _paintedLook: 1
+  _paintedLightGain: 2.5
+  _heightSpread: 0.55
 --- !u!4 &1562735720
 Transform:
   m_ObjectHideFlags: 0
@@ -457,7 +460,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1802321347
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -474,7 +477,7 @@ MonoBehaviour:
   priority: 0
   blendDistance: 0
   weight: 1
-  sharedProfile: {fileID: 11400000, guid: 5af436c5aae9f4942b5453b389fa361b, type: 2}
+  sharedProfile: {fileID: 11400000, guid: 6ad78e246e06787459a6d489f4d1eafc, type: 2}
 --- !u!4 &1802321348
 Transform:
   m_ObjectHideFlags: 0

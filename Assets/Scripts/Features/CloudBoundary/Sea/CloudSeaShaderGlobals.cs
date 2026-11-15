@@ -18,11 +18,11 @@ namespace TinCan.Features.CloudBoundary
         private static readonly Vector4[] HoleBuffer = new Vector4[ICloudHoles.MaxHoles];
         private static readonly float[] OpennessBuffer = new float[ICloudHoles.MaxHoles];
 
-        /// <param name="gridHalf">Half the drawn grid's width, where its edge has faded out.</param>
-        public static void Apply(float time, float baseAltitude, in CloudSwell swell, IReadOnlyList<CloudHoleShape> holes, float gridHalf)
+        /// <param name="fadeOut">Metres from the camera where the drawn surface has faded out.</param>
+        public static void Apply(float time, float baseAltitude, in CloudSwell swell, IReadOnlyList<CloudHoleShape> holes, float fadeOut)
         {
             Shader.SetGlobalVector(Sea, new Vector4(time, baseAltitude, swell.Amplitude, swell.Wavelength));
-            Shader.SetGlobalVector(Swell, new Vector4(swell.Speed, swell.Offset.x, swell.Offset.y, gridHalf));
+            Shader.SetGlobalVector(Swell, new Vector4(swell.Speed, swell.Offset.x, swell.Offset.y, fadeOut));
 
             int count = Mathf.Min(holes.Count, ICloudHoles.MaxHoles);
             for (int i = 0; i < ICloudHoles.MaxHoles; i++)
@@ -37,6 +37,37 @@ namespace TinCan.Features.CloudBoundary
             Shader.SetGlobalFloat(HoleCount, count);
         }
 
-        public static void Clear() => Shader.SetGlobalFloat(HoleCount, 0f);
+        private static readonly int LookOn = Shader.PropertyToID("_TinCanCloudLookOn");
+        private static readonly int LookLit = Shader.PropertyToID("_TinCanCloudLookLit");
+        private static readonly int LookShadow = Shader.PropertyToID("_TinCanCloudLookShadow");
+        private static readonly int LookHollow = Shader.PropertyToID("_TinCanCloudLookHollow");
+        private static readonly int LookLight = Shader.PropertyToID("_TinCanCloudLookLight");
+        private static readonly int LookSilver = Shader.PropertyToID("_TinCanCloudLookSilver");
+
+        /// <summary>
+        /// The sea material's look (colours and light knobs) as globals, for the volumetric sky's painted mode
+        /// (Shaders/Include/TinCanCloudLook.hlsl, <c>TinCanCloudLookFromGlobals</c>), so the sky takes the sea's colours.
+        /// </summary>
+        public static void ApplyLook(Material sea)
+        {
+            static Vector4 Colour(Material m, string name, float a)
+            {
+                Color c = m.GetColor(name);
+                return new Vector4(c.r, c.g, c.b, a);
+            }
+
+            Shader.SetGlobalVector(LookLit, Colour(sea, "_LitColour", sea.GetFloat("_HollowDarken")));
+            Shader.SetGlobalVector(LookShadow, Colour(sea, "_ShadowColour", sea.GetFloat("_SunTint")));
+            Shader.SetGlobalVector(LookHollow, Colour(sea, "_HollowColour", sea.GetFloat("_Ambient")));
+            Shader.SetGlobalVector(LookLight, new Vector4(sea.GetFloat("_Wrap"), sea.GetFloat("_BandSoftness"), sea.GetFloat("_Bands"), sea.GetFloat("_Rim")));
+            Shader.SetGlobalVector(LookSilver, new Vector4(sea.GetFloat("_RimPower"), sea.GetFloat("_SilverLining"), sea.GetFloat("_SilverFocus"), sea.GetFloat("_Translucency")));
+            Shader.SetGlobalFloat(LookOn, 1f);
+        }
+
+        public static void Clear()
+        {
+            Shader.SetGlobalFloat(HoleCount, 0f);
+            Shader.SetGlobalFloat(LookOn, 0f);
+        }
     }
 }

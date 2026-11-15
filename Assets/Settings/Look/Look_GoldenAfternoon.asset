@@ -49,6 +49,7 @@ MonoBehaviour:
     SkyZenith: {r: 0.15568627, g: 0.14137255, b: 0.17509805, a: 1}
     SkyBelt: {r: 0.2901961, g: 0.12156863, b: 0.23137255, a: 0}
     NightShade: {r: 0.09196079, g: 0.091274515, b: 0.124215685, a: 0.92}
+    Stars: 1
   - Elevation: -8
     SunColour: {r: 0.8156863, g: 0.47843137, b: 0.1882353, a: 1}
     SunIntensity: 0
@@ -60,6 +61,7 @@ MonoBehaviour:
     SkyZenith: {r: 0.21686275, g: 0.20960785, b: 0.27784315, a: 1}
     SkyBelt: {r: 0.48235294, g: 0.23137255, b: 0.3529412, a: 0.15}
     NightShade: {r: 0.24941178, g: 0.25882354, b: 0.36705884, a: 0.85}
+    Stars: 0.75
   - Elevation: -3
     SunColour: {r: 0.8156863, g: 0.47843137, b: 0.1882353, a: 1}
     SunIntensity: 0.15
@@ -71,6 +73,7 @@ MonoBehaviour:
     SkyZenith: {r: 0.31637254, g: 0.3527451, b: 0.46941176, a: 0.7}
     SkyBelt: {r: 0.6711765, g: 0.5154902, b: 0.53294116, a: 0.55}
     NightShade: {r: 0.4356863, g: 0.37137255, b: 0.53411764, a: 0.6}
+    Stars: 0
   - Elevation: 0
     SunColour: {r: 0.852549, g: 0.5827451, b: 0.35058823, a: 1}
     SunIntensity: 0.6
@@ -82,6 +85,7 @@ MonoBehaviour:
     SkyZenith: {r: 0.5027451, g: 0.6054902, b: 0.7529412, a: 1}
     SkyBelt: {r: 0.69215685, g: 0.5470588, b: 0.5529412, a: 0.6}
     NightShade: {r: 0.5156863, g: 0.44313726, b: 0.5058824, a: 0.2}
+    Stars: 0
   - Elevation: 6
     SunColour: {r: 0.93313724, g: 0.82529414, b: 0.6052941, a: 1}
     SunIntensity: 0.95
@@ -93,6 +97,7 @@ MonoBehaviour:
     SkyZenith: {r: 0.53901964, g: 0.67803925, b: 0.8117647, a: 1}
     SkyBelt: {r: 0.7341177, g: 0.6101961, b: 0.5929412, a: 0.2}
     NightShade: {r: 1, g: 1, b: 1, a: 0}
+    Stars: 0
   - Elevation: 20
     SunColour: {r: 0.9635294, g: 0.9047059, b: 0.7847059, a: 1}
     SunIntensity: 1.1
@@ -104,3 +109,4 @@ MonoBehaviour:
     SkyZenith: {r: 0.56078434, g: 0.72156864, b: 0.84705883, a: 1}
     SkyBelt: {r: 0.48235294, g: 0.23137255, b: 0.3529412, a: 0}
     NightShade: {r: 1, g: 1, b: 1, a: 0}
+    Stars: 0

@@ -9,7 +9,7 @@ namespace TinCan.DevTools.Scenarios
     /// <summary>
     /// Scenario steps for the moving day (.docs/plans/day-cycle.md, D2). Presentation, so every peer checks its own.
     /// Probes: DayApplied: the scene's sun shines from where the day's <see cref="ISunSource"/> says, at the colour the
-    /// atmosphere's frame gives it, the painted sky is the skybox and its day globals are on. SunMoved: the sun has
+    /// atmosphere's frame gives it, the painted sky is the skybox and its day globals are on, the stars at the day's. SunMoved: the sun has
     /// turned since MarkSun. Command: MarkSun (remembers where the sun is on this peer).
     /// </summary>
     public sealed class DayCycleScenarioLibrary : IScenarioLibrary
@@ -63,6 +63,8 @@ namespace TinCan.DevTools.Scenarios
 
             if (_look.Day.Length == 0) problems.Add("the look has no day keys");
             if (Shader.GetGlobalFloat("_TinCanSkyOn") < 0.5f) problems.Add("the sky's day globals are off");
+            float stars = new DayLightProcessor().Evaluate(_look.Day, _sun.Elevation).Stars;
+            if (Mathf.Abs(SkyShaderGlobals.StarsNow - stars) > 0.05f) problems.Add($"stars {SkyShaderGlobals.StarsNow:0.00}, the day's {stars:0.00}");
             if (_look.Sky != null && RenderSettings.skybox != _look.Sky) problems.Add($"skybox {(RenderSettings.skybox != null ? RenderSettings.skybox.name : "none")}, look {_look.Sky.name}");
 
             return problems.Count == 0

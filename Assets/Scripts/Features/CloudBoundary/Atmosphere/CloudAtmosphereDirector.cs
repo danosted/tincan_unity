@@ -125,6 +125,19 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
         [Min(0f)] [SerializeField] private float _sunIntensity = 1f;
         [ColorUsage(false, true)] [SerializeField] private Color _sunColor = Color.white;
 
+        [Header("Painted Look (plan .docs/plans/cloud-sea.md)")]
+        [Tooltip("Shade the clouds with the drawn cloud sea's colours and light bands (Shaders/Include/TinCanCloudLook.hlsl) instead of physically. Takes effect only where the cloud sea draws, since its material is the look.")]
+        [SerializeField] private bool _paintedLook = true;
+        [Tooltip("How strongly the sun's light inside the cloud counts toward the lit colour. Higher makes more of each cloud lit; lower more of it shadow.")]
+        [Range(0.1f, 10f)] [SerializeField] private float _paintedLightGain = 2.5f;
+
+        [Header("Height Spread")]
+        [Tooltip("The fraction of the layer's thickness one cloud fills, ending at its region's height limit (the cloud map's alpha), so clouds sit at different heights through the layer. 0 off: every cloud rises from the layer's floor.")]
+        [Range(0f, 1f)] [SerializeField] private float _heightSpread;
+
+        private static readonly int PaintedId = Shader.PropertyToID("_TinCanSkyCloudPainted");
+        private static readonly int SpreadId = Shader.PropertyToID("_TinCanCloudSpread");
+
         private VolumetricClouds? _clouds;
         private bool _changed;
 
@@ -146,6 +159,10 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
 
         private void Apply(bool markDirty)
         {
+            // Read by the vendored cloud shader (VolumetricClouds.hlsl, "TinCan: painted look"): x on, y the light gain.
+            Shader.SetGlobalVector(PaintedId, new Vector4(_paintedLook ? 1f : 0f, _paintedLightGain, 0f, 0f));
+            // Read by VolumetricCloudsUtilities.hlsl ("TinCan: the height spread").
+            Shader.SetGlobalVector(SpreadId, new Vector4(_heightSpread, 0f, 0f, 0f));
             ApplyClouds(markDirty);
             ApplyRendererFeature(markDirty);
             ApplyLight(markDirty);
@@ -158,6 +175,8 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
                 return;
             }
 
+            // Look the override up again when the profile changed, so the values never land in the previous profile.
+            if (_clouds != null && !_cloudsProfile.components.Contains(_clouds)) _clouds = null;
             if (_clouds == null && !_cloudsProfile.TryGet(out _clouds))
             {
                 return;

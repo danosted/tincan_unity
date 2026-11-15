@@ -6,6 +6,10 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
+// TinCan: the height spread (EvaluateCloudProperties), set by CloudAtmosphereDirector: x the fraction of the layer one
+// cloud fills, 0 off.
+float4 _TinCanCloudSpread;
+
 half3 EvaluateVolumetricCloudsAmbientProbe(half3 normalWS)
 {
     // Linear + constant polynomial terms
@@ -436,9 +440,22 @@ void EvaluateCloudProperties(float3 positionPS, float noiseMipOffset, float eros
     if (cloudCoverageData.coverage.x <= CLOUD_DENSITY_TRESHOLD || cloudCoverageData.maxCloudHeight < properties.height)
         return;
 
+    // TinCan: the height spread (plan .docs/plans/cloud-sea.md). With _TinCanCloudSpread.x above 0, a cloud fills only
+    // that fraction of the layer, ending at its region's height limit (the map's alpha), and its type profile runs over
+    // that slice: clouds sit at different heights, each with its own base, instead of all rising from the layer's floor.
+    half profileHeight = properties.height;
+    if (_TinCanCloudSpread.x > 0.0)
+    {
+        half top = cloudCoverageData.maxCloudHeight;
+        half bottom = max(0.0h, top - (half)_TinCanCloudSpread.x);
+        if (properties.height < bottom)
+            return;
+        profileHeight = saturate((properties.height - bottom) / max(top - bottom, 1e-3h));
+    }
+
     // Read from the multi-column cloud-type LUT: U picks the cloud "type" (from the cloud map's
-    // blue channel), V is the normalized height within the layer.
-    half3 densityErosionAO = SAMPLE_TEXTURE2D_LOD(_CloudLutTexture, s_linear_repeat_sampler, half2(cloudCoverageData.cloudType, properties.height), 0).xyz;
+    // blue channel), V is the normalized height within the layer (TinCan: within the cloud's slice).
+    half3 densityErosionAO = SAMPLE_TEXTURE2D_LOD(_CloudLutTexture, s_linear_repeat_sampler, half2(cloudCoverageData.cloudType, profileHeight), 0).xyz;
 
     // Adjust the shape and erosion factor based on the LUT and the coverage
     half shapeFactor = lerp(0.1, 1.0, _ShapeFactor) * densityErosionAO.y;

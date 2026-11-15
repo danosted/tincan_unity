@@ -9,7 +9,7 @@
 #define TINCAN_PI 3.14159265359
 
 float4 _TinCanCloudSea;   // x shared time, y base altitude, z swell amplitude, w swell wavelength
-float4 _TinCanCloudSwell; // x swell speed, yz seed offset
+float4 _TinCanCloudSwell; // x swell speed, yz seed offset, w where the drawn surface has faded out (m from the camera)
 float4 _TinCanCloudHoles[TINCAN_CLOUD_MAX_HOLES]; // xy centre, z radius now, w rim
 float _TinCanCloudHoleOpenness[TINCAN_CLOUD_MAX_HOLES];
 float _TinCanCloudHoleCount;

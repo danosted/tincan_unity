@@ -16,6 +16,7 @@ namespace TinCan.Features.Atmosphere.Tests
             AmbientSky = colour,
             SkyZenith = colour,
             NightShade = new Color(0f, 0f, 0f, 1f - intensity),
+            Stars = 1f - intensity,
         };
 
         // Out of order on purpose: the processor finds the keys around an elevation in any order.
@@ -34,6 +35,7 @@ namespace TinCan.Features.Atmosphere.Tests
             Assert.That(light.SunIntensity, Is.EqualTo(0.75f).Within(1e-5f));
             Assert.That(light.SunColour.g, Is.EqualTo(0.5f).Within(1e-5f));
             Assert.That(light.NightShade.a, Is.EqualTo(0.25f).Within(1e-5f));
+            Assert.That(light.Stars, Is.EqualTo(0.25f).Within(1e-5f));
         }
 
         [Test]

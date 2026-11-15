@@ -6,8 +6,8 @@
 // - Shells: the same grid drawn again in thin see-through layers above the surface (_ShellLayer 1..N, set by the
 //   presenter), each cut by one drifting fluff field at a rising threshold, so the tops are soft and fray, light
 //   passes through thin edges, and you see a little way into the cloud. Layer 0 is the surface itself.
-// Shaded like the soft clouds, not like water: cream lit heaps, cool hollows, a sky-coloured rim at grazing angles,
-// light through the thin tops toward the sun. A hole's rim rolls down into it, darkens toward the void and dissolves;
+// Shaded like the soft clouds, not like water (Include/TinCanCloudLook.hlsl, shared with the volumetric sky): cream lit
+// heaps, cool hollows, a sky-coloured rim at grazing angles, light through the thin tops toward the sun. A hole's rim rolls down into it, darkens toward the void and dissolves;
 // a raised lip rings it. None of the visual detail reaches the game.
 Shader "TinCan/Environment/Cloud Sea Swell"
 {
@@ -55,7 +55,7 @@ Shader "TinCan/Environment/Cloud Sea Swell"
         _HoleClear ("Hole Clear (cut where it starts to dissolve)", Range(0, 1)) = 0.55
 
         [Header(Edge)]
-        _EdgeFade ("Edge Fade (fraction of the grid)", Range(0.01, 0.5)) = 0.2
+        _EdgeFade ("Edge Fade (fraction of the drawn distance)", Range(0.01, 0.5)) = 0.2
 
         // Set by CloudSeaPresenter: which layer this draw is (0 the surface), how many, how far apart, and the shells'
         // own grid half-width; the shells draw without depth writes.
@@ -86,6 +86,7 @@ Shader "TinCan/Environment/Cloud Sea Swell"
             #include "Include/TinCanLighting.hlsl"
             #include "Include/TinCanAtmosphere.hlsl"
             #include "Include/TinCanCloudSea.hlsl"
+            #include "Include/TinCanCloudLook.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _LitColour;
@@ -136,29 +137,12 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                 float2 centre : TEXCOORD3; // the grid's centre (the camera, snapped)
             };
 
-            float Hash(float3 p)
-            {
-                p = frac(p * 0.1031);
-                p += dot(p, p.yzx + 33.33);
-                return frac((p.x + p.y) * p.z);
-            }
+            #define ValueNoise TinCanCloudNoise
 
-            float ValueNoise(float3 p)
-            {
-                float3 cell = floor(p);
-                float3 f = frac(p);
-                f = f * f * (3.0 - 2.0 * f);
-                return lerp(
-                    lerp(lerp(Hash(cell), Hash(cell + float3(1, 0, 0)), f.x), lerp(Hash(cell + float3(0, 1, 0)), Hash(cell + float3(1, 1, 0)), f.x), f.y),
-                    lerp(lerp(Hash(cell + float3(0, 0, 1)), Hash(cell + float3(1, 0, 1)), f.x), lerp(Hash(cell + float3(0, 1, 1)), Hash(cell + 1), f.x), f.y),
-                    f.z);
-            }
-
-            // Billow noise: rounded heaps with sharp creases between them, 0 in a crease .. 1 on a heap.
+            // Billow noise (TinCanCloudLook.hlsl) on the sea, slowly morphing with the shared time.
             float Billow(float2 xz, float scale, float morph)
             {
-                float n = ValueNoise(float3(xz / max(scale, 0.01), _TinCanCloudSea.x * morph));
-                return 1.0 - abs(n * 2.0 - 1.0);
+                return TinCanCloudBillow(float3(xz / max(scale, 0.01), _TinCanCloudSea.x * morph));
             }
 
             // The heaps, 0..1: big ones with small ones on top.
@@ -228,30 +212,18 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                 }
 
                 float3 view = GetWorldSpaceNormalizeViewDir(input.positionWS);
-                Light sun = GetMainLight();
-                half lit = TinCanBand((half)dot(normal, sun.direction), _Wrap, _BandSoftness, _Bands);
-                // Higher shells are the cloud's thin, sunlit tops.
-                lit = saturate(lit + (half)layer * 0.35h);
-                half3 lightColour = lerp(1.0h, sun.color, _SunTint);
-                half3 colour = lerp(_ShadowColour.rgb, _LitColour.rgb * lightColour, lit);
-                colour += SampleSH(normal) * _Ambient * (1.0h - lit);
-
-                // Hollows between heaps and the swell's troughs lean cool.
+                // Hollows between heaps and the swell's troughs lean cool; higher shells are the thin, sunlit tops.
                 half hollow = (half)saturate((1.0 - heaps) * 0.75 + (1.0 - input.sea.z) * 0.35) * (1.0h - (half)layer);
-                colour = lerp(colour, _HollowColour.rgb * lightColour, _HollowDarken * hollow);
-
-                // Grazing angles take the sky; toward the sun, light through the thin tops and a silver lining.
-                half grazing = (half)pow(1.0 - saturate(dot(normal, view)), _RimPower);
-                colour = lerp(colour, SampleSH(float3(0, 1, 0)) + sun.color * 0.25h, grazing * _Rim);
-                half toward = (half)pow(saturate(dot(-view, sun.direction)), _SilverFocus);
-                colour += sun.color * toward * (grazing * _SilverLining + (half)layer * _Translucency);
+                TINCAN_CLOUD_LOOK(look)
+                half3 colour = TinCanCloudShade(look, normal, view, hollow, (half)layer);
 
                 // A hole's wall darkens toward the void as it rolls down.
                 colour = lerp(colour, _VoidColour.rgb, _VoidDarken * smoothstep(0.0, 1.0, cut));
                 colour = TinCanNightShade(colour);
 
                 half alpha = 1.0h - (half)smoothstep(_HoleClear, 1.0, cut);
-                float reach = max(abs(xz.x - input.centre.x), abs(xz.y - input.centre.y));
+                // The surface fades by real distance (inside the camera's far plane); the shells by their own square grid.
+                float reach = shell ? max(abs(xz.x - input.centre.x), abs(xz.y - input.centre.y)) : distance(input.positionWS, GetCameraPositionWS());
                 float half_extent = shell ? _ShellHalf : _TinCanCloudSwell.w;
                 float edge = half_extent > 0.0 ? reach / half_extent : 0.0;
                 alpha *= 1.0h - (half)smoothstep(1.0 - _EdgeFade, 1.0, edge);

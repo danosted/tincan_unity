@@ -55,7 +55,11 @@ namespace TinCan.Features.CloudBoundary
             Vector3 eye = camera.transform.position;
             _root.position = new Vector3(Snap(eye.x, _config.GridStep), 0f, Snap(eye.z, _config.GridStep));
             for (int i = 0; i < _shellMaterials.Count; i++) MatchShell(_material, _shellMaterials[i], i + 1);
-            CloudSeaShaderGlobals.Apply(_time.Time, _boundary.BaseAltitude, _boundary.Swell, _holes.ShapesNow, _config.GridSize * 0.5f);
+            // The surface fades out by real distance before the grid's edge and before the camera's flat far plane,
+            // so turning the camera never cuts it.
+            float fadeOut = FadeOut(_config.GridSize * 0.5f, camera.farClipPlane);
+            CloudSeaShaderGlobals.Apply(_time.Time, _boundary.BaseAltitude, _boundary.Swell, _holes.ShapesNow, fadeOut);
+            CloudSeaShaderGlobals.ApplyLook(_material);
         }
 
         public void Dispose()
@@ -66,6 +70,10 @@ namespace TinCan.Features.CloudBoundary
                 if (owned != null) Object.Destroy(owned);
             }
         }
+
+        /// <summary>Where the drawn surface has faded out: the grid's reach, but always inside the camera's flat far
+        /// plane, so turning the camera never cuts it (the shader fades by real distance).</summary>
+        public static float FadeOut(float reach, float farClipPlane) => Mathf.Min(reach, farClipPlane * 0.95f);
 
         /// <summary>The grid's centre for a camera at <paramref name="value"/>: the nearest whole step.</summary>
         public static float Snap(float value, float step) => Mathf.Round(value / step) * step;

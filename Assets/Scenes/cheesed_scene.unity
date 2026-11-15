@@ -398,7 +398,7 @@ MonoBehaviour:
   _microErosionScale: 2000
   _microErosionEnabled: 1
   _microErosionFactor: 0.5
-  _bottomAltitude: 30
+  _bottomAltitude: 10
   _altitudeRange: 2400
   _cloudMap: {fileID: 2800000, guid: 853fddc3668f5084bb165e92e32fa636, type: 3}
   _cloudMapTileSize: 8000
@@ -428,8 +428,8 @@ MonoBehaviour:
   _sunColor: {r: 1, g: 1, b: 1, a: 1}
   _paintedLook: 1
   _paintedLightGain: 2.5
-  _heightTiers: 3
-  _heightJitter: 1
+  _heightTiers: 2
+  _heightJitter: 0.3
   _opacityVariation: 0.6
 --- !u!4 &1562735720
 Transform:

@@ -205,7 +205,22 @@ the ship can fly into it) from 250 m to 2.5 km above the sea, spread 0.3, step c
 Then (developer: weird blobs; the shapes were fine before, only the height range was too narrow): seen from close by
 (local, 250 m) with 60 m steps the coarse shape noise reads as smeared blobs. Back to the sky layer and 30 m steps,
 from 1 km to 2.6 km, spread 0.55: each cloud about 880 m tall, close to the 1 km clouds that looked right, with bases
-from about 1 km to 1.7 km and tops from about 1.5 km to 2.6 km.
+from about 1 km to 1.7 km and tops from about 1.5 km to 2.6 km. Committed 6abdfc3 as the first stable version.
+Then (developer: too solid; want a factor for how opaque each cloud is, adjustable): Density still sets the overall
+opacity (0.15). New on the director, Opacity Variation (0.6): the sky map's green channel, now spread over 0..1, says how
+opaque a region's clouds are, and the vendored block "TinCan: the opacity variation" scales their density by it (at 1
+the faintest regions are clear air). While it is on, the extinction is a fixed 0.08 instead of the rain's. The
+director's two variety knobs share the global `_TinCanCloudVariety` (x height tiers, y opacity variation).
+Then (developer: a blob with a weird arch underneath): the height spread hung each cloud's base a fixed distance below
+its region's height limit, which changes smoothly across the map, so bases curved into arches and tops into blobs.
+Replaced by height tiers (vendored block "TinCan: the height tiers", the director's Height Tiers): the layer is a few
+stacked bands, each a whole cloud layer with a flat floor that reads the map at its own offset, so low and high
+clouds sit in different places with flat bases. Set: 2 tiers from 1 km to 2.8 km (900 m each), Density 0.15, Opacity
+Variation 0.6.
+Then (developer: the bands show as cut-off lines toward the horizon): the floors now rise and fall slowly across the
+sky (the director's Height Jitter, global `_TinCanCloudVariety.z`): the map's alpha read at a fifth of its scale, so
+over kilometres, flat under one cloud but different from cloud to cloud, by up to that many bands. The layer holds
+tiers + jitter bands, so a lifted floor stays inside it. Set: 2 tiers, jitter 1, from 1 km to 3.4 km (800 m bands).
 
 ### Weather as tide
 A `WeatherState` asset holds what the weather sets:

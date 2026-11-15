@@ -6,9 +6,9 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
-// TinCan: the height spread (EvaluateCloudProperties), set by CloudAtmosphereDirector: x the fraction of the layer one
-// cloud fills, 0 off.
-float4 _TinCanCloudSpread;
+// TinCan: the clouds' variety (EvaluateCloudProperties), set by CloudAtmosphereDirector: x the height tiers (stacked
+// bands of cloud, 1 off), y the opacity variation (from the cloud map's green channel, 0 off).
+float4 _TinCanCloudVariety;
 
 half3 EvaluateVolumetricCloudsAmbientProbe(half3 normalWS)
 {
@@ -432,29 +432,45 @@ void EvaluateCloudProperties(float3 positionPS, float noiseMipOffset, float eros
     // Read the low frequency Perlin-Worley and Worley noises
     half lowFrequencyNoise = SAMPLE_TEXTURE3D_LOD(_Worley128RGBA, s_trilinear_repeat_sampler, baseNoiseSamplingCoordinates.xyz, noiseMipOffset).r;
 
-    // Evaluate the cloud coverage data for this position
-    CloudCoverageData cloudCoverageData;
-    GetCloudCoverageData(positionPS, cloudCoverageData);
-
-    // If this region of space has no cloud coverage, exit right away
-    if (cloudCoverageData.coverage.x <= CLOUD_DENSITY_TRESHOLD || cloudCoverageData.maxCloudHeight < properties.height)
-        return;
-
-    // TinCan: the height spread (plan .docs/plans/cloud-sea.md). With _TinCanCloudSpread.x above 0, a cloud fills only
-    // that fraction of the layer, ending at its region's height limit (the map's alpha), and its type profile runs over
-    // that slice: clouds sit at different heights, each with its own base, instead of all rising from the layer's floor.
+    // TinCan: the height tiers (plan .docs/plans/cloud-sea.md). With _TinCanCloudVariety.x tiers above 1, the layer is
+    // that many stacked bands, each a whole cloud layer with its own flat floor, reading the cloud map at its own offset
+    // so its clouds sit elsewhere: low, middle and high clouds, each with a flat base. Within a band, everything below
+    // works as for one layer (profileHeight is the height within the band).
+    // The floors rise and fall slowly across the sky by up to _TinCanCloudVariety.z of a band (the map's alpha read at a
+    // fifth of its scale, so over kilometres: flat under one cloud, but no two distant clouds share a base, and no floor
+    // shows as a line at the horizon). The layer holds tiers + z bands, so a lifted floor stays inside it.
     half profileHeight = properties.height;
-    if (_TinCanCloudSpread.x > 0.0)
+    float3 mapPositionPS = positionPS;
+    if (_TinCanCloudVariety.x > 1.5 || _TinCanCloudVariety.z > 0.0)
     {
-        half top = cloudCoverageData.maxCloudHeight;
-        half bottom = max(0.0h, top - (half)_TinCanCloudSpread.x);
-        if (properties.height < bottom)
+        float tiers = max(_TinCanCloudVariety.x, 1.0);
+        float lift = 0.0;
+        if (_TinCanCloudVariety.z > 0.0)
+        {
+            float2 liftUV = AnimateCloudMapPosition(positionPS).xz * _CloudMapTiling.xy * 0.2 + float2(0.37, 0.61);
+            half liftMap = SAMPLE_TEXTURE2D_LOD(_CloudMapTexture, s_linear_repeat_sampler, liftUV, 0).a;
+            lift = saturate((liftMap - 0.3h) / 0.7h) * _TinCanCloudVariety.z;
+        }
+
+        float scaled = properties.height * (tiers + _TinCanCloudVariety.z) - lift;
+        float tier = clamp(floor(scaled), 0.0, tiers - 1.0);
+        float within = scaled - tier;
+        if (within < 0.0 || within > 1.0)
             return;
-        profileHeight = saturate((properties.height - bottom) / max(top - bottom, 1e-3h));
+        profileHeight = within;
+        mapPositionPS.xz += tier * float2(3731.0, 1979.0);
     }
 
+    // Evaluate the cloud coverage data for this position
+    CloudCoverageData cloudCoverageData;
+    GetCloudCoverageData(mapPositionPS, cloudCoverageData);
+
+    // If this region of space has no cloud coverage, exit right away
+    if (cloudCoverageData.coverage.x <= CLOUD_DENSITY_TRESHOLD || cloudCoverageData.maxCloudHeight < profileHeight)
+        return;
+
     // Read from the multi-column cloud-type LUT: U picks the cloud "type" (from the cloud map's
-    // blue channel), V is the normalized height within the layer (TinCan: within the cloud's slice).
+    // blue channel), V is the normalized height within the layer (TinCan: within the tier).
     half3 densityErosionAO = SAMPLE_TEXTURE2D_LOD(_CloudLutTexture, s_linear_repeat_sampler, half2(cloudCoverageData.cloudType, profileHeight), 0).xyz;
 
     // Adjust the shape and erosion factor based on the LUT and the coverage
@@ -472,8 +488,8 @@ void EvaluateCloudProperties(float3 positionPS, float noiseMipOffset, float eros
     // Weight the ambient occlusion's contribution
     properties.ambientOcclusion = densityErosionAO.z;
 
-    // Change the sigma based on the rain cloud data
-    properties.sigmaT = lerp(0.04, 0.12, cloudCoverageData.rainClouds);
+    // Change the sigma based on the rain cloud data (TinCan: a fixed middle value while the green channel is opacity)
+    properties.sigmaT = _TinCanCloudVariety.y > 0.0 ? 0.08 : lerp(0.04, 0.12, cloudCoverageData.rainClouds);
 
     // The ambient occlusion value that is baked is less relevant if there is shaping or erosion, small hack to compensate that
     half ambientOcclusionBlend = saturate(1.0 - max(erosionFactor, shapeFactor) * 0.5);
@@ -510,6 +526,12 @@ void EvaluateCloudProperties(float3 positionPS, float noiseMipOffset, float eros
 
     // Attenuate everything by the density multiplier
     properties.density = base_cloud * _DensityMultiplier;
+
+    // TinCan: the opacity variation. With _TinCanCloudVariety.y above 0, the cloud map's green channel says how opaque
+    // the clouds of a region are (0 the faintest .. 1 full), instead of the rain's extinction: at 1 the faintest are
+    // clear air, at 0.5 half as dense.
+    if (_TinCanCloudVariety.y > 0.0)
+        properties.density *= lerp(1.0h - (half)_TinCanCloudVariety.y, 1.0h, cloudCoverageData.rainClouds);
 }
 
 // Function that evaluates the transmittance to the sun at a given cloud position

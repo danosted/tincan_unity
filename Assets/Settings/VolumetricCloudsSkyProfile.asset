@@ -38,7 +38,7 @@ MonoBehaviour:
     m_Value: 4
   densityMultiplier:
     m_OverrideState: 1
-    m_Value: 0.3
+    m_Value: 0.15
   densityCurve:
     m_OverrideState: 1
     m_Value:
@@ -170,7 +170,7 @@ MonoBehaviour:
     m_Value: 1000
   altitudeRange:
     m_OverrideState: 1
-    m_Value: 1600
+    m_Value: 2400
   shapeOffset:
     m_OverrideState: 1
     m_Value: {x: 0, y: 0, z: 0}

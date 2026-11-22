@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b62658fcf13b7ef42bfb877bd9a0014e, type: 3}
+  m_Name: Profile_Test_Islands
+  m_EditorClassIdentifier: TinCan.Core.Domain::TinCan.Core.Domain.Features.FeatureProfile
+  _includes:
+  - {fileID: 11400000, guid: da0f16431bcca1b41ae1bf663726e451, type: 2}
+  _installers:
+  - {fileID: 11400000, guid: cedd1ba961bf669479341e709eb80fb8, type: 2}
+  - {fileID: 11400000, guid: b4f6ceb9a4980e644ba61c6639c0c0eb, type: 2}
+  - {fileID: 11400000, guid: c0feb2e57159c1546b7ce0845fece1c1, type: 2}

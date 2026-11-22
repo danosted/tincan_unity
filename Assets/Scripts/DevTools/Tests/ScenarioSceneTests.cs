@@ -27,6 +27,20 @@ namespace TinCan.DevTools.Tests
             }
         }
 
+        /// <summary>
+        /// The rule (AGENTS.md; .docs/NETWORK_TEST_HARNESS.md, "Running"): a scenario runs in a test-range scene, never in
+        /// a game scene, whose state changes with the game, and never in whatever scene happens to be open.
+        /// </summary>
+        [Test]
+        public void EveryScenario_RunsInATestRangeScene()
+        {
+            var outside = ScenarioCatalog.Entries
+                .Where(entry => entry.Scenario.ScenePath == null || !TestScenes.All.Contains(entry.Scenario.ScenePath))
+                .Select(entry => $"{entry.Scenario.Name} ({entry.Scenario.ScenePath ?? "the open scene"})");
+
+            Assert.That(outside, Is.Empty, "Scenarios run only in the test-range scenes (TestScenes).");
+        }
+
         [Test]
         public void EveryTestScene_IsUsedByAScenario()
         {

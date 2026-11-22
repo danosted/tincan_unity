@@ -1,0 +1,27 @@
+{
+  "name": "TinCan.Features.Encounters.Tests",
+  "rootNamespace": "TinCan.Features.Encounters.Tests",
+  "references": [
+    "TinCan.Core.Domain",
+    "TinCan.Features.Encounters",
+    "TinCan.Tests.Fakes",
+    "VContainer",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

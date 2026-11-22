@@ -48,6 +48,12 @@ namespace TinCan.DevTools.Editor
         public const string GalleonProfilePath = "Assets/Settings/FeatureProfiles/Profile_Galleon.asset";
         private const string SandboxProfilePath = "Assets/Settings/FeatureProfiles/Profile_FuelSandbox.asset";
         private const string GalleonScenePath = "Assets/Scenes/cheesed_scene.unity";
+        private const string BaseProfilePath = "Assets/Settings/FeatureProfiles/Profile_Base.asset";
+        private const string TestCoreProfilePath = "Assets/Settings/FeatureProfiles/Test/Profile_Test_Core.asset";
+        public const string TestGalleonProfilePath = "Assets/Settings/FeatureProfiles/Test/Profile_Test_Galleon.asset";
+
+        /// <summary>Sandbox installers the game leaves out: the voyage (the world is persistent) and the fuel minigame.</summary>
+        private static readonly string[] NotInTheGame = { "VoyageFeatureInstaller", "FlyingCanFeatureInstaller" };
 
         /// <summary>Fixed-pose fixtures placed for Airship_Prefab's hull; on the Galleon they would float or sit in a part.</summary>
         private static readonly string[] OldHullFixtures =
@@ -92,11 +98,12 @@ namespace TinCan.DevTools.Editor
         }
 
         /// <summary>
-        /// TinCan > Dev > Ship Sockets > Build Galleon Airship: the Galleon's built-in loadout (four cannons, the fuel fittings and more),
+        /// TinCan > Dev > Ship Sockets > Build Galleon Airship: the Galleon's built-in loadout (four cannons, the fuel receiver and more),
         /// Galleon_Prefab (the modular ship with a preset: it flies the Galleon, and the fixed-pose fixtures made for the
-        /// old hull stay off it), Profile_Galleon (the sandbox's features plus ship designs and sockets), and both wired into
-        /// cheesed_scene's scope. Airship_Prefab is untouched. Run Build Assets first. Plan:
-        /// .docs/plans/ship-fitting-loadouts.md.
+        /// old hull stay off it), Profile_Galleon (the game's profile, <see cref="GameProfile"/>), both wired into
+        /// cheesed_scene's scope, and Profile_Test_Galleon (the Test_Galleon area: the same game on the test range).
+        /// Airship_Prefab is untouched. Run Build Assets first. Plans: .docs/plans/ship-fitting-loadouts.md,
+        /// .docs/plans/peaceful-mode.md (P0).
         /// </summary>
         [MenuItem("TinCan/Dev/Ship Sockets/Build Galleon Airship")]
         public static void BuildGalleonAirship()
@@ -112,22 +119,46 @@ namespace TinCan.DevTools.Editor
             AddUnique(config, nameof(ShipSocketsConfig.BuiltInLoadouts), loadout);
 
             GalleonPrefab();
-            Asset<FeatureProfile>(GalleonProfilePath, p =>
-            {
-                AddUnique(p, "_includes", Load<FeatureProfile>(SandboxProfilePath));
-                AddUnique(p, "_installers", Load<FeatureInstaller>(Installers + "ShipDesignsFeatureInstaller.asset"), Load<FeatureInstaller>(InstallerPath));
-            });
+            GameProfile();
+            var test = Asset<FeatureProfile>(TestGalleonProfilePath, _ => { });
+            AddUnique(test, "_includes", Load<FeatureProfile>(TestCoreProfilePath), Load<FeatureProfile>(GalleonProfilePath));
             AssetDatabase.SaveAssets();
 
             if (WireScene(GalleonScenePath, GalleonPrefabPath, GalleonProfilePath)) Debug.Log($"[ShipSocketsAssetBuilder] Galleon airship built; {GalleonScenePath} flies it.");
         }
 
         /// <summary>
+        /// The game's profile, Profile_Galleon (cheesed_scene; plan: peaceful-mode.md, P0): the base, every installer the
+        /// sandbox loads and the ones the Galleon adds, without the voyage and the flying-can minigame, and with
+        /// Encounters, which keeps the event features quiet outside zones. Rebuilt from the sandbox on every run, so a
+        /// feature a builder adds to the sandbox reaches the game the next time this runs. It no longer includes the
+        /// sandbox: the voyage would come back with it.
+        /// </summary>
+        public static void GameProfile()
+        {
+            var encounters = Asset<TinCan.Features.Encounters.EncountersFeatureInstaller>(Installers + "EncountersFeatureInstaller.asset", _ => { });
+            var sandbox = Load<FeatureProfile>(SandboxProfilePath);
+            var game = Load<FeatureProfile>(GalleonProfilePath);
+            var installers = sandbox.Installers
+                .Concat(game.Installers)
+                .Append(Load<FeatureInstaller>(Installers + "ShipDesignsFeatureInstaller.asset"))
+                .Append(Load<FeatureInstaller>(InstallerPath))
+                .Append(encounters)
+                .Where(installer => installer != null && !NotInTheGame.Contains(installer.name))
+                .Distinct()
+                .Cast<Object>()
+                .ToArray();
+
+            SetList(game, "_includes", Load<FeatureProfile>(BaseProfilePath));
+            SetList(game, "_installers", installers);
+        }
+
+        /// <summary>
         /// The Galleon's mount plates (Galleon.ship.json, <see cref="ShipFrameDesigns.GalleonMounts"/>): cannons at the bow and
         /// the stern, the tool rack in the port forward hold, the leash winch (Respawn) on the starboard balcony, the chart
-        /// table (Navigation) in the starboard forward hold; the fuel receiver and the crystal rack (Fuel) in the aft hold,
-        /// port and starboard, and the net rack (the flying-can minigame) on the quarterdeck's port stern corner. The cabin
-        /// floor's plate stays free for players. The socket ids are part instance ids in the committed design.
+        /// table (Navigation) in the starboard forward hold, and the fuel receiver (Fuel) in the port aft hold. The crystal
+        /// rack and the net rack (the fuel minigame) left the game (peaceful-mode.md, P0); their plates, the starboard aft
+        /// hold and the quarterdeck's port stern corner, stay free with the cabin floor's. The socket ids are part instance ids in the committed design.
         /// </summary>
         public static ShipFittingLoadout GalleonLoadout()
         {
@@ -135,8 +166,6 @@ namespace TinCan.DevTools.Editor
             return new ShipFittingLoadout(new[]
             {
                 new ShipFittingPlacement(new ShipSocketId(mounts.HoldPortAft, 0), FuelReceiverFittingId),
-                new ShipFittingPlacement(new ShipSocketId(mounts.HoldStarboardAft, 0), CrystalRackFittingId),
-                new ShipFittingPlacement(new ShipSocketId(mounts.QuarterdeckPortAft, 0), NetRackFittingId),
                 new ShipFittingPlacement(new ShipSocketId(mounts.HoldPortFore, 0), ToolRackFittingId),
                 new ShipFittingPlacement(new ShipSocketId(mounts.BowPort, 0), CannonFittingId),
                 new ShipFittingPlacement(new ShipSocketId(mounts.BowStarboard, 0), CannonFittingId),

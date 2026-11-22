@@ -1,0 +1,17 @@
+{
+    "name": "TinCan.Features.Encounters",
+    "rootNamespace": "TinCan.Features.Encounters",
+    "references": [
+        "TinCan.Core.Domain",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

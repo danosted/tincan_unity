@@ -103,6 +103,8 @@ Build Materials** writes them into `Assets/Materials/ShipParts/` from the palett
 | `M_ShipPennant` | lacquer red | Pennants, flags |
 | `M_ShipCairn` | rock ochre | The cairn's stone |
 | `M_ShipSpirit` | spirit cyan, glow | The cairn's spirit |
+| `M_FoliageRusset`, `M_FoliageOrange`, `M_FoliageGold` | russet, burnt orange, leaf gold | Island trees' canopies, bushes |
+| `M_IslandMoss` | grass | Moss on island boulders |
 
 Variation within a material comes from vertex colour (wear, dirt, sun-bleach; the shader's vertex colour switch), not
 from new materials.

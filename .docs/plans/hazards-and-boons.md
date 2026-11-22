@@ -2,6 +2,9 @@ Status: Approved (2026-11-07)
 
 # Hazards and boons: a turret cannon, roaming comets, boon gates, skill checks, crew chains
 
+> **2026-11-22 (developer):** the cannons become ray shooters of spirit energy ([ray-cannons.md](ray-cannons.md)).
+> Moving hazards (H1, comets) are also the storm's debris ([storm-crossing.md](storm-crossing.md)).
+
 ## Progress
 - **C1 built (2026-11-07), awaiting its play run and a playtest.**
   - **Turning:** `CannonAimLimits.TurnsFully` (`YawLimit` 180): the yaw wraps into -180..180 in `ClampAim` and

@@ -31,6 +31,9 @@ The human entry point is [`.docs/README.md`](.docs/README.md). Keep it and the d
 - Every processor, use case and interaction handler ships with an EditMode test; the suite stays green. Tests live in their assembly's own test assembly, `X.Tests` in a `Tests/` folder beside `X`'s asmdef, and follow the one-way rule; a new feature creates its test assembly with its asmdef (`.docs/CODE_STANDARDS.md` §7).
 - A new feature gets a row in the feature index in `.docs/CODE_MAP.md`.
 - Ask the developer before any `verify.ps1` run that plays scenarios (the Solo and Duo tiers: `-Scenario`, `-All`). It takes over the Editor and brings Unity and Player 2 to the front mid-work. Say which scenarios and tiers, roughly how long, and wait for a yes (or use an approval given ahead of time, see "Several sessions at once"). `-UpTo Compile` and `-UpTo Tests` need no confirmation. Batch the play runs: one confirmed run at the end beats several small ones.
+- Scenarios run only in test-range scenes (`Assets/Scenes/Test/`, `TestScenes.cs`), never in a game scene such as
+  `cheesed_scene`: a game scene's state changes with the game, and a scenario has to pin what it tests. Enforced by
+  `ScenarioSceneTests.EveryScenario_RunsInATestRangeScene`.
 - Every feature slice ships with a scenario that passes `.\.tools\verify.ps1 -Scenario <Name>` (solo and host + client) in its test-range scene. Procedures: `.claude/skills/verify-feature` and `.claude/skills/add-scenario` (Copilot: `.github/prompts/`); reference: `.docs/NETWORK_TEST_HARNESS.md`.
 - After a C# edit, check diagnostics and request Unity script compilation; confirm it finishes without compiler errors.
 - In documentation, cite file paths rather than pasting code.

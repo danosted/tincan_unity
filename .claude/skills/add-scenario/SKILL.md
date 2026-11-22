@@ -8,7 +8,8 @@ description: Add a TinCan feature scenario (an automated host + client test in t
 The canonical description is `.docs/NETWORK_TEST_HARNESS.md` ("Anatomy", "Adding a scenario for a feature slice" and
 "Test range"). Read those sections first. This is the procedure.
 
-1. **Pick the area scene.**
+1. **Pick the area scene.** Always a test-range scene under `Assets/Scenes/Test/` (through `TestScenes`), never a
+   game scene such as `cheesed_scene` and never `.InScene(null)`. This is a rule (`AGENTS.md`).
    - Reuse `TestScenes.Core`, `ShipDamage` or `NetCatch` when the feature's installers are already in that area's
      profile (`Assets/Settings/FeatureProfiles/Test/`).
    - Otherwise add an area:

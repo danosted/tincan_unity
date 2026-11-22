@@ -266,6 +266,7 @@ move the subject.
 | `Test_Respawn` | GrappleHook, Respawn | OverboardRespawn, LeashClimb, WinchRescue |
 | `Test_Navigation` | Stations, Helm, Voyage, SkyIslands, SkyHazards, Navigation | CompassCourse, ChartPlot, ChartIslands, ChartHazards |
 | `Test_Look` | Atmosphere (the look's fog, ambient, sun and post; the only test area with it, the others stay plain), DayCycle (the moving sun) | LookApplies, DayMoves |
+| `Test_Islands` | Sky islands, Camping, Island details (no voyage: the config's seed; trees, rocks and caves round the test ship; players place their own campfires and tents) | IslandForage, CampLoop |
 
 **The scenes are generated.** `DevTools/Editor/TestRangeSceneBuilder.cs` (**TinCan > Dev > Test Range > Rebuild
 Scenes**) builds every scene from its `Areas` table and adds them to the build list. Clients load the host's scene
@@ -278,14 +279,19 @@ a constant to `TestScenes`, add a row to `TestRangeSceneBuilder.Areas`, and run 
 
 **Running:** the scenario menu opens the scenario's scene first, and reopens your scene when Play ends. It refuses to
 switch while the open scene has unsaved changes. `verify.ps1` opens the scene itself, reopens it in every MPPM clone,
-and restores your scene at the end. `.InScene(null)` runs a scenario in whatever scene is open, for a deliberate
-check in the POC scene.
+and restores your scene at the end.
+
+**Rule: a catalog scenario runs in a test-range scene** (`Assets/Scenes/Test/`, named through `TestScenes`), never in
+a game scene such as `cheesed_scene` and never in whatever scene happens to be open (`.InScene(null)`). Game scenes
+change with the game; a scenario pins what it tests. A feature that needs the real ship gets an area that builds it
+(`Test_Galleon` builds the Galleon on the game's profile). `ScenarioSceneTests` enforces the rule.
 
 ### Troubleshooting
 
 | Symptom | Cause and fix |
 |---|---|
 | Scenarios take about a minute each instead of 10-25 s, `Main thread operation timed out after 5000ms` in the Console, or the client sometimes never joins | A long-lived Editor (a day of domain reloads and Play sessions; 3+ GB per Editor) slows everything. Restart the Editor and its clone from Unity Hub. Measured: InteractRack solo 57 s → 9 s, host + client 60 s → 23 s after a restart. The timeout lines themselves are harmless: a CLI poll landed while the main thread was busy. |
+| The second of two back-to-back `Hold`s of the same `ScriptedAction` does nothing | The harness merges them into one press. Put `.Wait(0.5f, "let go")` between them. |
 | `verify.ps1` stops with "the Editor is in Play mode" | A Play session (perhaps your playtest) keeps the Editor from being ready, and the script does not end it for you. Stop Play, rerun. |
 | `verify.ps1` stops with "no Unity Editor is open" or "the Editor does not answer, and Unity Hub is not running" | No Editor is open, or its main thread is stuck. The Editor runs without the Hub, but a Hub dialog (sign-in, terms after an update) can hold it: start the Hub and answer it yourself. Otherwise focus or restart the Editor, then rerun. |
 | Solo passes, host + client: `until SubjectReady timed out`, client report missing | The clone ran an old copy of the scene. Clones do not reload a scene that changed on disk; `verify.ps1` reopens it in each clone. From the menu, reopen the scene in Player 2 by hand. |

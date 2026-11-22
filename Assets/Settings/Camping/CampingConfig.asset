@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9b707324513f3d45918defad7378ab0, type: 3}
+  m_Name: CampingConfig
+  m_EditorClassIdentifier: TinCan.Features.Camping::TinCan.Features.Camping.CampingConfig
+  FirewoodItem: {fileID: 11400000, guid: 39329f51c44387846abe6de6df16feb5, type: 2}
+  BundleItem: {fileID: 11400000, guid: 5de8e2fcd0f6aae40a07f38451892b7b, type: 2}
+  TentItem: {fileID: 11400000, guid: a5afb5e6737e129438ede6120b78dc68, type: 2}
+  BurnSecondsPerLog: 180
+  MaxBurnSeconds: 600
+  DeadwoodLogs: 3
+  DeadwoodRegrowSeconds: 120
+  PlaceInput: {fileID: 11400000, guid: 228c6f632dea57046a0b40d23fb4e13d, type: 2}
+  CarryingFirewoodTag: {fileID: 11400000, guid: 05e9caedb50b60146b41f0732118e44e, type: 2}
+  CarryingBundleTag: {fileID: 11400000, guid: 552b732bd2d54624da07b13c63290cb4, type: 2}
+  CarryingTentTag: {fileID: 11400000, guid: a811757f14053804bbc8dc587f5d56e6, type: 2}
+  CampfirePrefab: {fileID: 7673780328576828629, guid: 46afdd0158f60794eb82c8b233469a77, type: 3}
+  TentPrefab: {fileID: 977966402123228969, guid: 4454ff3ce88809f49a2ca81a8e55180a, type: 3}
+  CampfirePreview: {fileID: 1271558737263618492, guid: d589d9944d3ebdf4da1e48c6af8f84bf, type: 3}
+  TentPreview: {fileID: 9005922192710597787, guid: f81b9abfe5bf70b4db05a76d335d4aed, type: 3}
+  FitsMaterial: {fileID: 2100000, guid: e7c911aab9a14ae40811bbdbae620771, type: 2}
+  NoFitMaterial: {fileID: 2100000, guid: 52a133ca0930cd042b0e8716d13c5407, type: 2}
+  PlaceReach: 4.5
+  MaxSlopeDegrees: 25
+  CampfireRadius: 0.8
+  TentRadius: 1.3
+  ClearHeight: 1.6

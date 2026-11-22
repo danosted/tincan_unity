@@ -28,6 +28,11 @@ namespace TinCan.Features.Airship.Fuel
         [Tooltip("The item a player holds while carrying a jerry can (taken from the crate, poured into the motor).")]
         public TinCan.Core.Items.ItemDefinition? JerryCanItem;
 
+        [Tooltip("A mined fuel crystal (Gathering's item): fed to the receiver, it adds CrystalLitres. Null: crystals are not fuel here.")]
+        public TinCan.Core.Items.ItemDefinition? CrystalItem;
+        [Tooltip("What one fed crystal adds to the tank.")]
+        [Min(0f)] public float CrystalLitres = 10f;
+
         [Tooltip("Attribute on the ship holding the current leak rate (litres per second, base 0). Hull breaches raise it; the tank drains it even while parked.")]
         public TinCan.Core.Gas.FuelLeakRateAttribute? LeakRateAttribute;
         [Tooltip("Slice 1 stopgap: the motor refuels on interact without a jerry can. Turn off once the carry loop exists.")]

@@ -2054,7 +2054,60 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold };
+        /// <summary>
+        /// Fuel from the islands (plan: fuel-gathering.md, G1 and G2): the subject stands at the crystal vein nearest the
+        /// Galleon, holds Interact while the work runs (IA_MineCrystal's hold time), and a crystal breaks off into their
+        /// hands; back aboard, they feed it to the receiver (ship (-0.9, -2.45, -5.5) stands in front of it) and the
+        /// drained tank rises. The vein shows one crystal fewer on both peers.
+        /// </summary>
+        public static readonly ScenarioEntry CrystalRun = new(
+            new Scenario.Builder("CrystalRun")
+                .InScene(TestScenes.Galleon)
+                .Describe("On the Galleon: at the nearest vein, hold Interact -> a crystal in hand, the vein one fewer -> aboard, feed it to the receiver -> the tank rises.")
+                .Timeout(180f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn; the design builds")
+                    .WaitUntil("VeinsSpawned", 60f, "1")
+                    .WaitUntil("SocketFitted", 15f, "fuel.receiver")
+                    .Do("DrainTank", "30")
+                    .Do("RecordTankLevel")
+                    .Do("PlaceSubjectAtVein"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtVein", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceVein")
+                    .WaitUntil("InteractTargetIs", 5f, "Vein_Amber")
+                    .Checkpoint("at-the-vein")
+                    .Hold(3.2f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHolds", 5f, "ITEM_FuelCrystal")
+                    .WaitUntil("VeinCrystals", 5f, "2")
+                    .Checkpoint("mined")
+                    .WaitUntil("SubjectNearShipLocal", 45f, "-0.9,-2.45,-5.5,0.8")
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceObject", "MotorFillPort")
+                    .WaitUntil("InteractTargetIs", 5f, "MotorFillPort")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHolds", 5f, "none")
+                    .Checkpoint("fed"))
+                .Assert(s => s
+                    .WaitUntil("SubjectHolds", 60f, "ITEM_FuelCrystal")
+                    .Expect("VeinCrystals", "2")
+                    .Do("PlaceSubjectAtShipLocal", "-0.9,-2.45,-5.5")
+                    .WaitUntil("TankLevelRose", 40f)
+                    .WaitUntil("SubjectHolds", 10f, "none"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<GatheringScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<FuelScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, CrystalRun };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

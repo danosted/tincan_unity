@@ -26,6 +26,7 @@
         "TinCan.Features.DesignedEvents",
         "TinCan.Features.Encounters",
         "TinCan.Features.Anchor",
+        "TinCan.Features.Gathering",
         "TinCan.Features.GasChallenge",
         "TinCan.Features.Voyage",
         "TinCan.Features.SkyIslands",

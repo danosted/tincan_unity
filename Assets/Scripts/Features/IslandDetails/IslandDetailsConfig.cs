@@ -18,6 +18,8 @@ namespace TinCan.Features.IslandDetails
         public List<GameObject> BoulderPrefabs = new();
         [Tooltip("Bushes: scenery on every peer, not solid.")]
         public List<GameObject> BushPrefabs = new();
+        [Tooltip("Networked crystal veins (a NetworkObject with Gathering's vein: its Crystal_* children are its stock). One is picked per vein.")]
+        public List<GameObject> VeinPrefabs = new();
 
         [Header("Trees (main islands and landmasses)")]
         [Min(0f)] public float TreesPerHectare = 12f;
@@ -42,6 +44,15 @@ namespace TinCan.Features.IslandDetails
         [Min(0.5f)] public float BushSpacing = 2f;
         public Vector2 BushScale = new(0.7f, 1.25f);
 
+        [Header("Crystal veins (main islands, landmasses and caves)")]
+        [Tooltip("Veins in the open on a main island (satellites get none).")]
+        [Min(0)] public int VeinsPerIsland = 2;
+        [Min(0)] public int VeinsOnALandmass = 6;
+        [Tooltip("Veins against the back wall inside each cave.")]
+        [Min(0)] public int VeinsPerCave = 1;
+        [Min(0.5f)] public float VeinSpacing = 4f;
+        public Vector2 VeinScale = new(0.9f, 1.2f);
+
         [Header("Placement")]
         [Tooltip("Nothing stands further out than this share of the way to the rim.")]
         [Range(0.3f, 0.93f)] public float RimReach = 0.86f;
@@ -58,6 +69,7 @@ namespace TinCan.Features.IslandDetails
         public IslandDetailRules Rules(float clearingRadius) => new(TreesPerHectare, MaxTrees, MaxTreesOnALandmass,
             GroveHectares, GroveSpread, TreeSpacing, TreeScale, BouldersPerHectare, MaxBoulders, BoulderSpacing, BoulderScale,
             BushesPerHectare, MaxBushes, BushSpacing, BushScale, RimReach, clearingRadius, TreePrefabs.Count,
-            BoulderPrefabs.Count, BushPrefabs.Count);
+            BoulderPrefabs.Count, BushPrefabs.Count, VeinsPerIsland, VeinsOnALandmass, VeinsPerCave, VeinSpacing, VeinScale,
+            VeinPrefabs.Count);
     }
 }

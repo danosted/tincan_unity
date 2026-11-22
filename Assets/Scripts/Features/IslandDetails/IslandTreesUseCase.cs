@@ -8,8 +8,8 @@ using VContainer.Unity;
 namespace TinCan.Features.IslandDetails
 {
     /// <summary>
-    /// Application Layer, server: the trees of every main island and landmass that stands. A tree is a network object (it
-    /// holds firewood every peer sees taken), spawned where the placement puts it (<see cref="IslandDetailPlacementProcessor"/>),
+    /// Application Layer, server: the trees and crystal veins of every main island and landmass that stands. Each is a
+    /// network object (it holds firewood or crystals every peer sees taken), spawned where the placement puts it (<see cref="IslandDetailPlacementProcessor"/>),
     /// a few per check so a landmass streaming in costs no spike, and despawned when its island streams out. A tree's
     /// stock lasts as long as its island stands: it is not saved yet (plan .docs/plans/peaceful-mode.md, the world save).
     /// </summary>
@@ -90,7 +90,7 @@ namespace TinCan.Features.IslandDetails
                 {
                     var tree = grove.Waiting.Dequeue();
                     budget--;
-                    if (_spawner.Spawn(grove.Top + tree.Position, tree.Rotation, tree.Scale, tree.Variant) is { } id) grove.Trees.Add(id);
+                    if (_spawner.Spawn(tree.Kind, grove.Top + tree.Position, tree.Rotation, tree.Scale, tree.Variant) is { } id) grove.Trees.Add(id);
                 }
                 if (budget <= 0) break;
             }
@@ -103,7 +103,7 @@ namespace TinCan.Features.IslandDetails
             var grove = new Grove(island.Top);
             foreach (var detail in _details)
             {
-                if (detail.Kind == IslandDetailKind.Tree) grove.Waiting.Enqueue(detail);
+                if (detail.Kind is IslandDetailKind.Tree or IslandDetailKind.Vein) grove.Waiting.Enqueue(detail);
             }
             return grove;
         }

@@ -29,11 +29,21 @@ namespace TinCan.Core.Interaction
         [SerializeField]
         [Tooltip("Requester: the interacting player activates the ability, targeting the interacted object (e.g. repairing a module).\nTarget: the interacted object activates the ability on itself (e.g. toggling a station).")]
         private AbilityActivatorType _abilityActivator;
+        [SerializeField, Min(0f)]
+        [Tooltip("0: Interact acts on the press. Above 0: the work takes this long; hold Interact on the same target until it is done (letting go, looking away or walking off cancels it).")]
+        private float _holdSeconds;
 
         public Type HandlerType => string.IsNullOrEmpty(_handlerTypeName) ? null : Type.GetType(_handlerTypeName);
         public AbilityDefinition Ability => _ability;
 
         /// <summary>Who activates <see cref="Ability"/> when this interaction fires; see <see cref="AbilityActivatorType"/>.</summary>
         public AbilityActivatorType AbilityActivator => _abilityActivator;
+
+        /// <summary>How long Interact must be held on the target before the handler runs; 0 acts on the press.</summary>
+        public float HoldSeconds
+        {
+            get => _holdSeconds;
+            set => _holdSeconds = Mathf.Max(0f, value);
+        }
     }
 }

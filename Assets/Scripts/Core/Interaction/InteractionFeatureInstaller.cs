@@ -6,6 +6,7 @@ using TinCan.Core.Domain.Input;
 using TinCan.Core.Targeting;
 using UnityEngine;
 using VContainer;
+using VContainer.Unity;
 
 namespace TinCan.Core.Interaction
 {
@@ -35,6 +36,7 @@ namespace TinCan.Core.Interaction
 
             builder.RegisterInstance(new InteractionTargetingSettings(_interactInput, _targeting));
             builder.Register<InteractInputUseCase>(Lifetime.Singleton).As<ISimulationTickable>();
+            builder.Register<InteractWorkPresenter>(Lifetime.Singleton).As<ITickable>();
         }
     }
 }

@@ -6,8 +6,9 @@ using TinCan.Core.Items;
 namespace TinCan.Features.Airship.Fuel
 {
     /// <summary>
-    /// Server-side handler for IA_PourFuel. A player holding a jerry can (FuelConfig.JerryCanItem) pours it into the tank (the can is used
-    /// up only if the tank accepted fuel). Without a can, the config's DebugFreeRefuel stopgap may still refuel.
+    /// Server-side handler for IA_PourFuel. A player holding a fuel crystal (FuelConfig.CrystalItem, mined on the islands)
+    /// feeds it to the engine, or a jerry can (FuelConfig.JerryCanItem) is poured; either is used up only if the tank
+    /// accepted fuel. Without either, the config's DebugFreeRefuel stopgap may still refuel.
     /// </summary>
     public class PourFuelInteractionHandler : IInteractionHandler
     {
@@ -25,6 +26,12 @@ namespace TinCan.Features.Airship.Fuel
             if (context.Target is not IFuelFillPort port || port.Tank is not { } tank || tank.Config is not { } config) return;
 
             var equipment = EquipmentLocator.Resolve(context.Requester);
+            if (equipment != null && config.CrystalItem != null && equipment.IsHolding(config.CrystalItem))
+            {
+                if (Refill(context, tank, config.CrystalLitres)) equipment.TryUnequip();
+                return;
+            }
+
             bool holdingCan = equipment != null && equipment.IsHolding(config.JerryCanItem);
             bool emptyHanded = equipment == null || equipment.IsEmptyHanded;
             switch (holdingCan, emptyHanded, debug: config.DebugFreeRefuel)

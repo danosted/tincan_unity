@@ -138,6 +138,53 @@ namespace TinCan.Features.IslandDetails.Tests
             Assert.That(details, Is.Not.Empty);
         }
 
+        [Test]
+        public void Veins_ComeLast_AndLeaveEveryOtherDetailWhereItWas()
+        {
+            var island = IslandDetailsTestKit.Main(7);
+            var without = Place(island).Select(detail => detail.ToString()).ToArray();
+
+            _config.VeinPrefabs.Add(null!);
+            var with = Place(island);
+
+            Assert.That(with.Take(without.Length).Select(detail => detail.ToString()), Is.EqualTo(without));
+            Assert.That(with.Skip(without.Length).All(detail => detail.Kind == IslandDetailKind.Vein), Is.True);
+        }
+
+        [Test]
+        public void MainIslandsAndLandmasses_GetVeins_SatellitesNone()
+        {
+            _config.VeinPrefabs.Add(null!);
+
+            Assert.That(Place(IslandDetailsTestKit.Main(3)).Count(d => d.Kind == IslandDetailKind.Vein), Is.GreaterThan(0));
+            Assert.That(Place(IslandDetailsTestKit.Landmass(2)).Count(d => d.Kind == IslandDetailKind.Vein),
+                Is.GreaterThan(_config.VeinsPerIsland));
+            for (uint seed = 0; seed < 5; seed++)
+                Assert.That(Place(IslandDetailsTestKit.Satellite(seed)).Any(d => d.Kind == IslandDetailKind.Vein), Is.False);
+        }
+
+        [Test]
+        public void EachCave_HasAVeinInside_OnItsFloor()
+        {
+            _config.VeinPrefabs.Add(null!);
+            int checkedCaves = 0;
+            for (uint seed = 0; seed < 4; seed++)
+            {
+                var island = IslandDetailsTestKit.Landmass(seed);
+                var sites = new SkyIslandSites();
+                _siteProcessor.Sites(island, _islands.SiteRules, sites);
+                var details = Place(island);
+                foreach (var cave in sites.Caves)
+                {
+                    checkedCaves++;
+                    Assert.That(details.Any(d => d.Kind == IslandDetailKind.Vein &&
+                                                 new Vector2(d.Position.x - cave.Base.x, d.Position.z - cave.Base.z).magnitude < cave.Radius &&
+                                                 Mathf.Abs(d.Position.y - cave.Floor) < 1e-3f), Is.True, cave.ToString());
+                }
+            }
+            Assume.That(checkedCaves, Is.GreaterThan(0), "no landmass had a cave");
+        }
+
         private List<IslandDetail> Place(in SkyIslandSpec island)
         {
             var sites = new SkyIslandSites();

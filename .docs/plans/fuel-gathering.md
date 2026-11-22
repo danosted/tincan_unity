@@ -84,6 +84,22 @@ engine. Running low means you have to find the next island.
 - **G4 Feel.** Vein visuals (full, bare, regrowing), a mining cue and sound, and the fuel HUD reading as "crystals'
   worth" rather than litres, if playtest asks for it.
 
+## Progress
+- **2026-11-22, G1 and G2 built (EditMode 1698/1698; `CrystalRun` passes solo and host + client in `Test_Galleon`;
+  `IslandForage` and `CampLoop` still pass with veins on the islands; awaiting a playtest).**
+  - Held work is in the core, as decided: `InteractionDefinition.HoldSeconds` and `InteractInputUseCase` (the press
+    starts it; same target every tick; letting go or looking away cancels), and a HUD meter on the local player
+    (`InteractWorkPresenter`). Repair and crafting can use it later.
+  - `Features/Gathering/`: `VeinNetworkMediator` and `MineCrystalInteractionHandler` (IA_MineCrystal, 2.5 s);
+    `RegrowingStock` lifted into `Core/Domain` and shared with deadwood.
+  - Veins are an Island Details kind: 2 on a main island, 6 on a landmass, one against each cave's back wall; placed
+    after everything else, so no island's trees or rocks moved.
+  - The receiver takes a crystal (`FuelConfig.CrystalItem`, `CrystalLitres` 10). The fuel config is still the shared
+    one, and `DebugFreeRefuel` stays on until the crank exists (G3); the game's own tuning is G4.
+  - The tag database had two tags in memory but not on disk (the campfire bundle's and the crystal's); fixed, and the
+    trap is in `CODE_MAP.md`.
+- **Next:** G3 the crank, then the crystal bin (`ship-shield.md`, SH3), then G4 feel and tuning.
+
 ## Tests
 EditMode: `RegrowingStock` (and deadwood still green on it), vein placement, the mine interaction (hold, cancel,
 completion, a bare vein), the feed handler (adds litres, refuses at a full tank, refuses other items), the crank (charges per turn, stops at the reserve cap). Scenarios (in test-range scenes) `CrankStart`

@@ -19,6 +19,8 @@ MonoBehaviour:
   JerryCanLitres: 25
   InitialSupply: 1
   JerryCanItem: {fileID: 11400000, guid: e7e80d4df040f794b8e4629467b40e24, type: 2}
+  CrystalItem: {fileID: 11400000, guid: 56c5da71ecb3c5c458263fd8d55e9942, type: 2}
+  CrystalLitres: 10
   LeakRateAttribute: {fileID: 11400000, guid: 5bb552c377bacfa42904e93b0c6fe9c8, type: 2}
   DebugFreeRefuel: 0
   StallWhenEmpty: 1

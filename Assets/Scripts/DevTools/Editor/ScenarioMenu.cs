@@ -124,6 +124,24 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "CloudHoleOpens (Host + Client, Lag100)")]
         public static void CloudHoleOpensDuo() => RunDuo("CloudHoleOpens", "Lag100");
 
+        [MenuItem(Root + "SoarFromDive (Host)")]
+        public static void SoarFromDiveSolo() => RunSolo("SoarFromDive");
+
+        [MenuItem(Root + "SoarFromDive (Host + Client, Lag100)")]
+        public static void SoarFromDiveDuo() => RunDuo("SoarFromDive", "Lag100");
+
+        [MenuItem(Root + "CampLoop (Host)")]
+        public static void CampLoopSolo() => RunSolo("CampLoop");
+
+        [MenuItem(Root + "CampLoop (Host + Client, Lag100)")]
+        public static void CampLoopDuo() => RunDuo("CampLoop", "Lag100");
+
+        [MenuItem(Root + "IslandForage (Host)")]
+        public static void IslandForageSolo() => RunSolo("IslandForage");
+
+        [MenuItem(Root + "IslandForage (Host + Client, Lag100)")]
+        public static void IslandForageDuo() => RunDuo("IslandForage", "Lag100");
+
         [MenuItem(Root + "MountFitting (Host)")]
         public static void MountFittingSolo() => RunSolo("MountFitting");
 
@@ -232,11 +250,11 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "GasSquallEvent (Host + Client, Lag100)")]
         public static void GasSquallEventDuo() => RunDuo("GasSquallEvent", "Lag100");
 
-        [MenuItem(Root + "GalleonFuelLoop (Host)")]
-        public static void GalleonFuelLoopSolo() => RunSolo("GalleonFuelLoop");
+        [MenuItem(Root + "AnchorHold (Host)")]
+        public static void AnchorHoldSolo() => RunSolo("AnchorHold");
 
-        [MenuItem(Root + "GalleonFuelLoop (Host + Client, Lag100)")]
-        public static void GalleonFuelLoopDuo() => RunDuo("GalleonFuelLoop", "Lag100");
+        [MenuItem(Root + "AnchorHold (Host + Client, Lag100)")]
+        public static void AnchorHoldDuo() => RunDuo("AnchorHold", "Lag100");
 
         [MenuItem(Root + "GalleonSternCannon (Host)")]
         public static void GalleonSternCannonSolo() => RunSolo("GalleonSternCannon");

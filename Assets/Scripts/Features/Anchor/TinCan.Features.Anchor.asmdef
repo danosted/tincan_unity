@@ -1,0 +1,20 @@
+{
+    "name": "TinCan.Features.Anchor",
+    "rootNamespace": "TinCan.Features.Anchor",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Interaction",
+        "TinCan.Ship",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

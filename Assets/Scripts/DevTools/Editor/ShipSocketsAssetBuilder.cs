@@ -156,9 +156,10 @@ namespace TinCan.DevTools.Editor
         /// <summary>
         /// The Galleon's mount plates (Galleon.ship.json, <see cref="ShipFrameDesigns.GalleonMounts"/>): cannons at the bow and
         /// the stern, the tool rack in the port forward hold, the leash winch (Respawn) on the starboard balcony, the chart
-        /// table (Navigation) in the starboard forward hold, and the fuel receiver (Fuel) in the port aft hold. The crystal
-        /// rack and the net rack (the fuel minigame) left the game (peaceful-mode.md, P0); their plates, the starboard aft
-        /// hold and the quarterdeck's port stern corner, stay free with the cabin floor's. The socket ids are part instance ids in the committed design.
+        /// table (Navigation) in the starboard forward hold, the fuel receiver (Fuel) in the port aft hold, and the anchor
+        /// (Anchor) on the quarterdeck's port stern corner, by the helm. The crystal rack and the net rack (the fuel
+        /// minigame) left the game (peaceful-mode.md, P0); the starboard aft hold's plate stays free with the cabin
+        /// floor's. The socket ids are part instance ids in the committed design.
         /// </summary>
         public static ShipFittingLoadout GalleonLoadout()
         {
@@ -166,6 +167,7 @@ namespace TinCan.DevTools.Editor
             return new ShipFittingLoadout(new[]
             {
                 new ShipFittingPlacement(new ShipSocketId(mounts.HoldPortAft, 0), FuelReceiverFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.QuarterdeckPortAft, 0), AnchorAssetBuilder.FittingId),
                 new ShipFittingPlacement(new ShipSocketId(mounts.HoldPortFore, 0), ToolRackFittingId),
                 new ShipFittingPlacement(new ShipSocketId(mounts.BowPort, 0), CannonFittingId),
                 new ShipFittingPlacement(new ShipSocketId(mounts.BowStarboard, 0), CannonFittingId),

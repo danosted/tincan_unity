@@ -1,0 +1,30 @@
+{
+  "name": "TinCan.Features.Anchor.Tests",
+  "rootNamespace": "TinCan.Features.Anchor.Tests",
+  "references": [
+    "TinCan.Core.Domain",
+    "TinCan.Features.Anchor",
+    "TinCan.Interaction",
+    "TinCan.Ship",
+    "TinCan.Tests.Fakes",
+    "Unity.Netcode.Runtime",
+    "VContainer",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 228c099c9845f0d47806bb0eda146cc3, type: 3}
+  m_Name: AnchorFeatureInstaller
+  m_EditorClassIdentifier: TinCan.Features.Anchor::TinCan.Features.Anchor.AnchorFeatureInstaller
+  _fittings:
+  - {fileID: 11400000, guid: e327f6a42ba5f5f40ab62e4f1e4e3618, type: 2}

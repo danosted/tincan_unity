@@ -35,6 +35,35 @@ namespace TinCan.Features.SkyIslands
         [Tooltip("Satellites sit up to this many metres above or below their main island's top.")]
         [Min(0f)] public float SatelliteAltitudeJitter = 30f;
 
+        [Header("Landmasses")]
+        [Tooltip("Chance that a cell holds a landmass: one much larger, hilly main island alone in the middle of the cell.")]
+        [Range(0f, 1f)] public float LandmassChance = 0.12f;
+        [Tooltip("Radius range of a landmass's top, in metres; never more than half a cell less 10 m.")]
+        public Vector2 LandmassRadius = new(150f, 200f);
+        [Tooltip("How deep a landmass's rock hangs, as a multiple of its radius.")]
+        public Vector2 LandmassDepthPerRadius = new(0.55f, 0.8f);
+
+        [Header("Caves and clearings")]
+        [Tooltip("Chance that a main island at least CaveMinIslandRadius wide has a cave rock on its top.")]
+        [Range(0f, 1f)] public float CaveChance = 0.6f;
+        [Tooltip("Main islands smaller than this (their top's radius, metres) have no cave.")]
+        [Min(0f)] public float CaveMinIslandRadius = 55f;
+        [Tooltip("How many caves a landmass has.")]
+        public Vector2Int LandmassCaves = new(2, 3);
+        [Tooltip("Radius range of a cave's chamber, metres (level, inside the wall).")]
+        public Vector2 CaveRadius = new(9f, 12f);
+        [Tooltip("Height range of a cave's chamber above its foot, metres.")]
+        public Vector2 CaveHeight = new(8f, 11f);
+        [Tooltip("Thickness of a cave's rock, metres.")]
+        [Min(1f)] public float CaveWall = 3f;
+        [Tooltip("A cave stands only where the ground under its wall rises no more than this, metres (set into a hillside; " +
+                 "its mouth opens downhill).")]
+        [Min(0f)] public float CaveMaxGroundRise = 4f;
+        [Tooltip("How many open clearings a landmass has besides its middle and its caves (open ground kept free of trees and rocks, room to camp).")]
+        public Vector2Int LandmassClearings = new(2, 4);
+        [Tooltip("The room a clearing keeps around it, metres: no cave, tree or rock within it.")]
+        [Min(1f)] public float ClearingRadius = 7f;
+
         [Header("Keep clear")]
         [Tooltip("No island comes within this many metres (level) of the voyage's start or destination, or of the world " +
                  "origin before any voyage, so the ship never starts or arrives inside rock.")]
@@ -63,17 +92,31 @@ namespace TinCan.Features.SkyIslands
 
         [Header("Meshes")]
         public SkyIslandMeshResolution MainVisual = new(48, 6, 14);
-        public SkyIslandMeshResolution MainCollision = new(16, 2, 5);
+        public SkyIslandMeshResolution MainCollision = new(32, 6, 5);
         public SkyIslandMeshResolution SatelliteVisual = new(20, 2, 6);
         public SkyIslandMeshResolution SatelliteCollision = new(10, 1, 3);
         [Tooltip("Collision is cut into convex wedges this many segments wide (more: a closer fit, more colliders).")]
         [Min(3)] public int CollisionWedgeSegments = 4;
+        public SkyIslandMeshResolution LandmassVisual = new(128, 24, 16);
+        public SkyIslandMeshResolution LandmassCollision = new(64, 12, 6);
+        [Tooltip("The top of a main island or landmass is solid as upright prisms this many segments wide (the ground " +
+                 "you walk on follows the drawn grass, and no hull spans a valley). 0: wedges to the axis, like satellites.")]
+        [Min(0)] public int TopPrismSegments = 2;
         [Tooltip("Material for the visual mesh (Shaders/SkyIsland). Peers without graphics build collision only.")]
         public Material? Material;
 
         public SkyIslandLayoutRules LayoutRules => new(CellSize, MainChance, MainRadius, DepthPerRadius, TopAltitude,
             SatellitesPerMain, LoneSatelliteChance, LoneSatellites, SatelliteRadius, SatelliteSpread,
-            SatelliteAltitudeJitter, KeepOutRadius);
+            SatelliteAltitudeJitter, KeepOutRadius, LandmassChance, LandmassRadius, LandmassDepthPerRadius);
+
+        public SkyIslandSiteRules SiteRules => new(CaveChance, CaveMinIslandRadius, LandmassCaves, CaveRadius, CaveHeight,
+            CaveWall, CaveMaxGroundRise, LandmassClearings, ClearingRadius);
+
+        /// <summary>The resolutions an island is drawn and made solid at.</summary>
+        public (SkyIslandMeshResolution Visual, SkyIslandMeshResolution Collision) Resolutions(in SkyIslandSpec island) =>
+            island.IsLandmass ? (LandmassVisual, LandmassCollision)
+            : island.IsSatellite ? (SatelliteVisual, SatelliteCollision)
+            : (MainVisual, MainCollision);
 
         private void OnValidate()
         {

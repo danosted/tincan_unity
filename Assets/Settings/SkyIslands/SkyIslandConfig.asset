@@ -24,6 +24,18 @@ MonoBehaviour:
   SatelliteRadius: {x: 5, y: 14}
   SatelliteSpread: {x: 1.25, y: 1.7}
   SatelliteAltitudeJitter: 30
+  LandmassChance: 0.12
+  LandmassRadius: {x: 150, y: 200}
+  LandmassDepthPerRadius: {x: 0.55, y: 0.8}
+  CaveChance: 0.6
+  CaveMinIslandRadius: 55
+  LandmassCaves: {x: 2, y: 3}
+  CaveRadius: {x: 9, y: 12}
+  CaveHeight: {x: 8, y: 11}
+  CaveWall: 3
+  CaveMaxGroundRise: 4
+  LandmassClearings: {x: 2, y: 4}
+  ClearingRadius: 7
   KeepOutRadius: 160
   ImpactEffect: {fileID: 11400000, guid: 478f198b9ab1aab4da7e54d5222d78d5, type: 2}
   ImpactCooldown: 1.5
@@ -37,8 +49,8 @@ MonoBehaviour:
     TopRings: 6
     UnderRings: 14
   MainCollision:
-    Segments: 16
-    TopRings: 2
+    Segments: 32
+    TopRings: 6
     UnderRings: 5
   SatelliteVisual:
     Segments: 20
@@ -49,4 +61,13 @@ MonoBehaviour:
     TopRings: 1
     UnderRings: 3
   CollisionWedgeSegments: 4
+  LandmassVisual:
+    Segments: 128
+    TopRings: 24
+    UnderRings: 16
+  LandmassCollision:
+    Segments: 64
+    TopRings: 12
+    UnderRings: 6
+  TopPrismSegments: 2
   Material: {fileID: 2100000, guid: fc1ab8256433b7b49a7756614afea5d3, type: 2}

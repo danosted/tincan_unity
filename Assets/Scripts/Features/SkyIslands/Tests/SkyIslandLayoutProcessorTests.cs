@@ -64,7 +64,8 @@ namespace TinCan.Features.SkyIslands.Tests
         {
             foreach (var island in Area(5))
             {
-                var radius = island.IsSatellite ? _config.SatelliteRadius : _config.MainRadius;
+                var radius = island.IsLandmass ? new Vector2(_config.LandmassRadius.x, _config.LayoutRules.LandmassMaxRadius)
+                    : island.IsSatellite ? _config.SatelliteRadius : _config.MainRadius;
                 Assert.That(island.Radius, Is.InRange(radius.x, radius.y), island.ToString());
                 Assert.That(island.Depth, Is.GreaterThan(island.Radius * 0.5f), island.ToString());
                 if (!island.IsSatellite) Assert.That(island.Top.y, Is.InRange(_config.TopAltitude.x, _config.TopAltitude.y));
@@ -133,6 +134,41 @@ namespace TinCan.Features.SkyIslands.Tests
             _layout.Around(4, focus, 1000f, _config.LayoutRules, NoKeepOuts, wide);
             Assert.That(wide.Select(island => island.Id.CellX).Distinct().Count(), Is.GreaterThan(3));
             Assert.That(wide.All(island => Mathf.Abs(island.Id.CellX) <= 3 && Mathf.Abs(island.Id.CellZ) <= 3), Is.True);
+        }
+
+        [Test]
+        public void ALandmass_StandsAloneInItsCell_AndWithinIt()
+        {
+            _config.LandmassChance = 0.3f;
+            float size = _config.CellSize;
+            var landmasses = Area(13).Where(island => island.IsLandmass).ToList();
+
+            Assert.That(landmasses.Count, Is.InRange(81 * 0.15f, 81 * 0.45f), "about LandmassChance of 81 cells");
+            foreach (var landmass in landmasses)
+            {
+                Assert.That(Cell(13, landmass.Id.CellX, landmass.Id.CellZ), Has.Count.EqualTo(1), $"{landmass}: alone, no satellites");
+                Assert.That(landmass.IsSatellite, Is.False);
+                float minX = landmass.Id.CellX * size, minZ = landmass.Id.CellZ * size;
+                Assert.That(landmass.Top.x - landmass.Radius, Is.GreaterThanOrEqualTo(minX + 9.9f), landmass.ToString());
+                Assert.That(landmass.Top.x + landmass.Radius, Is.LessThanOrEqualTo(minX + size - 9.9f), landmass.ToString());
+                Assert.That(landmass.Top.z - landmass.Radius, Is.GreaterThanOrEqualTo(minZ + 9.9f), landmass.ToString());
+                Assert.That(landmass.Top.z + landmass.Radius, Is.LessThanOrEqualTo(minZ + size - 9.9f), landmass.ToString());
+            }
+        }
+
+        [Test]
+        public void Landmasses_LeaveTheOtherCellsAsTheyWere()
+        {
+            _config.LandmassChance = 0f;
+            var before = Area(17);
+            _config.LandmassChance = 0.3f;
+            var after = Area(17);
+
+            var landmassCells = new HashSet<(int, int)>(after.Where(island => island.IsLandmass).Select(island => (island.Id.CellX, island.Id.CellZ)));
+            Assert.That(landmassCells, Is.Not.Empty);
+            var expected = before.Where(island => !landmassCells.Contains((island.Id.CellX, island.Id.CellZ))).Select(Describe);
+            var kept = after.Where(island => !island.IsLandmass).Select(Describe);
+            Assert.That(kept, Is.EqualTo(expected));
         }
 
         [Test]

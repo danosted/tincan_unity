@@ -17,7 +17,7 @@ namespace TinCan.Features.SkyIslands
         {
             into.Clear();
             var cut = resolution.Clamped;
-            var shape = new Shape(island);
+            var shape = new SkyIslandShape(island);
             int segments = cut.Segments;
 
             // Centre of the top.
@@ -26,7 +26,7 @@ namespace TinCan.Features.SkyIslands
             // The top: rings out to just inside the rim.
             for (int ring = 1; ring <= cut.TopRings; ring++)
             {
-                float reach = 0.93f * ring / cut.TopRings;
+                float reach = SkyIslandShape.TopReach * ring / cut.TopRings;
                 for (int i = 0; i < segments; i++)
                 {
                     float angle = Angle(i, segments);
@@ -79,9 +79,12 @@ namespace TinCan.Features.SkyIslands
         /// The island at this resolution as convex pieces: for every pair of neighbouring levels (the top's centre, each
         /// ring, the apex), wedges of <paramref name="wedgeSegments"/> segments, each with the middles of its two levels so
         /// the pieces meet at the axis. Coarse rings (no more than two wedges' worth) make one piece per slab.
+        /// With <paramref name="topPrismSegments"/> above 0 (a hilly landmass), the top, out to the rim, is cut into upright
+        /// prisms that many segments wide instead: each patch of ground down to just under the rim, so a hull never
+        /// spans a valley and makes a floor over it. The underside below the rim stays in wedges.
         /// </summary>
         public void BuildPieces(in SkyIslandSpec island, SkyIslandMeshResolution resolution, int wedgeSegments,
-            SkyIslandMeshData scratch, SkyIslandCollisionPieces into)
+            SkyIslandMeshData scratch, SkyIslandCollisionPieces into, int topPrismSegments = 0)
         {
             Build(island, resolution, scratch);
             into.Clear();
@@ -94,8 +97,16 @@ namespace TinCan.Features.SkyIslands
             var vertices = scratch.Vertices;
             int apex = vertices.Count - 1;
 
-            // Levels: -1 is the top's centre, 0..rings-1 the rings, rings the apex.
-            for (int level = -1; level < rings; level++)
+            // Levels: -1 is the top's centre, 0..rings-1 the rings (TopRings is the rim), rings the apex.
+            int firstWedgeLevel = -1;
+            if (topPrismSegments > 0)
+            {
+                firstWedgeLevel = cut.TopRings;
+                AddTopPrisms(into, vertices, cut.TopRings, segments, Mathf.Clamp(topPrismSegments, 1, segments),
+                    -new SkyIslandShape(island).Lip - 1f);
+            }
+
+            for (int level = firstWedgeLevel; level < rings; level++)
             {
                 for (int w = 0; w < wedges; w++)
                 {
@@ -104,6 +115,47 @@ namespace TinCan.Features.SkyIslands
                     AddLevel(into, vertices, level, first, last, segments, rings, apex);
                     AddLevel(into, vertices, level + 1, first, last, segments, rings, apex);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Upright prisms over the top, from the centre out to the rim: for every pair of neighbouring levels, patches
+        /// <paramref name="span"/> segments wide, each with its ground points and the same points dropped to
+        /// <paramref name="bottom"/>.
+        /// </summary>
+        private static void AddTopPrisms(SkyIslandCollisionPieces into, List<Vector3> vertices, int topRings, int segments,
+            int span, float bottom)
+        {
+            int patches = Mathf.CeilToInt((float)segments / span);
+            for (int level = -1; level < topRings; level++)
+            {
+                for (int p = 0; p < patches; p++)
+                {
+                    int first = p * span, last = Mathf.Min(segments, first + span);
+                    into.BeginPiece();
+                    AddPrismLevel(into, vertices, level, first, last, segments, bottom);
+                    AddPrismLevel(into, vertices, level + 1, first, last, segments, bottom);
+                }
+            }
+        }
+
+        /// <summary>A level's points across one patch (both ends included), each with its copy at the bottom.</summary>
+        private static void AddPrismLevel(SkyIslandCollisionPieces into, List<Vector3> vertices, int level, int first, int last,
+            int segments, float bottom)
+        {
+            if (level < 0)
+            {
+                into.Points.Add(vertices[0]);
+                into.Points.Add(new Vector3(vertices[0].x, bottom, vertices[0].z));
+                return;
+            }
+
+            int start = 1 + level * segments;
+            for (int i = first; i <= last; i++)
+            {
+                var point = vertices[start + i % segments];
+                into.Points.Add(point);
+                into.Points.Add(new Vector3(point.x, Mathf.Min(bottom, point.y - 0.5f), point.z));
             }
         }
 
@@ -192,115 +244,5 @@ namespace TinCan.Features.SkyIslands
         }
 
         private static float Angle(int index, int segments) => index * 2f * Mathf.PI / segments;
-
-        /// <summary>One island's character, rolled from its shape seed.</summary>
-        private readonly struct Shape
-        {
-            private readonly uint _seed;
-            private readonly float _radius;
-            private readonly float _edgeAmount;
-            private readonly float _edgeScale;
-            private readonly float _hill;
-            private readonly float _taper;
-            private readonly float _cragAmount;
-            private readonly float _lobeAmount;
-            private readonly float _ledgeAmount;
-            private readonly float _tuckIn;
-            private readonly int _spires;
-            private readonly float _spireWidth;
-            private readonly float _spire0, _spire1, _spire2;
-            private readonly float _height1, _height2;
-
-            public readonly float Lip;
-            public readonly Vector2 ApexOffset;
-
-            public Shape(in SkyIslandSpec island)
-            {
-                var random = new SkyIslandRandom(island.ShapeSeed);
-                _seed = island.ShapeSeed;
-                _radius = island.Radius;
-                _edgeAmount = random.Range(0.1f, 0.22f);
-                _edgeScale = random.Range(1.1f, 2.2f);
-                _hill = island.Radius * random.Range(0.03f, 0.08f);
-                _taper = random.Range(0.6f, 1.3f);
-                _cragAmount = random.Range(0.2f, 0.38f);
-                _lobeAmount = random.Range(0.08f, 0.2f);
-                _ledgeAmount = random.Range(0.04f, 0.12f);
-                Lip = 0.5f + island.Radius * random.Range(0.02f, 0.05f);
-
-                // Up to three spires: the deepest (the apex) and up to two shorter ones; between them the rock tucks in higher.
-                _tuckIn = random.Range(1.8f, 2.8f);
-                _spires = random.Range(1, 3);
-                _spireWidth = random.Range(0.9f, 1.6f);
-                _spire0 = random.Range(0f, 2f * Mathf.PI);
-                _spire1 = _spire0 + random.Range(1.6f, 2.6f);
-                _spire2 = _spire0 - random.Range(1.6f, 2.6f);
-                _height1 = random.Range(0.7f, 0.92f);
-                _height2 = random.Range(0.65f, 0.9f);
-                ApexOffset = new Vector2(Mathf.Cos(_spire0), Mathf.Sin(_spire0)) * island.Radius * random.Range(0.1f, 0.3f);
-            }
-
-            /// <summary>The top's edge at this angle: within [1 - edge amount, 1] of the radius, so the radius is the most.</summary>
-            public float Edge(float angle)
-            {
-                float noise = SkyIslandNoise.Fractal(_seed, Mathf.Cos(angle) * _edgeScale + 11f, 0f, Mathf.Sin(angle) * _edgeScale + 11f, 3);
-                return _radius * (1f - _edgeAmount * (0.5f + 0.5f * noise));
-            }
-
-            /// <summary>Rolling ground, highest near the middle, flattening toward the rim.</summary>
-            public float Height(float x, float z, float reach)
-            {
-                float scale = 2f / Mathf.Max(1f, _radius);
-                float noise = SkyIslandNoise.Fractal(_seed + 101u, x * scale + 31f, 0f, z * scale + 31f, 3);
-                float falloff = 1f - reach * reach;
-                return (_hill * noise + _hill * 0.6f) * falloff;
-            }
-
-            /// <summary>Craggy noise on the underside at this angle and depth, in [-1, 1].</summary>
-            public float Crag(float angle, float down) =>
-                SkyIslandNoise.Fractal(_seed + 211u, Mathf.Cos(angle) * 3.5f + 53f, down * 5f, Mathf.Sin(angle) * 3.5f + 53f, 3);
-
-            /// <summary>
-            /// The underside's radius: tapering with depth, crags growing in below the rim, never past the rim above.
-            /// </summary>
-            public float Under(float angle, float down, float crag, float ledge)
-            {
-                float edge = Edge(angle);
-                float taper = Mathf.Pow(1f - down, _taper);
-                float grow = Mathf.Min(1f, down * 4f);
-                float lobe = SkyIslandNoise.Value(_seed + 307u,
-                    Mathf.Cos(angle) * 1.2f + 71f, down * 1.2f, Mathf.Sin(angle) * 1.2f + 71f);
-                float rough = (1f + _cragAmount * grow * crag) * (1f + _lobeAmount * grow * lobe) * (1f + ledge * grow);
-                return Mathf.Min(edge * 0.97f * taper * rough, edge * 0.98f);
-            }
-
-            /// <summary>
-            /// How the rock drops at this angle: the exponent on the share of the way down. 1 under the deepest spire (a
-            /// steady drop), up to <c>_tuckIn</c> between spires (it stays high and curves in late). Every angle still ends
-            /// at the apex.
-            /// </summary>
-            public float Hang(float angle)
-            {
-                float spire = Bump(angle, _spire0);
-                if (_spires >= 2) spire = Mathf.Max(spire, _height1 * Bump(angle, _spire1));
-                if (_spires >= 3) spire = Mathf.Max(spire, _height2 * Bump(angle, _spire2));
-                return Mathf.Lerp(_tuckIn, 1f, spire);
-            }
-
-            /// <summary>A ring stepping in or out, for ledges between the rock layers: within plus or minus the ledge amount.</summary>
-            public float Ledge(int ring) =>
-                _ledgeAmount * (new SkyIslandRandom(SkyIslandRandom.Hash((int)_seed, ring, 613)).Value() * 2f - 1f);
-
-            /// <summary>1 at the spire's angle, falling smoothly to 0 one spire width away.</summary>
-            private float Bump(float angle, float at)
-            {
-                float apart = Mathf.Abs(Mathf.DeltaAngle(angle * Mathf.Rad2Deg, at * Mathf.Rad2Deg)) * Mathf.Deg2Rad;
-                float t = Mathf.Clamp01(1f - apart / _spireWidth);
-                return t * t * (3f - 2f * t);
-            }
-
-            /// <summary>A rock layer's tone, one per ring.</summary>
-            public float Strata(int ring) => new SkyIslandRandom(SkyIslandRandom.Hash((int)_seed, ring, 977)).Value();
-        }
     }
 }

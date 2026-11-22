@@ -31,6 +31,8 @@ namespace TinCan.Features.SkyIslands
             builder.RegisterInstance(_config);
             builder.Register<SkyIslandLayoutProcessor>(Lifetime.Transient);
             builder.Register<SkyIslandMeshProcessor>(Lifetime.Transient);
+            builder.Register<SkyIslandSiteProcessor>(Lifetime.Transient);
+            builder.Register<SkyIslandCaveMeshProcessor>(Lifetime.Transient);
             builder.Register<SkyIslandBuilder>(Lifetime.Singleton).As<ISkyIslandBuilder>();
             builder.Register<SkyIslandStreamingUseCase>(Lifetime.Singleton).As<ISkyIslands>().As<ITickable>();
             builder.Register<PhysicsSkyIslandContactQuery>(Lifetime.Singleton).As<ISkyIslandContactQuery>();

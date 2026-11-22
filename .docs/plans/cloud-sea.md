@@ -122,6 +122,31 @@ the reward of the dive, not a mode you switch on.
   - What it is for: planning the route (the chart and the sea ahead seen from high up) and enjoying the view.
 - Later: the camera and the sound at speed (a wider view, rushing wind) once the movement feels right.
 
+**Phase 2, step 1: the dive, the launch and the glide (asked by the developer, 2026-11-15; built 2026-11-15, not yet
+playtested).** The feature `CloudFlight` (its own assembly, `Profile_FuelSandbox` and `Profile_Test_Look`) adds forces
+through the core hook `IAirshipFlightForces`; the core keeps each ship's momentum (speed along the nose beyond the
+engine's) and a collision takes it away with the engine's. A ship counts as in the cloud below its rest height
+(`CloudFlightConfig.RestHeight`, 25 m above the cloud surface: the hull on the drawn tops, the deck clear of the fog),
+so a ship nobody steers settles there. Tuned by numbers first: a 4 s dive at 30 deg launches about 100 m above the
+tops (scenario `SoarFromDive` asks 30 m from a gentler, unpowered dive). Not yet: the fuel boost, the camera and
+sound at speed, the shelves (step 2), and the existing cloud emergency still counts a deep dive (5 m below the
+surface for 15 s) until the depth bands replace it.
+
+First try (2026-11-17, the developer): climbing felt very hard, nothing showed whether the ship was gaining speed or
+stalling, and the soft cloud surface is hard to read when sailing on it. So: the engine now holds a gentle climb for
+free (`FreeClimb`, 10 deg; only steeper climbs spend momentum), and a developer dashboard (`CloudFlightDashboard`, top
+right on the host, the config's `ShowDashboard`) shows the speed as engine + momentum, whether it is charging or
+spending, the nose, the height above rest, the zone, stall, the vertical push and how high the last launch went.
+Proposed next, as play feedback: a helm gauge (speed with a stall band, height above the tops), the ship's shadow and
+a wake on the tops, wind sound with speed and a stall shudder. Then (2026-11-21, the developer: "crank the engine up"):
+the ships' engine doubled to 30 m/s (acceleration 10, `Airship_Prefab`), and the most speed raised to 90 m/s.
+Then (2026-11-21, the developer: "the cloud sea has no impact on the levitation when moving; it should feel like
+sailing a sea, and off it you feel the pull back since there is no updraft"): the cloud now carries every ship to its
+rest height, moving or not (`Buoyancy` m/s per metre, up to `MaxHeave`), so it rides the swell and is pushed out
+harder the deeper it goes; off the sea the pull builds (`Gravity`) to a slow fall at speed (`GlideFall`) or a fast one
+stalled (`StallFall`), and the cloud takes the fall away on return (`CloudCatch`). This replaces the constant glide
+sink and the slow ship's rise.
+
 ### Depth bands
 Band edges are measured from the local surface, so they move with the swell.
 
@@ -346,6 +371,22 @@ Every phase is one feature slice: an EditMode test for each processor and use ca
    sun and fog driven from it. Scenario: host and client report the same weather blend at the same time.
 6. **Holes and currents in play.** Permanent wells and whirlpools as places, currents that move ships per band, the
    wake, the crew details. Stealth once an observer exists.
+
+## Cloud flight: state and notes (handover, 2026-11-22)
+Built, compiled, EditMode green (1680/1680 with the anchor); not playtested since the sea ride was added, and its own
+scenario `SoarFromDive` (Test_Look) has not run yet.
+- **The ride is gentle.** The swell is 20 m high over a 1000 m wavelength, so riding it gives at most about 4 m/s of
+  heave at 30 m/s. If it feels flat, the next lever is `CloudBoundaryConfig` `HeightAmplitude`/`HeightFrequency`;
+  that also reshapes the drawn sea and where the holes sit, so it waits until the developer has felt the ride.
+- **`SoarFromDive`** was written before the engine doubled and the sea ride was added; it may need retuning (dive
+  time, the `ShipAtRest` tolerance) on its first run.
+- **The dashboard** shows on the host only (the numbers live on the server); `CloudFlightConfig.ShowDashboard` turns
+  it off.
+- **Engine speed is read when a ship spawns**, so it cannot be tuned live; the `CloudFlightConfig` knobs can.
+- **A ship anchored mid-air** (`peaceful-mode.md`, P1) keeps its last cloud-flight fall rate and may start falling at
+  it when raised; on the sea the rate is zero. Handle it here if it shows.
+- **Next, as proposed:** a helm gauge, the ship's shadow and a wake on the cloud tops, wind sound and a stall
+  shudder; then step 2, the cloud shelves.
 
 ## Open questions (for the developer)
 1. **What lies beneath the sea?** Decided for now (developer, 2026-11-14): nothing. It is bottomless, and falling

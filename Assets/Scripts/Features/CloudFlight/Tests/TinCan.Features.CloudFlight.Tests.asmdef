@@ -1,0 +1,28 @@
+{
+  "name": "TinCan.Features.CloudFlight.Tests",
+  "rootNamespace": "TinCan.Features.CloudFlight.Tests",
+  "references": [
+    "TinCan.Core.Domain",
+    "TinCan.Ship",
+    "TinCan.Features.CloudBoundary",
+    "TinCan.Features.CloudFlight",
+    "TinCan.Tests.Fakes",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -24,6 +24,13 @@ namespace TinCan.Core.Ship.Tests
             }
         }
 
+        private sealed class FixedForce : IAirshipFlightForces
+        {
+            public AirshipFlightForce Force;
+
+            public AirshipFlightForce Evaluate(IAirshipView ship, float engineSpeed, float momentum, float deltaTime) => Force;
+        }
+
         private FakeActorRegistry _actors = null!;
         private FakeAirshipView _ship = null!;
 
@@ -38,8 +45,10 @@ namespace TinCan.Core.Ship.Tests
         [TearDown]
         public void TearDown() => _ship.Destroy();
 
-        private AirshipMovementUseCase Create(params IAirshipPilotInput[] pilots) => new(
-            new FakeInputReader(), new FakeNetworkService(), _actors, new FakeTimeService(), new AirshipMovementProcessor(), pilots);
+        private AirshipMovementUseCase Create(params IAirshipPilotInput[] pilots) => Create(pilots, System.Array.Empty<IAirshipFlightForces>());
+
+        private AirshipMovementUseCase Create(IAirshipPilotInput[] pilots, IAirshipFlightForces[] forces) => new(
+            new FakeInputReader(), new FakeNetworkService(), _actors, new FakeTimeService(), new AirshipMovementProcessor(), pilots, forces);
 
         [Test]
         public void NoPilot_TheShipGetsNoInput()
@@ -100,6 +109,31 @@ namespace TinCan.Core.Ship.Tests
             movement.Push(_ship, Vector3.zero);
 
             Assert.That(_ship.Transform.position, Is.EqualTo(before));
+        }
+
+        [Test]
+        public void AFlightForce_AddsMomentumOnTheNose_AndAVerticalPush()
+        {
+            var helm = new FixedPilot { Answer = new AirshipInputState { Throttle = 1f } };
+            var force = new FixedForce { Force = new AirshipFlightForce(momentumChange: 0.05f, vertical: -2f, noseDrop: 0f) };
+            var withForce = Create(new IAirshipPilotInput[] { helm }, new IAirshipFlightForces[] { force });
+            for (int i = 0; i < 120; i++) withForce.Tick();
+
+            Assert.That(_ship.AppliedVelocity.z, Is.GreaterThan(_ship.MaxForwardSpeed + 2f), "faster than the engine alone");
+            Assert.That(_ship.AppliedVelocity.y, Is.LessThan(-1f), "sinking");
+        }
+
+        [Test]
+        public void ANoseDrop_PitchesTheNoseDown_WithoutBuildingUp()
+        {
+            var force = new FixedForce { Force = new AirshipFlightForce(0f, 0f, noseDrop: 5f) };
+            var movement = Create(System.Array.Empty<IAirshipPilotInput>(), new IAirshipFlightForces[] { force });
+
+            movement.Tick();
+            movement.Tick();
+            movement.Tick();
+
+            Assert.That(_ship.AppliedAngularVelocity.x, Is.EqualTo(5f).Within(1e-4f));
         }
 
         /// <summary>Full throttle for a while: the ship flies along +z.</summary>

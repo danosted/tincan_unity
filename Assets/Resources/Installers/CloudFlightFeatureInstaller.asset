@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba8ddb79a88d65245806ae36fd0979a1, type: 3}
+  m_Name: CloudFlightFeatureInstaller
+  m_EditorClassIdentifier: TinCan.Features.CloudFlight::TinCan.Features.CloudFlight.CloudFlightFeatureInstaller
+  _config: {fileID: 11400000, guid: 5b84d50970a673742bde56f0741cd66a, type: 2}
+  _dashboardStyle: {fileID: 7433441132597879392, guid: d208229b4eea7294caf8ca4175488b7f, type: 3}

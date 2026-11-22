@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a1b348a59ae40e40a69df1eed4f0cf9, type: 3}
+  m_Name: CloudFlightConfig
+  m_EditorClassIdentifier: TinCan.Features.CloudFlight::TinCan.Features.CloudFlight.CloudFlightConfig
+  _restHeight: 25
+  _cloudBlend: 4
+  _pull: 9.8
+  _diveGain: 2.5
+  _freeClimb: 10
+  _climbCost: 0.2
+  _airDrag: 0.02
+  _cloudDrag: 0.03
+  _maxSpeed: 90
+  _buoyancy: 1
+  _maxHeave: 10
+  _cloudCatch: 15
+  _gravity: 4
+  _glideFall: 5
+  _stallFall: 15
+  _stallSpeed: 8
+  _noseDrop: 12
+  _ceilingStart: 400
+  _ceilingDepth: 300
+  _ceilingSink: 10
+  _showDashboard: 1

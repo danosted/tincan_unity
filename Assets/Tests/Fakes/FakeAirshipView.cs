@@ -56,7 +56,13 @@ namespace TinCan.Tests.Fakes
         /// <summary>The last velocity the movement use case applied.</summary>
         public Vector3 AppliedVelocity { get; private set; }
 
-        public void ApplyMovement(Vector3 velocity, Vector3 angularVelocity) => AppliedVelocity = velocity;
+        public Vector3 AppliedAngularVelocity { get; private set; }
+
+        public void ApplyMovement(Vector3 velocity, Vector3 angularVelocity)
+        {
+            AppliedVelocity = velocity;
+            AppliedAngularVelocity = angularVelocity;
+        }
         public void Simulate(float deltaTime) { }
         public Vector3 GetPointVelocity(Vector3 worldPoint) => Vector3.zero;
     }

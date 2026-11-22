@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d378242545e1de147a8466045c6d7f9d, type: 3}
+  m_Name: ITEM_CampfireBundle
+  m_EditorClassIdentifier: TinCan.Items::TinCan.Core.Items.ItemDefinition
+  _id: 7
+  _displayName: Campfire bundle
+  _heldVisual: {fileID: 1414100493024537178, guid: 5c332000590ad04479693ff9a151f93c, type: 3}
+  _grantedAbilities: []
+  _equippedEffect: {fileID: 11400000, guid: 44a24bf8bcd367e429d9bb306cd7f114, type: 2}

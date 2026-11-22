@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82eecf446cec0cb4eb0b47c9d3288411, type: 3}
+  m_Name: CampingFeatureInstaller
+  m_EditorClassIdentifier: TinCan.Features.Camping::TinCan.Features.Camping.CampingFeatureInstaller
+  _config: {fileID: 11400000, guid: 6b9eb524c31af73418f2d93ac045827d, type: 2}
+  _items:
+  - {fileID: 11400000, guid: 39329f51c44387846abe6de6df16feb5, type: 2}
+  - {fileID: 11400000, guid: 5de8e2fcd0f6aae40a07f38451892b7b, type: 2}
+  - {fileID: 11400000, guid: a5afb5e6737e129438ede6120b78dc68, type: 2}
+  _fittings:
+  - {fileID: 11400000, guid: fe45ff6315d9d7348a7f858a9b75f60b, type: 2}

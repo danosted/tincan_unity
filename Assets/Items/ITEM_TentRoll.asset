@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d378242545e1de147a8466045c6d7f9d, type: 3}
+  m_Name: ITEM_TentRoll
+  m_EditorClassIdentifier: TinCan.Items::TinCan.Core.Items.ItemDefinition
+  _id: 6
+  _displayName: Tent roll
+  _heldVisual: {fileID: 8606796303141799551, guid: 9b687203902848e459b60706acfe31dd, type: 3}
+  _grantedAbilities: []
+  _equippedEffect: {fileID: 11400000, guid: 625b8c9b40510dd4eb2a9d6c3f346760, type: 2}

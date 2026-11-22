@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d378242545e1de147a8466045c6d7f9d, type: 3}
+  m_Name: ITEM_Firewood
+  m_EditorClassIdentifier: TinCan.Items::TinCan.Core.Items.ItemDefinition
+  _id: 5
+  _displayName: Firewood
+  _heldVisual: {fileID: 5321610279495038521, guid: bfe86994f46f95044a2d8b4ccefa4cc3, type: 3}
+  _grantedAbilities: []
+  _equippedEffect: {fileID: 11400000, guid: 5f79f4af9ea374940abf7528c2eb3ed4, type: 2}

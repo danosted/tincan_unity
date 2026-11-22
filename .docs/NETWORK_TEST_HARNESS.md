@@ -267,6 +267,7 @@ move the subject.
 | `Test_Navigation` | Stations, Helm, Voyage, SkyIslands, SkyHazards, Navigation | CompassCourse, ChartPlot, ChartIslands, ChartHazards |
 | `Test_Look` | Atmosphere (the look's fog, ambient, sun and post; the only test area with it, the others stay plain), DayCycle (the moving sun) | LookApplies, DayMoves |
 | `Test_Islands` | Sky islands, Camping, Island details (no voyage: the config's seed; trees, rocks and caves round the test ship; players place their own campfires and tents) | IslandForage, CampLoop |
+| `Test_Galleon` | the game's profile (`Profile_Galleon`: the quiet world, Encounters, Anchor, Gathering and the rest) on the Galleon | GalleonLeashClimb, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun |
 
 **The scenes are generated.** `DevTools/Editor/TestRangeSceneBuilder.cs` (**TinCan > Dev > Test Range > Rebuild
 Scenes**) builds every scene from its `Areas` table and adds them to the build list. Clients load the host's scene

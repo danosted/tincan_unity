@@ -3,6 +3,7 @@
     "rootNamespace": "TinCan.Features.Anchor",
     "references": [
         "TinCan.Core.Domain",
+        "TinCan.Humanoid",
         "TinCan.Interaction",
         "TinCan.Ship",
         "Unity.Netcode.Runtime",

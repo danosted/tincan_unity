@@ -4,6 +4,7 @@ using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
 using TinCan.Core.Humanoid;
+using TinCan.Core.Items;
 using TinCan.Features.Gathering;
 using UnityEngine;
 
@@ -12,7 +13,7 @@ namespace TinCan.DevTools.Scenarios
     /// <summary>
     /// Scenario steps for fuel gathering (plan: fuel-gathering.md). Commands: stand the subject in front of the crystal
     /// vein nearest the ship (server), turn the subject's camera to it (subject peer). Probes: how many veins have spawned,
-    /// the subject stands by that vein, and how many crystals it holds (replicated).
+    /// the subject stands by that vein, how many crystals it holds, and how many the ship's crystal bin holds (replicated).
     /// </summary>
     public sealed class GatheringScenarioLibrary : IScenarioLibrary
     {
@@ -43,7 +44,8 @@ namespace TinCan.DevTools.Scenarios
         {
             new ScenarioProbe("VeinsSpawned", CheckSpawned),
             new ScenarioProbe("SubjectAtVein", _ => CheckAtVein()),
-            new ScenarioProbe("VeinCrystals", CheckCrystals)
+            new ScenarioProbe("VeinCrystals", CheckCrystals),
+            new ScenarioProbe("BinCrystals", CheckBin)
         };
 
         /// <summary>Server: stands the subject in front of the vein nearest the ship, facing it.</summary>
@@ -99,6 +101,15 @@ namespace TinCan.DevTools.Scenarios
             if (Vein() is not IVein vein) return ScenarioCheck.Fail("no vein");
             string detail = $"{vein.Available} crystal(s)";
             return vein.Available == int.Parse(expected, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
+
+        /// <summary>The ship's crystal bin holds exactly this many crystals on this peer.</summary>
+        private ScenarioCheck CheckBin(string expected)
+        {
+            var bin = Object.FindObjectsByType<ItemStockpileNetworkMediator>(FindObjectsSortMode.None).FirstOrDefault(store => store.IsSpawned);
+            if (bin == null) return ScenarioCheck.Fail("no crystal bin spawned");
+            string detail = $"{bin.Count}/{bin.Capacity} crystal(s) in the bin";
+            return bin.Count == int.Parse(expected, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
         private System.Collections.Generic.IEnumerable<Component> Veins() =>

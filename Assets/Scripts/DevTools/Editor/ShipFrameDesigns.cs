@@ -158,8 +158,9 @@ namespace TinCan.DevTools.Editor
             b.OnNode(ShipDesignsAssetBuilder.Propeller, hold[0]);
             b.OnNode(ShipDesignsAssetBuilder.Propeller, hold[1]);
             // Added after the rest, so every earlier placement keeps its id: the quarterdeck's port stern corner, under
-            // open sky (the net rack's 5 m pole would pierce the quarterdeck from the cabin floor).
-            int quarterdeckPortAft = b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, -30, -75);
+            // open sky (the net rack's 5 m pole would pierce the quarterdeck from the cabin floor). It faces port (quarter
+            // turn 3), 1.5 m inside the rail, so the anchor's chain and ladder hang over the side, clear of the hull below.
+            int quarterdeckPortAft = b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, -30, -75, 3);
             mounts = new GalleonMountIds(holdPortAft, holdStarboardAft, holdPortFore, holdStarboardFore, bowPort, bowStarboard,
                 sternPort, sternStarboard, balconyMount, quarterdeckPortAft);
             return b.Build(GalleonName);

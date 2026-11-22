@@ -207,6 +207,19 @@ lantern oil. The ship and spirit progression and the world save are unchanged by
   rest. It holds anywhere (the recommended default; the open question stands). Not built: the helm showing it is
   anchored. Known: the cloud flight keeps each ship's last fall rate, so a ship anchored mid-air may start falling at
   its old rate when raised; the cloud-flight session will handle that if it shows.
+- **2026-11-22, after the first playtest (developer feedback, built; EditMode 1716/1716; `LadderClimb`, `AnchorHold`, `CrystalRun` and `GalleonLoadout` pass solo and host + client).**
+  - **The engine was far too fast.** The Galleon is back to 15 m/s (acceleration 5), as before the cloud flight's
+    doubling, as an override on `Galleon_Prefab` only (`Airship_Prefab` is not touched; the classic test ship keeps 30).
+  - **No way back aboard without a grapple** (the Galleon has no grapple rack, and hands hold one thing, so a crystal
+    and a hook never go together). Decided: **a rope ladder with the anchor.** While the anchor is down a 13 m ladder
+    hangs over the port rail; forward climbs, back goes down, nothing hangs still, jump lets go, and hands may be full.
+    At the top you are set down on deck. The ship holds still while anchored, so the climb predicts like walking
+    (`LadderClimbUseCase`, `LadderLandingUseCase`). The anchor's plate now faces port, so the chain hangs over the side
+    too (the inboard chain above is fixed). Scenario `LadderClimb`. Not yet: a ladder that reaches the ground below,
+    whatever the height; climbing down onto it from the deck; catching someone who falls overboard near it.
+  - **A loadout picker** was raised and set aside: it needs a second hand or an inventory first.
+  - **Knowing what you carry:** the HUD names what you hold and what Interact does on the target in reach
+    ([fuel-gathering.md](fuel-gathering.md), progress).
 
 ## Open questions (for the developer)
 1. **Are actives limited?** Everything unlocked is usable at once (simplest), or the spirit has a few attunement

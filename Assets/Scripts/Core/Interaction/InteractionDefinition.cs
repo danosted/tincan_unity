@@ -32,6 +32,9 @@ namespace TinCan.Core.Interaction
         [SerializeField, Min(0f)]
         [Tooltip("0: Interact acts on the press. Above 0: the work takes this long; hold Interact on the same target until it is done (letting go, looking away or walking off cancels it).")]
         private float _holdSeconds;
+        [SerializeField]
+        [Tooltip("What Interact does here, shown on the HUD while the target is in reach (\"Mine crystal\"). Empty shows nothing.")]
+        private string _prompt = string.Empty;
 
         public Type HandlerType => string.IsNullOrEmpty(_handlerTypeName) ? null : Type.GetType(_handlerTypeName);
         public AbilityDefinition Ability => _ability;
@@ -44,6 +47,13 @@ namespace TinCan.Core.Interaction
         {
             get => _holdSeconds;
             set => _holdSeconds = Mathf.Max(0f, value);
+        }
+
+        /// <summary>What Interact does on this target, for the HUD; empty shows nothing. A target may say more (<see cref="IInteractionPrompt"/>).</summary>
+        public string Prompt
+        {
+            get => _prompt ?? string.Empty;
+            set => _prompt = value ?? string.Empty;
         }
     }
 }

@@ -8,6 +8,7 @@ using TinCan.Core.Entities;
 using TinCan.Core.Gas;
 using TinCan.Core.Interaction;
 using TinCan.Core.Items;
+using TinCan.Core.Ship.Sockets;
 using TinCan.Features.Airship.Fuel;
 using TinCan.Features.Gathering;
 using TinCan.Features.IslandDetails;
@@ -46,6 +47,16 @@ namespace TinCan.DevTools.Editor
         private const string IslandDetailsConfigPath = "Assets/Settings/IslandDetails/IslandDetailsConfig.asset";
         private const string FuelConfigPath = "Assets/Settings/FuelConfig.asset";
         private const string TestIslandsProfilePath = "Assets/Settings/FeatureProfiles/Test/Profile_Test_Islands.asset";
+        private const string BinInteractionPath = "Assets/Interactions/IA_CrystalBin.asset";
+        private const string BinPath = "Assets/Prefabs/Gathering/CrystalBin.prefab";
+        private const string BinFittingPath = "Assets/Settings/ShipFittings/FITTING_CrystalBin.asset";
+        private const string WoodPath = "Assets/Materials/Respawn/M_LeashWinch_Wood.mat";
+
+        /// <summary>The crystal bin's socket fitting id (the Galleon's loadout mounts it in the hold).</summary>
+        public const string CrystalBinFittingId = "stores.crystal_bin";
+
+        /// <summary>How many crystals the bin holds.</summary>
+        public const int BinCapacity = 12;
 
         // Stable network ids: 1-7 are the jerry can, the net, the repair tool, the hook, firewood, the tent roll, the bundle.
         private const int CrystalItemId = 8;
@@ -78,11 +89,28 @@ namespace TinCan.DevTools.Editor
                 var fields = new SerializedObject(definition);
                 fields.FindProperty("_handlerTypeName").stringValue = typeof(MineCrystalInteractionHandler).AssemblyQualifiedName!;
                 fields.FindProperty("_holdSeconds").floatValue = MineSeconds;
+                fields.FindProperty("_prompt").stringValue = "Mine crystal";
                 fields.ApplyModifiedPropertiesWithoutUndo();
             });
 
             var config = Asset<GatheringConfig>(ConfigPath, c => c.CrystalItem = crystal);
             var vein = VeinPrefab(mine, config, crystalMaterial, rock);
+            var binInteraction = Asset<InteractionDefinition>(BinInteractionPath, definition =>
+            {
+                var fields = new SerializedObject(definition);
+                fields.FindProperty("_handlerTypeName").stringValue = typeof(StockItemInteractionHandler).AssemblyQualifiedName!;
+                fields.FindProperty("_prompt").stringValue = "Crystal bin";
+                fields.ApplyModifiedPropertiesWithoutUndo();
+            });
+            var bin = BinPrefab(binInteraction, crystal, crystalMaterial, Load<Material>(WoodPath));
+            var binFitting = Asset<ShipFittingDefinition>(BinFittingPath, definition =>
+            {
+                var fields = new SerializedObject(definition);
+                fields.FindProperty("_fittingId").stringValue = CrystalBinFittingId;
+                fields.FindProperty("_displayName").stringValue = "Crystal bin";
+                fields.FindProperty("_prefab").objectReferenceValue = bin;
+                fields.ApplyModifiedPropertiesWithoutUndo();
+            });
 
             var installer = Asset<GatheringFeatureInstaller>(InstallerPath, i =>
             {
@@ -90,6 +118,9 @@ namespace TinCan.DevTools.Editor
                 var items = fields.FindProperty("_items");
                 items.arraySize = 1;
                 items.GetArrayElementAtIndex(0).objectReferenceValue = crystal;
+                var fittings = fields.FindProperty("_fittings");
+                fittings.arraySize = 1;
+                fittings.GetArrayElementAtIndex(0).objectReferenceValue = binFitting;
                 fields.ApplyModifiedPropertiesWithoutUndo();
             });
 
@@ -192,7 +223,67 @@ namespace TinCan.DevTools.Editor
             return prefab;
         }
 
-        private static void Visual(PrimitiveType shape, string name, Transform parent, Vector3 position, Vector3 euler, Vector3 scale, Material material)
+        /// <summary>
+        /// The crystal bin, a ship fitting: an open wooden crate on the deck (solid), its <see cref="BinCapacity"/> crystals
+        /// standing in it in rows (Stock_00 ... , one shown per crystal held), and an Interact volume over it. Its front is +z.
+        /// </summary>
+        private static GameObject BinPrefab(InteractionDefinition stock, ItemDefinition crystalItem, Material crystal, Material wood)
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(BinPath);
+            if (existing != null) return existing;
+
+            var root = new GameObject("CrystalBin");
+            var networkObject = root.AddComponent<NetworkObject>();
+            networkObject.AutoObjectParentSync = true;
+            networkObject.SyncOwnerTransformWhenParented = true;
+            root.AddComponent<EntityNetworkMediator>();
+            var bin = root.AddComponent<ItemStockpileNetworkMediator>();
+            var fields = new SerializedObject(bin);
+            fields.FindProperty("_interactionDefinition").objectReferenceValue = stock;
+            fields.FindProperty("_item").objectReferenceValue = crystalItem;
+            fields.FindProperty("_capacity").intValue = BinCapacity;
+            fields.ApplyModifiedPropertiesWithoutUndo();
+
+            // A 1.2 x 0.6 x 0.8 m crate, open at the top: a floor and four walls.
+            Visual(PrimitiveType.Cube, "Floor", root.transform, new Vector3(0f, 0.05f, 0f), Vector3.zero, new Vector3(1.2f, 0.1f, 0.8f), wood);
+            Visual(PrimitiveType.Cube, "Wall_Front", root.transform, new Vector3(0f, 0.3f, 0.37f), Vector3.zero, new Vector3(1.2f, 0.6f, 0.06f), wood);
+            Visual(PrimitiveType.Cube, "Wall_Back", root.transform, new Vector3(0f, 0.3f, -0.37f), Vector3.zero, new Vector3(1.2f, 0.6f, 0.06f), wood);
+            Visual(PrimitiveType.Cube, "Wall_Left", root.transform, new Vector3(-0.57f, 0.3f, 0f), Vector3.zero, new Vector3(0.06f, 0.6f, 0.8f), wood);
+            Visual(PrimitiveType.Cube, "Wall_Right", root.transform, new Vector3(0.57f, 0.3f, 0f), Vector3.zero, new Vector3(0.06f, 0.6f, 0.8f), wood);
+
+            // Three rows of four, leaning a little each way so the bin reads as a heap of crystal.
+            for (int i = 0; i < BinCapacity; i++)
+            {
+                int column = i % 4, row = i / 4;
+                var position = new Vector3(-0.39f + column * 0.26f, 0.35f + row * 0.04f, -0.22f + row * 0.22f);
+                var euler = new Vector3(15f * ((i % 3) - 1), 37f * i % 90f, 12f * ((i % 2) * 2 - 1));
+                var piece = Visual(PrimitiveType.Cube, $"Stock_{i:00}", root.transform, position, euler, new Vector3(0.13f, 0.32f, 0.13f), crystal);
+                piece.SetActive(false);
+            }
+
+            var solid = root.AddComponent<BoxCollider>();
+            solid.center = new Vector3(0f, 0.3f, 0f);
+            solid.size = new Vector3(1.2f, 0.6f, 0.8f);
+
+            var volume = new GameObject("InteractVolume").AddComponent<BoxCollider>();
+            volume.transform.SetParent(root.transform, false);
+            volume.transform.localPosition = new Vector3(0f, 0.6f, 0f);
+            volume.isTrigger = true;
+            volume.size = new Vector3(1.4f, 1.2f, 1.0f);
+
+            EnsureFolder(BinPath);
+            var prefab = PrefabUtility.SaveAsPrefabAsset(root, BinPath);
+            Object.DestroyImmediate(root);
+
+            var saved = prefab.GetComponent<NetworkObject>();
+            typeof(NetworkObject).GetMethod("OnValidate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)
+                ?.Invoke(saved, null);
+            EditorUtility.SetDirty(saved);
+            EditorUtility.SetDirty(prefab);
+            return prefab;
+        }
+
+        private static GameObject Visual(PrimitiveType shape, string name, Transform parent, Vector3 position, Vector3 euler, Vector3 scale, Material material)
         {
             var visual = GameObject.CreatePrimitive(shape);
             visual.name = name;
@@ -202,6 +293,7 @@ namespace TinCan.DevTools.Editor
             visual.transform.localEulerAngles = euler;
             visual.transform.localScale = scale;
             visual.GetComponent<MeshRenderer>().sharedMaterial = material;
+            return visual;
         }
 
         private static T Asset<T>(string path, Action<T> configure) where T : ScriptableObject

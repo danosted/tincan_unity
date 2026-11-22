@@ -98,7 +98,18 @@ engine. Running low means you have to find the next island.
     one, and `DebugFreeRefuel` stays on until the crank exists (G3); the game's own tuning is G4.
   - The tag database had two tags in memory but not on disk (the campfire bundle's and the crystal's); fixed, and the
     trap is in `CODE_MAP.md`.
-- **Next:** G3 the crank, then the crystal bin (`ship-shield.md`, SH3), then G4 feel and tuning.
+- **2026-11-22, the crystal bin and the HUD (developer feedback after the first playtest: "where do you put the
+  crystals, and how do you know what you are carrying?"; built, EditMode 1716/1716; `CrystalRun` passes solo and host + client with the bin).**
+  - **The crystal bin** (SH3, pulled forward): the `stores.crystal_bin` fitting, a crate of 12 in the Galleon's
+    starboard aft hold across from the receiver. A crystal in hand goes in; empty hands take one out; the crystals in
+    the crate show the count. It is a core item stockpile (`Core/Items/ItemStockpileNetworkMediator.cs`), so the
+    shield can later spend from it without knowing Gathering. `CrystalRun` now stores the crystal and takes it out
+    again before feeding the engine. Not yet: the bin's count surviving a session (the world save).
+  - **The HUD** says what you hold ("Holding: Fuel crystal") and what Interact does on the target in reach
+    ("Interact: Mine crystal", "Crystal bin 4/12", "Drop anchor"). Prompts are a field on each interaction
+    (`InteractionDefinition.Prompt`); a target can say more (`IInteractionPrompt`). The builders set them for
+    gathering and the anchor; the older interactions' prompts were set once in the Editor.
+- **Next:** G3 the crank, then G4 feel and tuning.
 
 ## Tests
 EditMode: `RegrowingStock` (and deadwood still green on it), vein placement, the mine interaction (hold, cancel,

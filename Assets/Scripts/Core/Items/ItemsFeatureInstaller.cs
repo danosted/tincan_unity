@@ -5,6 +5,7 @@ using TinCan.Core.Domain.Features;
 using TinCan.Core.Interaction;
 using UnityEngine;
 using VContainer;
+using VContainer.Unity;
 
 namespace TinCan.Core.Items
 {
@@ -27,6 +28,8 @@ namespace TinCan.Core.Items
             builder.Register(resolver => BuildCatalog(resolver.Resolve<FeatureInstallerCatalog>()), Lifetime.Singleton);
             builder.Register<EquipmentAbilityBinder>(Lifetime.Singleton);
             builder.Register<TakeItemInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
+            builder.Register<StockItemInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
+            builder.Register<HeldItemPresenter>(Lifetime.Singleton).As<ITickable>();
         }
 
         private ItemCatalog BuildCatalog(FeatureInstallerCatalog features)

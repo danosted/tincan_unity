@@ -5,6 +5,7 @@
         "TinCan.Core.Domain",
         "TinCan.Interaction",
         "TinCan.Items",
+        "TinCan.Ship",
         "Unity.Netcode.Runtime",
         "VContainer"
     ],

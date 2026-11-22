@@ -1,0 +1,19 @@
+{
+    "name": "TinCan.Features.IslandDetails",
+    "rootNamespace": "TinCan.Features.IslandDetails",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Features.SkyIslands",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

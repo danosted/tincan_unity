@@ -1066,6 +1066,163 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<CloudSeaScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
+        public static readonly ScenarioEntry SoarFromDive = new(
+            new Scenario.Builder("SoarFromDive")
+                .InScene(TestScenes.Look)
+                .Describe("Host and client spawn in the look's test area -> the ship, nobody at the helm, settles at its rest height on the cloud -> the server points its nose 20 deg down into the cloud for 6 s, then 25 deg up -> the dive's speed launches it at least 30 m above the cloud on every peer.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .WaitUntil("ShipAtRest", 30f)
+                    .Do("PitchShip", "-20")
+                    .Wait(6f, "the dive through the cloud")
+                    .Do("PitchShip", "25")
+                    .WaitUntil("ShipAboveCloud", 25f, "30"))
+                .Act(s => s
+                    .WaitUntil("ShipAboveCloud", 90f, "30")
+                    .Checkpoint("launch"))
+                .Assert(s => s
+                    .WaitUntil("ShipAboveCloud", 90f, "30"))
+                .Build(),
+            builder => builder.Register<CloudFlightScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        /// <summary>
+        /// Island life (plan island-life.md): the islands round the test ship stand with their scenery, trees and caves.
+        /// The server stands the subject by a tree on an island; the subject gathers a log from it with the real key (the
+        /// canopy loses a lobe on every peer); then the server stands it in a cave, under the rock, where it ties the log
+        /// into a bundle and sets a campfire down on the chamber's floor.
+        /// </summary>
+        public static readonly ScenarioEntry IslandForage = new(
+            new Scenario.Builder("IslandForage")
+                .InScene(TestScenes.Islands)
+                .Describe("Islands stand with trees, rocks and caves -> stand by a tree on an island -> gather firewood from it " +
+                          "(a log less on every peer) -> stand in a cave, under its roof -> set a campfire down inside.")
+                .Timeout(150f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .WaitUntil("IslandTreesStand", 40f)
+                    .Expect("SubjectHolds", "none")
+                    .Do("PlaceSubjectAtIslandTree"))
+                .Act(s => s
+                    .WaitUntil("SubjectNearIslandTree", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Expect("IslandSceneryStands")
+                    .Do("FaceIslandTree")
+                    .WaitUntil("InteractTargetIs", 5f, IslandTreeTarget)
+                    .WaitUntil("IslandTreeLogs", 5f, "3")
+                    .Checkpoint("at-a-tree")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHolds", 5f, "ITEM_Firewood")
+                    .WaitUntil("IslandTreeLogs", 5f, "2")
+                    .Checkpoint("gathered")
+                    .WaitUntil("SubjectInCave", 45f)
+                    .Wait(1f, "teleport settles")
+                    .Checkpoint("in-a-cave")
+                    .Hold(0.3f, ScriptedAction.Primary)
+                    .WaitUntil("SubjectHolds", 5f, "ITEM_CampfireBundle")
+                    .Do("AimAtGround", "2")
+                    .WaitUntil("PlacementPreview", 5f, "Campfire,Fits")
+                    .Wait(0.5f, "let go")
+                    .Hold(0.3f, ScriptedAction.Primary)
+                    .WaitUntil("CampfirePlaced", 5f)
+                    .Checkpoint("campfire-in-a-cave"))
+                .Assert(s => s
+                    .WaitUntil("SubjectHolds", 45f, "ITEM_Firewood")
+                    .Expect("IslandTreeLogs", "2")
+                    .Do("PlaceSubjectInCave")
+                    .WaitUntil("SubjectInCave", 20f)
+                    .WaitUntil("CampfirePlaced", 30f)
+                    .Expect("SubjectInCave"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<IslandLifeScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<CampingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>The name of a tree's firewood part (IslandDetailsAssetBuilder.TreeTargetName, an Editor type).</summary>
+        private const string IslandTreeTarget = "Branches";
+
+        /// <summary>
+        /// The camp loop with the real keys, on an island (plan island-life.md): in the middle clearing of the island
+        /// nearest the test ship, the subject ties the log it holds into a campfire bundle (Primary), aims at the ground
+        /// and sets the bundle down where the preview says it fits (Primary); the campfire stands unlit on every peer and
+        /// a log fed to it lights it. Then it sets a tent roll down beside it, pitched, and packs it away again. The server
+        /// hands over each item once the replicated outcome of the last step arrives.
+        /// </summary>
+        public static readonly ScenarioEntry CampLoop = new(
+            new Scenario.Builder("CampLoop")
+                .InScene(TestScenes.Islands)
+                .Describe("In an island clearing: tie a log into a campfire bundle -> set it down where the preview fits -> " +
+                          "light it with a log -> set a tent down beside it -> pack the tent away again.")
+                .Timeout(150f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Expect("SubjectHolds", "none")
+                    .Do("PlaceSubjectInAClearing")
+                    .Do("EquipSubject", "ITEM_Firewood"))
+                .Act(s => s
+                    .WaitUntil("SubjectInAClearing", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .WaitUntil("SubjectHolds", 10f, "ITEM_Firewood")
+                    .Hold(0.3f, ScriptedAction.Primary)
+                    .WaitUntil("SubjectHolds", 5f, "ITEM_CampfireBundle")
+                    .Do("AimAtGround", "2.5")
+                    .WaitUntil("PlacementPreview", 5f, "Campfire,Fits")
+                    .Checkpoint("campfire-preview")
+                    .Wait(0.5f, "let go")
+                    .Hold(0.3f, ScriptedAction.Primary)
+                    .WaitUntil("CampfirePlaced", 5f)
+                    .Expect("FireOut")
+                    .WaitUntil("SubjectHolds", 20f, "ITEM_Firewood")
+                    .Do("FaceNearest", CampfireTarget)
+                    .WaitUntil("InteractTargetIs", 5f, CampfireTarget)
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("FireLit", 5f)
+                    .Checkpoint("fire-lit")
+                    .WaitUntil("SubjectHolds", 20f, "ITEM_TentRoll")
+                    .Do("AimAtGround", "3,120")
+                    .WaitUntil("PlacementPreview", 5f, "Tent,Fits")
+                    .Checkpoint("tent-preview")
+                    .Wait(0.5f, "let go")
+                    .Hold(0.3f, ScriptedAction.Primary)
+                    .WaitUntil("TentPitched", 5f)
+                    .WaitUntil("SubjectHolds", 5f, "none")
+                    .Checkpoint("tent-pitched")
+                    .Do("FaceNearest", TentTarget)
+                    .WaitUntil("InteractTargetIs", 5f, TentTarget)
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHolds", 5f, "ITEM_TentRoll")
+                    .WaitUntil("TentGone", 5f))
+                .Assert(s => s
+                    .WaitUntil("SubjectHolds", 45f, "ITEM_CampfireBundle")
+                    .WaitUntil("CampfirePlaced", 30f)
+                    .WaitUntil("SubjectHolds", 10f, "none")
+                    .Expect("FireOut")
+                    .Do("EquipSubject", "ITEM_Firewood")
+                    .WaitUntil("FireLit", 30f)
+                    .WaitUntil("SubjectHolds", 10f, "none")
+                    .Do("EquipSubject", "ITEM_TentRoll")
+                    .WaitUntil("TentPitched", 30f)
+                    .WaitUntil("TentGone", 30f)
+                    .Expect("SubjectHolds", "ITEM_TentRoll")
+                    .Expect("FireLit"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<CampingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>The names of the placed campfire's and tent's targets (CampingAssetBuilder, an Editor type).</summary>
+        private const string CampfireTarget = "Campfire";
+        private const string TentTarget = "TentSpot";
+
         public static readonly ScenarioEntry MountFitting = new(            new Scenario.Builder("MountFitting")
                 .InScene(TestScenes.Shipyard)
                 .Describe("Face a free socket on the designed ship -> press Interact -> the fitting menu opens on the subject's peer only -> pick the cannon -> the server mounts it on that socket for every peer.")
@@ -1490,12 +1647,12 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<RespawnScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        // The leash on the Galleon (cheesed_scene, the developer's scene, which flies it with Profile_Galleon). The winch is
+        // The leash on the Galleon (Test_Galleon: the Galleon with the game's profile). The winch is
         // mounted on the starboard balcony off the quarterdeck (ship space (5,2,-6), its rope hanging past x 5.9), so the
         // subject falls beside and below it, climbs the rope in open air and lands on the quarterdeck, not inside a wall.
         public static readonly ScenarioEntry GalleonLeashClimb = new(
             new Scenario.Builder("GalleonLeashClimb")
-                .InScene("Assets/Scenes/cheesed_scene.unity")
+                .InScene(TestScenes.Galleon)
                 .Describe("On the Galleon: fall overboard by the starboard balcony -> hang on its winch's leash -> climb -> aboard on the quarterdeck, on both peers.")
                 .Timeout(150f)
                 .Arrange(s => s
@@ -1718,20 +1875,18 @@ namespace TinCan.DevTools.Scenarios
             });
 
         /// <summary>
-        /// The Galleon in the game scene: its loadout mounts the chart table in the starboard forward hold; the subject
-        /// takes it, looks through the table's camera in first person and plots a waypoint, then leaves. Plan:
-        /// navigation-compass.md (S2).
+        /// The Galleon as the game builds it (Test_Galleon): its loadout mounts the chart table in the starboard forward
+        /// hold; the subject takes it, looks through the table's camera in first person and plots a waypoint on the empty
+        /// route (the game has no voyage, so no destination), then leaves. Plan: navigation-compass.md (S2).
         /// </summary>
         public static readonly ScenarioEntry GalleonChartTable = new(
             new Scenario.Builder("GalleonChartTable")
-                .InScene("Assets/Scenes/cheesed_scene.unity")
-                .Describe("On the Galleon: the chart table in the hold -> take it -> the chart shows the course -> plot a waypoint -> leave.")
+                .InScene(TestScenes.Galleon)
+                .Describe("On the Galleon: the chart table in the hold -> take it -> plot a waypoint on the empty route -> leave.")
                 .Timeout(150f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 60f)
                     .Wait(2f, "settle after spawn; the design builds")
-                    .Do("VoyageBegin")
-                    .WaitUntil("RouteEndsAtDestination", 5f)
                     .Do("PlaceSubjectAtChartTable"))
                 .Act(s => s
                     .WaitUntil("SubjectAtChartTable", 45f)
@@ -1741,24 +1896,22 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("InteractTargetIs", 5f, "ChartTable")
                     .Hold(0.3f, ScriptedAction.Interact)
                     .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Chart")
-                    .WaitUntil("ChartShowsWaypoints", 5f, "1")
+                    .WaitUntil("ChartShowsWaypoints", 5f, "0")
                     .Hold(0.25f, ScriptedAction.NavigatorCursorLeft)
                     .Tap(ScriptedAction.NavigatorPlace)
-                    .WaitUntil("RouteWaypoints", 5f, "2")
-                    .WaitUntil("ChartShowsWaypoints", 5f, "2")
+                    .WaitUntil("RouteWaypoints", 5f, "1")
+                    .WaitUntil("ChartShowsWaypoints", 5f, "1")
                     .Checkpoint("galleon-chart")
                     .Hold(0.3f, ScriptedAction.NavigatorLeave)
                     .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Chart"))
                 .Assert(s => s
                     .WaitUntil("ChartTableManned", 60f)
-                    .WaitUntil("RouteWaypoints", 30f, "2")
-                    .Expect("RouteEndsAtDestination")
+                    .WaitUntil("RouteWaypoints", 30f, "1")
                     .WaitUntil("ChartTableFree", 30f))
                 .Build(),
             builder =>
             {
                 builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
-                builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
                 builder.Register<NavigationScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
@@ -1770,7 +1923,7 @@ namespace TinCan.DevTools.Scenarios
         /// </summary>
         public static readonly ScenarioEntry GasSquallEvent = new(
             new Scenario.Builder("GasSquallEvent")
-                .InScene("Assets/Scenes/cheesed_scene.unity")
+                .InScene(TestScenes.Galleon)
                 .Describe("On the Galleon: GasSquall -> pockets on both peers and the chart -> one goes off on the ship -> fittings break -> repaired -> succeeds.")
                 .Timeout(150f)
                 .Arrange(s => s
@@ -1807,69 +1960,13 @@ namespace TinCan.DevTools.Scenarios
             });
 
         /// <summary>
-        /// The Galleon's fuel loop (plan: main-game-state.md, M2): its loadout mounts the receiver (port) and the crystal
-        /// rack (starboard) in the aft hold and the net rack on the quarterdeck. The tank, now ship state, is drained a
-        /// little; the subject pours a crystal into the receiver and the level rises; then, with the net, catches a can,
-        /// which lands in the crystal rack. The receiver stands at ship (-2.5, -3.5, -5) facing inboard.
-        /// </summary>
-        public static readonly ScenarioEntry GalleonFuelLoop = new(
-            new Scenario.Builder("GalleonFuelLoop")
-                .InScene("Assets/Scenes/cheesed_scene.unity")
-                .Describe("On the Galleon: fuel fittings mounted -> pour a crystal into the receiver, the tank rises -> catch a can with the net, the crystal rack grows.")
-                .Timeout(150f)
-                .Arrange(s => s
-                    .WaitUntil("SubjectReady", 60f)
-                    .Wait(2f, "settle after spawn; the design builds")
-                    .WaitUntil("SocketFitted", 15f, "fuel.receiver")
-                    .WaitUntil("SocketFitted", 5f, "fuel.crystal_rack")
-                    .WaitUntil("SocketFitted", 5f, "fuel.net_rack")
-                    .Do("DrainTank", "30")
-                    .Do("RecordTankLevel")
-                    .Do("RecordJerryCanSupply")
-                    .Do("EquipSubject", "ITEM_JerryCan")
-                    .Do("PlaceSubjectAtShipLocal", "-0.9,-2.45,-5.5"))
-                .Act(s => s
-                    .WaitUntil("SubjectHolds", 10f, "ITEM_JerryCan")
-                    .WaitUntil("SubjectNearShipLocal", 30f, "-0.9,-2.45,-5.5,0.8")
-                    .Wait(0.5f, "teleport settles")
-                    .Do("FaceObject", "MotorFillPort")
-                    .WaitUntil("InteractTargetIs", 5f, "MotorFillPort")
-                    .Checkpoint("at-the-receiver")
-                    .Hold(0.3f, ScriptedAction.Interact)
-                    // The server hands over the net only once the tank has risen, so holding it proves the pour (an
-                    // empty-handed check in between can miss: the net may arrive on the same tick).
-                    .WaitUntil("SubjectHolds", 20f, "ITEM_CatchingNet")
-                    .Checkpoint("poured-holding-net")
-                    .WaitUntil("CanInNetReach", 10f)
-                    .Checkpoint("can-in-reach")
-                    .Hold(0.3f, ScriptedAction.Primary)
-                    .WaitUntil("NoCanInNetReach", 5f)
-                    .Checkpoint("caught"))
-                .Assert(s => s
-                    .WaitUntil("TankLevelRose", 40f)
-                    .Do("GiveSubjectNet")
-                    .Wait(0.5f, "the net replicates")
-                    .Do("SpawnCanAtSubjectNet")
-                    .WaitUntil("JerryCanSupplyIncreased", 20f))
-                .Build(),
-            builder =>
-            {
-                builder.Register<FuelScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
-                builder.Register<NetCatchScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
-                builder.Register<ItemsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
-                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
-                builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
-                builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
-            });
-
-        /// <summary>
         /// The Galleon's aft cannons (the starboard one at ship (3, 2.5, -4.5), its seat 1.8 m behind at z -6.3, 2.2 m inside
         /// the stern rail): manning one puts the subject on its seat on the quarterdeck, not overboard. Before the plates
         /// moved forward the seat hung past the stern rail; the seat check now also refuses such a seat.
         /// </summary>
         public static readonly ScenarioEntry GalleonSternCannon = new(
             new Scenario.Builder("GalleonSternCannon")
-                .InScene("Assets/Scenes/cheesed_scene.unity")
+                .InScene(TestScenes.Galleon)
                 .Describe("On the Galleon: stand behind the aft starboard cannon -> man it -> seated on the quarterdeck, still aboard -> leave.")
                 .Timeout(120f)
                 .Arrange(s => s
@@ -1906,7 +2003,58 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonFuelLoop, GalleonSternCannon };
+        /// <summary>
+        /// The anchor on the Galleon (plan: peaceful-mode.md, P1): the subject drops it from its winch on the quarterdeck,
+        /// then takes the helm and gives full throttle and a turn for a few seconds, and the ship stays where it was; the
+        /// chain is down on both peers.
+        /// </summary>
+        public static readonly ScenarioEntry AnchorHold = new(
+            new Scenario.Builder("AnchorHold")
+                .InScene(TestScenes.Galleon)
+                .Describe("On the Galleon: drop the anchor -> take the helm, full throttle and a turn -> the ship holds where it was -> leave.")
+                .Timeout(150f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn; the design builds")
+                    .WaitUntil("SocketFitted", 15f, "ship.anchor")
+                    .Expect("AnchorUp")
+                    .Do("PlaceSubjectAtAnchor"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtAnchor", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceAnchor")
+                    .WaitUntil("InteractTargetIs", 5f, "Anchor")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("AnchorDown", 5f)
+                    .Checkpoint("anchored")
+                    .WaitUntil("SubjectAtHelm", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceHelm")
+                    .WaitUntil("InteractTargetIs", 5f, "HelmStation")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Helm")
+                    .Hold(4f, ScriptedAction.ShipThrottleUp, ScriptedAction.ShipTurnRight)
+                    .Checkpoint("throttled-anchored")
+                    .Hold(0.3f, ScriptedAction.HelmLeave)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Helm"))
+                .Assert(s => s
+                    .WaitUntil("AnchorDown", 60f)
+                    .Do("RecordAnchoredShip")
+                    .Do("PlaceSubjectAtHelm")
+                    .WaitUntil("HelmManned", 60f)
+                    .WaitUntil("HelmFree", 30f)
+                    .Expect("ShipHeldWithin", "0.3")
+                    .Expect("AnchorDown"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<AnchorScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<HelmScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

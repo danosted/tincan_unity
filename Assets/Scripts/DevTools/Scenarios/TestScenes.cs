@@ -20,7 +20,12 @@ namespace TinCan.DevTools.Scenarios
         public const string Navigation = "Assets/Scenes/Test/Test_Navigation.unity";
         /// <summary>The one test area with the look (Atmosphere): the other areas stay plain.</summary>
         public const string Look = "Assets/Scenes/Test/Test_Look.unity";
+        /// <summary>Sky islands with their details, caves and camps around the test ship (no voyage: the config's seed).</summary>
+        public const string Islands = "Assets/Scenes/Test/Test_Islands.unity";
 
-        public static readonly string[] All = { Core, ShipDamage, NetCatch, Cannon, Voyage, Helm, Shipyard, GrappleHook, Respawn, Navigation, Look };
+        /// <summary>The Galleon with the game's profile (Profile_Galleon, as in cheesed_scene), for the scenarios on it.</summary>
+        public const string Galleon = "Assets/Scenes/Test/Test_Galleon.unity";
+
+        public static readonly string[] All = { Core, ShipDamage, NetCatch, Cannon, Voyage, Helm, Shipyard, GrappleHook, Respawn, Navigation, Look, Islands, Galleon };
     }
 }

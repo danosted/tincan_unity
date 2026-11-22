@@ -27,6 +27,7 @@ namespace TinCan.DevTools.Editor
         private static readonly System.Collections.Generic.Dictionary<string, string> ShipPrefabs = new()
         {
             [TestScenes.Shipyard] = ShipDesignsAssetBuilder.ModularShipPath,
+            [TestScenes.Galleon] = ShipSocketsAssetBuilder.GalleonPrefabPath,
         };
 
         /// <summary>Each test-range scene and the feature profile its scope loads.</summary>
@@ -42,7 +43,9 @@ namespace TinCan.DevTools.Editor
             (TestScenes.GrappleHook, "Profile_Test_GrappleHook"),
             (TestScenes.Respawn, "Profile_Test_Respawn"),
             (TestScenes.Navigation, "Profile_Test_Navigation"),
-            (TestScenes.Look, "Profile_Test_Look")
+            (TestScenes.Look, "Profile_Test_Look"),
+            (TestScenes.Islands, "Profile_Test_Islands"),
+            (TestScenes.Galleon, "Profile_Test_Galleon")
         };
 
         [MenuItem("TinCan/Dev/Test Range/Rebuild Scenes")]
@@ -63,7 +66,7 @@ namespace TinCan.DevTools.Editor
 
             string returnTo = active.path;
             foreach (var (scene, profile) in Areas) Build(scene, profile);
-            AddToBuildList();
+            SyncBuildList();
             if (!string.IsNullOrEmpty(returnTo)) EditorSceneManager.OpenScene(returnTo, OpenSceneMode.Single);
             Debug.Log($"[TestRange] Rebuilt {Areas.Length} scene(s): {string.Join(", ", Areas.Select(area => area.Scene))}.");
         }
@@ -74,7 +77,7 @@ namespace TinCan.DevTools.Editor
             var area = Areas.Single(a => a.Scene == scenePath);
             string returnTo = SceneManager.GetActiveScene().path;
             Build(area.Scene, area.Profile);
-            AddToBuildList();
+            SyncBuildList();
             if (!string.IsNullOrEmpty(returnTo)) EditorSceneManager.OpenScene(returnTo, OpenSceneMode.Single);
         }
 
@@ -121,9 +124,11 @@ namespace TinCan.DevTools.Editor
             EditorSceneManager.SaveScene(scene, scenePath);
         }
 
-        private static void AddToBuildList()
+        /// <summary>Every area scene in the build list, and no test scene that no longer exists.</summary>
+        public static void SyncBuildList()
         {
             var scenes = EditorBuildSettings.scenes.ToList();
+            scenes.RemoveAll(entry => entry.path.StartsWith("Assets/Scenes/Test/") && AssetDatabase.LoadAssetAtPath<SceneAsset>(entry.path) == null);
             foreach (var (scenePath, _) in Areas)
             {
                 if (scenes.Any(entry => entry.path == scenePath)) continue;

@@ -62,6 +62,13 @@ namespace TinCan.DevTools.Editor
             new Entry("M_ShipPennant", "lacquer-red"),
             new Entry("M_ShipCairn", "rock-ochre"),
             new Entry("M_ShipSpirit", "spirit-cyan", glow: 1.6f),
+            new Entry("M_CampFlame", "lantern-amber", glow: 2.4f),
+            new Entry("M_CampEmber", "burnt-orange", glow: 1.2f),
+            new Entry("M_CampLeather", "russet"),
+            new Entry("M_FoliageRusset", "russet"),
+            new Entry("M_FoliageOrange", "burnt-orange"),
+            new Entry("M_FoliageGold", "leaf-gold"),
+            new Entry("M_IslandMoss", "grass"),
         };
 
         [MenuItem("TinCan/Dev/Look/Build Materials")]

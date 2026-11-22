@@ -1,0 +1,20 @@
+{
+    "name": "TinCan.Features.CloudFlight",
+    "rootNamespace": "TinCan.Features.CloudFlight",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Ship",
+        "TinCan.Features.CloudBoundary",
+        "TinCan.UI",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,12 @@
+/* The cloud flight's developer dashboard (CloudFlightDashboard.cs), top right; contributed by its installer. */
+.tc-cloud-flight-dashboard {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 580px;
+    padding: 6px;
+    font-size: var(--tc-font-s);
+    white-space: pre;
+    color: var(--tc-text);
+    background-color: var(--tc-surface-readout);
+}

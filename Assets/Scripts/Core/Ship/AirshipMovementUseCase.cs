@@ -12,6 +12,8 @@ namespace TinCan.Core.Ship
     /// (<see cref="IAirshipPilotInput"/>, the first source with an answer; the helm station today) and is kept on the
     /// ship as its current input, which other server systems read (fuel burns with the throttle).
     /// Something solid can push the ship out of itself (<see cref="IAirshipCollisionResponse"/>).
+    /// Features can add forces to the flight (<see cref="IAirshipFlightForces"/>: momentum, a vertical push, a nose drop);
+    /// with none, the ship flies on its engine alone.
     /// </summary>
     public class AirshipMovementUseCase : SimulationUseCase<IAirshipView, AirshipInputState>, IAirshipCollisionResponse
     {
@@ -20,6 +22,8 @@ namespace TinCan.Core.Ship
             public float CurrentSpeed;
             public Vector3 CurrentVelocity;
             public Vector3 CurrentAngularVelocity;
+            /// <summary>Speed along the nose beyond the engine's, from <see cref="IAirshipFlightForces"/>.</summary>
+            public float Momentum;
         }
 
         /// <summary>How much of the velocity into a surface comes back out of it when the ship is pushed.</summary>
@@ -27,6 +31,7 @@ namespace TinCan.Core.Ship
 
         private readonly AirshipMovementProcessor _processor;
         private readonly IReadOnlyList<IAirshipPilotInput> _pilots;
+        private readonly IReadOnlyList<IAirshipFlightForces> _forces;
         private readonly Dictionary<Guid, MovementState> _states = new();
 
         public AirshipMovementUseCase(
@@ -35,11 +40,13 @@ namespace TinCan.Core.Ship
             IActorRegistry registry,
             ITimeService timeService,
             AirshipMovementProcessor processor,
-            IReadOnlyList<IAirshipPilotInput> pilots)
+            IReadOnlyList<IAirshipPilotInput> pilots,
+            IReadOnlyList<IAirshipFlightForces> forces)
             : base(input, networkService, registry, timeService)
         {
             _processor = processor;
             _pilots = pilots;
+            _forces = forces;
         }
 
         // Nobody steers a ship from their own peer: its pilot's input reaches the server through the pilot source.
@@ -66,15 +73,25 @@ namespace TinCan.Core.Ship
                 airship.DecelerationRate,
                 deltaTime);
 
-            // 2. Calculate Drift Velocity
+            // 2. The features' forces: momentum on top of the engine, a vertical push, a nose drop.
+            float vertical = 0f, noseDrop = 0f;
+            foreach (var source in _forces)
+            {
+                var force = source.Evaluate(airship, state.CurrentSpeed, state.Momentum, deltaTime);
+                state.Momentum += force.MomentumChange;
+                vertical += force.Vertical;
+                noseDrop += force.NoseDrop;
+            }
+
+            // 3. Calculate Drift Velocity (the vertical push blends in the same way: the lerp toward forward + up).
             state.CurrentVelocity = _processor.CalculateVelocityWithDrift(
                 state.CurrentVelocity,
                 airship.Transform.forward,
-                state.CurrentSpeed,
+                state.CurrentSpeed + state.Momentum,
                 airship.VelocityBlendRate,
-                deltaTime);
+                deltaTime) + Vector3.up * (vertical * Mathf.Clamp01(airship.VelocityBlendRate * deltaTime));
 
-            // 3. Calculate Angular Velocity with Momentum and Banking
+            // 4. Calculate Angular Velocity with Momentum and Banking
             state.CurrentAngularVelocity = _processor.CalculateAngularVelocity(
                 state.CurrentAngularVelocity,
                 input,
@@ -89,8 +106,10 @@ namespace TinCan.Core.Ship
                 airship.BankSpeed,
                 deltaTime);
 
-            // 4. Apply to view
-            airship.ApplyMovement(state.CurrentVelocity, state.CurrentAngularVelocity);
+            // 5. Apply to view (the nose drop is applied, not kept: it never builds up in the pitch momentum).
+            Vector3 angular = state.CurrentAngularVelocity;
+            angular.x += noseDrop;
+            airship.ApplyMovement(state.CurrentVelocity, angular);
             airship.Simulate(deltaTime);
         }
 
@@ -107,7 +126,11 @@ namespace TinCan.Core.Ship
 
             // Head on, the engine stops pushing into the rock; along it, it keeps most of its way.
             float facing = Vector3.Dot(airship.Transform.forward, normal);
-            if (facing < 0f) state.CurrentSpeed *= 1f + facing;
+            if (facing < 0f)
+            {
+                state.CurrentSpeed *= 1f + facing;
+                state.Momentum *= 1f + facing;
+            }
         }
 
         private AirshipInputState PilotInput(IAirshipView airship)

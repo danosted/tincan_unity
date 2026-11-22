@@ -2,6 +2,10 @@ Status: Draft; the first step (a cairn part, the spirit's lift as one tuning val
 
 # Spirit cairn: a bound spirit lifts the ship, boat parts steer it
 
+> **2026-11-22 (developer):** the spirit's progression is a talent tree, seen on the spirit, and the ship's shield is
+> its first branch (Ward): [spirit-talents.md](spirit-talents.md), [ship-shield.md](ship-shield.md). That plan takes
+> over "Spirit levels", "Tending the spirit" and "The cairn's look, and the spirit's" from "Later" below.
+
 ## Why
 
 Balloons do not suit the ships the frame builder makes ([ship-frames.md](ship-frames.md)). They sit over the hull, block

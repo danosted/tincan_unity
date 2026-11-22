@@ -2,6 +2,11 @@ Status: Draft
 
 # The main game: scene_main, Profile_Main, and the Galleon's fuel, hull stress and gas pockets
 
+> **Replaced in part (developer, 2026-11-22).** The main scene is `cheesed_scene`, running the peaceful mode as a
+> quiet world ([peaceful-mode.md](peaceful-mode.md) P0), not `scene_main` or `Profile_Main`. Fuel comes from mined
+> crystals ([fuel-gathering.md](fuel-gathering.md)). Hull stress and gas pockets now run only inside encounter zones
+> ([encounters.md](encounters.md)).
+
 ## Goal
 One scene and one profile are "the current state of the game": `scene_main` running `Profile_Main`, flying the
 Galleon. On that ship the fuel loop works through the socket system, the hull can be stressed and broken (and

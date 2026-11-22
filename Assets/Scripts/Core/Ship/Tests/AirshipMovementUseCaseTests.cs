@@ -47,8 +47,17 @@ namespace TinCan.Core.Ship.Tests
 
         private AirshipMovementUseCase Create(params IAirshipPilotInput[] pilots) => Create(pilots, System.Array.Empty<IAirshipFlightForces>());
 
-        private AirshipMovementUseCase Create(IAirshipPilotInput[] pilots, IAirshipFlightForces[] forces) => new(
-            new FakeInputReader(), new FakeNetworkService(), _actors, new FakeTimeService(), new AirshipMovementProcessor(), pilots, forces);
+        private AirshipMovementUseCase Create(IAirshipPilotInput[] pilots, IAirshipFlightForces[] forces) =>
+            Create(pilots, forces, System.Array.Empty<IAirshipHold>());
+
+        private AirshipMovementUseCase Create(IAirshipPilotInput[] pilots, IAirshipFlightForces[] forces, IAirshipHold[] holds) => new(
+            new FakeInputReader(), new FakeNetworkService(), _actors, new FakeTimeService(), new AirshipMovementProcessor(), pilots, forces, holds);
+
+        private sealed class SwitchHold : IAirshipHold
+        {
+            public bool Holding;
+            public bool Holds(IAirshipView ship) => Holding;
+        }
 
         [Test]
         public void NoPilot_TheShipGetsNoInput()
@@ -134,6 +143,41 @@ namespace TinCan.Core.Ship.Tests
             movement.Tick();
 
             Assert.That(_ship.AppliedAngularVelocity.x, Is.EqualTo(5f).Within(1e-4f));
+        }
+
+        [Test]
+        public void AHeldShip_StandsStill_DespiteThrottleAndFlightForces()
+        {
+            var helm = new FixedPilot { Answer = new AirshipInputState { Throttle = 1f, Yaw = 1f } };
+            var force = new FixedForce { Force = new AirshipFlightForce(momentumChange: 0.5f, vertical: -3f, noseDrop: 5f) };
+            var hold = new SwitchHold { Holding = true };
+            var movement = Create(new IAirshipPilotInput[] { helm }, new IAirshipFlightForces[] { force }, new IAirshipHold[] { hold });
+
+            for (int i = 0; i < 60; i++) movement.Tick();
+
+            Assert.That(_ship.AppliedVelocity, Is.EqualTo(Vector3.zero));
+            Assert.That(_ship.AppliedAngularVelocity, Is.EqualTo(Vector3.zero));
+            Assert.That(_ship.InputState.Throttle, Is.EqualTo(1f), "the pilot's input is still kept on the ship");
+        }
+
+        [Test]
+        public void LettingGo_StartsFromRest_WithNoStoredMomentum()
+        {
+            var helm = new FixedPilot { Answer = new AirshipInputState { Throttle = 1f } };
+            var force = new FixedForce { Force = new AirshipFlightForce(momentumChange: 0.5f, vertical: 0f, noseDrop: 0f) };
+            var hold = new SwitchHold();
+            var movement = Create(new IAirshipPilotInput[] { helm }, new IAirshipFlightForces[] { force }, new IAirshipHold[] { hold });
+            for (int i = 0; i < 60; i++) movement.Tick();
+            float flying = _ship.AppliedVelocity.z;
+
+            hold.Holding = true;
+            movement.Tick();
+            hold.Holding = false;
+            helm.Answer = default(AirshipInputState);
+            force.Force = default;
+            movement.Tick();
+
+            Assert.That(_ship.AppliedVelocity.magnitude, Is.LessThan(flying * 0.25f), "no leap away with the old speed");
         }
 
         /// <summary>Full throttle for a while: the ship flies along +z.</summary>

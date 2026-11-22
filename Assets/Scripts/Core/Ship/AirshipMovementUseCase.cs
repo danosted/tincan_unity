@@ -13,7 +13,8 @@ namespace TinCan.Core.Ship
     /// ship as its current input, which other server systems read (fuel burns with the throttle).
     /// Something solid can push the ship out of itself (<see cref="IAirshipCollisionResponse"/>).
     /// Features can add forces to the flight (<see cref="IAirshipFlightForces"/>: momentum, a vertical push, a nose drop);
-    /// with none, the ship flies on its engine alone.
+    /// with none, the ship flies on its engine alone. A feature can hold the ship still (<see cref="IAirshipHold"/>: the
+    /// anchor), which comes before all of it.
     /// </summary>
     public class AirshipMovementUseCase : SimulationUseCase<IAirshipView, AirshipInputState>, IAirshipCollisionResponse
     {
@@ -32,6 +33,7 @@ namespace TinCan.Core.Ship
         private readonly AirshipMovementProcessor _processor;
         private readonly IReadOnlyList<IAirshipPilotInput> _pilots;
         private readonly IReadOnlyList<IAirshipFlightForces> _forces;
+        private readonly IReadOnlyList<IAirshipHold> _holds;
         private readonly Dictionary<Guid, MovementState> _states = new();
 
         public AirshipMovementUseCase(
@@ -41,12 +43,14 @@ namespace TinCan.Core.Ship
             ITimeService timeService,
             AirshipMovementProcessor processor,
             IReadOnlyList<IAirshipPilotInput> pilots,
-            IReadOnlyList<IAirshipFlightForces> forces)
+            IReadOnlyList<IAirshipFlightForces> forces,
+            IReadOnlyList<IAirshipHold> holds)
             : base(input, networkService, registry, timeService)
         {
             _processor = processor;
             _pilots = pilots;
             _forces = forces;
+            _holds = holds;
         }
 
         // Nobody steers a ship from their own peer: its pilot's input reaches the server through the pilot source.
@@ -62,6 +66,18 @@ namespace TinCan.Core.Ship
 
             var state = _states[airship.Id];
             float deltaTime = TimeService.DeltaTime;
+
+            // 0. Held (anchored): still where it is, and from rest when let go (no stored speed or momentum).
+            if (IsHeld(airship))
+            {
+                state.CurrentSpeed = 0f;
+                state.Momentum = 0f;
+                state.CurrentVelocity = Vector3.zero;
+                state.CurrentAngularVelocity = Vector3.zero;
+                airship.ApplyMovement(Vector3.zero, Vector3.zero);
+                airship.Simulate(deltaTime);
+                return;
+            }
 
             // 1. Calculate Linear Speed
             state.CurrentSpeed = _processor.CalculateLinearSpeed(
@@ -131,6 +147,15 @@ namespace TinCan.Core.Ship
                 state.CurrentSpeed *= 1f + facing;
                 state.Momentum *= 1f + facing;
             }
+        }
+
+        private bool IsHeld(IAirshipView airship)
+        {
+            foreach (var hold in _holds)
+            {
+                if (hold.Holds(airship)) return true;
+            }
+            return false;
         }
 
         private AirshipInputState PilotInput(IAirshipView airship)

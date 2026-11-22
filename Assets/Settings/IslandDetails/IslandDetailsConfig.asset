@@ -22,6 +22,8 @@ MonoBehaviour:
   BushPrefabs:
   - {fileID: 1628199405522613286, guid: 39a86efac7a3a9541b470701636582e0, type: 3}
   - {fileID: 1810855384042752402, guid: 2a4c6aeff3fcc9c49a4f29ef1b406503, type: 3}
+  VeinPrefabs:
+  - {fileID: 2991035391553100549, guid: 9fc989740647e92408d476e729b0263a, type: 3}
   TreesPerHectare: 12
   MaxTrees: 18
   MaxTreesOnALandmass: 70
@@ -37,6 +39,11 @@ MonoBehaviour:
   MaxBushes: 140
   BushSpacing: 2
   BushScale: {x: 0.7, y: 1.25}
+  VeinsPerIsland: 2
+  VeinsOnALandmass: 6
+  VeinsPerCave: 1
+  VeinSpacing: 4
+  VeinScale: {x: 0.9, y: 1.2}
   RimReach: 0.86
   CheckIntervalSeconds: 0.5
   MaxTreeSpawnsPerCheck: 24

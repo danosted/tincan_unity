@@ -136,6 +136,30 @@ namespace TinCan.Features.IslandDetails.Tests
             Assert.That(_spawner.Spawned, Is.Empty);
         }
 
+        [Test]
+        public void Veins_AreSpawnedWithTheTrees_AsVeins()
+        {
+            _config.VeinPrefabs.Add(null!);
+            var island = IslandDetailsTestKit.Main(4);
+            _islands.List.Add(island);
+
+            var useCase = Create();
+            for (int i = 0; i < 20; i++)
+            {
+                useCase.Tick();
+                _time.Time += _config.CheckIntervalSeconds;
+            }
+
+            var sites = new SkyIslandSites();
+            new SkyIslandSiteProcessor().Sites(island, _islandConfig.SiteRules, sites);
+            var details = new List<IslandDetail>();
+            new IslandDetailPlacementProcessor().Place(island, sites, _config.Rules(_islandConfig.ClearingRadius), details);
+            int veins = details.Count(d => d.Kind == IslandDetailKind.Vein);
+
+            Assert.That(veins, Is.GreaterThan(0));
+            Assert.That(_spawner.Spawned.Values.Count(t => t.Kind == IslandDetailKind.Vein), Is.EqualTo(veins));
+        }
+
         private List<IslandDetail> Expected(in SkyIslandSpec island)
         {
             var sites = new SkyIslandSites();

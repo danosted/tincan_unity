@@ -33,7 +33,7 @@ namespace TinCan.Features.IslandDetails
             builder.Register<IslandSceneryBuilder>(Lifetime.Singleton).As<IIslandSceneryBuilder>();
             builder.Register<IslandSceneryUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
             builder.Register<IIslandTreeSpawner>(
-                resolver => new NetworkIslandTreeSpawner(resolver.Resolve<NetworkManager>(), resolver, config.TreePrefabs),
+                resolver => new NetworkIslandTreeSpawner(resolver.Resolve<NetworkManager>(), resolver, config),
                 Lifetime.Singleton);
             builder.Register<IslandTreesUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>();
         }
@@ -46,6 +46,10 @@ namespace TinCan.Features.IslandDetails
                 foreach (var tree in _config.TreePrefabs)
                 {
                     if (tree != null) yield return tree;
+                }
+                foreach (var vein in _config.VeinPrefabs)
+                {
+                    if (vein != null) yield return vein;
                 }
             }
         }

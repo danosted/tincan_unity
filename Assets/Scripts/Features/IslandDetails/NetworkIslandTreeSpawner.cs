@@ -15,20 +15,26 @@ namespace TinCan.Features.IslandDetails
     {
         private readonly NetworkManager _networkManager;
         private readonly IObjectResolver _container;
-        private readonly IReadOnlyList<GameObject> _prefabs;
+        private readonly IslandDetailsConfig _config;
 
-        public NetworkIslandTreeSpawner(NetworkManager networkManager, IObjectResolver container, IReadOnlyList<GameObject> prefabs)
+        public NetworkIslandTreeSpawner(NetworkManager networkManager, IObjectResolver container, IslandDetailsConfig config)
         {
             _networkManager = networkManager;
             _container = container;
-            _prefabs = prefabs;
+            _config = config;
         }
 
-        public ulong? Spawn(Vector3 position, Quaternion rotation, float scale, int variant)
+        public ulong? Spawn(IslandDetailKind kind, Vector3 position, Quaternion rotation, float scale, int variant)
         {
-            if (!_networkManager.IsServer || variant < 0 || variant >= _prefabs.Count || _prefabs[variant] == null) return null;
+            IReadOnlyList<GameObject>? prefabs = kind switch
+            {
+                IslandDetailKind.Tree => _config.TreePrefabs,
+                IslandDetailKind.Vein => _config.VeinPrefabs,
+                _ => null
+            };
+            if (!_networkManager.IsServer || prefabs == null || variant < 0 || variant >= prefabs.Count || prefabs[variant] == null) return null;
 
-            var prefab = _prefabs[variant];
+            var prefab = prefabs[variant];
             var instance = Object.Instantiate(prefab, position, rotation);
             instance.transform.localScale = prefab.transform.localScale * scale;
             _container.InjectGameObject(instance);

@@ -54,6 +54,24 @@ namespace TinCan.Core.Interaction.Tests
         private FakeNetHumanoidView _player = null!;
         private FakeTarget _rack = null!;
         private InteractInputUseCase _useCase = null!;
+        private FakeTimeService _time = null!;
+
+        private sealed class WorkTarget : IInteractionTarget
+        {
+            public WorkTarget(InteractionDefinition definition) => Definition = definition;
+            public InteractionDefinition Definition { get; }
+        }
+
+        /// <summary>A target whose interaction takes <paramref name="seconds"/> of held work.</summary>
+        private WorkTarget Work(float seconds)
+        {
+            var definition = ScriptableObject.CreateInstance<InteractionDefinition>();
+            definition.HoldSeconds = seconds;
+            _created.Add(definition);
+            return new WorkTarget(definition);
+        }
+
+        private readonly List<Object> _created = new();
 
         [SetUp]
         public void SetUp()
@@ -68,8 +86,9 @@ namespace TinCan.Core.Interaction.Tests
             _movement = new FakeHumanoidMovementView("Player");
             _player = new FakeNetHumanoidView(_movement);
             _actors.Register(_player);
+            _time = new FakeTimeService { DeltaTime = 0.1f };
             _useCase = new InteractInputUseCase(new FakeNetworkService(), _actors, _targeting, _orchestrator,
-                new InteractionTargetingSettings(_input, _definition), new FakeEventPublisher());
+                new InteractionTargetingSettings(_input, _definition), new FakeEventPublisher(), _time);
         }
 
         [TearDown]
@@ -78,6 +97,64 @@ namespace TinCan.Core.Interaction.Tests
             _movement.Destroy();
             Object.DestroyImmediate(_input);
             Object.DestroyImmediate(_definition);
+            foreach (var created in _created) Object.DestroyImmediate(created);
+            _created.Clear();
+        }
+
+        [Test]
+        public void HeldWork_IsDoneOnlyAfterItsTime()
+        {
+            var vein = Work(0.5f);
+            _targeting.Answer = vein;
+            Press(true);
+
+            _useCase.Tick(); // the press starts the work
+            for (int i = 0; i < 4; i++) _useCase.Tick();
+            Assert.That(_orchestrator.Interactions, Is.Empty, "0.4 s of 0.5 s");
+            Assert.That(_useCase.TryGetWork(_player.Id, out _, out float progress), Is.True);
+            Assert.That(progress, Is.EqualTo(0.8f).Within(1e-3f));
+
+            _useCase.Tick();
+            Assert.That(_orchestrator.Interactions, Has.Count.EqualTo(1));
+            Assert.That(_orchestrator.Interactions[0].Target, Is.SameAs(vein));
+            Assert.That(_useCase.TryGetWork(_player.Id, out _, out _), Is.False);
+
+            for (int i = 0; i < 10; i++) _useCase.Tick();
+            Assert.That(_orchestrator.Interactions, Has.Count.EqualTo(1), "still holding: done once, not again");
+        }
+
+        [Test]
+        public void LettingGo_CancelsTheWork()
+        {
+            _targeting.Answer = Work(0.5f);
+            Press(true);
+            _useCase.Tick();
+            _useCase.Tick();
+            _useCase.Tick();
+
+            Press(false);
+            _useCase.Tick();
+            Press(true);
+            for (int i = 0; i < 3; i++) _useCase.Tick();
+
+            Assert.That(_orchestrator.Interactions, Is.Empty, "the work restarted from zero on the new press");
+        }
+
+        [Test]
+        public void LookingAway_CancelsTheWork()
+        {
+            _targeting.Answer = Work(0.3f);
+            Press(true);
+            _useCase.Tick();
+            _useCase.Tick();
+
+            _targeting.Answer = Work(0.3f); // another target
+            for (int i = 0; i < 5; i++) _useCase.Tick();
+            _targeting.Answer = null;
+            _useCase.Tick();
+
+            Assert.That(_orchestrator.Interactions, Is.Empty);
+            Assert.That(_useCase.TryGetWork(_player.Id, out _, out _), Is.False);
         }
 
         private void Press(bool pressed) =>

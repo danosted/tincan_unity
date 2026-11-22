@@ -26,12 +26,26 @@ namespace TinCan.Features.IslandDetails
         public readonly int TreeVariants;
         public readonly int BoulderVariants;
         public readonly int BushVariants;
+        public readonly int VeinsPerIsland;
+        public readonly int VeinsOnALandmass;
+        public readonly int VeinsPerCave;
+        public readonly float VeinSpacing;
+        public readonly Vector2 VeinScale;
+        public readonly int VeinVariants;
 
         public IslandDetailRules(float treesPerHectare, int maxTrees, int maxTreesOnALandmass, float groveHectares,
             float groveSpread, float treeSpacing, Vector2 treeScale, float bouldersPerHectare, int maxBoulders,
             float boulderSpacing, Vector2 boulderScale, float bushesPerHectare, int maxBushes, float bushSpacing,
-            Vector2 bushScale, float rimReach, float clearingRadius, int treeVariants, int boulderVariants, int bushVariants)
+            Vector2 bushScale, float rimReach, float clearingRadius, int treeVariants, int boulderVariants, int bushVariants,
+            int veinsPerIsland = 0, int veinsOnALandmass = 0, int veinsPerCave = 0, float veinSpacing = 4f,
+            Vector2 veinScale = default, int veinVariants = 0)
         {
+            VeinsPerIsland = veinsPerIsland;
+            VeinsOnALandmass = veinsOnALandmass;
+            VeinsPerCave = veinsPerCave;
+            VeinSpacing = veinSpacing;
+            VeinScale = veinScale == default ? Vector2.one : veinScale;
+            VeinVariants = veinVariants;
             TreesPerHectare = treesPerHectare;
             MaxTrees = maxTrees;
             MaxTreesOnALandmass = maxTreesOnALandmass;
@@ -58,6 +72,7 @@ namespace TinCan.Features.IslandDetails
         {
             IslandDetailKind.Tree => TreeSpacing,
             IslandDetailKind.Boulder => BoulderSpacing,
+            IslandDetailKind.Vein => VeinSpacing,
             _ => BushSpacing
         };
     }

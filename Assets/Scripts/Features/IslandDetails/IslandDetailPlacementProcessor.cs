@@ -72,7 +72,36 @@ namespace TinCan.Features.IslandDetails
                 }
             }
 
+            // Veins last, so adding them leaves every island's trees, boulders and bushes where they were.
+            if (!island.IsSatellite && rules.VeinVariants > 0)
+            {
+                int veins = island.IsLandmass ? rules.VeinsOnALandmass : rules.VeinsPerIsland;
+                for (int i = 0; i < veins; i++)
+                    TryPlace(IslandDetailKind.Vein, rules.VeinVariants, rules.VeinScale, shape, sites, rules, reach, ref random,
+                        null, 0f, island.Radius);
+
+                foreach (var cave in sites.Caves)
+                {
+                    for (int i = 0; i < rules.VeinsPerCave; i++) PlaceInCave(cave, i, rules, ref random);
+                }
+            }
+
             into.AddRange(_placed);
+        }
+
+        /// <summary>
+        /// A vein against the cave's back wall, facing the mouth: on the chamber's floor, spread round the back when there
+        /// is more than one.
+        /// </summary>
+        private void PlaceInCave(in SkyIslandCave cave, int index, in IslandDetailRules rules, ref SkyIslandRandom random)
+        {
+            float back = cave.Facing + Mathf.PI + (index - (rules.VeinsPerCave - 1) * 0.5f) * 0.6f;
+            float reach = cave.Radius * 0.7f;
+            var at = new Vector3(cave.Base.x + Mathf.Cos(back) * reach, cave.Floor, cave.Base.z + Mathf.Sin(back) * reach);
+            int variant = (int)(random.NextUInt() % (uint)rules.VeinVariants);
+            float yaw = 90f - (back + Mathf.PI) * Mathf.Rad2Deg; // its front (+z) toward the chamber's middle
+            float scale = random.Range(rules.VeinScale.x, rules.VeinScale.y);
+            _placed.Add(new IslandDetail(IslandDetailKind.Vein, variant, at, yaw, scale));
         }
 
         /// <summary>A whole number near <paramref name="expected"/>: its fraction is a chance of one more.</summary>

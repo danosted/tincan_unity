@@ -1,0 +1,20 @@
+{
+    "name": "TinCan.Features.Gathering",
+    "rootNamespace": "TinCan.Features.Gathering",
+    "references": [
+        "TinCan.Core.Domain",
+        "TinCan.Interaction",
+        "TinCan.Items",
+        "Unity.Netcode.Runtime",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

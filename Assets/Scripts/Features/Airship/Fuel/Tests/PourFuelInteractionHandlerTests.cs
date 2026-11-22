@@ -97,6 +97,50 @@ namespace TinCan.Features.Airship.Fuel.Tests
         }
 
         [Test]
+        public void Handle_CarryingACrystal_FeedsItToTheEngine()
+        {
+            var crystal = ItemDefinition.Create(41, "ITEM_FuelCrystal");
+            try
+            {
+                _config.DebugFreeRefuel = false;
+                _config.CrystalItem = crystal;
+                _config.CrystalLitres = 10f;
+                _player.Held = crystal;
+
+                _handler.Handle(Context(_player, _port));
+
+                Assert.That(_tank.Level, Is.EqualTo(60f));
+                Assert.That(_player.Held, Is.Null);
+                Assert.That(_events.Events, Has.Exactly(1).TypeOf<FuelRefilledEvent>());
+            }
+            finally
+            {
+                Object.DestroyImmediate(crystal);
+            }
+        }
+
+        [Test]
+        public void Handle_CarryingACrystalIntoAFullTank_KeepsTheCrystal()
+        {
+            var crystal = ItemDefinition.Create(41, "ITEM_FuelCrystal");
+            try
+            {
+                _config.CrystalItem = crystal;
+                _tank.Level = 100f;
+                _player.Held = crystal;
+
+                _handler.Handle(Context(_player, _port));
+
+                Assert.That(_player.Held, Is.SameAs(crystal));
+                Assert.That(_events.Events, Has.None.TypeOf<FuelRefilledEvent>());
+            }
+            finally
+            {
+                Object.DestroyImmediate(crystal);
+            }
+        }
+
+        [Test]
         public void Handle_CarryingACanIntoAFullTank_KeepsTheCan()
         {
             _tank.Level = 100f;

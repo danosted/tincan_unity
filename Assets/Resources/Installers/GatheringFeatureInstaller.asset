@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: TinCan.Features.Gathering::TinCan.Features.Gathering.GatheringFeatureInstaller
   _items:
   - {fileID: 11400000, guid: 56c5da71ecb3c5c458263fd8d55e9942, type: 2}
+  _fittings:
+  - {fileID: 11400000, guid: 64e683e0a4e091b4db40c0d3667a52a0, type: 2}

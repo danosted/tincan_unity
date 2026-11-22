@@ -12,9 +12,10 @@ namespace TinCan.DevTools.Scenarios
 {
     /// <summary>
     /// Scenario steps for the anchor (plan: peaceful-mode.md, P1). Commands: stand the subject inboard of the anchor
-    /// (server), turn the subject's camera to it (subject peer), remember where the ship is (server). Probes: the subject
-    /// stands by the anchor, the anchor is down or up (replicated), and the ship has stayed within some metres of the
-    /// recorded spot (server).
+    /// (server), turn the subject's camera to it (subject peer), remember where the ship is (server), hang the subject on
+    /// the dropped anchor's ladder (server). Probes: the subject stands by the anchor, the anchor is down or up
+    /// (replicated), the ship has stayed within some metres of the recorded spot (server), the subject hangs on the ladder
+    /// and stands at its landing spot on deck.
     /// </summary>
     public sealed class AnchorScenarioLibrary : IScenarioLibrary
     {
@@ -41,7 +42,8 @@ namespace TinCan.DevTools.Scenarios
         {
             new ScenarioCommand("PlaceSubjectAtAnchor", _ => PlaceAtAnchor()),
             new ScenarioCommand("FaceAnchor", _ => FaceAnchor()),
-            new ScenarioCommand("RecordAnchoredShip", _ => RecordShip())
+            new ScenarioCommand("RecordAnchoredShip", _ => RecordShip()),
+            new ScenarioCommand("PlaceSubjectOnLadder", PlaceOnLadder)
         };
 
         public System.Collections.Generic.IEnumerable<ScenarioProbe> Probes => new[]
@@ -49,7 +51,9 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("SubjectAtAnchor", _ => CheckAtAnchor()),
             new ScenarioProbe("AnchorDown", _ => CheckDown(expected: true)),
             new ScenarioProbe("AnchorUp", _ => CheckDown(expected: false)),
-            new ScenarioProbe("ShipHeldWithin", CheckHeld)
+            new ScenarioProbe("ShipHeldWithin", CheckHeld),
+            new ScenarioProbe("SubjectOnLadder", _ => CheckOnLadder()),
+            new ScenarioProbe("SubjectAtLadderDeck", _ => CheckAtLadderDeck())
         };
 
         /// <summary>Server: stands the subject on the deck inboard of the anchor, through the respawn service.</summary>
@@ -128,6 +132,40 @@ namespace TinCan.DevTools.Scenarios
             float moved = Vector3.Distance(ship.position, _recorded);
             string detail = $"ship moved {moved:0.00} m";
             return moved <= float.Parse(metres, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
+
+        /// <summary>Server: hangs the subject on the dropped anchor's ladder, this many metres below its top, facing it.</summary>
+        private ScenarioCheck PlaceOnLadder(string metresDown)
+        {
+            if (!_network.IsServer) return ScenarioCheck.Fail("server-only command");
+            var subject = _subject.Resolve();
+            if (subject == null || Anchor() is not { IsDown: true, Ladder: { } ladder }) return ScenarioCheck.Fail("no subject, or no dropped anchor with a ladder");
+
+            float down = float.Parse(metresDown, CultureInfo.InvariantCulture);
+            float span = Mathf.Max(0.01f, ladder.Top.y - ladder.Foot.y);
+            Vector3 at = Vector3.Lerp(ladder.Top, ladder.Foot, Mathf.Clamp01(down / span));
+            Vector3 toDeck = Vector3.ProjectOnPlane(ladder.DeckPosition - ladder.Top, Vector3.up).normalized;
+            _respawn.ResetCharacter(subject, at, Quaternion.LookRotation(toDeck, Vector3.up));
+            return ScenarioCheck.Pass($"subject hung on the ladder {down} m below its top, at {at}");
+        }
+
+        private ScenarioCheck CheckOnLadder()
+        {
+            var body = _subject.Body;
+            if (body == null || Anchor() is not { Ladder: { } ladder }) return ScenarioCheck.Fail("no subject, or no ladder");
+            string detail = $"feet at {body.position}, ladder top {ladder.Top}";
+            return LadderProcessor.IsOn(body.position, ladder) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
+
+        private ScenarioCheck CheckAtLadderDeck()
+        {
+            var body = _subject.Body;
+            if (body == null || Anchor() is not { Ladder: { } ladder }) return ScenarioCheck.Fail("no subject, or no ladder");
+            Vector3 offset = body.position - ladder.DeckPosition;
+            string detail = $"{Vector3.ProjectOnPlane(offset, Vector3.up).magnitude:0.00} m from the landing spot, {offset.y:0.00} m up";
+            return Vector3.ProjectOnPlane(offset, Vector3.up).magnitude <= NearTolerance && Mathf.Abs(offset.y) <= 0.6f
+                ? ScenarioCheck.Pass(detail)
+                : ScenarioCheck.Fail(detail);
         }
 
         private IAnchor? Anchor() => _actors.GetActors<IAnchor>().FirstOrDefault(anchor => anchor is Component component && component != null);

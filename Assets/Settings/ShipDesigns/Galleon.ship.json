@@ -18,7 +18,7 @@
     {"id":114,"part":"hull.mount","on":{"face":53,"x":-30,"z":-60},"rot":0},
     {"id":115,"part":"prop.propeller","on":{"node":1},"rot":0},
     {"id":116,"part":"prop.propeller","on":{"node":2},"rot":0},
-    {"id":117,"part":"hull.mount","on":{"face":94,"x":-30,"z":-75},"rot":0}
+    {"id":117,"part":"hull.mount","on":{"face":94,"x":-30,"z":-75},"rot":3}
   ],
   "frame": {
     "base": -35,

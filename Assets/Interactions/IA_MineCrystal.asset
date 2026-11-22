@@ -17,3 +17,4 @@ MonoBehaviour:
   _ability: {fileID: 0}
   _abilityActivator: 0
   _holdSeconds: 2.5
+  _prompt: Mine crystal

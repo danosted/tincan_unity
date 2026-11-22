@@ -56,7 +56,9 @@ so the storm has work for everyone, not just the gunners.
   bar. Tested with a test effect that sets `ShieldMax`, so it does not wait on the talent tree.
 - **SH2 Fuse and channel at the cairn.** The cairn as a station, the fuse interaction and the channel. Needs
   `spirit-talents.md` T3 for a real `ShieldMax`.
-- **SH3 The crystal bin.** The stockpile fitting, mounted on the Galleon by the engine and the cairn.
+- **SH3 The crystal bin.** The stockpile fitting, mounted on the Galleon by the engine and the cairn. **Built early
+  (2026-11-22)** with fuel gathering: `stores.crystal_bin` in the starboard aft hold (`fuel-gathering.md`, progress); the
+  shield's fusing spends from it through `IItemStockpile.ServerTryTake`.
 
 ## Tests
 EditMode: the hit split (all shield, part shield and part health, no shield, `ShieldMax` 0), fusing (adds the

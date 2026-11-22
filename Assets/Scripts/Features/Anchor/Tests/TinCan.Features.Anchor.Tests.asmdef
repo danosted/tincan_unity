@@ -4,6 +4,7 @@
   "references": [
     "TinCan.Core.Domain",
     "TinCan.Features.Anchor",
+    "TinCan.Humanoid",
     "TinCan.Interaction",
     "TinCan.Ship",
     "TinCan.Tests.Fakes",

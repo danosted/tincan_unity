@@ -2055,15 +2055,60 @@ namespace TinCan.DevTools.Scenarios
             });
 
         /// <summary>
-        /// Fuel from the islands (plan: fuel-gathering.md, G1 and G2): the subject stands at the crystal vein nearest the
+        /// Back aboard by the anchor's rope ladder (plan: peaceful-mode.md, P1): the subject drops the anchor, the server
+        /// hangs them on its ladder 6 m below the deck, they hang still with no input, then hold forward and climb, and at the
+        /// top they are set down on deck inboard of the winch. The server checks the landing (the subject keeps holding forward
+        /// for a while and walks on across the deck, so its own lane cannot).
+        /// </summary>
+        public static readonly ScenarioEntry LadderClimb = new(
+            new Scenario.Builder("LadderClimb")
+                .InScene(TestScenes.Galleon)
+                .Describe("On the Galleon: drop the anchor -> hang on its ladder below the deck -> hold forward -> climbed aboard.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn; the design builds")
+                    .WaitUntil("SocketFitted", 15f, "ship.anchor")
+                    .Expect("AnchorUp")
+                    .Do("PlaceSubjectAtAnchor"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtAnchor", 45f)
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceAnchor")
+                    .WaitUntil("InteractTargetIs", 5f, "Anchor")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("AnchorDown", 5f)
+                    .Checkpoint("anchored")
+                    .WaitUntil("SubjectOnLadder", 30f)
+                    .Wait(1.5f, "no input: the subject hangs still")
+                    .Expect("SubjectOnLadder")
+                    .Checkpoint("hanging")
+                    .Hold(5f, ScriptedAction.MoveForward))
+                .Assert(s => s
+                    .WaitUntil("AnchorDown", 60f)
+                    .Wait(1f, "the ladder shows on every peer")
+                    .Do("PlaceSubjectOnLadder", "6")
+                    .WaitUntil("SubjectAtLadderDeck", 40f)
+                    .Expect("AnchorDown"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<AnchorScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>
+        /// Fuel from the islands (plan: fuel-gathering.md, G1 and G2; the bin is ship-shield.md SH3): the subject stands at the crystal vein nearest the
         /// Galleon, holds Interact while the work runs (IA_MineCrystal's hold time), and a crystal breaks off into their
-        /// hands; back aboard, they feed it to the receiver (ship (-0.9, -2.45, -5.5) stands in front of it) and the
-        /// drained tank rises. The vein shows one crystal fewer on both peers.
+        /// hands; back aboard, they put it in the crystal bin (ship (1.2, -2.45, -5) stands in front of it) and take it out
+        /// again, then feed it to the receiver (ship (-0.9, -2.45, -5.5) stands in front of it) and the drained tank rises.
+        /// The vein shows one crystal fewer and the bin its count on both peers.
         /// </summary>
         public static readonly ScenarioEntry CrystalRun = new(
             new Scenario.Builder("CrystalRun")
                 .InScene(TestScenes.Galleon)
-                .Describe("On the Galleon: at the nearest vein, hold Interact -> a crystal in hand, the vein one fewer -> aboard, feed it to the receiver -> the tank rises.")
+                .Describe("On the Galleon: at the nearest vein, hold Interact -> a crystal in hand, the vein one fewer -> aboard, into the bin and out again -> feed it to the receiver -> the tank rises.")
                 .Timeout(180f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 60f)
@@ -2083,6 +2128,19 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("SubjectHolds", 5f, "ITEM_FuelCrystal")
                     .WaitUntil("VeinCrystals", 5f, "2")
                     .Checkpoint("mined")
+                    .WaitUntil("SubjectNearShipLocal", 45f, "1.2,-2.45,-5,0.8")
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceObject", "CrystalBin")
+                    .WaitUntil("InteractTargetIs", 5f, "CrystalBin")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHolds", 5f, "none")
+                    .WaitUntil("BinCrystals", 5f, "1")
+                    .Checkpoint("stored")
+                    .Wait(0.5f, "let go of Interact")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHolds", 5f, "ITEM_FuelCrystal")
+                    .WaitUntil("BinCrystals", 5f, "0")
+                    .Checkpoint("taken")
                     .WaitUntil("SubjectNearShipLocal", 45f, "-0.9,-2.45,-5.5,0.8")
                     .Wait(0.5f, "teleport settles")
                     .Do("FaceObject", "MotorFillPort")
@@ -2093,6 +2151,10 @@ namespace TinCan.DevTools.Scenarios
                 .Assert(s => s
                     .WaitUntil("SubjectHolds", 60f, "ITEM_FuelCrystal")
                     .Expect("VeinCrystals", "2")
+                    .Do("PlaceSubjectAtShipLocal", "1.2,-2.45,-5")
+                    .WaitUntil("BinCrystals", 40f, "1")
+                    .WaitUntil("SubjectHolds", 20f, "ITEM_FuelCrystal")
+                    .Expect("BinCrystals", "0")
                     .Do("PlaceSubjectAtShipLocal", "-0.9,-2.45,-5.5")
                     .WaitUntil("TankLevelRose", 40f)
                     .WaitUntil("SubjectHolds", 10f, "none"))
@@ -2107,7 +2169,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, CrystalRun };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

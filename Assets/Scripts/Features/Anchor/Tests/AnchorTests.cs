@@ -16,6 +16,7 @@ namespace TinCan.Features.Anchor.Tests
             public bool IsSimulating { get; set; } = true;
             public Transform? Ship { get; set; }
             public bool IsDown { get; private set; }
+            public AnchorLadder? Ladder => null;
             public void ServerSetDown(bool down) => IsDown = down;
         }
 

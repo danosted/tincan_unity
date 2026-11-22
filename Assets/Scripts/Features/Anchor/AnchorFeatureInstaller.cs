@@ -1,7 +1,9 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Linq;
+using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
+using TinCan.Core.Humanoid;
 using TinCan.Core.Interaction;
 using TinCan.Core.Ship;
 using TinCan.Core.Ship.Sockets;
@@ -12,7 +14,7 @@ namespace TinCan.Features.Anchor
 {
     /// <summary>
     /// The anchor: a socket fitting (ship.anchor) the crew drops so the ship waits for them while they are away from the
-    /// helm. Built by TinCan > Dev > Anchor > Build Assets. Plan: .docs/plans/peaceful-mode.md (P1).
+    /// helm, with a rope ladder over the side to climb back aboard while it is down. Built by TinCan > Dev > Anchor > Build Assets. Plan: .docs/plans/peaceful-mode.md (P1).
     /// </summary>
     [CreateAssetMenu(fileName = "AnchorFeatureInstaller", menuName = "TinCan/Features/Anchor Feature Installer")]
     public class AnchorFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<ShipFittingDefinition>
@@ -23,6 +25,8 @@ namespace TinCan.Features.Anchor
         {
             builder.Register<AnchorHoldUseCase>(Lifetime.Singleton).As<IAirshipHold>();
             builder.Register<ToggleAnchorInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
+            builder.Register<LadderClimbUseCase>(Lifetime.Singleton).As<IHumanoidMotionContributor>();
+            builder.Register<LadderLandingUseCase>(Lifetime.Singleton).As<ISimulationTickable>();
         }
 
         public override IEnumerable<GameObject> NetworkedPrefabs =>

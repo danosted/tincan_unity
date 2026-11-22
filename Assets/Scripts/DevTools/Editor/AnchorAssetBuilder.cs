@@ -14,8 +14,8 @@ using Object = UnityEngine.Object;
 namespace TinCan.DevTools.Editor
 {
     /// <summary>
-    /// TinCan > Dev > Anchor > Build Assets: IA_ToggleAnchor, the Anchor prefab (a winch with a chain that shows while the
-    /// anchor is down), its socket fitting (ship.anchor), the installer, and its place in the game's profile
+    /// TinCan > Dev > Anchor > Build Assets: IA_ToggleAnchor, the Anchor prefab (a winch with a chain and a rope ladder
+    /// that show while the anchor is down), its socket fitting (ship.anchor), the installer, and its place in the game's profile
     /// (Profile_Galleon). Then run TinCan > Dev > Ship Sockets > Build Galleon Airship, which mounts it on the Galleon's
     /// quarterdeck. The prefab is built only when missing (delete it to rebuild it), so its network id stays stable. Plan:
     /// .docs/plans/peaceful-mode.md (P1).
@@ -38,10 +38,14 @@ namespace TinCan.DevTools.Editor
             {
                 var fields = new SerializedObject(definition);
                 fields.FindProperty("_handlerTypeName").stringValue = typeof(ToggleAnchorInteractionHandler).AssemblyQualifiedName!;
+                fields.FindProperty("_prompt").stringValue = "Anchor"; // the anchor says "Drop anchor" or "Raise anchor" itself
                 fields.ApplyModifiedPropertiesWithoutUndo();
             });
 
-            var prefab = AnchorPrefab(toggle, Load<Material>(WoodPath), Load<Material>(IronPath));
+            var wood = Load<Material>(WoodPath);
+            var iron = Load<Material>(IronPath);
+            var prefab = AnchorPrefab(toggle, wood, iron);
+            Refit(prefab, wood, iron);
             var fitting = Asset<ShipFittingDefinition>(FittingPath, definition =>
             {
                 var fields = new SerializedObject(definition);
@@ -128,6 +132,80 @@ namespace TinCan.DevTools.Editor
             EditorUtility.SetDirty(saved);
             EditorUtility.SetDirty(prefab);
             return prefab;
+        }
+
+        // The plate stands this far inboard of the rail (the Galleon's quarterdeck, port aft), facing out over it.
+        private const float RailOut = 1.5f;
+        private const float LadderOut = 1.85f;
+        private const float LadderLength = 13f;
+        private const float LadderRungSpacing = 0.45f;
+
+        /// <summary>
+        /// Brings an existing anchor prefab up to date in place (its GUID and network id stay): the chain hangs over the
+        /// side rather than through the deck, and a rope ladder ("Ladder", shown while the anchor is down) hangs beside it,
+        /// hooked on the rail and reaching <see cref="LadderLength"/> below the deck. Its markers stay active under the
+        /// root: "LadderTop" and "LadderFoot" (the line a climber's feet follow, just outside the rungs) and "LadderDeck"
+        /// (inboard of the winch, facing in, where a climber lands).
+        /// </summary>
+        private static void Refit(GameObject prefab, Material wood, Material iron)
+        {
+            string path = AssetDatabase.GetAssetPath(prefab);
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                var chain = root.transform.Find("Chain");
+                if (chain != null)
+                {
+                    Place(chain, "Run", new Vector3(0.7f, 0.8f, LadderOut / 2f), new Vector3(90f, 0f, 0f), new Vector3(0.08f, LadderOut / 2f, 0.08f));
+                    Place(chain, "Drop", new Vector3(0.7f, -2.2f, LadderOut), Vector3.zero, new Vector3(0.08f, 3f, 0.08f));
+                    Place(chain, "Fluke", new Vector3(0.7f, -5.2f, LadderOut), new Vector3(0f, 0f, 45f), new Vector3(0.5f, 0.5f, 0.12f));
+                }
+
+                var old = root.transform.Find("Ladder");
+                if (old != null) Object.DestroyImmediate(old.gameObject);
+                var ladder = new GameObject("Ladder").transform;
+                ladder.SetParent(root.transform, false);
+                const float hookHeight = 1.1f;
+                float bottom = -LadderLength;
+                float ropeHalf = (hookHeight - bottom) / 2f;
+                foreach (float side in new[] { -0.28f, 0.28f })
+                {
+                    Visual(PrimitiveType.Cylinder, side < 0f ? "Rope_L" : "Rope_R", ladder, new Vector3(side, hookHeight - ropeHalf, LadderOut), Vector3.zero, new Vector3(0.05f, ropeHalf, 0.05f), wood);
+                    Visual(PrimitiveType.Cube, side < 0f ? "Hook_L" : "Hook_R", ladder, new Vector3(side, hookHeight, (RailOut + LadderOut) / 2f), Vector3.zero, new Vector3(0.06f, 0.06f, LadderOut - RailOut + 0.1f), iron);
+                }
+
+                int rung = 0;
+                for (float y = hookHeight - 0.4f; y > bottom + 0.1f; y -= LadderRungSpacing)
+                    Visual(PrimitiveType.Cube, $"Rung_{rung++:00}", ladder, new Vector3(0f, y, LadderOut), Vector3.zero, new Vector3(0.6f, 0.05f, 0.07f), wood);
+                ladder.gameObject.SetActive(false);
+
+                Marker(root.transform, "LadderTop", new Vector3(0f, 0f, LadderOut + 0.45f), Vector3.zero);
+                Marker(root.transform, "LadderFoot", new Vector3(0f, bottom, LadderOut + 0.45f), Vector3.zero);
+                Marker(root.transform, "LadderDeck", new Vector3(0f, 0.05f, -0.9f), new Vector3(0f, 180f, 0f));
+
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        private static void Place(Transform parent, string name, Vector3 position, Vector3 euler, Vector3 scale)
+        {
+            var child = parent.Find(name);
+            if (child == null) return;
+            child.localPosition = position;
+            child.localEulerAngles = euler;
+            child.localScale = scale;
+        }
+
+        private static void Marker(Transform parent, string name, Vector3 position, Vector3 euler)
+        {
+            var marker = parent.Find(name) ?? new GameObject(name).transform;
+            marker.SetParent(parent, false);
+            marker.localPosition = position;
+            marker.localEulerAngles = euler;
         }
 
         private static void Visual(PrimitiveType shape, string name, Transform parent, Vector3 position, Vector3 euler, Vector3 scale, Material material)

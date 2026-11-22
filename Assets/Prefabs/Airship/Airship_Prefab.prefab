@@ -79,9 +79,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bb3ef3023bf474459cc27bda84fbc73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TinCan.Features.Airship.AirshipControllerView
-  _maxForwardSpeed: 15
+  _maxForwardSpeed: 30
   _maxBackwardSpeed: 8
-  _accelerationRate: 5
+  _accelerationRate: 10
   _decelerationRate: 2
   _angularAcceleration: 15
   _angularDeceleration: 20

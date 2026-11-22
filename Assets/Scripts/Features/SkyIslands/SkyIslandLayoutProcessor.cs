@@ -7,13 +7,14 @@ namespace TinCan.Features.SkyIslands
     /// <summary>
     /// Domain, pure: where the islands are. The world is a grid of square cells; what a cell holds depends only on the
     /// seed and the cell, so every peer computes the same islands without asking anyone. A cell holds at most one
-    /// cluster (a main island and its satellites, or a few lone rocks), kept far enough inside the cell that clusters in
+    /// cluster (a main island and its satellites, a landmass alone, or a few lone rocks), kept far enough inside the cell that clusters in
     /// neighbouring cells never touch. Islands within the keep-out radius (level distance) of a keep-clear point are
     /// left out.
     /// </summary>
     public class SkyIslandLayoutProcessor
     {
         private const float LoneClusterSpread = 60f;
+        private const int LandmassSalt = 7331;
 
         public Vector2Int CellOf(Vector3 position, float cellSize) =>
             new(Mathf.FloorToInt(position.x / cellSize), Mathf.FloorToInt(position.z / cellSize));
@@ -48,9 +49,17 @@ namespace TinCan.Features.SkyIslands
         public void Cell(int seed, int cellX, int cellZ, in SkyIslandLayoutRules rules, IReadOnlyList<Vector3> keepClear,
             List<SkyIslandSpec> into)
         {
-            var random = new SkyIslandRandom(SkyIslandRandom.Hash(seed, cellX, cellZ));
             var corner = new Vector2(cellX * rules.CellSize, cellZ * rules.CellSize);
 
+            // Rolled from its own hash, so the cells that hold no landmass keep the layout they had without them.
+            var landmass = new SkyIslandRandom(SkyIslandRandom.Hash(seed, cellX, cellZ, LandmassSalt));
+            if (rules.LandmassChance > 0f && landmass.Value() < rules.LandmassChance)
+            {
+                Landmass(seed, cellX, cellZ, rules, keepClear, ref landmass, corner, into);
+                return;
+            }
+
+            var random = new SkyIslandRandom(SkyIslandRandom.Hash(seed, cellX, cellZ));
             if (random.Value() < rules.MainChance) MainCluster(seed, cellX, cellZ, rules, keepClear, ref random, corner, into);
             else if (random.Value() < rules.LoneSatelliteChance) LoneCluster(seed, cellX, cellZ, rules, keepClear, ref random, corner, into);
         }
@@ -85,6 +94,22 @@ namespace TinCan.Features.SkyIslands
 
             int count = random.Range(rules.SatellitesPerMain.x, rules.SatellitesPerMain.y);
             Satellites(seed, cellX, cellZ, rules, keepClear, ref random, centre, altitude, radius * spread, count, into);
+        }
+
+        /// <summary>A landmass alone in the middle of its cell (a little off it), no satellites: it nearly fills the cell.</summary>
+        private void Landmass(int seed, int cellX, int cellZ, in SkyIslandLayoutRules rules,
+            IReadOnlyList<Vector3> keepClear, ref SkyIslandRandom random, Vector2 corner, List<SkyIslandSpec> into)
+        {
+            float largest = rules.LandmassMaxRadius;
+            float radius = random.Range(Mathf.Min(rules.LandmassRadius.x, largest), largest);
+            float slack = Mathf.Max(0f, rules.CellSize * 0.5f - 10f - radius);
+            var centre = corner + Vector2.one * (rules.CellSize * 0.5f) +
+                         new Vector2(random.Range(-slack, slack), random.Range(-slack, slack));
+            float altitude = random.Range(rules.TopAltitude.x, rules.TopAltitude.y);
+            float depth = radius * random.Range(rules.LandmassDepthPerRadius.x, rules.LandmassDepthPerRadius.y);
+
+            Add(new SkyIslandSpec(new SkyIslandId(seed, cellX, cellZ, 0), new Vector3(centre.x, altitude, centre.y),
+                radius, depth, random.NextUInt(), isLandmass: true), rules, keepClear, into);
         }
 
         private void LoneCluster(int seed, int cellX, int cellZ, in SkyIslandLayoutRules rules,

@@ -9,13 +9,19 @@ namespace TinCan.Features.SkyIslands
     /// Infrastructure: islands as GameObjects under a <c>SkyIslands</c> root in the active scene, each marked with a
     /// <see cref="SkyIslandBody"/>, solid through convex mesh colliders (the low-detail shape cut into pieces,
     /// <see cref="SkyIslandMeshProcessor.BuildPieces"/>) and, on peers that render, drawn with the detailed mesh and the
-    /// island material. Removed islands go back to a pool with their meshes, so streaming does not churn objects. Peers
+    /// island material. An island's cave rocks (<see cref="SkyIslandSiteProcessor"/>) are part of its object: their
+    /// rock is drawn in the island's mesh and solid through pieces of their own (<see cref="SkyIslandCaveMeshProcessor"/>).
+    /// A main island's or landmass's top is solid as upright prisms that follow the ground (a landmass has its own
+    /// resolutions). Removed islands go back to a pool with their meshes, so streaming does not churn objects. Peers
     /// without graphics (batch mode: the dedicated server, bots) build collision only.
     /// </summary>
     public sealed class SkyIslandBuilder : ISkyIslandBuilder
     {
         private readonly SkyIslandConfig _config;
         private readonly SkyIslandMeshProcessor _meshes;
+        private readonly SkyIslandSiteProcessor _siteProcessor;
+        private readonly SkyIslandCaveMeshProcessor _caves;
+        private readonly SkyIslandSites _sites = new();
         private readonly SkyIslandMeshData _data = new();
         private readonly SkyIslandCollisionPieces _pieces = new();
         private readonly List<Vector3> _piecePoints = new();
@@ -25,10 +31,13 @@ namespace TinCan.Features.SkyIslands
         private readonly bool _renders;
         private Transform? _root;
 
-        public SkyIslandBuilder(SkyIslandConfig config, SkyIslandMeshProcessor meshes)
+        public SkyIslandBuilder(SkyIslandConfig config, SkyIslandMeshProcessor meshes, SkyIslandSiteProcessor sites,
+            SkyIslandCaveMeshProcessor caves)
         {
             _config = config;
             _meshes = meshes;
+            _siteProcessor = sites;
+            _caves = caves;
             _renders = !Application.isBatchMode;
             if (_renders && config.Material == null)
             {
@@ -56,14 +65,19 @@ namespace TinCan.Features.SkyIslands
             built.Bounds = BoundsOf(island);
             _standing.Add(built);
 
-            _meshes.BuildPieces(island, island.IsSatellite ? _config.SatelliteCollision : _config.MainCollision,
-                _config.CollisionWedgeSegments, _data, _pieces);
+            var (visual, collision) = _config.Resolutions(island);
+            _siteProcessor.Sites(island, _config.SiteRules, _sites);
+
+            _meshes.BuildPieces(island, collision, _config.CollisionWedgeSegments, _data, _pieces,
+                island.IsSatellite ? 0 : _config.TopPrismSegments);
+            foreach (var cave in _sites.Caves) _caves.AppendPieces(cave, _pieces);
             built.Fit(_pieces.Count);
             for (int piece = 0; piece < _pieces.Count; piece++) FillPiece(built.Pieces[piece], piece);
 
             if (built.Visual != null)
             {
-                _meshes.Build(island, island.IsSatellite ? _config.SatelliteVisual : _config.MainVisual, _data);
+                _meshes.Build(island, visual, _data);
+                foreach (var cave in _sites.Caves) _caves.AppendVisual(cave, _data);
                 Fill(built.Visual);
             }
 
@@ -98,7 +112,7 @@ namespace TinCan.Features.SkyIslands
         /// <summary>The box the island's rock fits in: its radius around, from a little over the top down to the apex.</summary>
         private static Bounds BoundsOf(in SkyIslandSpec island)
         {
-            float above = island.Radius * 0.2f;
+            float above = island.Radius * 0.2f + 20f; // hills, and a cave rock on top
             var size = new Vector3(island.Radius * 2f, island.Depth + above, island.Radius * 2f);
             return new Bounds(island.Top + Vector3.up * ((above - island.Depth) * 0.5f), size);
         }
@@ -150,6 +164,7 @@ namespace TinCan.Features.SkyIslands
         private void Fill(Mesh mesh)
         {
             mesh.Clear();
+            mesh.indexFormat = _data.Vertices.Count > ushort.MaxValue ? IndexFormat.UInt32 : IndexFormat.UInt16;
             mesh.SetVertices(_data.Vertices);
             mesh.SetNormals(_data.Normals);
             mesh.SetColors(_data.Colors);

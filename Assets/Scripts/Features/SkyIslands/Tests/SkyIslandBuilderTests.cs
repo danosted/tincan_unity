@@ -15,7 +15,7 @@ namespace TinCan.Features.SkyIslands.Tests
         public void SetUp()
         {
             _config = ScriptableObject.CreateInstance<SkyIslandConfig>();
-            _builder = new SkyIslandBuilder(_config, new SkyIslandMeshProcessor());
+            _builder = new SkyIslandBuilder(_config, new SkyIslandMeshProcessor(), new SkyIslandSiteProcessor(), new SkyIslandCaveMeshProcessor());
         }
 
         [TearDown]
@@ -75,6 +75,73 @@ namespace TinCan.Features.SkyIslands.Tests
                 var collider = GameObject.Find(SkyIslandBuilder.NameOf(island.Id))!.GetComponent<MeshCollider>();
                 Assert.That(collider.sharedMesh != null, Is.True, $"shape seed {seed}");
             }
+        }
+
+        [Test]
+        public void ACave_HasARoofOverhead_AndAnOpenMouth()
+        {
+            var (island, cave) = IslandWithCave();
+            _builder.Build(island);
+            Physics.SyncTransforms();
+
+            var chamber = island.Top + cave.Chamber + Vector3.up * 1.5f;
+            Assert.That(Physics.Raycast(chamber, Vector3.up, out var roof, 40f), Is.True, "a roof over the chamber");
+            Assert.That(roof.collider.name, Is.EqualTo(SkyIslandBuilder.NameOf(island.Id)), "island rock");
+            Assert.That(roof.distance, Is.LessThan(cave.Height + 1f));
+
+            // Half way up the chamber: over the ground at the mouth (downhill) and under the mouth's top (45 degrees up).
+            var halfway = island.Top + cave.Base + Vector3.up * (cave.Height * 0.5f);
+            var inside = halfway + cave.MouthDirection * (cave.Radius * 0.4f);
+            var outside = halfway + cave.MouthDirection * (cave.OuterRadius + 4f);
+            Assert.That(Physics.Linecast(outside, inside), Is.False, "in through the mouth");
+            var behind = halfway - cave.MouthDirection * (cave.OuterRadius + 4f);
+            Assert.That(Physics.Linecast(behind, halfway), Is.True, "not through the back wall");
+        }
+
+        [Test]
+        public void ALandmass_IsSolidWhereItsGroundIsDrawn()
+        {
+            var landmass = new SkyIslandSpec(new SkyIslandId(3, 9, 9, 0), new Vector3(-3000f, 40f, 0f), 180f, 120f, 42u, isLandmass: true);
+            var shape = new SkyIslandShape(landmass);
+            var sites = new SkyIslandSites();
+            new SkyIslandSiteProcessor().Sites(landmass, _config.SiteRules, sites);
+            _builder.Build(landmass);
+            Physics.SyncTransforms();
+
+            var random = new SkyIslandRandom(11u);
+            int tested = 0;
+            for (int i = 0; i < 200 && tested < 60; i++)
+            {
+                float angle = random.Range(0f, 2f * Mathf.PI), distance = random.Range(0f, 0.85f) * landmass.Radius;
+                var at = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * distance;
+                if (UnderACave(sites, at)) continue;
+                tested++;
+
+                var from = landmass.Top + new Vector3(at.x, 200f, at.y);
+                Assert.That(Physics.Raycast(from, Vector3.down, out var hit, 400f), Is.True, $"solid at {at}");
+                float ground = landmass.Top.y + shape.Surface(at.x, at.y);
+                Assert.That(hit.point.y - ground, Is.InRange(-1.5f, 2.5f), $"the ground at {at}: no floor over a valley");
+            }
+            Assert.That(tested, Is.GreaterThan(40));
+        }
+
+        private (SkyIslandSpec Island, SkyIslandCave Cave) IslandWithCave()
+        {
+            var sites = new SkyIslandSites();
+            for (uint seed = 1; seed < 200; seed++)
+            {
+                var island = new SkyIslandSpec(new SkyIslandId(3, (int)seed, 4, 0), new Vector3(seed * 400f, 30f, 900f), 85f, 100f, seed);
+                new SkyIslandSiteProcessor().Sites(island, _config.SiteRules, sites);
+                if (sites.Caves.Count > 0) return (island, sites.Caves[0]);
+            }
+            throw new AssertionException("no shape seed under 200 gave a cave");
+        }
+
+        private static bool UnderACave(SkyIslandSites sites, Vector2 at)
+        {
+            foreach (var cave in sites.Caves)
+                if ((new Vector2(cave.Base.x, cave.Base.z) - at).magnitude < cave.OuterRadius + 2f) return true;
+            return false;
         }
 
         [Test]

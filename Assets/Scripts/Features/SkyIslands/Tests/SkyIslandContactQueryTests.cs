@@ -24,7 +24,7 @@ namespace TinCan.Features.SkyIslands.Tests
         public void SetUp()
         {
             _config = ScriptableObject.CreateInstance<SkyIslandConfig>();
-            _builder = new SkyIslandBuilder(_config, new SkyIslandMeshProcessor());
+            _builder = new SkyIslandBuilder(_config, new SkyIslandMeshProcessor(), new SkyIslandSiteProcessor(), new SkyIslandCaveMeshProcessor());
             _builder.Build(Island);
             _query = new PhysicsSkyIslandContactQuery(_builder);
 

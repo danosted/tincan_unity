@@ -112,6 +112,65 @@ namespace TinCan.Features.SkyIslands.Tests
             Assert.That(mesh.Colors[^1].a, Is.EqualTo(255), "apex: all the way down");
         }
 
+        [TestCase(4u)]
+        [TestCase(808u)]
+        public void ALandmass_IsClosed_AndHillier(uint shapeSeed)
+        {
+            var landmass = Landmass(shapeSeed);
+            var mesh = Build(landmass, new SkyIslandMeshResolution(128, 24, 16));
+
+            var edges = new HashSet<(int, int)>();
+            for (int t = 0; t < mesh.Triangles.Count; t += 3)
+                for (int e = 0; e < 3; e++)
+                    Assert.That(edges.Add((mesh.Triangles[t + e], mesh.Triangles[t + (e + 1) % 3])), Is.True);
+            foreach (var (a, b) in edges) Assert.That(edges.Contains((b, a)), Is.True, $"edge {a}-{b} is open");
+            Assert.That(SignedVolume(mesh), Is.GreaterThan(0f));
+
+            var top = mesh.Vertices.Where((_, i) => mesh.Colors[i].r == 255).Select(vertex => vertex.y).ToArray();
+            Assert.That(top.Max() - top.Min(), Is.GreaterThan(6f), "hills, not a plate");
+            Assert.That(top.Max(), Is.LessThan(landmass.Radius * 0.2f), "hills, not mountains");
+        }
+
+        [Test]
+        public void ALandmassTop_IsCutIntoPrisms_ThatStayInTheirPatch()
+        {
+            var landmass = Landmass(21);
+            var resolution = new SkyIslandMeshResolution(64, 12, 6);
+            var pieces = new SkyIslandCollisionPieces();
+            _meshes.BuildPieces(landmass, resolution, 4, new SkyIslandMeshData(), pieces, topPrismSegments: 2);
+
+            int topPieces = (resolution.TopRings + 1) * (resolution.Segments / 2);
+            int underPieces = (resolution.UnderRings + 1) * (resolution.Segments / 4);
+            Assert.That(pieces.Count, Is.EqualTo(topPieces + underPieces));
+
+            float ring = landmass.Radius * SkyIslandShape.TopReach / resolution.TopRings;
+            float arc = 2f * Mathf.PI * landmass.Radius * 2f / resolution.Segments;
+            for (int piece = 0; piece < topPieces; piece++)
+            {
+                var points = pieces.Points.Skip(pieces.Starts[piece]).Take(pieces.Length(piece)).ToArray();
+                float spreadX = points.Max(p => p.x) - points.Min(p => p.x);
+                float spreadZ = points.Max(p => p.z) - points.Min(p => p.z);
+                Assert.That(Mathf.Max(spreadX, spreadZ), Is.LessThan(ring * 1.5f + arc), $"top piece {piece} spans more than its patch");
+            }
+        }
+
+        [Test]
+        public void TheShapesSurface_MatchesTheTopOfTheMesh()
+        {
+            var island = Island(14, radius: 70f);
+            var shape = new SkyIslandShape(island);
+            var mesh = Build(island, Visual);
+
+            for (int i = 0; i < 1 + Visual.Segments * Visual.TopRings; i++)
+            {
+                var vertex = mesh.Vertices[i];
+                Assert.That(shape.Surface(vertex.x, vertex.z), Is.EqualTo(vertex.y).Within(1e-3f), $"top vertex {i}");
+            }
+        }
+
+        private static SkyIslandSpec Landmass(uint shapeSeed) =>
+            new(new SkyIslandId(1, 0, 0, 0), Vector3.zero, 180f, 120f, shapeSeed, isLandmass: true);
+
         private SkyIslandMeshData Build(SkyIslandSpec island, SkyIslandMeshResolution resolution)
         {
             var mesh = new SkyIslandMeshData();

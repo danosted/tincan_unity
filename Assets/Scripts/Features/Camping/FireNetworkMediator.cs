@@ -1,5 +1,6 @@
 #nullable enable
 using TinCan.Core.Interaction;
+using TinCan.Core.Items;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -8,7 +9,7 @@ namespace TinCan.Features.Camping
     /// <summary>
     /// Infrastructure Layer: a fire (a campfire at a campsite, or the hearth fitting). It replicates one value, the server
     /// time it goes out, so it burns down on every peer with no tick and a late joiner sees it as it is. Interacting
-    /// routes to <see cref="StokeFireInteractionHandler"/> through IA_StokeFire; <see cref="FireView"/> draws it.
+    /// routes to core's ItemInteractionHandler through IA_StokeFire (a held log feeds it); <see cref="FireView"/> draws it.
     /// </summary>
     public class FireNetworkMediator : NetworkBehaviour, IInteractionTarget, IFire
     {
@@ -37,6 +38,11 @@ namespace TinCan.Features.Camping
             if (accepted > 0f) _outAt.Value = outAt;
             return accepted;
         }
+
+        // A held log (the config's firewood) feeds the fire while it has room (core's ItemInteractionHandler).
+        public bool Accepts(ItemDefinition item) => _config != null && item == _config.FirewoodItem;
+
+        public bool TryConsume(ItemDefinition item) => Accepts(item) && Stoke(_config!.BurnSecondsPerLog) > 0f;
 
         private double Now => NetworkManager != null && IsSpawned ? NetworkManager.ServerTime.Time : 0d;
     }

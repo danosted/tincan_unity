@@ -11,8 +11,8 @@ namespace TinCan.Features.Anchor
 {
     /// <summary>
     /// Infrastructure Layer: the anchor fitting, a networked ship part (with an EntityNetworkMediator). An Interact target:
-    /// its InteractionDefinition (IA_ToggleAnchor) routes to <see cref="ToggleAnchorInteractionHandler"/>. Whether it is
-    /// down is replicated; its children "Chain" and "Ladder" show while it is down, on every peer. The ladder is placed by
+    /// its InteractionDefinition (IA_ToggleAnchor) routes to core's ToggleInteractionHandler (it is an IToggleable).
+    /// Whether it is down is replicated; its children "Chain" and "Ladder" show while it is down, on every peer. The ladder is placed by
     /// its markers "LadderTop", "LadderFoot" (the line a climber follows) and "LadderDeck" (where a climber lands).
     /// </summary>
     public class AnchorNetworkMediator : NetworkBehaviour, IInteractionTarget, IAnchor, IInteractionPrompt
@@ -40,14 +40,7 @@ namespace TinCan.Features.Anchor
 
         public string Prompt => IsDown ? "Raise anchor" : "Drop anchor";
 
-        public Transform? Ship
-        {
-            get
-            {
-                var ship = transform.parent != null ? transform.parent.GetComponentInParent<IAirshipView>() : null;
-                return ship?.Transform;
-            }
-        }
+        public Transform? Ship => ShipParts.ShipOf(this)?.Transform;
 
         public AnchorLadder? Ladder
         {
@@ -64,6 +57,12 @@ namespace TinCan.Features.Anchor
         public void ServerSetDown(bool down)
         {
             if (IsServer) _down.Value = down;
+        }
+
+        public bool ServerToggle()
+        {
+            ServerSetDown(!IsDown);
+            return IsDown;
         }
 
         public override void OnNetworkSpawn()

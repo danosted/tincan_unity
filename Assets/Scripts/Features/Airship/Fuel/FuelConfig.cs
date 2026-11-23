@@ -35,8 +35,6 @@ namespace TinCan.Features.Airship.Fuel
 
         [Tooltip("Attribute on the ship holding the current leak rate (litres per second, base 0). Hull breaches raise it; the tank drains it even while parked.")]
         public TinCan.Core.Gas.FuelLeakRateAttribute? LeakRateAttribute;
-        [Tooltip("Slice 1 stopgap: the motor refuels on interact without a jerry can. Turn off once the carry loop exists.")]
-        public bool DebugFreeRefuel = true;
 
         [Header("Hand crank")]
         [Tooltip("What one turn of the crank adds to the tank.")]

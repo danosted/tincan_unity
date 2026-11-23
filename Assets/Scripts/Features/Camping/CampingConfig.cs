@@ -28,12 +28,6 @@ namespace TinCan.Features.Camping
         [Tooltip("The most a fire holds, in seconds of burning. A fire with less than half a log of room refuses another.")]
         [Min(1f)] public float MaxBurnSeconds = 600f;
 
-        [Header("Deadwood")]
-        [Tooltip("How many logs a deadwood pile (a tree's canopy) holds when it is full.")]
-        [Min(1)] public int DeadwoodLogs = 3;
-        [Tooltip("Seconds for a pile to gather one log again.")]
-        [Min(1f)] public float DeadwoodRegrowSeconds = 120f;
-
         [Header("Placing")]
         [Tooltip("The ability input that ties a held log into a bundle, and sets a held bundle or tent roll down.")]
         public GameplayInput? PlaceInput;

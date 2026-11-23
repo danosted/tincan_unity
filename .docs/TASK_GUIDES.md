@@ -48,20 +48,27 @@ unity cmd console get --level error
 
 **When:** a station, a valve, a crate: something the humanoid walks up to and uses.
 
+**First:** most interactions need no handler. Pick the capability your target has from
+[`CODE_STANDARDS.md`](CODE_STANDARDS.md), "Interactions: capabilities, not handlers" (items out or in, a held item
+used, a toggle, a station), and use the shared handler and, where one fits, the shared target
+(`RegrowingItemSourceNetworkMediator`, `ItemRackNetworkMediator`, `ItemStockpileNetworkMediator`), set by data.
+
 **Touch:**
-- Target: a small `NetworkBehaviour : IInteractionTarget` that exposes `Definition`. Copy
-  `Assets/Scripts/Features/Airship/Fuel/MotorFillPortNetworkMediator.cs` (25 lines). If handlers need to find
-  the target without NGO, add a marker interface like `INetRack` in `Features/Airship/Fuel/Minigame/NetRackNetworkMediator.cs`.
-- Behaviour: an `IInteractionHandler`. Copy `Features/Airship/Fuel/PourFuelInteractionHandler.cs`: a type guard
-  on `context.Target`, then a `switch` over the state matrix, `LogInfo` on every refused branch.
-- Registration: in your `FeatureInstaller.Install`:
+- Target: a small `NetworkBehaviour : IInteractionTarget` that exposes `Definition` and implements its
+  capabilities. Copy `Assets/Scripts/Features/Airship/Fuel/MotorFillPortNetworkMediator.cs` (an `IItemConsumer`:
+  `Accepts` and `TryConsume` are one line each, backed by the pure `FuelFeed`).
+- Behaviour, only for a kind of interaction no capability covers yet: a new capability interface and one generic
+  `IInteractionHandler` in core over it (copy `Core/Interaction/ToggleInteractionHandler.cs`: a type guard on
+  `context.Target`, then the rules, `LogInfo` on every refused branch). Register it in the core installer:
   `builder.Register<MyHandler>(Lifetime.Singleton).As<IInteractionHandler>();`
 - Asset: **Assets > Create > TinCan > Interactions > Interaction Definition**, save as
-  `Assets/Interactions/IA_<Verb>.asset`, pick the handler from the dropdown.
+  `Assets/Interactions/IA_<Verb>.asset`, pick the handler from the dropdown, write its `Prompt` (the HUD line) and,
+  for work that takes time, its `HoldSeconds`.
 - Prefab: add the target component and a collider at chest height (the interaction ray starts at the
   player's eye, `HumanoidControllerView` Eye Height 0.7 m above the capsule-centre pivot, so about 1.7 m above the feet; 3 m range), assign the `IA_` asset.
 
-**Verify:** a handler test (copy `Features/Airship/Fuel/Tests/PourFuelInteractionHandlerTests.cs`); then Play, Start
+**Verify:** a test of your target's rule (copy `Features/Airship/Fuel/Tests/FuelFeedTests.cs`) or, for a new
+handler, a test with fake targets (copy `Core/Items/Tests/ItemInteractionHandlerTests.cs`); then Play, Start
 Host, walk up, press E, watch the console for your `LogInfo` line.
 
 **Trap:** the handler is stored by assembly-qualified name. Renaming the class blanks the dropdown and makes the

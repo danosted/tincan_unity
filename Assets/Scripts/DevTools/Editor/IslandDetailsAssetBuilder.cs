@@ -38,6 +38,10 @@ namespace TinCan.DevTools.Editor
         /// <summary>The name of the tree's part that holds its firewood (the interaction target), for scenarios.</summary>
         public const string TreeTargetName = "Branches";
 
+        /// <summary>Logs a tree holds, and seconds for it to gather one again.</summary>
+        public const int TreeLogs = 3;
+        public const float TreeRegrowSeconds = 120f;
+
         [MenuItem("TinCan/Dev/Island Details/Build Assets")]
         public static void Build()
         {
@@ -110,14 +114,15 @@ namespace TinCan.DevTools.Editor
         {
             string path = Prefabs + name + ".prefab";
             var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (existing != null) return existing;
+            if (existing != null)
+            {
+                Deadwood(path, camping, gather);
+                return existing;
+            }
 
             var root = NetworkedRoot(name);
             var branches = new GameObject(TreeTargetName).transform;
             branches.SetParent(root.transform, false);
-            var pile = branches.gameObject.AddComponent<DeadwoodNetworkMediator>();
-            SetField(pile, "_interactionDefinition", gather);
-            SetField(pile, "_config", camping);
 
             Visual(PrimitiveType.Sphere, "Flare", branches, new Vector3(0f, 0.1f, 0f), Vector3.zero, new Vector3(1.1f, 0.5f, 1.1f), m.Bark);
             Visual(PrimitiveType.Cylinder, "Trunk", branches, new Vector3(0f, 1.9f, 0f), new Vector3(0f, 0f, 2f), new Vector3(0.55f, 2.4f, 0.55f), m.Bark);
@@ -134,8 +139,18 @@ namespace TinCan.DevTools.Editor
             trunk.direction = 1;
             InteractVolume(branches, new Vector3(0f, 1.2f, 0f), new Vector3(1.4f, 2.4f, 1.4f));
 
-            return SaveNetworkPrefab(root, path);
+            var prefab = SaveNetworkPrefab(root, path);
+            Deadwood(path, camping, gather);
+            return prefab;
         }
+
+        /// <summary>
+        /// The tree's firewood: core's regrowing item source on its branches (logs out, logs back), its Log_* lobes the stock.
+        /// </summary>
+        private static void Deadwood(string path, CampingConfig camping, InteractionDefinition gather) =>
+            ItemTargetRefit.Regrowing(path, TreeTargetName, gather, camping.FirewoodItem
+                ?? throw new System.InvalidOperationException("CampingConfig has no FirewoodItem: run TinCan > Dev > Camping > Build Assets first."),
+                TreeLogs, TreeRegrowSeconds, takesBack: true, "Log_");
 
         /// <summary>A low rounded boulder of two stones with moss on top. Solid.</summary>
         private static void RoundBoulder(Transform root, Materials m)

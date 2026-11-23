@@ -1,10 +1,14 @@
 #nullable enable
 using TinCan.Core.Domain;
+using TinCan.Core.Items;
 
 namespace TinCan.Features.Camping
 {
-    /// <summary>A fire that burns firewood: a campfire, or the ship's hearth. Server-owned; every peer reads it.</summary>
-    public interface IFire : IInteractable
+    /// <summary>
+    /// A fire that burns firewood: a campfire, or the ship's hearth. Server-owned; every peer reads it. A held log is fed
+    /// to it by core's ItemInteractionHandler (<see cref="IItemConsumer"/>): it takes firewood while it has room.
+    /// </summary>
+    public interface IFire : IItemConsumer
     {
         CampingConfig? Config { get; }
 

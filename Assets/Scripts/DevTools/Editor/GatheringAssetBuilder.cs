@@ -21,8 +21,8 @@ namespace TinCan.DevTools.Editor
 {
     /// <summary>
     /// TinCan > Dev > Gathering > Build Assets: every asset of fuel gathering, reviewable as code: the fuel crystal (its
-    /// carrying tag and effect, its held visual), IA_MineCrystal (held work: <see cref="MineSeconds"/>), the config, the
-    /// vein prefab (warm amber crystals in ochre rock; its Crystal_* children are its stock), and the wiring: the veins in
+    /// carrying tag and effect, its held visual), IA_MineCrystal (held work: <see cref="MineSeconds"/>), the
+    /// vein prefab (warm amber crystals in ochre rock; a core regrowing item source, its Crystal_* children its stock), and the wiring: the veins in
     /// Island Details' config, the crystal in the fuel config (a crystal fed to the receiver is fuel), the installer in
     /// the game's profile and in Profile_Test_Islands. Run after Island Details' builder. Prefabs are built only when
     /// missing (delete one to rebuild it), so network ids stay stable. Placeholder models in the look's library
@@ -33,6 +33,10 @@ namespace TinCan.DevTools.Editor
         /// <summary>How long mining one crystal takes, seconds (the interaction's hold time).</summary>
         public const float MineSeconds = 2.5f;
 
+        /// <summary>Crystals a vein holds, and seconds to grow one back.</summary>
+        public const int VeinCrystals = 3;
+        public const float VeinRegrowSeconds = 240f;
+
         /// <summary>The vein's interaction target name, for scenarios.</summary>
         public const string VeinTargetName = "Vein_Amber";
 
@@ -42,7 +46,6 @@ namespace TinCan.DevTools.Editor
         private const string HeldVisualPath = "Assets/Prefabs/Items/Carry_FuelCrystal.prefab";
         private const string InteractionPath = "Assets/Interactions/IA_MineCrystal.asset";
         private const string VeinPath = "Assets/Prefabs/Gathering/" + VeinTargetName + ".prefab";
-        private const string ConfigPath = "Assets/Settings/Gathering/GatheringConfig.asset";
         private const string InstallerPath = "Assets/Resources/Installers/GatheringFeatureInstaller.asset";
         private const string IslandDetailsConfigPath = "Assets/Settings/IslandDetails/IslandDetailsConfig.asset";
         private const string FuelConfigPath = "Assets/Settings/FuelConfig.asset";
@@ -87,18 +90,19 @@ namespace TinCan.DevTools.Editor
             var mine = Asset<InteractionDefinition>(InteractionPath, definition =>
             {
                 var fields = new SerializedObject(definition);
-                fields.FindProperty("_handlerTypeName").stringValue = typeof(MineCrystalInteractionHandler).AssemblyQualifiedName!;
+                fields.FindProperty("_handlerTypeName").stringValue = typeof(ItemInteractionHandler).AssemblyQualifiedName!;
                 fields.FindProperty("_holdSeconds").floatValue = MineSeconds;
                 fields.FindProperty("_prompt").stringValue = "Mine crystal";
                 fields.ApplyModifiedPropertiesWithoutUndo();
             });
 
-            var config = Asset<GatheringConfig>(ConfigPath, c => c.CrystalItem = crystal);
-            var vein = VeinPrefab(mine, config, crystalMaterial, rock);
+            var vein = VeinPrefab(crystalMaterial, rock);
+            // The vein is the core regrowing item source: mining is taking one, with the interaction's hold time.
+            ItemTargetRefit.Regrowing(VeinPath, null, mine, crystal, VeinCrystals, VeinRegrowSeconds, takesBack: false, "Crystal_");
             var binInteraction = Asset<InteractionDefinition>(BinInteractionPath, definition =>
             {
                 var fields = new SerializedObject(definition);
-                fields.FindProperty("_handlerTypeName").stringValue = typeof(StockItemInteractionHandler).AssemblyQualifiedName!;
+                fields.FindProperty("_handlerTypeName").stringValue = typeof(ItemInteractionHandler).AssemblyQualifiedName!;
                 fields.FindProperty("_prompt").stringValue = "Crystal bin";
                 fields.ApplyModifiedPropertiesWithoutUndo();
             });
@@ -177,7 +181,7 @@ namespace TinCan.DevTools.Editor
         /// A crystal vein: a low ochre outcrop (solid) with three amber crystals growing out of its top and front, which
         /// show while the vein holds them, and an Interact volume over it. Its front is +z.
         /// </summary>
-        private static GameObject VeinPrefab(InteractionDefinition mine, GatheringConfig config, Material crystal, Material rock)
+        private static GameObject VeinPrefab(Material crystal, Material rock)
         {
             var existing = AssetDatabase.LoadAssetAtPath<GameObject>(VeinPath);
             if (existing != null) return existing;
@@ -187,11 +191,6 @@ namespace TinCan.DevTools.Editor
             networkObject.AutoObjectParentSync = true;
             networkObject.SyncOwnerTransformWhenParented = true;
             root.AddComponent<EntityNetworkMediator>();
-            var vein = root.AddComponent<VeinNetworkMediator>();
-            var fields = new SerializedObject(vein);
-            fields.FindProperty("_interactionDefinition").objectReferenceValue = mine;
-            fields.FindProperty("_config").objectReferenceValue = config;
-            fields.ApplyModifiedPropertiesWithoutUndo();
 
             Visual(PrimitiveType.Sphere, "Rock", root.transform, new Vector3(0f, 0.35f, 0f), Vector3.zero, new Vector3(1.8f, 0.9f, 1.4f), rock);
             Visual(PrimitiveType.Sphere, "Rock_Shoulder", root.transform, new Vector3(-0.6f, 0.25f, -0.2f), Vector3.zero, new Vector3(0.9f, 0.6f, 0.9f), rock);

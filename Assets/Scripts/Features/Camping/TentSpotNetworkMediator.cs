@@ -1,5 +1,6 @@
 #nullable enable
 using TinCan.Core.Interaction;
+using TinCan.Core.Items;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -8,8 +9,8 @@ namespace TinCan.Features.Camping
     /// <summary>
     /// Infrastructure Layer: a tent. A placed one (set down from a tent roll) spawns pitched and despawns once packed. It
     /// replicates whether the tent stands; its child
-    /// "Tent" shows while one does and "TentMarker" (the pegs) while none does. Interacting routes to
-    /// <see cref="PitchTentInteractionHandler"/> through IA_PitchTent.
+    /// "Tent" shows while one does and "TentMarker" (the pegs) while none does. Interacting routes to core's
+    /// ItemInteractionHandler through IA_PitchTent (pitch with a held roll, pack with empty hands).
     /// </summary>
     public class TentSpotNetworkMediator : NetworkBehaviour, IInteractionTarget, ITentSpot
     {
@@ -55,6 +56,25 @@ namespace TinCan.Features.Camping
             _pitched.OnValueChanged -= HandlePitchedChanged;
             base.OnNetworkDespawn();
         }
+
+        // A held tent roll pitches an empty spot; empty hands pack a pitched tent back into a roll, and a placed tent is
+        // then taken away (core's ItemInteractionHandler).
+        public bool Accepts(ItemDefinition item) => !IsPitched && item == TentItem;
+
+        public bool TryConsume(ItemDefinition item) => Accepts(item) && TryPitch();
+
+        public ItemDefinition? YieldItem => IsPitched ? TentItem : null;
+
+        public bool TryYield()
+        {
+            if (!TryPack()) return false;
+            if (_placed) Remove();
+            return true;
+        }
+
+        public void Unyield() => TryPitch();
+
+        private ItemDefinition? TentItem => _config != null ? _config.TentItem : null;
 
         public bool TryPitch()
         {

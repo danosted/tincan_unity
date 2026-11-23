@@ -24,7 +24,6 @@ namespace TinCan.Features.Anchor
         public override void Install(IContainerBuilder builder)
         {
             builder.Register<AnchorHoldUseCase>(Lifetime.Singleton).As<IAirshipHold>();
-            builder.Register<ToggleAnchorInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
             builder.Register<LadderClimbUseCase>(Lifetime.Singleton).As<IHumanoidMotionContributor>();
             builder.Register<LadderLandingUseCase>(Lifetime.Singleton).As<ISimulationTickable>();
         }

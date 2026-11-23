@@ -22,7 +22,6 @@ MonoBehaviour:
   CrystalItem: {fileID: 11400000, guid: 56c5da71ecb3c5c458263fd8d55e9942, type: 2}
   CrystalLitres: 10
   LeakRateAttribute: {fileID: 11400000, guid: 5bb552c377bacfa42904e93b0c6fe9c8, type: 2}
-  DebugFreeRefuel: 0
   CrankLitresPerTurn: 0.1
   CrankMaxLevel: 10
   StallWhenEmpty: 1

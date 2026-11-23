@@ -37,8 +37,7 @@ namespace TinCan.Features.Navigation
         public Guid Id => (_identity ??= new ActorIdentity(this)).Id;
         public bool IsSimulating => IsSpawned;
 
-        // Fixtures are parented to the ship root after they spawn, so look the ship up when asked.
-        public IAirshipView? Ship => this != null ? GetComponentInParent<IAirshipView>() : null;
+        public IAirshipView? Ship => ShipParts.ShipOf(this);
 
         public int Count => _waypoints.Count;
         public RouteWaypoint Waypoint(int index) => _waypoints[index];

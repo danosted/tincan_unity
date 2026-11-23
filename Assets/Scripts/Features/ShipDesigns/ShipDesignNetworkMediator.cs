@@ -21,7 +21,7 @@ namespace TinCan.Features.ShipDesigns
         public Guid Id => (_identity ??= new ActorIdentity(this)).Id;
         public bool IsSimulating => IsSpawned;
 
-        public IAirshipView? Ship => transform.parent != null ? transform.parent.GetComponentInParent<IAirshipView>() : null;
+        public IAirshipView? Ship => ShipParts.ShipOf(this);
 
         public ulong DesignHash => _design.Value?.Hash ?? 0;
         public byte[] DesignBytes => _design.Value?.Bytes ?? Array.Empty<byte>();

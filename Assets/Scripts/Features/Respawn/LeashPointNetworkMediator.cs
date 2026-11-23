@@ -28,13 +28,6 @@ namespace TinCan.Features.Respawn
         public Transform Anchor => _anchor != null ? _anchor : _anchor = transform.FindDescendant(AnchorName) ?? transform;
         public Transform Stand => _stand != null ? _stand : _stand = transform.FindDescendant(StandName) ?? transform;
 
-        public Transform? Ship
-        {
-            get
-            {
-                var ship = transform.parent != null ? transform.parent.GetComponentInParent<IAirshipView>() : null;
-                return ship?.Transform;
-            }
-        }
+        public Transform? Ship => ShipParts.ShipOf(this)?.Transform;
     }
 }

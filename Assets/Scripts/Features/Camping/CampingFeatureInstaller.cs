@@ -33,10 +33,8 @@ namespace TinCan.Features.Camping
 
         public override void Install(IContainerBuilder builder)
         {
-            builder.Register<GatherFirewoodInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
-            builder.Register<StokeFireInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
-            builder.Register<PitchTentInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
-
+            // Gathering firewood, stoking a fire and pitching a tent are core's ItemInteractionHandler on the targets'
+            // capabilities (the trees' regrowing source, IFire, ITentSpot); nothing to register for them here.
             if (_config == null)
             {
                 Debug.LogWarning($"[{name}] No CampingConfig assigned; nothing can be bundled or placed.", this);

@@ -49,7 +49,7 @@ namespace TinCan.Features.SkillChecks
         public Guid Id => (_identity ??= new ActorIdentity(this)).Id;
         public bool IsSimulating => IsSpawned;
 
-        public IAirshipView? Ship => transform.parent != null ? transform.parent.GetComponentInParent<IAirshipView>() : null;
+        public IAirshipView? Ship => ShipParts.ShipOf(this);
         public SkillCheckDefinition? Definition => _check;
 
         public string? LitChallenge => IsSpawned && _litChallenge.Value.Length > 0 ? _litChallenge.Value.ToString() : null;

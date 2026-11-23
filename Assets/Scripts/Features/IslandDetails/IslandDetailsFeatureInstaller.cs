@@ -11,8 +11,8 @@ namespace TinCan.Features.IslandDetails
     /// <summary>
     /// Island details: trees in groves, boulders and bushes on the sky islands (SkyIslands), clear of their clearings and
     /// caves. Boulders and bushes are scenery every peer builds for itself; trees are networked, spawned by the server,
-    /// and give firewood through Camping's deadwood (their prefabs carry a <c>DeadwoodNetworkMediator</c>, so load
-    /// Camping for them to be gathered from). Plan: .docs/plans/island-life.md.
+    /// and give firewood (their prefabs carry core's <c>RegrowingItemSourceNetworkMediator</c>; the firewood item is Camping's,
+    /// so load Camping for them to be gathered from). Plan: .docs/plans/island-life.md.
     /// </summary>
     [CreateAssetMenu(fileName = "IslandDetailsFeatureInstaller", menuName = "TinCan/Features/Island Details Feature Installer")]
     public class IslandDetailsFeatureInstaller : FeatureInstaller

@@ -76,10 +76,10 @@ namespace TinCan.DevTools.Editor
             var tent = Item(Items + "ITEM_TentRoll.asset", TentItemId, "Tent roll", "TentRoll",
                 HeldVisual("Carry_TentRoll", root => TentRollModel(root, materials)));
 
-            var gather = Interaction("IA_GatherFirewood", typeof(GatherFirewoodInteractionHandler));
-            var stoke = Interaction("IA_StokeFire", typeof(StokeFireInteractionHandler));
-            var pitch = Interaction("IA_PitchTent", typeof(PitchTentInteractionHandler));
-            var takeTent = Interaction("IA_TakeTentRoll", typeof(TakeItemInteractionHandler));
+            var gather = Interaction("IA_GatherFirewood", typeof(ItemInteractionHandler));
+            var stoke = Interaction("IA_StokeFire", typeof(ItemInteractionHandler));
+            var pitch = Interaction("IA_PitchTent", typeof(ItemInteractionHandler));
+            var takeTent = Interaction("IA_TakeTentRoll", typeof(ItemInteractionHandler));
 
             var bundle = Item(Items + "ITEM_CampfireBundle.asset", BundleItemId, "Campfire bundle", "CampfireBundle",
                 HeldVisual("Carry_CampfireBundle", root => BundleModel(root, materials)));

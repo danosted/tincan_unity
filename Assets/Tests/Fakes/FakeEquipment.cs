@@ -14,9 +14,12 @@ namespace TinCan.Tests.Fakes
         public int Equips { get; private set; }
         public int Unequips { get; private set; }
 
+        /// <summary>Refuses every equip (an item missing from the catalog), to test the take being put back.</summary>
+        public bool RefuseEquip { get; set; }
+
         public bool TryEquip(ItemDefinition item)
         {
-            if (Held != null) return false;
+            if (Held != null || RefuseEquip) return false;
             Held = item;
             Equips++;
             return true;

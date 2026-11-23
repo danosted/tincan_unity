@@ -18,6 +18,13 @@ namespace TinCan.Features.Anchor.Tests
             public bool IsDown { get; private set; }
             public AnchorLadder? Ladder => null;
             public void ServerSetDown(bool down) => IsDown = down;
+            public bool ServerToggle() => IsDown = !IsDown;
+        }
+
+        private sealed class Player : TinCan.Core.Domain.IActor
+        {
+            public Guid Id { get; } = Guid.NewGuid();
+            public bool IsSimulating => true;
         }
 
         private FakeActorRegistry _actors = null!;
@@ -68,12 +75,12 @@ namespace TinCan.Features.Anchor.Tests
         [Test]
         public void Interact_DropsTheAnchor_ThenRaisesIt()
         {
-            var handler = new ToggleAnchorInteractionHandler(new FakeEventPublisher());
+            var handler = new ToggleInteractionHandler(new FakeEventPublisher());
 
-            handler.Handle(new InteractionContext(null!, _anchor, null!));
+            handler.Handle(new InteractionContext(new Player(), _anchor, null!));
             Assert.That(_anchor.IsDown, Is.True);
 
-            handler.Handle(new InteractionContext(null!, _anchor, null!));
+            handler.Handle(new InteractionContext(new Player(), _anchor, null!));
             Assert.That(_anchor.IsDown, Is.False);
         }
     }

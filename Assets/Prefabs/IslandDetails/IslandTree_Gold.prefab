@@ -584,8 +584,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3301866078510873636}
-  - component: {fileID: 1331032398956304340}
   - component: {fileID: 1555387701564537365}
+  - component: {fileID: 3632625627484700986}
   m_Layer: 0
   m_Name: Branches
   m_TagString: Untagged
@@ -616,21 +616,6 @@ Transform:
   - {fileID: 6542529310533984943}
   m_Father: {fileID: 5381977417482486621}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1331032398956304340
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7585555432092004007}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e956b527e76c424ea8a596c0a5ff70f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TinCan.Features.Camping::TinCan.Features.Camping.DeadwoodNetworkMediator
-  ShowTopMostFoldoutHeaderGroup: 1
-  _interactionDefinition: {fileID: 11400000, guid: 73f760985bcbea444bbc280108525f84, type: 2}
-  _config: {fileID: 11400000, guid: 6b9eb524c31af73418f2d93ac045827d, type: 2}
 --- !u!136 &1555387701564537365
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -654,6 +639,25 @@ CapsuleCollider:
   m_Height: 4.6
   m_Direction: 1
   m_Center: {x: 0, y: 2, z: 0}
+--- !u!114 &3632625627484700986
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7585555432092004007}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e576e26f7ef706b41bc6c09fe70fb943, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Items::TinCan.Core.Items.RegrowingItemSourceNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
+  _interactionDefinition: {fileID: 11400000, guid: 73f760985bcbea444bbc280108525f84, type: 2}
+  _item: {fileID: 11400000, guid: 39329f51c44387846abe6de6df16feb5, type: 2}
+  _capacity: 3
+  _regrowSeconds: 120
+  _takesBack: 1
+  _visualPrefix: Log_
 --- !u!1 &8912193615884016429
 GameObject:
   m_ObjectHideFlags: 0

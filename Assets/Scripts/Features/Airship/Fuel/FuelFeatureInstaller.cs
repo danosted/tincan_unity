@@ -38,8 +38,6 @@ namespace TinCan.Features.Airship.Fuel
         {
             builder.Register<FuelConsumptionProcessor>(Lifetime.Transient);
             builder.Register<FuelConsumptionUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>().As<ISessionParticipant>();
-            builder.Register<PourFuelInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
-            builder.Register<TakeJerryCanInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
             builder.Register<FuelHudPresenter>(Lifetime.Singleton).As<ITickable>();
             builder.Register<CrankTurnUseCase>(Lifetime.Singleton).AsSelf().As<IHumanoidMotionContributor>().WithParameter(new CrankInput(_crankInput));
         }

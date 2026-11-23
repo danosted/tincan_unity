@@ -22,6 +22,7 @@ namespace TinCan.Features.Anchor.Tests
             public bool IsDown { get; set; } = true;
             public AnchorLadder? Ladder { get; set; } = LadderTests.Ladder;
             public void ServerSetDown(bool down) => IsDown = down;
+            public bool ServerToggle() => IsDown = !IsDown;
         }
 
         private sealed class RecordingRespawn : IHumanoidRespawnService

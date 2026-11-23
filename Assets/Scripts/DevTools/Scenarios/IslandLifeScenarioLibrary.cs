@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using TinCan.Core.Domain;
+using TinCan.Core.Items;
 using TinCan.Core.Domain.Networking;
 using TinCan.Core.Humanoid;
 using TinCan.Core.Ship;
@@ -33,7 +34,7 @@ namespace TinCan.DevTools.Scenarios
         private readonly SkyIslandConfig? _islandConfig;
         private readonly IslandSceneryUseCase? _scenery;
         private readonly SkyIslandSiteProcessor _siteProcessor = new();
-        private DeadwoodNetworkMediator? _chosen;
+        private RegrowingItemSourceNetworkMediator? _chosen;
 
         public IslandLifeScenarioLibrary(INetworkService network, IActorRegistry actors, ScenarioSubject subject,
             IHumanoidRespawnService respawn, IObjectResolver resolver)
@@ -72,7 +73,7 @@ namespace TinCan.DevTools.Scenarios
             var ship = Ship();
             if (subject == null || body == null || ship == null) return ScenarioCheck.Fail("no subject or no ship");
 
-            var tree = Trees().Where(t => t.Pile.Available == t.Pile.Config?.DeadwoodLogs)
+            var tree = Trees().Where(t => t.Pile.Available == t.Pile.Capacity)
                 .OrderBy(t => (t.Root.position - ship.Transform.position).sqrMagnitude).FirstOrDefault();
             if (tree.Root == null) return ScenarioCheck.Fail($"no full island tree ({Trees().Count()} trees)");
 
@@ -171,8 +172,8 @@ namespace TinCan.DevTools.Scenarios
             return fromMiddle < cave.Radius && roofed ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
-        private IEnumerable<(Transform Root, DeadwoodNetworkMediator Pile)> Trees() =>
-            Object.FindObjectsByType<DeadwoodNetworkMediator>()
+        private IEnumerable<(Transform Root, RegrowingItemSourceNetworkMediator Pile)> Trees() =>
+            Object.FindObjectsByType<RegrowingItemSourceNetworkMediator>()
                 .Where(pile => pile.IsSpawned && pile.transform.root.name.StartsWith(TreePrefix))
                 .Select(pile => (pile.transform.root, pile));
 
@@ -180,7 +181,7 @@ namespace TinCan.DevTools.Scenarios
         /// The tree this peer chose (placed the subject at, or faced), while it stands; otherwise the nearest. Two trees
         /// can stand about as close, so a later step must not switch to the other.
         /// </summary>
-        private (Transform Root, DeadwoodNetworkMediator Pile)? NearestTree(Vector3 from)
+        private (Transform Root, RegrowingItemSourceNetworkMediator Pile)? NearestTree(Vector3 from)
         {
             if (_chosen != null && _chosen.IsSpawned) return (_chosen.transform.root, _chosen);
             var nearest = Trees().OrderBy(t => (t.Root.position - from).sqrMagnitude).FirstOrDefault();

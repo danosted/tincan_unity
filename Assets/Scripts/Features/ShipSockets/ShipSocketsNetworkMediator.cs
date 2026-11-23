@@ -28,7 +28,7 @@ namespace TinCan.Features.ShipSockets
         public Guid Id => (_identity ??= new ActorIdentity(this)).Id;
         public bool IsSimulating => IsSpawned;
 
-        public IAirshipView? Ship => transform.parent != null ? transform.parent.GetComponentInParent<IAirshipView>() : null;
+        public IAirshipView? Ship => ShipParts.ShipOf(this);
 
         public IReadOnlyList<MountedFitting> Mounted
         {

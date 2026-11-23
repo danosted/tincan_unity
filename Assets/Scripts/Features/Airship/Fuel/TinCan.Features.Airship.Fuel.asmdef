@@ -4,9 +4,11 @@
     "references": [
         "TinCan.Core.Domain",
         "TinCan.Gas",
+        "TinCan.Humanoid",
         "TinCan.Interaction",
         "TinCan.Items",
         "TinCan.Ship",
+        "TinCan.Targeting",
         "Unity.Netcode.Runtime",
         "VContainer"
     ],

@@ -38,6 +38,12 @@ namespace TinCan.Features.Airship.Fuel
         [Tooltip("Slice 1 stopgap: the motor refuels on interact without a jerry can. Turn off once the carry loop exists.")]
         public bool DebugFreeRefuel = true;
 
+        [Header("Hand crank")]
+        [Tooltip("What one turn of the crank adds to the tank.")]
+        [Min(0f)] public float CrankLitresPerTurn = 0.1f;
+        [Tooltip("The crank charges only up to this level, a small reserve, so it never replaces gathering.")]
+        [Min(0f)] public float CrankMaxLevel = 10f;
+
         [Header("Stall")]
         public bool StallWhenEmpty = true;
         [Tooltip("Tag the ship carries while boosting (State.FlightBoost.IsActive).")]

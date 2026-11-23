@@ -10,6 +10,7 @@
     {"part":111,"socket":0,"fitting":"weapon.cannon"},
     {"part":112,"socket":0,"fitting":"weapon.cannon"},
     {"part":113,"socket":0,"fitting":"rescue.leash_winch"},
+    {"part":114,"socket":0,"fitting":"fuel.crank"},
     {"part":117,"socket":0,"fitting":"ship.anchor"}
   ]
 }

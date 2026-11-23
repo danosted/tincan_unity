@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using TinCan.Core.Domain.Features;
 using TinCan.Core.Entities;
+using TinCan.Core.Interaction;
 using TinCan.Core.Ship.Sockets;
 using TinCan.Features.Airship.Fuel;
 using Unity.Netcode;
@@ -20,6 +21,8 @@ namespace TinCan.DevTools.Editor
     /// its tank and keeps the receiver, the crystal rack and the gauge for the old hull;</item>
     /// <item>the fittings fuel.receiver (the receiver with the gauge beside it) and fuel.crystal_rack, made from
     /// FuelSystem's children, and fuel.net_rack (the existing NetRack prefab);</item>
+    /// <item>the hand crank, fuel.crank (IA_TurnCrank has no handler: a Primary press turns it), with Input_Primary on the
+    /// Fuel installer;</item>
     /// <item>both installers list them. Each crystal rack reads FuelConfig itself.</item>
     /// </list>
     /// Prefabs are built only when missing (delete one to rebuild it), so their network ids stay stable. Every fitting's
@@ -33,6 +36,14 @@ namespace TinCan.DevTools.Editor
         private const string TankStatePath = Parts + "FuelTankState.prefab";
         private const string ReceiverPath = Parts + "FuelReceiver.prefab";
         private const string CrystalRackPath = Parts + "CrystalRack.prefab";
+        private const string CrankPath = Parts + "FuelCrank.prefab";
+        private const string CrankInteractionPath = "Assets/Interactions/IA_TurnCrank.asset";
+        private const string PrimaryInputPath = "Assets/Abilities/Inputs/Input_Primary.asset";
+        private const string WoodPath = "Assets/Materials/Respawn/M_LeashWinch_Wood.mat";
+        private const string IronPath = "Assets/Materials/Respawn/M_LeashWinch_Iron.mat";
+
+        /// <summary>The hand crank's socket fitting id (fuel-gathering.md, G3).</summary>
+        public const string CrankFittingId = "fuel.crank";
         private const string TankFixturePath = "Assets/Settings/Fixtures/FuelTankStateFixture.asset";
         private const string ConfigPath = "Assets/Settings/FuelConfig.asset";
         private const string FuelAttributePath = "Assets/Abilities/Attributes/Attr_Fuel.asset";
@@ -67,10 +78,20 @@ namespace TinCan.DevTools.Editor
             var receiverFitting = Fitting("FITTING_FuelReceiver", ShipSocketsAssetBuilder.FuelReceiverFittingId, "Fuel receiver", receiver);
             var rackFitting = Fitting("FITTING_CrystalRack", ShipSocketsAssetBuilder.CrystalRackFittingId, "Crystal rack", crystalRack);
             var netFitting = Fitting("FITTING_NetRack", ShipSocketsAssetBuilder.NetRackFittingId, "Net rack", Load<GameObject>(NetRackPath));
+            var turnCrank = Asset<InteractionDefinition>(CrankInteractionPath, definition =>
+            {
+                // No handler: Interact does nothing here; a Primary press turns it (CrankTurnUseCase). The prompt says so.
+                var fields = new SerializedObject(definition);
+                fields.FindProperty("_handlerTypeName").stringValue = string.Empty;
+                fields.FindProperty("_prompt").stringValue = "Turn crank (Primary)";
+                fields.ApplyModifiedPropertiesWithoutUndo();
+            });
+            var crankFitting = Fitting("FITTING_FuelCrank", CrankFittingId, "Hand crank", CrankPrefab(turnCrank, Load<Material>(WoodPath), Load<Material>(IronPath)));
 
             var fuel = Load<FeatureInstaller>(Installers + "FuelFeatureInstaller.asset");
             SetField(fuel, "_tankStateFixture", tankFixture);
-            SetList(fuel, "_fittings", receiverFitting, rackFitting);
+            SetList(fuel, "_fittings", receiverFitting, rackFitting, crankFitting);
+            SetField(fuel, "_crankInput", Load<Object>(PrimaryInputPath));
             SetList(Load<FeatureInstaller>(Installers + "FlyingCanFeatureInstaller.asset"), "_fittings", netFitting);
 
             AssetDatabase.SaveAssets();
@@ -142,6 +163,54 @@ namespace TinCan.DevTools.Editor
             copy.transform.localPosition = localPosition;
             copy.transform.localRotation = localRotation;
             return copy;
+        }
+
+        /// <summary>
+        /// The hand crank: a wooden post with an iron drum on its front (+Z) and a handle ("Handle", turned a quarter per
+        /// turn by its mediator) on an arm; solid, with an Interact volume around the handle.
+        /// </summary>
+        private static GameObject CrankPrefab(InteractionDefinition turn, Material wood, Material iron)
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(CrankPath);
+            if (existing != null) return existing;
+
+            var root = NetworkedRoot("FuelCrank");
+            var crank = root.AddComponent<FuelCrankNetworkMediator>();
+            var fields = new SerializedObject(crank);
+            fields.FindProperty("_interactionDefinition").objectReferenceValue = turn;
+            fields.ApplyModifiedPropertiesWithoutUndo();
+
+            CrankVisual(PrimitiveType.Cube, "Base", root.transform, new Vector3(0f, 0.08f, 0f), Vector3.zero, new Vector3(0.7f, 0.16f, 0.6f), wood);
+            CrankVisual(PrimitiveType.Cube, "Post", root.transform, new Vector3(0f, 0.55f, 0f), Vector3.zero, new Vector3(0.25f, 0.9f, 0.25f), wood);
+            CrankVisual(PrimitiveType.Cylinder, "Drum", root.transform, new Vector3(0f, 0.95f, 0.2f), new Vector3(90f, 0f, 0f), new Vector3(0.4f, 0.08f, 0.4f), iron);
+            var handle = new GameObject("Handle").transform;
+            handle.SetParent(root.transform, false);
+            handle.localPosition = new Vector3(0f, 0.95f, 0.3f);
+            CrankVisual(PrimitiveType.Cube, "Arm", handle, new Vector3(0f, 0.2f, 0f), Vector3.zero, new Vector3(0.06f, 0.45f, 0.06f), iron);
+            CrankVisual(PrimitiveType.Cylinder, "Grip", handle, new Vector3(0f, 0.4f, 0.12f), new Vector3(90f, 0f, 0f), new Vector3(0.07f, 0.12f, 0.07f), wood);
+
+            var solid = root.AddComponent<BoxCollider>();
+            solid.center = new Vector3(0f, 0.5f, 0f);
+            solid.size = new Vector3(0.7f, 1f, 0.6f);
+            var volume = new GameObject("InteractVolume").AddComponent<BoxCollider>();
+            volume.transform.SetParent(root.transform, false);
+            volume.transform.localPosition = new Vector3(0f, 1f, 0.3f);
+            volume.isTrigger = true;
+            volume.size = new Vector3(0.9f, 1f, 0.6f);
+
+            return Save(root, CrankPath);
+        }
+
+        private static void CrankVisual(PrimitiveType shape, string name, Transform parent, Vector3 position, Vector3 euler, Vector3 scale, Material material)
+        {
+            var visual = GameObject.CreatePrimitive(shape);
+            visual.name = name;
+            Object.DestroyImmediate(visual.GetComponent<Collider>());
+            visual.transform.SetParent(parent, false);
+            visual.transform.localPosition = position;
+            visual.transform.localEulerAngles = euler;
+            visual.transform.localScale = scale;
+            visual.GetComponent<MeshRenderer>().sharedMaterial = material;
         }
 
         private static GameObject NetworkedRoot(string name)

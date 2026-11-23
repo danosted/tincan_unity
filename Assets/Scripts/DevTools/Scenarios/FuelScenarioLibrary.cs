@@ -33,7 +33,7 @@ namespace TinCan.DevTools.Scenarios
 
         public IEnumerable<ScenarioProbe> Probes => new[]
         {
-            new ScenarioProbe("TankLevelRose", _ => Rose())
+            new ScenarioProbe("TankLevelRose", Rose)
         };
 
         private ScenarioCheck Drain(string litres)
@@ -55,14 +55,16 @@ namespace TinCan.DevTools.Scenarios
             return ScenarioCheck.Pass($"tank at {tank.Level:0.0}");
         }
 
-        private ScenarioCheck Rose()
+        /// <summary>The tank holds more than RecordTankLevel saw, by over this many litres (1 when not given).</summary>
+        private ScenarioCheck Rose(string byLitres)
         {
             var tank = Tank();
             if (tank == null) return ScenarioCheck.Fail("no fuel tank on any airship");
             if (_baseline == null) return ScenarioCheck.Fail("RecordTankLevel has not run");
 
             string detail = $"tank {_baseline:0.0} -> {tank.Level:0.0}";
-            return tank.Level > _baseline + 1f ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+            float by = string.IsNullOrEmpty(byLitres) ? 1f : float.Parse(byLitres, CultureInfo.InvariantCulture);
+            return tank.Level > _baseline + by ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
         private IFuelTank? Tank() =>

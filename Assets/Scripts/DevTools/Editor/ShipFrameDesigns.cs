@@ -57,7 +57,7 @@ namespace TinCan.DevTools.Editor
         public readonly struct GalleonMountIds
         {
             public GalleonMountIds(int holdPortAft, int holdStarboardAft, int holdPortFore, int holdStarboardFore, int bowPort, int bowStarboard,
-                int sternPort, int sternStarboard, int balcony, int quarterdeckPortAft)
+                int sternPort, int sternStarboard, int balcony, int quarterdeckPortAft, int cabinFloor)
             {
                 HoldPortAft = holdPortAft;
                 HoldStarboardAft = holdStarboardAft;
@@ -69,6 +69,7 @@ namespace TinCan.DevTools.Editor
                 SternStarboard = sternStarboard;
                 Balcony = balcony;
                 QuarterdeckPortAft = quarterdeckPortAft;
+                CabinFloor = cabinFloor;
             }
 
             public int HoldPortAft { get; }
@@ -81,6 +82,7 @@ namespace TinCan.DevTools.Editor
             public int SternStarboard { get; }
             public int Balcony { get; }
             public int QuarterdeckPortAft { get; }
+            public int CabinFloor { get; }
         }
 
         private static ShipDesign Galleon(out GalleonMountIds mounts)
@@ -154,7 +156,7 @@ namespace TinCan.DevTools.Editor
             int sternPort = b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, -30, -45);
             int sternStarboard = b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, 30, -45);
             int balconyMount = b.OnFace(ShipDesignsAssetBuilder.HullMount, balcony, 50, -60, 1);
-            b.OnFace(ShipDesignsAssetBuilder.HullMount, cabinFloor, -30, -60);
+            int cabinPlate = b.OnFace(ShipDesignsAssetBuilder.HullMount, cabinFloor, -30, -60);
             b.OnNode(ShipDesignsAssetBuilder.Propeller, hold[0]);
             b.OnNode(ShipDesignsAssetBuilder.Propeller, hold[1]);
             // Added after the rest, so every earlier placement keeps its id: the quarterdeck's port stern corner, under
@@ -162,7 +164,7 @@ namespace TinCan.DevTools.Editor
             // turn 3), 1.5 m inside the rail, so the anchor's chain and ladder hang over the side, clear of the hull below.
             int quarterdeckPortAft = b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, -30, -75, 3);
             mounts = new GalleonMountIds(holdPortAft, holdStarboardAft, holdPortFore, holdStarboardFore, bowPort, bowStarboard,
-                sternPort, sternStarboard, balconyMount, quarterdeckPortAft);
+                sternPort, sternStarboard, balconyMount, quarterdeckPortAft, cabinPlate);
             return b.Build(GalleonName);
         }
 

@@ -109,7 +109,19 @@ engine. Running low means you have to find the next island.
     ("Interact: Mine crystal", "Crystal bin 4/12", "Drop anchor"). Prompts are a field on each interaction
     (`InteractionDefinition.Prompt`); a target can say more (`IInteractionPrompt`). The builders set them for
     gathering and the anchor; the older interactions' prompts were set once in the Editor.
-- **Next:** G3 the crank, then G4 feel and tuning.
+- **2026-11-23, G3 the hand crank (built; EditMode 1719/1719; `CrankStart` passes solo and host + client in
+  `Test_Galleon`; awaiting a playtest).**
+  - The `fuel.crank` fitting on the Galleon's cabin floor plate (under the quarterdeck, above the engines; the hold
+    has no free plate). Look at it with empty hands and press Primary: each press is a turn that adds
+    `CrankLitresPerTurn` (0.1) until the tank reaches the reserve `CrankMaxLevel` (10 L), and any fuel restarts a
+    stalled engine. The handle turns a quarter per turn on every peer.
+  - **Simpler than the station first planned:** no occupying, no new input context. Primary is read where each input
+    arrives once (as camping does), and the target is the one Interact would pick. A second crewmate can crank the
+    same crank, which is the co-op version.
+  - **Correction:** `DebugFreeRefuel` was already off in `FuelConfig.asset` (only the class default is on), so the
+    game has had no free refuel since G2; the crank is the only way back from a dry tank besides crystals.
+  - Tuning to try in playtest: about 100 presses fill the reserve (13 s at full throttle, longer cruising).
+- **Next:** G4 feel and tuning.
 
 ## Tests
 EditMode: `RegrowingStock` (and deadwood still green on it), vein placement, the mine interaction (hold, cancel,

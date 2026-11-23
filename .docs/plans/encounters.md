@@ -74,6 +74,14 @@ to change, to be checked feature by feature:
   same features off (`HarnessGameplayOverrides`), so a scenario cannot see it. E1 turns the pressure on while a zone
   runs.
 
+- **2026-11-23, E1 built (EditMode 1697/1697; play run pending).** Decided (developer, 2026-11-23): nothing runs in
+  the zone yet (the storm is E2); a zone is a disc at every height; what happens after a round ends is a setting
+  (`EncounterZoneConfig.AfterEnd`: rest for `RestSeconds` and return, or gone for good), kept flexible. One zone, the
+  storm, 750 m round with its centre at (0, 1500): its wall stands 750 m north of the start in `cheesed_scene`. Its
+  look is a placeholder ring of plum pillars; the storm lab's Follow Zone switch drives the storm's look from the zone
+  (sail in to see it), and the game gets that at ST2. The event pressure stays off: it is not yet kept to a zone's
+  bounds. Scenario `EncounterZone` stands moving the zone in for sailing in and out.
+
 ## Tests
 EditMode: the zone processor (enter, turn back during the warning, start, abandon, succeed, fail, rest), the use case
 with a fake director, and the zone query. Scenario `EncounterZone` in a test-range scene, solo and host + client: the

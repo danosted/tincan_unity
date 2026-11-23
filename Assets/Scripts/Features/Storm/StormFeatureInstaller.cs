@@ -30,7 +30,8 @@ namespace TinCan.Features.Storm
             }
 
             builder.RegisterInstance(_config);
-            builder.RegisterInstance<IStormIntensity>(_lab);
+            builder.RegisterInstance(_lab);
+            builder.Register<StormIntensity>(Lifetime.Singleton).As<IStormIntensity>().As<ITickable>();
             builder.Register<StormSoundPresenter>(Lifetime.Singleton);
             builder.Register<StormWeatherPresenter>(Lifetime.Singleton).AsSelf().As<IAtmosphereWeather>().As<ICloudWeather>().As<ITickable>();
         }

@@ -70,6 +70,7 @@ namespace TinCan.DevTools.Editor
             new Entry("M_FoliageGold", "leaf-gold"),
             new Entry("M_IslandMoss", "grass"),
             new Entry("M_FuelCrystal", "lantern-amber", glow: 0.9f),
+            new Entry("M_EncounterWall", "plum"),
         };
 
         [MenuItem("TinCan/Dev/Look/Build Materials")]

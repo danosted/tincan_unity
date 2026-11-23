@@ -2140,6 +2140,44 @@ namespace TinCan.DevTools.Scenarios
             });
 
         /// <summary>
+        /// An encounter zone's round (plan: encounters.md, E1). The server moves the zone around the ship to stand in for
+        /// sailing in and out: in, the warning shows on both peers; out again during it, nothing starts; in for good, it
+        /// runs once the warning ends; out, it is abandoned and rests.
+        /// </summary>
+        public static readonly ScenarioEntry EncounterZone = new(
+            new Scenario.Builder("EncounterZone")
+                .InScene(TestScenes.Galleon)
+                .Describe("On the Galleon: the zone around the ship -> the warning -> away again, nothing starts -> around it for good -> it runs -> away -> abandoned, it rests.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn")
+                    .WaitUntil("ZoneSpawned", 30f)
+                    .Do("PlaceZone", "out")
+                    .WaitUntil("ZoneState", 5f, "Idle"))
+                .Act(s => s
+                    .WaitUntil("ZoneState", 30f, "Warning")
+                    .WaitUntil("ZoneState", 40f, "Running")
+                    .WaitUntil("ZoneState", 30f, "Resting"))
+                .Assert(s => s
+                    .Do("PlaceZone", "in")
+                    .WaitUntil("ZoneState", 5f, "Warning")
+                    .Wait(1.5f, "every peer sees the warning")
+                    .Do("PlaceZone", "out")
+                    .WaitUntil("ZoneState", 5f, "Idle")
+                    .Wait(1f, "turned back: nothing starts")
+                    .Expect("ZoneState", "Idle")
+                    .Do("PlaceZone", "in")
+                    .WaitUntil("ZoneState", 5f, "Warning")
+                    .WaitUntil("ZoneState", 15f, "Running")
+                    .Wait(1.5f, "every peer sees it run")
+                    .Do("PlaceZone", "out")
+                    .WaitUntil("ZoneState", 5f, "Resting")
+                    .Wait(1.5f, "every peer sees it rest"))
+                .Build(),
+            builder => builder.Register<EncounterScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        /// <summary>
         /// Fuel from the islands (plan: fuel-gathering.md, G1 and G2; the bin is ship-shield.md SH3): the subject stands at the crystal vein nearest the
         /// Galleon, holds Interact while the work runs (IA_MineCrystal's hold time), and a crystal breaks off into their
         /// hands; back aboard, they put it in the crystal bin (ship (1.2, -2.45, -5) stands in front of it) and take it out
@@ -2210,7 +2248,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

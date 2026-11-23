@@ -4,6 +4,7 @@
   "references": [
     "TinCan.Core.Domain",
     "TinCan.Features.Encounters",
+    "TinCan.Ship",
     "TinCan.Tests.Fakes",
     "VContainer",
     "UnityEngine.TestRunner",

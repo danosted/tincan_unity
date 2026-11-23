@@ -9,8 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 030b3ae0b7da3044ea963878b6d2190c, type: 3}
   m_Name: StormLab
-  m_EditorClassIdentifier: TinCan.Features.Storm:TinCan.Features.Storm:StormLabSettings
+  m_EditorClassIdentifier: TinCan.Features.Storm::TinCan.Features.Storm.StormLabSettings
   LabDepth: 0.5
   LabStrength: 1
+  FollowZone: 0

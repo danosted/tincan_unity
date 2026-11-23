@@ -19,3 +19,5 @@ MonoBehaviour:
   _fittings:
   - {fileID: 11400000, guid: 280541fed8af693499f040e1ed2a98d6, type: 2}
   - {fileID: 11400000, guid: 8cc5ae84c72e66348a6f72fcb16a3d2c, type: 2}
+  - {fileID: 11400000, guid: b82123ad855a9764785541c509a4a7ba, type: 2}
+  _crankInput: {fileID: 11400000, guid: 228c6f632dea57046a0b40d23fb4e13d, type: 2}

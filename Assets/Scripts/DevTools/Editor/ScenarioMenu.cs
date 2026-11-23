@@ -256,6 +256,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "LadderClimb (Host + Client, Lag100)")]
         public static void LadderClimbDuo() => RunDuo("LadderClimb", "Lag100");
 
+        [MenuItem(Root + "CrankStart (Host)")]
+        public static void CrankStartSolo() => RunSolo("CrankStart");
+
+        [MenuItem(Root + "CrankStart (Host + Client, Lag100)")]
+        public static void CrankStartDuo() => RunDuo("CrankStart", "Lag100");
+
         [MenuItem(Root + "CrystalRun (Host)")]
         public static void CrystalRunSolo() => RunSolo("CrystalRun");
 

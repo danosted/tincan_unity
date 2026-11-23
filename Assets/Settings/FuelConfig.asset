@@ -23,6 +23,8 @@ MonoBehaviour:
   CrystalLitres: 10
   LeakRateAttribute: {fileID: 11400000, guid: 5bb552c377bacfa42904e93b0c6fe9c8, type: 2}
   DebugFreeRefuel: 0
+  CrankLitresPerTurn: 0.1
+  CrankMaxLevel: 10
   StallWhenEmpty: 1
   BoostActiveTag: {fileID: 11400000, guid: 525daa4b9da694d4398b7264e73a1586, type: 2}
   StalledTag: {fileID: 11400000, guid: 64142c2be12877b41bd665104a774a08, type: 2}

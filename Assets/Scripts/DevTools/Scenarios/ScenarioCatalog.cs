@@ -2099,6 +2099,47 @@ namespace TinCan.DevTools.Scenarios
             });
 
         /// <summary>
+        /// The hand crank (plan: fuel-gathering.md, G3): the Galleon's tank runs dry, the subject stands at the crank on
+        /// the cabin floor (ship (-3, 0.55, -4.8) faces it) and presses Primary a few times with empty hands; each press
+        /// is a turn that charges the tank, so it rises from empty on the server.
+        /// </summary>
+        public static readonly ScenarioEntry CrankStart = new(
+            new Scenario.Builder("CrankStart")
+                .InScene(TestScenes.Galleon)
+                .Describe("On the Galleon: the tank runs dry -> at the hand crank, press Primary a few times -> the tank rises from empty.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn; the design builds")
+                    .WaitUntil("SocketFitted", 15f, "fuel.crank")
+                    .Do("DrainTank", "1000")
+                    .Do("RecordTankLevel")
+                    .Do("PlaceSubjectAtShipLocal", "-3,0.55,-4.8"))
+                .Act(s => s
+                    .WaitUntil("SubjectNearShipLocal", 45f, "-3,0.55,-4.8,0.8")
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceObject", "FuelCrank")
+                    .WaitUntil("InteractTargetIs", 5f, "FuelCrank")
+                    .Checkpoint("at-the-crank")
+                    .Hold(0.2f, ScriptedAction.Primary).Wait(0.25f, "let go")
+                    .Hold(0.2f, ScriptedAction.Primary).Wait(0.25f, "let go")
+                    .Hold(0.2f, ScriptedAction.Primary).Wait(0.25f, "let go")
+                    .Hold(0.2f, ScriptedAction.Primary).Wait(0.25f, "let go")
+                    .Hold(0.2f, ScriptedAction.Primary).Wait(0.25f, "let go")
+                    .Checkpoint("cranked"))
+                .Assert(s => s
+                    .WaitUntil("SubjectNearShipLocal", 60f, "-3,0.55,-4.8,0.8")
+                    .WaitUntil("TankLevelRose", 40f, "0.3"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<FuelScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>
         /// Fuel from the islands (plan: fuel-gathering.md, G1 and G2; the bin is ship-shield.md SH3): the subject stands at the crystal vein nearest the
         /// Galleon, holds Interact while the work runs (IA_MineCrystal's hold time), and a crystal breaks off into their
         /// hands; back aboard, they put it in the crystal bin (ship (1.2, -2.45, -5) stands in front of it) and take it out
@@ -2169,7 +2210,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

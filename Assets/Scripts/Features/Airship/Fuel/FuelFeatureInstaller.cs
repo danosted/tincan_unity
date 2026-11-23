@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using TinCan.Core.Items;
 using TinCan.Core.Domain;
+using TinCan.Core.Domain.Abilities.Inputs;
 using TinCan.Core.Domain.Features;
+using TinCan.Core.Humanoid;
 using TinCan.Core.Interaction;
 using TinCan.Core.Ship.Sockets;
 using UnityEngine;
@@ -27,8 +29,10 @@ namespace TinCan.Features.Airship.Fuel
         [SerializeField] private ShipFixtureDefinition? _fuelSystemFixture;
         [Tooltip("The items this feature owns (the jerry can); they exist only in scenes that load fuel.")]
         [SerializeField] private List<ItemDefinition> _items = new();
-        [Tooltip("Socket fittings: the receiver and the crystal rack.")]
+        [Tooltip("Socket fittings: the receiver, the crystal rack and the hand crank.")]
         [SerializeField] private List<ShipFittingDefinition> _fittings = new();
+        [Tooltip("The input that turns a hand crank in reach (Input_Primary): one press, one turn. Unset: cranks do nothing.")]
+        [SerializeField] private GameplayInput? _crankInput;
 
         public override void Install(IContainerBuilder builder)
         {
@@ -37,6 +41,7 @@ namespace TinCan.Features.Airship.Fuel
             builder.Register<PourFuelInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
             builder.Register<TakeJerryCanInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
             builder.Register<FuelHudPresenter>(Lifetime.Singleton).As<ITickable>();
+            builder.Register<CrankTurnUseCase>(Lifetime.Singleton).AsSelf().As<IHumanoidMotionContributor>().WithParameter(new CrankInput(_crankInput));
         }
 
         public override IEnumerable<GameObject> NetworkedPrefabs

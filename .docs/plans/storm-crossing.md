@@ -147,6 +147,23 @@ bin), and `spirit-talents.md` T1 to T3 (a spirit that can learn Ward).
     waits for ST2, where every peer must agree on it.
   - **Next:** your eye on the look and the mix (StormConfig), then the encounter zone (E1).
 
+- **2026-11-23, ST2 the storm in the world (built; EditMode green; play run pending).**
+  - **It stands where its zone is, for everyone:** the storm's region (centre, radius, strength) is a shader global
+    (`Shaders/Include/TinCanStorm.hlsl`). Over it the volumetric clouds close in (more coverage, the tallest type, to
+    the top of the layer, denser) and the sea and the painted sky darken toward the storm's cloud shade, so the storm
+    reads as a dark mass from afar and every peer sees it in the same place.
+  - **Its shape across the disc:** rising steeply into the wall, holding through the bands, clearing in the eye
+    (`TinCanStormProfile`, mirrored by `StormProcessor.Profile` for the light and air at the camera). The plan's
+    "depth falls off again inside the eye" is this.
+  - **Driven by the nearest encounter zone** (`IEncounterZones.Nearest`): its region, the camera's depth in it, and a
+    strength that calms over 20 s while the zone rests and builds again when it returns. The storm is in the game's
+    profile; the lab is now a plain copy of `cheesed_scene` with Storm Lab Controls (an injected scene view: sliders,
+    or follow the zone), and Profile_Lab_Storm and the StormLab asset are gone.
+  - **The warning on entering** is the zone's (encounters.md E1): the HUD line and the light, wind and thunder rising
+    as the ship crosses the wall.
+  - Scenario `StormInWorld`: the zone moved round the ship weighs on the light on every peer, and lifts when moved away.
+  - **Next:** your eye on the storm in `cheesed_scene` (sail north 750 m), then ST3 gusts and debris.
+
 ## Tests
 EditMode: the depth function (outside, the wall, the bands, the eye), the blend by depth and strength, the gust waves
 (the same push from the same seed and time), the heart's path by severity (still at 1; the same path on every peer),

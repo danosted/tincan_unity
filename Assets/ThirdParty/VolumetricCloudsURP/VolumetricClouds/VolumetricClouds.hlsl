@@ -198,9 +198,10 @@ VolumetricRayResult TraceVolumetricRay(CloudRay cloudRay)
                     half hollow = (_TinCanCloudVariety.x > 1.5 || _TinCanCloudVariety.z > 0.0)
                         ? saturate(1.0h - ambientAmount)
                         : saturate((1.0h - (half)relativeHeight) * 0.6h + (1.0h - ambientAmount) * 0.4h);
-                    half3 colour = TinCanCloudShadeLit(look, lit, SampleSH(float3(0, 1, 0)), 0.0h, view, hollow, 1.0h - opacity);
-                    colour = TinCanNightShade(colour);
                     float3 cloudWS = GetCameraPositionWS() + volumetricRay.meanDistance * cloudRay.direction;
+                    half3 colour = TinCanCloudShadeLit(look, lit, SampleSH(float3(0, 1, 0)), 0.0h, view, hollow, 1.0h - opacity);
+                    colour = TinCanWeatherShade(colour, cloudWS);
+                    colour = TinCanNightShade(colour);
                     volumetricRay.scattering = TinCanSkyAtmospherePremultiplied(half4(colour * opacity, opacity), cloudWS).rgb;
                     // Inside the cloud sea (plan cloud-sea.md, step 3) the sky's clouds fade into the air's colour, like the sky.
                     volumetricRay.scattering = lerp(volumetricRay.scattering,

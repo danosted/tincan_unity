@@ -11,5 +11,8 @@ namespace TinCan.Features.Encounters
     {
         /// <summary>The deepest zone holding <paramref name="point"/>, or null outside every zone.</summary>
         (IEncounterZone Zone, float Depth)? ZoneAt(Vector3 point);
+
+        /// <summary>The zone nearest <paramref name="point"/>, inside or not (the storm stands there and reads from afar).</summary>
+        IEncounterZone? Nearest(Vector3 point);
     }
 }

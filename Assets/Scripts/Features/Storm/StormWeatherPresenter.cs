@@ -9,12 +9,12 @@ namespace TinCan.Features.Storm
 {
     /// <summary>
     /// Every peer with a view, presentation only: the storm as the atmosphere's weather (<see cref="IAtmosphereWeather"/>)
-    /// and the volumetric clouds' (<see cref="ICloudWeather"/>).
-    /// Each frame it reads the storm's depth and strength (<see cref="IStormIntensity"/>), weighs the config's look by
-    /// them, and runs the lightning on the shared clock (<see cref="StormProcessor"/>): a strike flashes the air and asks
-    /// <see cref="StormSoundPresenter"/> for its thunder, later the farther it is.
+    /// and the volumetric clouds' (<see cref="ICloudWeather"/>). Each frame it reads the storm's depth, strength and region
+    /// (<see cref="IStormIntensity"/>), weighs the config's look by them, gives the shaders the region
+    /// (<see cref="StormShaderGlobals"/>), and runs the lightning on the shared clock (<see cref="StormProcessor"/>): a
+    /// strike flashes the air and asks <see cref="StormSoundPresenter"/> for its thunder, later the farther it is.
     /// </summary>
-    public sealed class StormWeatherPresenter : IAtmosphereWeather, ICloudWeather, ITickable
+    public sealed class StormWeatherPresenter : IAtmosphereWeather, ICloudWeather, ITickable, System.IDisposable
     {
         private readonly StormConfig _config;
         private readonly IStormIntensity _intensity;
@@ -38,6 +38,8 @@ namespace TinCan.Features.Storm
 
         public void Tick() => Step(_time.Time);
 
+        public void Dispose() => StormShaderGlobals.Clear();
+
         /// <summary>One frame at the shared clock's <paramref name="now"/>.</summary>
         public void Step(float now)
         {
@@ -57,6 +59,9 @@ namespace TinCan.Features.Storm
 
             Flash = StormProcessor.Flash(now - _strikeAt, _config.FlashSeconds);
             _sound.Step(now, _intensity.Depth, _intensity.Strength, Weight);
+
+            if (_intensity.Region is { } region) StormShaderGlobals.Apply(region.Centre, region.Radius, _intensity.Strength);
+            else StormShaderGlobals.Clear();
         }
     }
 }

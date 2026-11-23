@@ -227,6 +227,7 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                 }
                 TINCAN_CLOUD_LOOK(look)
                 half3 colour = TinCanCloudShade(look, normal, view, hollow, (half)layer);
+                colour = TinCanWeatherShade(colour, input.positionWS);
 
                 // A hole's wall darkens toward the void as it rolls down.
                 colour = lerp(colour, _VoidColour.rgb, _VoidDarken * smoothstep(0.0, 1.0, cut));

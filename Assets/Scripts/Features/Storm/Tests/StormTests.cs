@@ -12,6 +12,7 @@ namespace TinCan.Features.Storm.Tests
         {
             public float Depth { get; set; }
             public float Strength { get; set; } = 1f;
+            public (Vector2 Centre, float Radius)? Region => null;
         }
 
         private StormConfig _config = null!;
@@ -37,12 +38,14 @@ namespace TinCan.Features.Storm.Tests
         }
 
         [Test]
-        public void TheWeight_IsDepthTimesStrength()
+        public void TheWeight_RisesIntoTheWall_HoldsInTheBands_ClearsInTheEye_TimesStrength()
         {
-            Assert.That(StormProcessor.Weight(0f, 1f), Is.Zero, "outside the wall");
-            Assert.That(StormProcessor.Weight(1f, 1f), Is.EqualTo(1f), "at the heart, raging");
-            Assert.That(StormProcessor.Weight(1f, 0f), Is.Zero, "cured");
-            Assert.That(StormProcessor.Weight(0.5f, 0.5f), Is.EqualTo(0.25f));
+            Assert.That(StormProcessor.Weight(0f, 1f), Is.Zero, "the wall's foot");
+            Assert.That(StormProcessor.Weight(0.4f, 1f), Is.EqualTo(1f), "in the bands, raging");
+            Assert.That(StormProcessor.Weight(1f, 1f), Is.Zero, "the eye is calm");
+            Assert.That(StormProcessor.Weight(0.4f, 0f), Is.Zero, "cured");
+            Assert.That(StormProcessor.Weight(0.4f, 0.5f), Is.EqualTo(0.5f));
+            Assert.That(StormProcessor.Profile(0.075f), Is.EqualTo(0.5f).Within(1e-4f), "halfway up the wall");
         }
 
         [Test]
@@ -90,7 +93,7 @@ namespace TinCan.Features.Storm.Tests
             Assert.That(_weather.Weight, Is.Zero);
             Assert.That(calmFlash, Is.Zero, "no lightning in a calm sky");
 
-            _intensity.Depth = 1f;
+            _intensity.Depth = 0.4f;
             float stormFlash = 0f;
             for (float t = 120f; t < 240f; t += 0.05f)
             {

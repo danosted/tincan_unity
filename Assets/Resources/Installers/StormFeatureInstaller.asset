@@ -13,4 +13,3 @@ MonoBehaviour:
   m_Name: StormFeatureInstaller
   m_EditorClassIdentifier: TinCan.Features.Storm::TinCan.Features.Storm.StormFeatureInstaller
   _config: {fileID: 11400000, guid: f6d40461e29585a4d8810313f07756f1, type: 2}
-  _lab: {fileID: 11400000, guid: 7f05ef7b5fdcf2a4885a15ed453d2f42, type: 2}

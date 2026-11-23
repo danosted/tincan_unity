@@ -268,6 +268,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "StormInWorld (Host + Client, Lag100)")]
         public static void StormInWorldDuo() => RunDuo("StormInWorld", "Lag100");
 
+        [MenuItem(Root + "StormCure (Host)")]
+        public static void StormCureSolo() => RunSolo("StormCure");
+
+        [MenuItem(Root + "StormCure (Host + Client, Lag100)")]
+        public static void StormCureDuo() => RunDuo("StormCure", "Lag100");
+
         [MenuItem(Root + "EncounterZone (Host)")]
         public static void EncounterZoneSolo() => RunSolo("EncounterZone");
 

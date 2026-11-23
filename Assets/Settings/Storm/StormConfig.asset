@@ -48,3 +48,18 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 78b9fa6a1825b444fb529602a6246be1, type: 3}
   - {fileID: 8300000, guid: 61b47f6e6af905545800e3d334ab6aec, type: 3}
   ThunderVolume: 0.9
+  HeartAboveShip: 10
+  HeartWander: 25
+  HeartWanderSeconds: 60
+  TargetRing: {x: 10, y: 20}
+  TargetHeight: 5
+  TargetRadius: 2.5
+  TargetSeconds: 6
+  TargetGapSeconds: 1.5
+  HitsToCure: 3
+  GlowMaterial: {fileID: 2100000, guid: 64d0337e7db82574d97b4c9fc477b35b, type: 2}
+  HeartColor: {r: 0.55, g: 0.95, b: 1, a: 1}
+  TargetColor: {r: 1, g: 0.8, b: 0.45, a: 1}
+  HeartDiameter: 8
+  TargetDiameter: 3
+  HeartPulseRate: 0.8

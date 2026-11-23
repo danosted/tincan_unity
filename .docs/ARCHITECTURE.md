@@ -163,8 +163,8 @@ build placement and weapons are *uses* of targeting, not separate aiming systems
 - **Authority:** `ITargetingService.TryAcquire` runs on any peer from simulated state: a humanoid aims from its body's
   position along its replicated look (yaw and pitch from the input, not the body, which eases toward the look). The
   owner uses it to predict; the server's answer is authoritative. The server never trusts a client-chosen target.
-- **Projectile sweeps are targeting too:** `ITargetingService.TryAcquireSegment(from, to, definition, ignore)` sweeps
-  one straight piece of a path (a cannonball's step this tick) with the definition's `Radius` and tag filters. The
+- **Shot sweeps are targeting too:** `ITargetingService.TryAcquireSegment(from, to, definition, ignore)` sweeps
+  one straight piece of a path (a cannon's beam, from the muzzle out to its range) with the definition's `Radius` and tag filters. The
   first accepted target or solid non-target collider ends it. Triggers, filtered-out targets and colliders the
   caller ignores (its own ship, players) are passed. Plan: `.docs/plans/cannon-and-hazards.md`.
 - **Aim pitch travels in the input:** `HumanoidInputState.LookPitch`, in degrees, positive looks down. It is captured

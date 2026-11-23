@@ -36,8 +36,8 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             public ulong? OccupantClientId { get; set; }
 
             public void ServerSetAim(float yaw, float elevation) { }
-            public void ServerShotFired(int shotId, Vector3 origin, Vector3 velocity) { }
-            public void ServerShotEnded(int shotId, Vector3 point) { }
+            public void ServerShotCharging(int shotId) { }
+            public void ServerShotFired(int shotId, Vector3 origin, Vector3 end) { }
             public bool TryTakeShotEvent(out CannonShotEvent shotEvent) { shotEvent = default; return false; }
             public void ApplyAim(float yaw, float elevation) { }
             public void ShowAimPreview(Vector3[]? points, int count) { }

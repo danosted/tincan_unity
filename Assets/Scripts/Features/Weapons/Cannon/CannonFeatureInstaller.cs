@@ -12,11 +12,11 @@ using VContainer.Unity;
 namespace TinCan.Features.Weapons.Cannon
 {
     /// <summary>
-    /// Ship cannons: the cannon fixture(s) on the ship, firing and sweeping shots on the server, and drawing barrels,
-    /// the aiming arc and balls on every peer. A player mans a cannon by interacting with it (a station, so the Stations
+    /// Ship cannons: the cannon fixture(s) on the ship, charging and firing beams on the server, and drawing barrels,
+    /// the aiming line and the beams on every peer. A player mans a cannon by interacting with it (a station, so the Stations
     /// installer must be in the profile too). While manning it the Gunner input context is live: the mouse swings the
     /// barrel (<see cref="GunnerAimUseCase"/>) while the body holds still, Fire shoots and Leave steps away.
-    /// Add a fixture to add a cannon: placement is data. Plan: .docs/plans/cannon-and-hazards.md.
+    /// Add a fixture to add a cannon: placement is data. Plans: .docs/plans/cannon-and-hazards.md, .docs/plans/ray-cannons.md.
     /// </summary>
     [CreateAssetMenu(fileName = "CannonFeatureInstaller", menuName = "TinCan/Features/Cannon Feature Installer")]
     public class CannonFeatureInstaller : FeatureInstaller, FeatureInstaller.IExtension<ShipFixtureDefinition>, FeatureInstaller.IExtension<InputContext>,
@@ -40,7 +40,6 @@ namespace TinCan.Features.Weapons.Cannon
 
             builder.RegisterInstance(_config);
             builder.RegisterInstance(_controls);
-            builder.Register<CannonballProcessor>(Lifetime.Transient);
             builder.Register<CannonAimProcessor>(Lifetime.Transient);
             builder.Register<GunnerAimUseCase>(Lifetime.Singleton).AsSelf().As<ITickable>().As<IHumanoidInputContributor>();
             builder.Register<CannonFireUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();

@@ -18,7 +18,7 @@ using Object = UnityEngine.Object;
 
 namespace TinCan.Features.Weapons.Cannon.Tests
 {
-    /// <summary><see cref="CannonFireUseCase"/>: aiming, firing on the press, reload, the per-tick sweep, hits and expiry.</summary>
+    /// <summary><see cref="CannonFireUseCase"/>: aiming, the charge on the press, the cooldown, the beam's one sweep, hits and misfires.</summary>
     public class CannonFireUseCaseTests
     {
         private sealed class FakeCannon : ICannon, IStation
@@ -38,12 +38,12 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             public TinCan.Core.Domain.Abilities.IAbilityControllerBase? ShipController { get; set; }
             public float Yaw { get; private set; }
             public float Elevation { get; private set; }
-            public List<int> Fired { get; } = new();
-            public List<int> Ended { get; } = new();
+            public List<int> Charging { get; } = new();
+            public List<(int Id, Vector3 Origin, Vector3 End)> Fired { get; } = new();
 
             public void ServerSetAim(float yaw, float elevation) => (Yaw, Elevation) = (yaw, elevation);
-            public void ServerShotFired(int shotId, Vector3 origin, Vector3 velocity) => Fired.Add(shotId);
-            public void ServerShotEnded(int shotId, Vector3 point) => Ended.Add(shotId);
+            public void ServerShotCharging(int shotId) => Charging.Add(shotId);
+            public void ServerShotFired(int shotId, Vector3 origin, Vector3 end) => Fired.Add((shotId, origin, end));
             public bool TryTakeShotEvent(out CannonShotEvent shotEvent) { shotEvent = default; return false; }
             public void ApplyAim(float yaw, float elevation) { }
             public void ShowAimPreview(Vector3[]? points, int count) { }
@@ -76,18 +76,18 @@ namespace TinCan.Features.Weapons.Cannon.Tests
         }
 
         /// <summary>
-        /// Answers a segment sweep with a hit on <see cref="Target"/> (and <see cref="Collider"/>) once the ball passes
-        /// <see cref="HitBeyondZ"/>, and keeps the ignore rule it was asked with.
+        /// Answers a sweep with a hit on <see cref="Target"/> (and <see cref="Collider"/>) <see cref="HitAt"/> metres along
+        /// it when the sweep is that long, records each sweep, and keeps the ignore rule it was asked with.
         /// </summary>
         private sealed class FakeTargeting : ITargetingService
         {
-            public float? HitBeyondZ { get; set; }
+            public float? HitAt { get; set; }
             public ITargetable? Target { get; set; }
             public Collider? Collider { get; set; }
             /// <summary>Colliders the ignore rule is asked about during each sweep (it only knows the shot while sweeping).</summary>
             public List<Collider> Probe { get; } = new();
             public Dictionary<Collider, bool> Ignored { get; } = new();
-            public int Sweeps { get; private set; }
+            public List<(Vector3 From, Vector3 To)> Sweeps { get; } = new();
 
             public bool TryAcquire(ITargeter targeter, TargetingDefinition definition, out TargetResult result)
             {
@@ -97,14 +97,17 @@ namespace TinCan.Features.Weapons.Cannon.Tests
 
             public bool TryAcquireSegment(Vector3 from, Vector3 to, TargetingDefinition definition, Func<Collider, bool>? ignore, out SegmentHit hit)
             {
-                Sweeps++;
+                Sweeps.Add((from, to));
                 foreach (var collider in Probe) Ignored[collider] = ignore != null && ignore(collider);
                 hit = default;
-                if (HitBeyondZ is not { } z || to.z < z) return false;
-                hit = new SegmentHit(Target, to, (to - from).magnitude, Collider);
+                if (HitAt is not { } distance || (to - from).magnitude < distance) return false;
+                hit = new SegmentHit(Target, from + (to - from).normalized * distance, distance, Collider);
                 return true;
             }
         }
+
+        // 0.4 s at 30 ticks a second.
+        private const int ChargeTicks = 12;
 
         private readonly List<Object> _assets = new();
         private FakeTimeService _time = null!;
@@ -118,6 +121,7 @@ namespace TinCan.Features.Weapons.Cannon.Tests
         private FakeHumanoidCharacterView _gunner = null!;
         private CannonFireUseCase _useCase = null!;
         private GameplayInput _fireInput = null!;
+        private readonly List<ISpiritBeamTargets> _beamTargets = new();
 
         [SetUp]
         public void SetUp()
@@ -133,10 +137,9 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             _config = Create<CannonConfig>("CannonConfig");
             _config.FireInput = _fireInput;
             _config.FireAbility = FireAbility(reloadSeconds: 1f);
-            _config.Sweep = Create<TargetingDefinition>("TD_CannonballSweep");
-            _config.MuzzleSpeed = 30f;
-            _config.Gravity = 0f;
-            _config.MaxLifetime = 2f;
+            _config.Sweep = Create<TargetingDefinition>("TD_SpiritBeamSweep");
+            _config.ChargeSeconds = 0.4f;
+            _config.BeamRange = 100f;
 
             _cannon = new FakeCannon();
             _actors.Register(_cannon);
@@ -145,12 +148,13 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             _abilities.GrantAbility(_gunner, _config.FireAbility);
 
             _useCase = new CannonFireUseCase(new FakeNetworkService(), _actors, _time, new FakeEventPublisher(), _abilities,
-                _targeting, _occupancy, _config, new CannonballProcessor(), new CannonAimProcessor());
+                _targeting, _occupancy, _config, new CannonAimProcessor(), _beamTargets);
         }
 
         [TearDown]
         public void TearDown()
         {
+            _beamTargets.Clear();
             _cannon.Destroy();
             _body.Destroy();
             foreach (var asset in _assets) Object.DestroyImmediate(asset);
@@ -160,37 +164,44 @@ namespace TinCan.Features.Weapons.Cannon.Tests
         [Test]
         public void Unmanned_NeverFires()
         {
-            Step(fire: true);
+            for (int i = 0; i < 20; i++) Step(fire: true);
 
+            Assert.That(_cannon.Charging, Is.Empty);
             Assert.That(_cannon.Fired, Is.Empty);
         }
 
         [Test]
-        public void Manned_FiresOnceOnThePress_NotWhileHeld()
+        public void Press_Charges_ThenFiresOnce_AfterTheCharge()
         {
             _occupancy.Occupant = _gunner;
 
             Step(fire: true);
-            Step(fire: true);
-            Step(fire: true);
+            Assert.That(_cannon.Charging, Has.Count.EqualTo(1), "the press starts the charge");
+            Assert.That(_useCase.ShotsCharging, Is.EqualTo(1));
 
+            for (int i = 1; i < ChargeTicks; i++) Step(fire: true);
+            Assert.That(_cannon.Fired, Is.Empty, "still charging");
+
+            Step(fire: true);
             Assert.That(_cannon.Fired, Has.Count.EqualTo(1));
-            Assert.That(_useCase.ShotsInFlight, Is.EqualTo(1));
+            Assert.That(_cannon.Fired[0].Id, Is.EqualTo(_cannon.Charging[0]));
+            Assert.That(_useCase.ShotsCharging, Is.Zero);
+            Assert.That(_cannon.Charging, Has.Count.EqualTo(1), "holding the button fires once");
         }
 
         [Test]
-        public void Reload_BlocksTheNextShot_UntilTheCooldownEnds()
+        public void Cooldown_BlocksTheNextShot_UntilItEnds()
         {
             _occupancy.Occupant = _gunner;
             Step(fire: true);
             Step(fire: false);
 
             Step(fire: true);
-            Assert.That(_cannon.Fired, Has.Count.EqualTo(1), "reloading");
+            Assert.That(_cannon.Charging, Has.Count.EqualTo(1), "cooling down");
 
             while (_time.Tick < 31) Step(fire: false);
             Step(fire: true);
-            Assert.That(_cannon.Fired, Has.Count.EqualTo(2));
+            Assert.That(_cannon.Charging, Has.Count.EqualTo(2));
         }
 
         [Test]
@@ -236,6 +247,21 @@ namespace TinCan.Features.Weapons.Cannon.Tests
         }
 
         [Test]
+        public void Beam_IsOneSweep_FromTheMuzzle_AlongTheAimAtTheEndOfTheCharge()
+        {
+            _occupancy.Occupant = _gunner;
+            Step(fire: true);
+            // The gunner turns the barrel to 90 (right) while it charges: the beam goes where it points when it fires.
+            for (int i = 1; i <= ChargeTicks; i++) Step(fire: false, aim: new Vector2(90f, 0f));
+
+            Assert.That(_targeting.Sweeps, Has.Count.EqualTo(1));
+            var (from, to) = _targeting.Sweeps[0];
+            Assert.That(Vector3.Distance(from, _cannon.Muzzle!.position), Is.LessThan(1e-3f));
+            Assert.That(Vector3.Distance(to, from + Vector3.right * _config.BeamRange), Is.LessThan(1e-3f));
+            Assert.That(Vector3.Distance(_cannon.Fired[0].End, to), Is.LessThan(1e-3f), "a miss ends at its range");
+        }
+
+        [Test]
         public void Sweep_PassesTheFiringCannon_ButNotItsShip()
         {
             var ship = new GameObject("Ship");
@@ -253,9 +279,9 @@ namespace TinCan.Features.Weapons.Cannon.Tests
 
             try
             {
-                Step(fire: true);
+                FireAndWait();
 
-                Assert.That(_targeting.Ignored[carriageCollider], Is.True, "the ball starts inside its own cannon");
+                Assert.That(_targeting.Ignored[carriageCollider], Is.True, "the beam starts inside its own cannon");
                 Assert.That(_targeting.Ignored[hullCollider], Is.False, "its own ship is hit, not passed");
             }
             finally
@@ -280,16 +306,15 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             // The hull is not a target: the sweep reports a hit on nothing, as on rock.
             _targeting.Target = null;
             _targeting.Collider = hull.GetComponent<Collider>();
-            _targeting.HitBeyondZ = 3f;
+            _targeting.HitAt = 3f;
             _occupancy.Occupant = _gunner;
 
             try
             {
-                Step(fire: true);
-                for (int i = 0; i < 10 && _cannon.Ended.Count == 0; i++) Step(fire: false);
+                FireAndWait();
 
                 Assert.That(shipController.HasTag(hitTag), Is.True, "the misfire hurts the ship");
-                Assert.That(_cannon.Ended, Is.EqualTo(_cannon.Fired));
+                Assert.That(_cannon.Fired, Has.Count.EqualTo(1));
             }
             finally
             {
@@ -298,55 +323,86 @@ namespace TinCan.Features.Weapons.Cannon.Tests
         }
 
         [Test]
-        public void Hit_AppliesTheHitEffect_AndEndsTheShot()
+        public void Hit_AppliesTheHitEffect_AndTheBeamEndsThere()
         {
             var hitTag = Create<GameplayTag>("State.Hit");
-            var hitEffect = Create<GameplayEffectDefinition>("GE_Hit");
-            hitEffect.DurationType = DurationType.Infinite;
-            hitEffect.Modifiers = new List<AttributeModifier>();
-            hitEffect.GrantedTags = new List<GameplayTag> { hitTag };
-            _config.HitEffect = hitEffect;
+            _config.HitEffect = TagEffect("GE_Hit", hitTag);
             var target = new FakeAbilityController();
             _targeting.Target = new FakeTargetable { Controller = target };
-            _targeting.HitBeyondZ = 3f; // 30 m/s straight ahead: past 3 m on the fourth tick of flight
+            _targeting.HitAt = 30f;
             _occupancy.Occupant = _gunner;
 
-            Step(fire: true);
-            for (int i = 0; i < 10 && _cannon.Ended.Count == 0; i++) Step(fire: false);
+            FireAndWait();
 
             Assert.That(target.HasTag(hitTag), Is.True);
-            Assert.That(_cannon.Ended, Is.EqualTo(_cannon.Fired));
-            Assert.That(_useCase.ShotsInFlight, Is.Zero);
+            var (_, origin, end) = _cannon.Fired[0];
+            Assert.That((end - origin).magnitude, Is.EqualTo(30f).Within(1e-3f));
         }
 
         [Test]
-        public void Miss_EndsTheShot_WhenItsLifetimeRunsOut()
+        public void BeamTarget_NearerThanAnythingSolid_AnswersTheHit_AndEndsTheBeam()
         {
+            var hitTag = Create<GameplayTag>("State.Hit");
+            _config.HitEffect = TagEffect("GE_Hit", hitTag);
+            var solid = new FakeAbilityController();
+            _targeting.Target = new FakeTargetable { Controller = solid };
+            _targeting.HitAt = 50f;
+            var targets = new FakeBeamTargets { At = 20f };
+            _beamTargets.Add(targets);
             _occupancy.Occupant = _gunner;
 
-            Step(fire: true);
-            while (_time.Tick < 61) Step(fire: false);
+            FireAndWait();
 
-            Assert.That(_cannon.Ended, Has.Count.EqualTo(1));
-            Assert.That(_useCase.ShotsInFlight, Is.Zero);
+            Assert.That(targets.Answered, Is.EqualTo(new[] { 20f }));
+            Assert.That(targets.AskedLength, Is.EqualTo(50f).Within(1e-3f), "asked as far as the first solid thing");
+            Assert.That(solid.HasTag(hitTag), Is.False, "the beam ended before the solid target");
+            var (_, origin, end) = _cannon.Fired[0];
+            Assert.That((end - origin).magnitude, Is.EqualTo(20f).Within(1e-3f));
         }
 
         [Test]
-        public void EachTick_SweepsOnlyThatTicksPieceOfTheArc()
+        public void BeamTarget_BehindSomethingSolid_IsNotHit()
         {
+            var hitTag = Create<GameplayTag>("State.Hit");
+            _config.HitEffect = TagEffect("GE_Hit", hitTag);
+            var solid = new FakeAbilityController();
+            _targeting.Target = new FakeTargetable { Controller = solid };
+            _targeting.HitAt = 10f;
+            var targets = new FakeBeamTargets { At = 20f };
+            _beamTargets.Add(targets);
             _occupancy.Occupant = _gunner;
-            Step(fire: true);
-            int afterFire = _targeting.Sweeps;
 
-            Step(fire: false);
-            Step(fire: false);
+            FireAndWait();
 
-            Assert.That(_targeting.Sweeps - afterFire, Is.EqualTo(2), "one sweep per tick per shot");
+            Assert.That(targets.Answered, Is.Empty);
+            Assert.That(solid.HasTag(hitTag), Is.True);
         }
 
-        private void Step(bool fire)
+        /// <summary>A beam target <see cref="At"/> metres along any beam that reaches it.</summary>
+        private sealed class FakeBeamTargets : ISpiritBeamTargets
         {
-            _gunner.InputState = new HumanoidInputState { ActiveInputMask = fire ? 1UL << _fireInput.BitIndex : 0UL };
+            public float At { get; set; }
+            public float AskedLength { get; private set; }
+            public List<float> Answered { get; } = new();
+
+            public float? FirstHit(Vector3 origin, Vector3 direction, float length)
+            {
+                AskedLength = length;
+                return At <= length ? At : null;
+            }
+
+            public void Answer(Vector3 origin, Vector3 direction, float distance) => Answered.Add(distance);
+        }
+
+        private void FireAndWait()
+        {
+            Step(fire: true);
+            for (int i = 0; i < ChargeTicks; i++) Step(fire: false);
+        }
+
+        private void Step(bool fire, Vector2 aim = default)
+        {
+            _gunner.InputState = new HumanoidInputState { ActiveInputMask = fire ? 1UL << _fireInput.BitIndex : 0UL, StationAim = aim };
             _useCase.Tick();
             _time.Tick++;
         }

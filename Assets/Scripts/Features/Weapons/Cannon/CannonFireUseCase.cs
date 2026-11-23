@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace TinCan.Features.Weapons.Cannon
 {
-    /// <summary>Server: a cannon fired a shot.</summary>
+    /// <summary>Server: a cannon's beam fired, after its charge.</summary>
     public readonly struct CannonFiredEvent
     {
         public readonly Guid CannonId;
@@ -26,17 +26,17 @@ namespace TinCan.Features.Weapons.Cannon
     }
 
     /// <summary>
-    /// Server: a cannonball ended its flight, on a target (<see cref="Target"/> set) or on something solid.
-    /// <see cref="OwnShip"/>: it hit the ship its cannon is mounted on (a misfire).
+    /// Server: a beam ended on a target (<see cref="Target"/> set) or on something solid. Not published for a beam that
+    /// hit nothing. <see cref="OwnShip"/>: it hit the ship its cannon is mounted on (a misfire).
     /// </summary>
-    public readonly struct CannonballHitEvent
+    public readonly struct CannonHitEvent
     {
         public readonly int ShotId;
         public readonly string Target;
         public readonly bool Damaged;
         public readonly bool OwnShip;
 
-        public CannonballHitEvent(int shotId, string target, bool damaged, bool ownShip = false)
+        public CannonHitEvent(int shotId, string target, bool damaged, bool ownShip = false)
         {
             ShotId = shotId;
             Target = target;
@@ -48,12 +48,15 @@ namespace TinCan.Features.Weapons.Cannon
     /// <summary>
     /// Application Layer, server only, after humanoid movement. For each manned cannon it turns the occupant's station
     /// aim (from the input simulated this tick, steered by the Gunner context; see <see cref="GunnerAimUseCase"/>) into
-    /// barrel angles, and on the tick their fire input is first pressed it activates the fire ability; the ability's
-    /// cooldown is the reload. A shot is an arc,
-    /// not an object: each tick its newest piece is swept through targeting (<see cref="ITargetingService.TryAcquireSegment"/>),
-    /// passing the cannon that fired it and players. A hit applies the hit effect to the target's controller; a hit on
-    /// the cannon's own ship is a misfire and applies it to the ship. Every peer hears of the
-    /// shot twice (fired, ended) and draws it itself (<see cref="CannonShotPresenter"/>).
+    /// barrel angles, and on the tick their fire input is first pressed it activates the fire ability, whose cooldown
+    /// is the time between shots. That starts the charge; <see cref="CannonConfig.ChargeSeconds"/> later the beam fires
+    /// along the barrel's aim then (the gunner can still turn it while it charges): one sweep from the muzzle out to
+    /// <see cref="CannonConfig.BeamRange"/> through targeting (<see cref="ITargetingService.TryAcquireSegment"/>),
+    /// passing the cannon that fired it and players. A target answers the beam in its own way (R2): a collider target
+    /// through the hit effect on its controller (a hazard's health; it breaks), and a target that is no collider
+    /// through its <see cref="ISpiritBeamTargets"/> source, when it is nearer than anything solid (the storm's heart
+    /// targets). A hit on the cannon's own ship is a misfire and applies the hit effect to the ship. Every peer hears of the shot twice (charging, fired with where it went) and draws it
+    /// itself (<see cref="CannonShotPresenter"/>). Plan: .docs/plans/ray-cannons.md.
     /// </summary>
     public class CannonFireUseCase : ISimulationTickable
     {
@@ -61,12 +64,11 @@ namespace TinCan.Features.Weapons.Cannon
 
         private const string LogSource = "Cannon";
 
-        private sealed class Shot
+        private sealed class Charge
         {
             public int Id;
-            public BallisticArc Arc;
+            public int FireTick;
             public ICannon Cannon = null!;
-            public Transform? ShipRoot;
         }
 
         private readonly INetworkService _network;
@@ -77,12 +79,11 @@ namespace TinCan.Features.Weapons.Cannon
         private readonly ITargetingService _targeting;
         private readonly IStationOccupancy _occupancy;
         private readonly CannonConfig _config;
-        private readonly CannonballProcessor _balls;
         private readonly CannonAimProcessor _aim;
-        private readonly List<Shot> _shots = new();
+        private readonly IReadOnlyList<ISpiritBeamTargets> _beamTargets;
+        private readonly List<Charge> _charges = new();
         private readonly List<ICannon> _cannons = new();
         private readonly Dictionary<Guid, bool> _wasPressed = new();
-        private readonly Dictionary<Guid, (Vector3 Position, Quaternion Rotation)> _lastBase = new();
         private readonly Func<Collider, bool> _ignore;
         private Transform? _sweepingCannon;
         private int _nextShotId;
@@ -96,9 +97,10 @@ namespace TinCan.Features.Weapons.Cannon
             ITargetingService targeting,
             IStationOccupancy occupancy,
             CannonConfig config,
-            CannonballProcessor balls,
-            CannonAimProcessor aim)
+            CannonAimProcessor aim,
+            IReadOnlyList<ISpiritBeamTargets> beamTargets)
         {
+            _beamTargets = beamTargets;
             _network = network;
             _actors = actors;
             _time = time;
@@ -107,13 +109,12 @@ namespace TinCan.Features.Weapons.Cannon
             _targeting = targeting;
             _occupancy = occupancy;
             _config = config;
-            _balls = balls;
             _aim = aim;
             _ignore = Ignores;
         }
 
-        /// <summary>Shots in flight, for tests and scenario probes.</summary>
-        public int ShotsInFlight => _shots.Count;
+        /// <summary>Shots charging, for tests and scenario probes.</summary>
+        public int ShotsCharging => _charges.Count;
 
         public void Tick()
         {
@@ -123,16 +124,12 @@ namespace TinCan.Features.Weapons.Cannon
             _cannons.AddRange(_actors.GetActors<ICannon>());
             foreach (var cannon in _cannons) TickCannon(cannon);
 
-            SweepShots();
+            FireCharged();
         }
 
         private void TickCannon(ICannon cannon)
         {
             if (cannon.Base == null || cannon.Muzzle == null) return;
-
-            var basePose = (cannon.Base.position, cannon.Base.rotation);
-            bool hadLast = _lastBase.TryGetValue(cannon.Id, out var last);
-            _lastBase[cannon.Id] = basePose;
 
             var occupant = cannon is IStation station ? _occupancy.OccupantOf(station) : null;
             if (occupant == null)
@@ -146,16 +143,27 @@ namespace TinCan.Features.Weapons.Cannon
             cannon.ServerSetAim(yaw, elevation);
             cannon.ApplyAim(yaw, elevation);
 
-            if (JustPressedFire(cannon.Id, occupant) && _config.FireAbility != null &&
+            if (JustPressedFire(cannon.Id, occupant) && !IsCharging(cannon) && _config.FireAbility != null &&
                 _abilities.TryActivateAbility(occupant, _config.FireAbility))
             {
-                // The ship's motion at the muzzle, not the barrel's swing (see CannonAimProcessor.BaseVelocityAt).
-                Vector3 muzzle = cannon.Muzzle.position;
-                Vector3 inherited = hadLast
-                    ? _aim.BaseVelocityAt(muzzle, last.Position, last.Rotation, basePose.position, basePose.rotation, _time.DeltaTime)
-                    : Vector3.zero;
-                Fire(cannon, muzzle, _aim.MuzzleDirection(cannon.Base.rotation, yaw, elevation), inherited);
+                var charge = new Charge
+                {
+                    Id = ++_nextShotId,
+                    FireTick = _time.Tick + Mathf.CeilToInt(_config.ChargeSeconds * _time.TickRate),
+                    Cannon = cannon,
+                };
+                _charges.Add(charge);
+                cannon.ServerShotCharging(charge.Id);
             }
+        }
+
+        private bool IsCharging(ICannon cannon)
+        {
+            foreach (var charge in _charges)
+            {
+                if (ReferenceEquals(charge.Cannon, cannon)) return true;
+            }
+            return false;
         }
 
         private bool JustPressedFire(Guid cannonId, IHumanoidCharacterView occupant)
@@ -169,47 +177,68 @@ namespace TinCan.Features.Weapons.Cannon
             return pressed && !wasPressed;
         }
 
-        private void Fire(ICannon cannon, Vector3 origin, Vector3 direction, Vector3 inherited)
+        private void FireCharged()
         {
-            var arc = BallisticArc.FromMuzzle(origin, direction, _config.MuzzleSpeed, inherited, _config.GravityVector, _time.Tick);
-            var shot = new Shot { Id = ++_nextShotId, Arc = arc, Cannon = cannon, ShipRoot = cannon.ShipRoot };
-            _shots.Add(shot);
-
-            cannon.ServerShotFired(shot.Id, arc.Origin, arc.Velocity);
-            _events.Publish(new CannonFiredEvent(cannon.Id, shot.Id));
-            _events.LogInfo(LogSource, $"Shot {shot.Id} fired at {arc.Velocity.magnitude:0} m/s.");
-        }
-
-        private void SweepShots()
-        {
-            int tick = _time.Tick;
-            int tickRate = _time.TickRate;
-
-            for (int i = _shots.Count - 1; i >= 0; i--)
+            for (int i = _charges.Count - 1; i >= 0; i--)
             {
-                var shot = _shots[i];
-                var (from, to) = _balls.SegmentAt(shot.Arc, tick, tickRate);
+                var charge = _charges[i];
+                if (_time.Tick < charge.FireTick) continue;
 
-                _sweepingCannon = shot.Cannon.Base;
-                if (_config.Sweep != null && _targeting.TryAcquireSegment(from, to, _config.Sweep, _ignore, out var hit))
-                {
-                    Hit(shot, hit);
-                    End(i, hit.Point);
-                }
-                else if (_balls.IsSpent(shot.Arc, tick, tickRate, _config.BallLimits))
-                {
-                    End(i, to);
-                }
+                _charges.RemoveAt(i);
+                // A cannon gone while it charged (its ship despawned) fires nothing.
+                if (charge.Cannon is Component component && component == null) continue;
+                if (charge.Cannon.Base == null || charge.Cannon.Muzzle == null) continue;
+                Fire(charge);
             }
 
             _sweepingCannon = null;
         }
 
-        private void Hit(Shot shot, SegmentHit hit)
+        private void Fire(Charge charge)
         {
-            if (shot.ShipRoot != null && hit.Collider != null && hit.Collider.transform.IsChildOf(shot.ShipRoot))
+            var cannon = charge.Cannon;
+            Vector3 origin = cannon.Muzzle!.position;
+            Vector3 direction = _aim.MuzzleDirection(cannon.Base!.rotation, cannon.Yaw, cannon.Elevation);
+            Vector3 end = origin + direction * _config.BeamRange;
+
+            _sweepingCannon = cannon.Base;
+            SegmentHit hit = default;
+            bool solid = _config.Sweep != null && _targeting.TryAcquireSegment(origin, end, _config.Sweep, _ignore, out hit);
+            float length = solid ? Vector3.Distance(origin, hit.Point) : _config.BeamRange;
+
+            // Targets that are not colliders answer the beam themselves, if they are nearer than anything solid.
+            ISpiritBeamTargets? answering = null;
+            foreach (var source in _beamTargets)
             {
-                Misfire(shot);
+                if (source.FirstHit(origin, direction, length) is not { } distance || distance >= length) continue;
+                length = distance;
+                answering = source;
+            }
+
+            if (answering != null)
+            {
+                end = origin + direction * length;
+                answering.Answer(origin, direction, length);
+                _events.Publish(new CannonHitEvent(charge.Id, answering.GetType().Name, damaged: false));
+                _events.LogInfo(LogSource, $"Shot {charge.Id} hit a {answering.GetType().Name} target.");
+            }
+            else if (solid)
+            {
+                end = hit.Point;
+                Hit(charge, hit);
+            }
+
+            cannon.ServerShotFired(charge.Id, origin, end);
+            _events.Publish(new CannonFiredEvent(cannon.Id, charge.Id));
+            _events.LogInfo(LogSource, $"Shot {charge.Id} fired, {(end - origin).magnitude:0} m.");
+        }
+
+        private void Hit(Charge charge, SegmentHit hit)
+        {
+            var ship = charge.Cannon.ShipRoot;
+            if (ship != null && hit.Collider != null && hit.Collider.transform.IsChildOf(ship))
+            {
+                Misfire(charge);
                 return;
             }
 
@@ -218,30 +247,23 @@ namespace TinCan.Features.Weapons.Cannon
             if (damaged) _abilities.ApplyEffect(controller!, _config.HitEffect!);
 
             string target = hit.Target is Component component && component != null ? component.name : hit.Target != null ? hit.Target.GetType().Name : "terrain";
-            _events.Publish(new CannonballHitEvent(shot.Id, target, damaged));
-            _events.LogInfo(LogSource, $"Shot {shot.Id} hit {target}.");
+            _events.Publish(new CannonHitEvent(charge.Id, target, damaged));
+            _events.LogInfo(LogSource, $"Shot {charge.Id} hit {target}.");
         }
 
-        private void End(int index, Vector3 point)
-        {
-            var shot = _shots[index];
-            _shots.RemoveAt(index);
-            if (shot.Cannon is not Component component || component != null) shot.Cannon.ServerShotEnded(shot.Id, point);
-        }
-
-        // The ball hit the ship its cannon stands on. The hull is not a target, so the hit effect goes to the ship's
+        // The beam hit the ship its cannon stands on. The hull is not a target, so the hit effect goes to the ship's
         // controller directly.
-        private void Misfire(Shot shot)
+        private void Misfire(Charge charge)
         {
-            var ship = shot.Cannon.ShipController;
+            var ship = charge.Cannon.ShipController;
             bool damaged = ship != null && _config.HitEffect != null;
             if (damaged) _abilities.ApplyEffect(ship!, _config.HitEffect!);
 
-            _events.Publish(new CannonballHitEvent(shot.Id, "own ship", damaged, ownShip: true));
-            _events.LogInfo(LogSource, $"Shot {shot.Id} hit its own ship.");
+            _events.Publish(new CannonHitEvent(charge.Id, "own ship", damaged, ownShip: true));
+            _events.LogInfo(LogSource, $"Shot {charge.Id} hit its own ship.");
         }
 
-        // A shot passes the cannon that fired it (it starts inside it) and players. Its own ship it hits: a misfire.
+        // A beam passes the cannon that fired it (it starts inside it) and players. Its own ship it hits: a misfire.
         private bool Ignores(Collider collider) =>
             (_sweepingCannon != null && collider.transform.IsChildOf(_sweepingCannon)) ||
             collider.GetComponentInParent<IHumanoidCharacterView>() != null;

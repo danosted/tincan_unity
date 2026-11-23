@@ -4,16 +4,36 @@ using UnityEngine;
 namespace TinCan.Features.Storm
 {
     /// <summary>
-    /// Pure storm rules for the look and the sound. Depth (0 outside the wall, 1 at the eye's edge) times strength (1
-    /// raging, 0 cured) is the weight that blends everything. Lightning falls in time slots: whether a slot has a strike,
-    /// and when in it, come from a hash of the seed and the slot, so every peer on the same clock sees the same strikes.
+    /// Pure storm rules for the look and the sound. The storm's profile at a depth into its disc (0 the wall's foot, 1 the
+    /// centre) times its strength (1 raging, 0 cured) is the weight that blends everything. Lightning falls in time slots:
+    /// whether a slot has a strike, and when in it, come from a hash of the seed and the slot, so every peer on the same
+    /// clock sees the same strikes.
     /// </summary>
     public static class StormProcessor
     {
         /// <summary>Each slot holds at most one strike.</summary>
         public const float SlotSeconds = 1.5f;
 
-        public static float Weight(float depth, float strength) => Mathf.Clamp01(depth) * Mathf.Clamp01(strength);
+        /// <summary>
+        /// How much storm there is at a depth into the disc (0 the wall's foot, 1 the centre): rising steeply into the wall,
+        /// holding through the bands, clearing in the eye. Kept in step with TinCanStormProfile
+        /// (Shaders/Include/TinCanStorm.hlsl), so the light at the camera matches the clouds the shaders draw.
+        /// </summary>
+        public static float Profile(float depth)
+        {
+            float d = Mathf.Clamp01(depth);
+            return SmoothStep(0f, 0.15f, d) * (1f - SmoothStep(0.8f, 0.95f, d));
+        }
+
+        /// <summary>The weather's weight: the profile at the depth times the strength.</summary>
+        public static float Weight(float depth, float strength) => Profile(depth) * Mathf.Clamp01(strength);
+
+        // HLSL's smoothstep (Mathf.SmoothStep interpolates between its first two arguments instead).
+        private static float SmoothStep(float edge0, float edge1, float x)
+        {
+            float t = Mathf.Clamp01((x - edge0) / (edge1 - edge0));
+            return t * t * (3f - 2f * t);
+        }
 
         /// <summary>The chance a slot holds a strike at <paramref name="weight"/>: the rate, scaled from the threshold up.</summary>
         public static float StrikeChance(float weight, float strikesPerMinute, float minWeight)

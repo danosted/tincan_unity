@@ -2140,6 +2140,42 @@ namespace TinCan.DevTools.Scenarios
             });
 
         /// <summary>
+        /// The storm in the world (plan: storm-crossing.md, ST2): outside the zone the storm weighs nothing on the light; with
+        /// the zone moved round the ship (half its radius in, in the bands) it weighs on every peer, and its region is set
+        /// for the shaders; with the zone moved away it lifts again.
+        /// </summary>
+        public static readonly ScenarioEntry StormInWorld = new(
+            new Scenario.Builder("StormInWorld")
+                .InScene(TestScenes.Galleon)
+                .Describe("On the Galleon: outside the storm, clear -> the zone round the ship -> the storm weighs on every peer -> away -> clear again.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn")
+                    .WaitUntil("ZoneSpawned", 30f)
+                    .Do("PlaceZone", "out")
+                    .Wait(1f, "every peer sees it away"))
+                .Act(s => s
+                    .WaitUntil("StormWeightBelow", 10f, "0.05")
+                    .WaitUntil("StormWeightAbove", 30f, "0.5")
+                    .Expect("StormRegionSet")
+                    .Checkpoint("in-the-storm")
+                    .WaitUntil("StormWeightBelow", 30f, "0.05"))
+                .Assert(s => s
+                    .Wait(3f, "the subject sees it clear first")
+                    .Do("PlaceZone", "in")
+                    .WaitUntil("StormWeightAbove", 10f, "0.5")
+                    .Wait(4f, "every peer sees the storm")
+                    .Do("PlaceZone", "out")
+                    .WaitUntil("StormWeightBelow", 10f, "0.05"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<EncounterScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<StormScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>
         /// An encounter zone's round (plan: encounters.md, E1). The server moves the zone around the ship to stand in for
         /// sailing in and out: in, the warning shows on both peers; out again during it, nothing starts; in for good, it
         /// runs once the warning ends; out, it is abandoned and rests.
@@ -2248,7 +2284,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone, StormInWorld };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

@@ -35,6 +35,16 @@ float TinCanCloudBillow(float3 p)
 // until a weather sets it, so the clouds are untouched.
 float4 _TinCanWeatherShade;
 
+#include "Assets/Shaders/Include/TinCanStorm.hlsl"
+
+// The weather on a cloud at a world position: darkened toward the shade by the weather where the camera is (a) or the
+// storm standing there (TinCanStorm.hlsl), whichever is more, so the storm reads dark from afar and all round you inside.
+half3 TinCanWeatherShade(half3 colour, float3 positionWS)
+{
+    half weight = max((half)_TinCanWeatherShade.a, TinCanStormWeightAt(positionWS));
+    return lerp(colour, colour * (half3)_TinCanWeatherShade.rgb, weight);
+}
+
 struct TinCanCloudLook
 {
     half3 lit;
@@ -78,7 +88,6 @@ half3 TinCanCloudShadeLit(TinCanCloudLook look, half lit, half3 skyFill, half gr
     colour = lerp(colour, SampleSH(float3(0, 1, 0)) + sun.color * 0.25h, grazing * look.rim);
     half toward = (half)pow(saturate(dot(-view, sun.direction)), look.silverFocus);
     colour += sun.color * toward * (grazing * look.silverLining + thin * look.translucency);
-    colour = lerp(colour, colour * _TinCanWeatherShade.rgb, _TinCanWeatherShade.a);
     return colour;
 }
 

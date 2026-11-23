@@ -23,5 +23,21 @@ namespace TinCan.Features.Encounters
 
             return best;
         }
+
+        public IEncounterZone? Nearest(Vector3 point)
+        {
+            IEncounterZone? nearest = null;
+            float best = float.PositiveInfinity;
+            foreach (var zone in _actors.GetActors<IEncounterZone>())
+            {
+                if (!zone.IsSimulating) continue;
+                float distance = Vector2.Distance(zone.Centre, new Vector2(point.x, point.z)) - zone.Radius;
+                if (distance >= best) continue;
+                best = distance;
+                nearest = zone;
+            }
+
+            return nearest;
+        }
     }
 }

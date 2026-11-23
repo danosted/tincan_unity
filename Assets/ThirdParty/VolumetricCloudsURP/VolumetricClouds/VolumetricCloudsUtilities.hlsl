@@ -6,6 +6,9 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
+// TinCan: the storm's region (plan .docs/plans/storm-crossing.md, ST2): the storm towers where it stands.
+#include "Assets/Shaders/Include/TinCanStorm.hlsl"
+
 // TinCan: the clouds' variety (EvaluateCloudProperties), set by CloudAtmosphereDirector: x the height tiers (stacked
 // bands of cloud, 1 off), y the opacity variation (from the cloud map's green channel, 0 off).
 float4 _TinCanCloudVariety;
@@ -465,6 +468,16 @@ void EvaluateCloudProperties(float3 positionPS, float noiseMipOffset, float eros
     CloudCoverageData cloudCoverageData;
     GetCloudCoverageData(mapPositionPS, cloudCoverageData);
 
+    // TinCan: the storm (plan .docs/plans/storm-crossing.md, ST2). Where the storm stands (TinCanStorm.hlsl) the sky closes:
+    // more coverage, the tallest cloud type, reaching to the top of the layer, so its wall towers and reads from afar.
+    half tinCanStorm = TinCanStormWeightAt(positionPS);
+    if (tinCanStorm > 0.0h)
+    {
+        cloudCoverageData.coverage = lerp(cloudCoverageData.coverage, 1.0h, tinCanStorm * 0.85h);
+        cloudCoverageData.cloudType = lerp(cloudCoverageData.cloudType, 1.0h, tinCanStorm);
+        cloudCoverageData.maxCloudHeight = lerp(cloudCoverageData.maxCloudHeight, 1.0h, tinCanStorm);
+    }
+
     // If this region of space has no cloud coverage, exit right away
     if (cloudCoverageData.coverage.x <= CLOUD_DENSITY_TRESHOLD || cloudCoverageData.maxCloudHeight < profileHeight)
         return;
@@ -526,6 +539,9 @@ void EvaluateCloudProperties(float3 positionPS, float noiseMipOffset, float eros
 
     // Attenuate everything by the density multiplier
     properties.density = base_cloud * _DensityMultiplier;
+
+    // TinCan: the storm's clouds are denser.
+    properties.density *= 1.0h + tinCanStorm * 1.5h;
 
     // TinCan: the opacity variation. With _TinCanCloudVariety.y above 0, the cloud map's green channel says how opaque
     // the clouds of a region are (0 the faintest .. 1 full), instead of the rain's extinction: at 1 the faintest are

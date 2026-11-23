@@ -17,17 +17,18 @@ using Object = UnityEngine.Object;
 namespace TinCan.DevTools.Editor
 {
     /// <summary>
-    /// TinCan > Dev > Storm > Build Lab: the storm lab (plan: .docs/plans/storm-crossing.md, ST1).
+    /// TinCan > Dev > Storm > Build Lab: the storm, in the game and in its lab (plan: .docs/plans/storm-crossing.md, ST1, ST2).
     /// <list type="bullet">
     /// <item>stand-in sounds (<see cref="StormSynth"/>) in Assets/Audio/Storm/;</item>
     /// <item>StormConfig (its look from the palette: slate and plum, never grey; built only when missing, so tuning in
-    /// the Inspector is kept), the lab's sliders (StormLab), the installer, and Profile_Lab_Storm: the game's profile
-    /// plus the storm;</item>
-    /// <item><see cref="ScenePath"/>: a copy of cheesed_scene on the lab profile, its volumetric clouds on their own
-    /// profile copy (the cloud director writes into its profile). Rebuilding copies the game scene again. It is put on the
-    /// build list, which Netcode needs to load it (the scene itself is git-ignored build output).</item>
+    /// the Inspector is kept; fields added later get their first guess), and the installer, in the game's profile
+    /// (Profile_Galleon): there the nearest encounter zone drives the storm;</item>
+    /// <item><see cref="ScenePath"/>: a copy of cheesed_scene (the game's profile) with "Storm Lab Controls"
+    /// (<see cref="StormLabControls"/>: sliders, or follow the zone), its volumetric clouds on their own profile copy (the
+    /// cloud director writes into its profile). Rebuilding copies the game scene again. It is put on the build list,
+    /// which Netcode needs to load it (the scene itself is git-ignored build output).</item>
     /// </list>
-    /// Press Play in Lab_Storm, start a host, select Assets/Settings/Storm/StormLab and drag Depth and Strength.
+    /// Press Play in Lab_Storm, host, select "Storm Lab Controls" and drag Depth and Strength.
     /// </summary>
     public static class StormLabBuilder
     {
@@ -35,10 +36,8 @@ namespace TinCan.DevTools.Editor
         private const string GameScenePath = "Assets/Scenes/cheesed_scene.unity";
         private const string Folder = "Assets/Settings/Storm/";
         private const string ConfigPath = Folder + "StormConfig.asset";
-        private const string LabPath = Folder + "StormLab.asset";
         private const string CloudsProfilePath = Folder + "VolumetricClouds_StormLab.asset";
         private const string InstallerPath = "Assets/Resources/Installers/StormFeatureInstaller.asset";
-        private const string ProfilePath = "Assets/Settings/FeatureProfiles/Lab/Profile_Lab_Storm.asset";
         private const string AudioFolder = "Assets/Audio/Storm/";
         private const string AudioConfigPath = "Assets/Audio/AudioConfig.asset";
 
@@ -59,27 +58,30 @@ namespace TinCan.DevTools.Editor
         {
             WriteClips();
             var config = Config();
-            var lab = Asset<StormLabSettings>(LabPath, _ => { });
             var installer = Asset<StormFeatureInstaller>(InstallerPath, i =>
             {
                 var fields = new SerializedObject(i);
                 fields.FindProperty("_config").objectReferenceValue = config;
-                fields.FindProperty("_lab").objectReferenceValue = lab;
                 fields.ApplyModifiedPropertiesWithoutUndo();
             });
-            var profile = Asset<FeatureProfile>(ProfilePath, p =>
+            // In the game: the zone drives it (the lab's controls exist only in the lab scene).
+            var game = new SerializedObject(Load<FeatureProfile>(ShipSocketsAssetBuilder.GalleonProfilePath));
+            var installers = game.FindProperty("_installers");
+            bool present = false;
+            for (int i = 0; i < installers.arraySize; i++) present |= installers.GetArrayElementAtIndex(i).objectReferenceValue == installer;
+            if (!present)
             {
-                var fields = new SerializedObject(p);
-                SetList(fields.FindProperty("_includes"), Load<Object>(ShipSocketsAssetBuilder.GalleonProfilePath));
-                SetList(fields.FindProperty("_installers"), installer);
-                fields.ApplyModifiedPropertiesWithoutUndo();
-            });
+                installers.arraySize++;
+                installers.GetArrayElementAtIndex(installers.arraySize - 1).objectReferenceValue = installer;
+                game.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(game.targetObject);
+            }
             AssetDatabase.SaveAssets();
 
             string returnTo = SceneManager.GetActiveScene().path;
             BuildScene();
             if (!string.IsNullOrEmpty(returnTo) && returnTo != ScenePath) EditorSceneManager.OpenScene(returnTo, OpenSceneMode.Single);
-            Debug.Log($"[StormLab] Built {ScenePath}: press Play, start a host, and drag Depth and Strength on {LabPath}.");
+            Debug.Log($"[StormLab] Built {ScenePath}: press Play, host, and drag Depth and Strength on Storm Lab Controls.");
         }
 
         private static void WriteClips()
@@ -157,12 +159,8 @@ namespace TinCan.DevTools.Editor
             var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var roots = scene.GetRootGameObjects();
 
-            var scope = roots.Select(o => o.GetComponent("ProjectLifetimeScope")).FirstOrDefault(c => c != null)
-                        ?? throw new InvalidOperationException($"{ScenePath} has no ProjectLifetimeScope at its root.");
-            var scopeFields = new SerializedObject(scope);
-            // Loaded again here: opening the scene unloaded the assets loaded before it, so the caller's reference is dead.
-            scopeFields.FindProperty("_featureProfile").objectReferenceValue = Load<FeatureProfile>(ProfilePath);
-            scopeFields.ApplyModifiedPropertiesWithoutUndo();
+            // The lab's controls: sliders, or follow the zone as the game does.
+            new GameObject("Storm Lab Controls").AddComponent<StormLabControls>();
 
             // The volumetric clouds on the lab's own profile copy: the director writes into its profile asset.
             var director = roots.SelectMany(o => o.GetComponentsInChildren<MonoBehaviour>(true))

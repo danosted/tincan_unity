@@ -9,31 +9,29 @@ using VContainer.Unity;
 namespace TinCan.Features.Storm
 {
     /// <summary>
-    /// The storm (plan: .docs/plans/storm-crossing.md). ST1, the lab: the storm's light and air as the atmosphere's
-    /// weather, its lightning and its sound, driven by two sliders (<see cref="StormLabSettings"/>) in Lab_Storm. Without
-    /// lab settings nothing drives it yet (the zone does from ST2), so it stays calm. Needs the Atmosphere feature.
-    /// Built by TinCan > Dev > Storm > Build Lab.
+    /// The storm (plan: .docs/plans/storm-crossing.md): its light and air as the atmosphere's weather and the volumetric
+    /// clouds', its region for the shaders (it towers and darkens where it stands, seen from afar), its lightning and its
+    /// sound, all driven by the nearest encounter zone (<see cref="StormIntensity"/>), or by the lab's controls in Lab_Storm.
+    /// Needs the Atmosphere feature; in the game's profile with Encounters. Built by TinCan > Dev > Storm > Build Lab.
     /// </summary>
     [CreateAssetMenu(fileName = "StormFeatureInstaller", menuName = "TinCan/Features/Storm Feature Installer")]
     public sealed class StormFeatureInstaller : FeatureInstaller
     {
         [SerializeField] private StormConfig? _config;
-        [Tooltip("The lab's sliders. Set only on the lab's profile.")]
-        [SerializeField] private StormLabSettings? _lab;
 
         public override void Install(IContainerBuilder builder)
         {
-            if (_config == null || _lab == null)
+            if (_config == null)
             {
-                if (_config == null) Debug.LogWarning($"[{name}] No StormConfig assigned; the storm is off.", this);
+                Debug.LogWarning($"[{name}] No StormConfig assigned; the storm is off.", this);
                 return;
             }
 
             builder.RegisterInstance(_config);
-            builder.RegisterInstance(_lab);
-            builder.Register<StormIntensity>(Lifetime.Singleton).As<IStormIntensity>().As<ITickable>();
+            builder.Register<StormIntensity>(Lifetime.Singleton).AsSelf().As<IStormIntensity>().As<ITickable>();
             builder.Register<StormSoundPresenter>(Lifetime.Singleton);
-            builder.Register<StormWeatherPresenter>(Lifetime.Singleton).AsSelf().As<IAtmosphereWeather>().As<ICloudWeather>().As<ITickable>();
+            builder.Register<StormWeatherPresenter>(Lifetime.Singleton).AsSelf().As<IAtmosphereWeather>().As<ICloudWeather>().As<ITickable>()
+                .As<System.IDisposable>();
         }
     }
 }

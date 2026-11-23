@@ -8,49 +8,66 @@ using VContainer.Unity;
 namespace TinCan.Features.Storm
 {
     /// <summary>
-    /// Every peer with a view: the storm's depth and strength. From the lab's sliders, or (with Follow Zone) from the
-    /// encounter zone the camera is in (<see cref="IEncounterZones"/>): its depth, and a strength that calms over
-    /// <see cref="CalmSeconds"/> while the zone rests or is gone and builds again when it returns.
+    /// Every peer with a view: the storm's depth, strength and region. From the nearest encounter zone
+    /// (<see cref="IEncounterZones"/>): its region, the camera's depth in it, and a strength that calms over
+    /// <see cref="CalmSeconds"/> while the zone rests or is gone and builds again when it returns. In the lab, its
+    /// <see cref="StormLabControls"/> drive it instead unless they follow the zone.
     /// </summary>
     public sealed class StormIntensity : IStormIntensity, ITickable
     {
         public const float CalmSeconds = 20f;
 
-        private readonly StormLabSettings _lab;
         private readonly IEncounterZones? _zones;
         private readonly ILocalViewCamera _view;
+        private StormLabControls? _lab;
 
-        public StormIntensity(StormLabSettings lab, IEncounterZones? zones, ILocalViewCamera view)
+        public StormIntensity(IEncounterZones? zones, ILocalViewCamera view, StormLabControls? lab = null)
         {
-            _lab = lab;
             _zones = zones;
             _view = view;
+            _lab = lab;
         }
 
         [Inject]
-        public StormIntensity(StormLabSettings lab, ILocalViewCamera view, IObjectResolver resolver)
-            : this(lab, resolver.TryResolve<IEncounterZones>(out var zones) ? zones : null, view)
+        public StormIntensity(ILocalViewCamera view, IObjectResolver resolver)
+            : this(resolver.TryResolve<IEncounterZones>(out var zones) ? zones : null, view)
         {
         }
 
         public float Depth { get; private set; }
         public float Strength { get; private set; } = 1f;
+        public (Vector2 Centre, float Radius)? Region { get; private set; }
 
-        public void Tick() => Step(_view.Camera != null ? _view.Camera.transform.position : (Vector3?)null, Time.deltaTime);
+        /// <summary>The lab scene's controls, handed over when the scope injects them (only Lab_Storm has them).</summary>
+        public void UseLab(StormLabControls lab) => _lab = lab;
+
+        public void Tick()
+        {
+            Step(_view.Camera != null ? _view.Camera.transform.position : (Vector3?)null, Time.deltaTime);
+        }
 
         /// <summary>One frame with the camera at <paramref name="camera"/> (null: no view yet).</summary>
         public void Step(Vector3? camera, float deltaTime)
         {
-            if (!_lab.FollowZone || _zones == null)
+            if (_lab != null && !_lab.FollowZone)
             {
-                Depth = _lab.LabDepth;
-                Strength = _lab.LabStrength;
+                Depth = _lab.Depth;
+                Strength = _lab.Strength;
+                Region = null;
                 return;
             }
 
-            var at = camera is { } position ? _zones.ZoneAt(position) : null;
-            Depth = at?.Depth ?? 0f;
-            bool spent = at?.Zone.State is EncounterZoneState.Resting or EncounterZoneState.Gone;
+            var zone = camera is { } position ? _zones?.Nearest(position) : null;
+            if (zone == null)
+            {
+                Depth = 0f;
+                Region = null;
+                return;
+            }
+
+            Depth = EncounterZoneProcessor.Depth(zone.Centre, zone.Radius, camera!.Value);
+            Region = (zone.Centre, zone.Radius);
+            bool spent = zone.State is EncounterZoneState.Resting or EncounterZoneState.Gone;
             Strength = Mathf.MoveTowards(Strength, spent ? 0f : 1f, deltaTime / CalmSeconds);
         }
     }

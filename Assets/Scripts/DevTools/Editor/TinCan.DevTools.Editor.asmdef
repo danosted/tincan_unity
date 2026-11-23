@@ -8,6 +8,7 @@
         "TinCan.Features.CloudBoundary",
         "TinCan.Features.CloudFlight",
         "TinCan.Features.Atmosphere",
+        "TinCan.Features.Storm",
         "TinCan.Features.DayCycle",
         "TinCan.Gas",
         "TinCan.Interaction",

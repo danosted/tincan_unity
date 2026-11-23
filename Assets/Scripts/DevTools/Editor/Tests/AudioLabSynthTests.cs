@@ -17,6 +17,10 @@ namespace TinCan.DevTools.Editor.Tests
             ("EngineLoop", AudioLabSynth.EngineLoop, true),
             ("WindLoop", AudioLabSynth.WindLoop, true),
             ("MusicLoop", AudioLabSynth.MusicLoop, true),
+            ("StormWind", StormSynth.Wind, true),
+            ("StormRain", StormSynth.Rain, true),
+            ("StormHeart", StormSynth.Heart, true),
+            ("StormThunder", () => StormSynth.Thunder(31), false),
         };
 
         [Test]

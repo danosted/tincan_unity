@@ -115,6 +115,27 @@ bin), and `spirit-talents.md` T1 to T3 (a spirit that can learn Ward).
 - **ST5 Playtest and tune.** Size, severity steps, gust strength, debris, how dark it can get and still be readable,
   how long the cure takes.
 
+## Progress
+- **2026-11-23, ST1 step 1: the lab with light, lightning and sound (built; EditMode 1729/1729; awaiting your eye).**
+  - **The lab** (developer, 2026-11-23: in Play, with the real look): **TinCan > Dev > Storm > Build Lab** copies
+    `cheesed_scene` to `Assets/Scenes/Lab/Lab_Storm.unity` (git-ignored build output) on `Profile_Lab_Storm` (the
+    game's profile plus the storm) with its own volumetric cloud profile. Press Play, start a host, select
+    `Assets/Settings/Storm/StormLab` and drag Depth and Strength in the Inspector (a panel on screen would fight the
+    locked cursor).
+  - **Light** (developer: a weather seam): Atmosphere blends a weather in after the day light and before a cloud's
+    whiteout (`IAtmosphereWeather`, `WeatherLook`, `WeatherLookProcessor`), so the storm never fights the day cycle.
+    The storm's look at full weight is on `StormConfig.Look`, a first guess from the palette: a dim, misty sun, slate
+    and plum ambient, thick slate fog. Weight = depth x strength.
+  - **Lightning** (mood only): strikes in seeded 1.5 s slots on the shared clock, more often deeper, none below a
+    threshold; a double flicker of pale spirit-cyan in the ambient. The same on every peer once the storm is in the
+    world.
+  - **Sound** (developer: synthesized stand-ins): a storm wind, rain, the heart's deep double beat near the eye, and
+    three thunderclaps, sooner after the flash the deeper the storm, through the Ambience group
+    (`DevTools/Editor/StormSynth.cs`). Real clips go on `StormConfig` without code changes.
+  - **Not yet (step 2): the clouds.** The overcast lid closing in (the lab's volumetric cloud profile), and the sea
+    darkening. The sea's swell height is also the cloud flight's surface (`CloudSurfaceQuery`), so a taller storm swell
+    waits for ST2, where every peer must agree on it; the lab changes only its colour and light.
+
 ## Tests
 EditMode: the depth function (outside, the wall, the bands, the eye), the blend by depth and strength, the gust waves
 (the same push from the same seed and time), the heart's path by severity (still at 1; the same path on every peer),

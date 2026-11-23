@@ -22,6 +22,8 @@ namespace TinCan.Features.Atmosphere
     /// When the scene runs a day (an <see cref="ISunSource"/>, the DayCycle feature) and the look has day keys, the sun
     /// follows it and the look's light, the air and the painted sky (<see cref="LookProfile.Sky"/>,
     /// <see cref="SkyShaderGlobals"/>) follow the sun's height (<see cref="DayLightProcessor"/>).
+    /// A weather (<see cref="IAtmosphereWeather"/>, the storm) then blends the light and the air toward its own look by
+    /// its weight (<see cref="WeatherLookProcessor"/>), before a cloud's whiteout.
     /// Leaving restores the shaders' plain fog and the materials' own shading. Plans: .docs/plans/look-slice.md (L2),
     /// .docs/plans/artstyle-pipeline-breakdown.md, .docs/plans/day-cycle.md (D2).
     /// </summary>
@@ -38,6 +40,7 @@ namespace TinCan.Features.Atmosphere
         private readonly IObjectResolver _resolver;
         private IViewSubmersion? _submersion;
         private ISunSource? _day;
+        private IAtmosphereWeather? _weather;
         private GameObject? _volume;
         private Light? _sun;
         private Camera? _postCamera;
@@ -62,6 +65,8 @@ namespace TinCan.Features.Atmosphere
             _resolver.TryResolve(out _submersion);
             // The moving day (DayCycle), when the scene loads it; otherwise the look's fixed sun.
             _resolver.TryResolve(out _day);
+            // A weather (the Storm feature), when the scene loads one: it blends the look after the day.
+            _resolver.TryResolve(out _weather);
             if (_profile.Sky != null) RenderSettings.skybox = _profile.Sky;
             // The scene's sun is the one its lighting settings name (Window > Rendering > Lighting > Sun Source).
             _sun = RenderSettings.sun;
@@ -96,6 +101,7 @@ namespace TinCan.Features.Atmosphere
             bool day = _day != null && _profile.Day.Length > 0;
             var light = day ? _dayLight.Evaluate(_profile.Day, _day!.Elevation) : default;
             if (day) look = _dayLight.Apply(look, light);
+            if (_weather != null) look = WeatherLookProcessor.Apply(look, _weather.Look, _weather.Weight, _weather.Flash);
             var frame = _processor.Evaluate(look, _submersion?.Whiteout ?? 0f, _submersion?.LightMultiplier ?? 1f);
             Current = frame;
 

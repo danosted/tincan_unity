@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1a901e90e7889489d2149518c1f52e, type: 3}
+  m_Name: StormConfig
+  m_EditorClassIdentifier: TinCan.Features.Storm::TinCan.Features.Storm.StormConfig
+  Look:
+    SunScale: 0.25
+    SunColour: {r: 0.7882353, g: 0.7647059, b: 0.8392157, a: 1}
+    AmbientSky: {r: 0.22862746, g: 0.2372549, b: 0.3364706, a: 0.55}
+    AmbientHorizon: {r: 0.21950981, g: 0.18068628, b: 0.26058826, a: 0.5}
+    AmbientGround: {r: 0.20313726, g: 0.085098036, b: 0.16196078, a: 0.7}
+    SunwardFog: {r: 0.39764708, g: 0.39058825, b: 0.47058827, a: 0.6}
+    AwayFog: {r: 0.20792156, g: 0.18613724, b: 0.2737059, a: 0.55}
+    FogDensity: 0.006
+    HazeDensity: 0.0025
+    MaxFog: 0.94
+    FlashColour: {r: 0.70235294, g: 0.8505882, b: 0.8735294, a: 0.9}
+  StrikesPerMinute: 12
+  LightningMinWeight: 0.25
+  FlashSeconds: 0.35
+  ThunderDelay: {x: 0.4, y: 4}
+  Seed: 1
+  Output: {fileID: -8096275680961054458, guid: c14745ce156266845ace123b2030b89c, type: 2}
+  WindLoop: {fileID: 8300000, guid: fa9eac89f50acaa4e96f620582ad6f6d, type: 3}
+  WindVolume: 0.8
+  RainLoop: {fileID: 8300000, guid: 67a506d88d3fe55419346fcafdfe96d6, type: 3}
+  RainVolume: 0.6
+  HeartLoop: {fileID: 8300000, guid: 6c319cc81eb76ad46be0b52ea0b40caf, type: 3}
+  HeartVolume: 0.7
+  HeartFromDepth: 0.6
+  Thunder:
+  - {fileID: 8300000, guid: 0b003493537c5094e8823cc90003545d, type: 3}
+  - {fileID: 8300000, guid: 78b9fa6a1825b444fb529602a6246be1, type: 3}
+  - {fileID: 8300000, guid: 61b47f6e6af905545800e3d334ab6aec, type: 3}
+  ThunderVolume: 0.9

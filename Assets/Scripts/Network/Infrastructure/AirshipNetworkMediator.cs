@@ -40,7 +40,8 @@ namespace TinCan.Network.Infrastructure
         public IAbilityControllerBase Controller => _abilitySync;
 
         // IAirshipView Implementation (Forwarding to view or using attributes)
-        public Transform Transform => _view.transform;
+        // Null once the view is destroyed (teardown, a despawn in progress), as callers that check it expect.
+        public Transform Transform => _view != null ? _view.transform : null;
         public float MaxForwardSpeed => _attributes?.MoveSpeed ?? _view.MaxForwardSpeed;
         // A zero flight-speed override disables propulsion in both directions (for example, an empty fuel tank).
         public float MaxBackwardSpeed => MaxForwardSpeed > 0f ? _view.MaxBackwardSpeed : 0f;

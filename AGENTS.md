@@ -36,6 +36,9 @@ The human entry point is [`.docs/README.md`](.docs/README.md). Keep it and the d
   `ScenarioSceneTests.EveryScenario_RunsInATestRangeScene`.
 - Every feature slice ships with a scenario that passes `.\.tools\verify.ps1 -Scenario <Name>` (solo and host + client) in its test-range scene. Procedures: `.claude/skills/verify-feature` and `.claude/skills/add-scenario` (Copilot: `.github/prompts/`); reference: `.docs/NETWORK_TEST_HARNESS.md`.
 - After a C# edit, check diagnostics and request Unity script compilation; confirm it finishes without compiler errors.
+- **Boy scout rule** (developer, 2026-11-23): leave the code better than you found it. A small, safe fix for a bug you
+  notice in passing (an exception in the Console, a stale comment) goes in with your change, even outside your task, as
+  long as no other session is editing that file; name it in your summary. A larger one you report instead of fixing.
 - In documentation, cite file paths rather than pasting code.
 - Finish implementation work with a human-readable summary: what changed, which files to read first, what to look at in the Editor, what still needs a human playtest.
 

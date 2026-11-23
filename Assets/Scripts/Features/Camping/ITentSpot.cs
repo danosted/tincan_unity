@@ -1,13 +1,15 @@
 #nullable enable
 using TinCan.Core.Domain;
+using TinCan.Core.Items;
 
 namespace TinCan.Features.Camping
 {
     /// <summary>
     /// A tent: pitched from a tent roll, packed up again. A tent a player set down (<see cref="RemovesWhenPacked"/>) stands
-    /// pitched and is gone once packed. Server-owned.
+    /// pitched and is gone once packed. Server-owned. Core's ItemInteractionHandler does both: a held tent roll pitches an
+    /// empty spot (<see cref="IItemConsumer"/>), and empty hands pack a pitched tent into a roll (<see cref="IItemYield"/>).
     /// </summary>
-    public interface ITentSpot : IInteractable
+    public interface ITentSpot : IItemConsumer, IItemYield
     {
         CampingConfig? Config { get; }
 

@@ -46,7 +46,6 @@ namespace TinCan.Features.Airship.Fuel.Minigame
             builder.Register<FlyingCanUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
             builder.Register<CatchProcessor>(Lifetime.Transient);
             builder.Register<NetCatchUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
-            builder.Register<TakeNetInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
         }
 
         public override IEnumerable<GameObject> NetworkedPrefabs

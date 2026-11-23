@@ -88,7 +88,7 @@ namespace TinCan.DevTools.Editor
             });
 
             var take = Asset<InteractionDefinition>(InteractionPath, definition =>
-                SetField(definition, "_handlerTypeName", typeof(TakeItemInteractionHandler).AssemblyQualifiedName!));
+                SetField(definition, "_handlerTypeName", typeof(ItemInteractionHandler).AssemblyQualifiedName!));
 
             var rackFixture = Asset<ShipFixtureDefinition>(RackFixturePath, fixture =>
             {

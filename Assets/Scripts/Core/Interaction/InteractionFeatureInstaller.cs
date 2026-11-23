@@ -38,6 +38,7 @@ namespace TinCan.Core.Interaction
             builder.Register<InteractInputUseCase>(Lifetime.Singleton).As<ISimulationTickable>();
             builder.Register<InteractWorkPresenter>(Lifetime.Singleton).As<ITickable>();
             builder.Register<InteractPromptPresenter>(Lifetime.Singleton).As<ITickable>();
+            builder.Register<ToggleInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
         }
     }
 }

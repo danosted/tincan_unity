@@ -154,8 +154,8 @@ GameObject:
   - component: {fileID: 2652537940003621275}
   - component: {fileID: 6360969277271750437}
   - component: {fileID: 5749969612527748054}
-  - component: {fileID: 987533404688527210}
   - component: {fileID: 3343432962843028473}
+  - component: {fileID: 6943806991737295890}
   m_Layer: 0
   m_Name: Vein_Amber
   m_TagString: Untagged
@@ -222,21 +222,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: TinCan.Entities::TinCan.Core.Entities.EntityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
---- !u!114 &987533404688527210
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2991035391553100549}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4b98aa7f8b55b5f4aa1ac227a27971f3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TinCan.Features.Gathering::TinCan.Features.Gathering.VeinNetworkMediator
-  ShowTopMostFoldoutHeaderGroup: 1
-  _interactionDefinition: {fileID: 11400000, guid: 38b14f1c4a9fcd744a4b26a69590f3f4, type: 2}
-  _config: {fileID: 11400000, guid: 33d080b6e614322498cc5f760247231e, type: 2}
 --- !u!65 &3343432962843028473
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -258,6 +243,25 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.7, y: 0.7, z: 1.3}
   m_Center: {x: 0, y: 0.35, z: 0}
+--- !u!114 &6943806991737295890
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2991035391553100549}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e576e26f7ef706b41bc6c09fe70fb943, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Items::TinCan.Core.Items.RegrowingItemSourceNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
+  _interactionDefinition: {fileID: 11400000, guid: 38b14f1c4a9fcd744a4b26a69590f3f4, type: 2}
+  _item: {fileID: 11400000, guid: 56c5da71ecb3c5c458263fd8d55e9942, type: 2}
+  _capacity: 3
+  _regrowSeconds: 240
+  _takesBack: 0
+  _visualPrefix: Crystal_
 --- !u!1 &4102280175489553990
 GameObject:
   m_ObjectHideFlags: 0

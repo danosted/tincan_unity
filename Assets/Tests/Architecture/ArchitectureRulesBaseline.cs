@@ -30,7 +30,6 @@ namespace TinCan.Tests.Architecture
         public static readonly string[] UntestedTypes =
         {
             "ActivateAbilityInteractionHandler",
-            "DoorInteractionHandler",
             "FreeCameraMovementProcessor",
             "FreeCameraMovementUseCase",
             "FreeCameraRotationProcessor",

@@ -150,16 +150,21 @@ on client; no fill without possessor; fills when driven; finds the tank on a chi
 
 ### 12. Interaction handler
 
-`DumpBallastInteractionHandler.cs` from `Fuel/PourFuelInteractionHandler.cs`: `IInteractionHandler`,
+First check whether a shared capability covers it ([CODE_STANDARDS.md](CODE_STANDARDS.md), "Interactions:
+capabilities, not handlers"): items in or out, a held item used, or a toggle need no handler. Dumping ballast acts on
+the ballast tank, which no capability covers, so it gets one; if a second feature could use the same rule, make it a
+capability and a core handler instead.
+
+`DumpBallastInteractionHandler.cs` from `Respawn/CrankWinchInteractionHandler.cs`: `IInteractionHandler`,
 constructor `(IEventPublisher)`, `Handle` starts with `if (context.Target is not IBallastValve valve) return;`,
 then a switch over the state, `LogInfo(LogSource, ...)` on every refused branch, `BallastDumpedEvent` on success.
 No `IsServer` check here: the orchestrator only runs handlers on the server, and the mediator guards the write.
 
 ### 13. Handler tests
 
-`DumpBallastInteractionHandlerTests.cs` from `PourFuelInteractionHandlerTests.cs`: empty tank is a no-op; dump
-removes `DumpLitres`; event carries the removed amount. Use the same `RecordingPublisher` and
-`Context(requester, target)` helpers.
+`DumpBallastInteractionHandlerTests.cs` from `Respawn/Tests/CrankWinchInteractionHandlerTests.cs`: empty tank is a no-op; dump
+removes `DumpLitres`; event carries the removed amount. Use the same `FakeEventPublisher` and a
+`Context()` helper that builds the `InteractionContext`.
 
 ### 14. Interaction target
 

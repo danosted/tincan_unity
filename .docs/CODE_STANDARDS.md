@@ -54,6 +54,37 @@ For where code goes, see [`CODE_MAP.md`](./CODE_MAP.md); for the design rules, [
 - **Named Tuples:** Use named tuple elements (e.g. `(IActor Requester, IActor Target)`) instead of positional tuples when returning or destructuring multiple values, for clarity at call sites.
 - **One type per file:** Each class, interface, struct and enum gets its own file, named after the type. The only exception is a type fully isolated to its containing class (a private nested type, or one used nowhere else). Older files break this rule: do not sweep them, but split a file when you touch it anyway, as part of that change.
 - **Regions:** Do not use `#region`. If a class is too large and needs regions, it should be refactored into multiple classes.
+- **One place for each piece of logic, many consumers** (developer, 2026-11-23): when two features need the same
+  behaviour, it lives once (in core, or in the feature that owns it) behind a small interface, and each feature only
+  says which interface it implements. Before writing logic, look for the shared piece below; when you write logic a
+  second feature could use, make it that shared piece instead of a feature-specific copy.
+
+### Interactions: capabilities, not handlers
+A target says what it can do by implementing small capability interfaces; one shared handler does the rest. A feature
+writes no handler for these, and its `IA_*` asset names the shared handler.
+
+| A target that... | implements | handled by |
+|---|---|---|
+| hands out an item into empty hands (a rack, a vein, a woodpile, a bin, a pitched tent) | `IItemYield` | `ItemInteractionHandler` (`Core/Items/`) |
+| takes its own item back in (a rack, a woodpile, a bin) | `IItemStore` | `ItemInteractionHandler` |
+| uses a held item it accepts (the receiver, a fire, an empty tent spot) | `IItemConsumer` | `ItemInteractionHandler` |
+| flips between two states (a door, the anchor) | `IToggleable` | `ToggleInteractionHandler` (`Core/Interaction/`) |
+| is occupied (a cannon, the helm) | `IStation` | `OccupyStationInteractionHandler` (`Features/Stations/`) |
+| runs an ability | (its `InteractionDefinition.Ability`) | `ActivateAbilityInteractionHandler` |
+
+- **Held work is data, not a handler:** set `InteractionDefinition.HoldSeconds`; mining a crystal is taking one from a
+  yield with a 2.5 s hold.
+- **Shared targets, set by data:** `RegrowingItemSourceNetworkMediator` (anything that gives an item and grows it
+  back: veins and trees differ only in the item and numbers on the prefab), `ItemRackNetworkMediator` (never runs
+  out), `ItemStockpileNetworkMediator` (counted). Prefer one of these over a new mediator.
+- **Feature rules stay small and pure:** what a consumer accepts and what it does with it is a one-liner on its
+  mediator, backed by a pure, tested function where there is a rule (`FuelFeed.Litres`).
+- **A new kind of interaction** gets a new capability and one generic handler in core, tested once with fake
+  targets (`ItemInteractionHandlerTests`). A handler for one feature only is right only when the behaviour depends on
+  that feature's server state and cannot be put on the target (`CrankWinchInteractionHandler`, which reads the leash
+  store).
+- **Other shared pieces:** `ShipParts.ShipOf(part)` (which ship a fixture or fitting is on), `StockVisuals` (one child
+  shown per item held), `InputPresses` (a key press read once per input inside the movement step).
 
 ## 7. Tests
 - Processors, use cases and interaction handlers ship with an EditMode test.

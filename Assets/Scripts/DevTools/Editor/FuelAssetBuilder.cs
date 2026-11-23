@@ -93,6 +93,9 @@ namespace TinCan.DevTools.Editor
             SetList(fuel, "_fittings", receiverFitting, rackFitting, crankFitting);
             SetField(fuel, "_crankInput", Load<Object>(PrimaryInputPath));
             SetList(Load<FeatureInstaller>(Installers + "FlyingCanFeatureInstaller.asset"), "_fittings", netFitting);
+            // The net rack is core's item rack (the net out and back in, through ItemInteractionHandler).
+            ItemTargetRefit.Rack(NetRackPath, null, Load<InteractionDefinition>("Assets/Interactions/IA_TakeNet.asset"),
+                Load<TinCan.Core.Items.ItemDefinition>("Assets/Items/ITEM_CatchingNet.asset"));
 
             AssetDatabase.SaveAssets();
             Debug.Log("[FuelAssetBuilder] Fuel fittings built.");

@@ -34,8 +34,7 @@ namespace TinCan.Features.Airship.Fuel
         private readonly InteractionTargetingSettings _settings;
         private readonly GameplayInput? _input;
         private readonly IEventPublisher _events;
-        private readonly Dictionary<Guid, uint> _lastSequence = new();
-        private readonly HashSet<Guid> _pressHeld = new();
+        private readonly InputPresses _presses = new();
 
         public CrankTurnUseCase(INetworkService network, ITargetingService targeting, InteractionTargetingSettings settings, CrankInput input,
             IEventPublisher events)
@@ -51,17 +50,8 @@ namespace TinCan.Features.Airship.Fuel
         {
             if (!_network.IsServer || _input == null) return;
             int bit = _input.BitIndex;
-            if (bit < 0) return;
-
-            // Each input once, in order: a replay of one already read never presses twice.
-            Guid id = character.Id;
-            if (_lastSequence.TryGetValue(id, out uint last) && input.Sequence <= last) return;
-            _lastSequence[id] = input.Sequence;
-
-            bool held = (input.ActiveInputMask & (1UL << bit)) != 0;
-            bool pressed = held && _pressHeld.Add(id);
-            if (!held) _pressHeld.Remove(id);
-            if (!pressed) return;
+            // Each input once, in order (InputPresses: a replay never presses twice).
+            if (!_presses.Pressed(character.Id, input, bit)) return;
 
             if (EquipmentLocator.Resolve(character) is { IsEmptyHanded: false }) return;
             if (!_targeting.TryAcquire(new HumanoidTargeter(character), _settings.Targeting, InteractionTargetingSettings.OnlyInteractable, out var result) ||

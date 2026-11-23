@@ -6,7 +6,8 @@ using UnityEngine;
 
 namespace TinCan.Features.Airship.PhysicalParts
 {
-    public class AirshipDoor : NetworkBehaviour, IInteractionTarget
+    /// <summary>A ship's door: Interact opens or shuts it, through core's ToggleInteractionHandler (IA_ToggleDoor).</summary>
+    public class AirshipDoor : NetworkBehaviour, IInteractionTarget, IToggleable
     {
         [SerializeField] private InteractionDefinition _interactionDefinition;
         [SerializeField] private Transform _hinge;
@@ -19,10 +20,11 @@ namespace TinCan.Features.Airship.PhysicalParts
             NetworkVariableWritePermission.Server //Only the server can tell players clients to open the door
             );
 
-        public void ServerToggle()
+        public bool ServerToggle()
         {
-            if(!IsServer) return;
+            if (!IsServer) return _isOpen.Value;
             _isOpen.Value = !_isOpen.Value;
+            return _isOpen.Value;
         }
 
         public InteractionDefinition Definition => _interactionDefinition;

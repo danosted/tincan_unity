@@ -29,8 +29,7 @@ namespace TinCan.Features.Camping
         private readonly CampingConfig _config;
         private readonly IEventPublisher _events;
 
-        private readonly HashSet<Guid> _pressHeld = new();
-        private readonly Dictionary<Guid, uint> _lastSequence = new();
+        private readonly InputPresses _presses = new();
         private readonly List<(Guid Player, CampPlacement? Place)> _pending = new();
 
         public CampPlacementUseCase(INetworkService network, IActorRegistry actors, CampPlacementFinder finder, ICampSpawner spawner,
@@ -48,18 +47,8 @@ namespace TinCan.Features.Camping
         {
             if (!_network.IsServer || _config.PlaceInput == null) return;
             int bit = _config.PlaceInput.BitIndex;
-            if (bit < 0) return;
-
-            // Each input once, in order: a release the host sees only as a replay still counts, and an input seen
-            // again (a replay of one already read) never presses twice.
-            Guid id = character.Id;
-            if (_lastSequence.TryGetValue(id, out uint last) && input.Sequence <= last) return;
-            _lastSequence[id] = input.Sequence;
-
-            bool held = (input.ActiveInputMask & (1UL << bit)) != 0;
-            bool pressed = held && _pressHeld.Add(id);
-            if (!held) _pressHeld.Remove(id);
-            if (!pressed) return;
+            // Each input once, in order (InputPresses: a replay never presses twice).
+            if (!_presses.Pressed(character.Id, input, bit)) return;
 
             if (Holds(character, _config.CarryingFirewoodTag))
             {

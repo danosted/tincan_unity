@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1511043020639831783}
   - component: {fileID: 5314675346200287245}
-  - component: {fileID: 8937794225947928614}
   m_Layer: 0
   m_Name: NetRack
   m_TagString: Untagged
@@ -58,20 +57,6 @@ CapsuleCollider:
   m_Height: 1.6
   m_Direction: 1
   m_Center: {x: 0, y: 0.8, z: 0}
---- !u!114 &8937794225947928614
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3926398123337180553}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9ce7ef737d21b134d86baf2f4426a2c8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: TinCan.Features::TinCan.Features.Carry.NetRackNetworkMediator
-  ShowTopMostFoldoutHeaderGroup: 1
-  _interactionDefinition: {fileID: 11400000, guid: 8003f0ff51785904eb1e2ea11911cb7d, type: 2}
 --- !u!1 &4324866450129825698
 GameObject:
   m_ObjectHideFlags: 0
@@ -136,6 +121,7 @@ GameObject:
   - component: {fileID: 2853815605427819858}
   - component: {fileID: 3965707881394563059}
   - component: {fileID: 6973564926014593621}
+  - component: {fileID: 7979428533079803021}
   m_Layer: 0
   m_Name: NetRack
   m_TagString: Untagged
@@ -197,6 +183,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: TinCan.Entities::TinCan.Core.Entities.EntityNetworkMediator
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &7979428533079803021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4429782523899149801}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 774748cac4e291348855cd5e668c743e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TinCan.Items::TinCan.Core.Items.ItemRackNetworkMediator
+  ShowTopMostFoldoutHeaderGroup: 1
+  _interactionDefinition: {fileID: 11400000, guid: 8003f0ff51785904eb1e2ea11911cb7d, type: 2}
+  _item: {fileID: 11400000, guid: 89a9305e9f8494f4b9b7cc503a190564, type: 2}
 --- !u!1001 &8607780373598656993
 PrefabInstance:
   m_ObjectHideFlags: 0

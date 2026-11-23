@@ -27,7 +27,8 @@ namespace TinCan.Features.Gathering
 
         public override void Install(IContainerBuilder builder)
         {
-            builder.Register<MineCrystalInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
+            // Mining is core's ItemInteractionHandler on the vein (a regrowing item source) with IA_MineCrystal's hold time;
+            // storing is the same handler on the bin. Nothing to register here.
         }
 
         public override IEnumerable<GameObject> NetworkedPrefabs =>

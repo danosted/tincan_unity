@@ -41,8 +41,7 @@ namespace TinCan.Features.Helm
 
         public Transform? Seat { get; private set; }
 
-        // Fixtures are parented to the ship root after they spawn, so look the ship up when asked.
-        public IAirshipView? Ship => this != null ? GetComponentInParent<IAirshipView>() : null;
+        public IAirshipView? Ship => ShipParts.ShipOf(this);
 
         private void Awake()
         {

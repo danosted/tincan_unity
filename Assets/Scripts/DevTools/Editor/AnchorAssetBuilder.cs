@@ -37,7 +37,7 @@ namespace TinCan.DevTools.Editor
             var toggle = Asset<InteractionDefinition>(InteractionPath, definition =>
             {
                 var fields = new SerializedObject(definition);
-                fields.FindProperty("_handlerTypeName").stringValue = typeof(ToggleAnchorInteractionHandler).AssemblyQualifiedName!;
+                fields.FindProperty("_handlerTypeName").stringValue = typeof(ToggleInteractionHandler).AssemblyQualifiedName!;
                 fields.FindProperty("_prompt").stringValue = "Anchor"; // the anchor says "Drop anchor" or "Raise anchor" itself
                 fields.ApplyModifiedPropertiesWithoutUndo();
             });

@@ -27,8 +27,7 @@ namespace TinCan.Core.Items
         {
             builder.Register(resolver => BuildCatalog(resolver.Resolve<FeatureInstallerCatalog>()), Lifetime.Singleton);
             builder.Register<EquipmentAbilityBinder>(Lifetime.Singleton);
-            builder.Register<TakeItemInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
-            builder.Register<StockItemInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
+            builder.Register<ItemInteractionHandler>(Lifetime.Singleton).As<IInteractionHandler>();
             builder.Register<HeldItemPresenter>(Lifetime.Singleton).As<ITickable>();
         }
 

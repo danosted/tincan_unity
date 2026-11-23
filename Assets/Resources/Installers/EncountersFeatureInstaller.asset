@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 667f1fc30ab5ead47af66afd2e9a94e7, type: 3}
   m_Name: EncountersFeatureInstaller
   m_EditorClassIdentifier: TinCan.Features.Encounters::TinCan.Features.Encounters.EncountersFeatureInstaller
+  _zone: {fileID: 11400000, guid: a03c1a69391099447a2a8b85810d6e32, type: 2}

@@ -3,6 +3,8 @@
     "rootNamespace": "TinCan.Features.Encounters",
     "references": [
         "TinCan.Core.Domain",
+        "TinCan.Ship",
+        "Unity.Netcode.Runtime",
         "VContainer"
     ],
     "includePlatforms": [],

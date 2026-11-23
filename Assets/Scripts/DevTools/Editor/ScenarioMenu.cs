@@ -262,6 +262,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "CrankStart (Host + Client, Lag100)")]
         public static void CrankStartDuo() => RunDuo("CrankStart", "Lag100");
 
+        [MenuItem(Root + "EncounterZone (Host)")]
+        public static void EncounterZoneSolo() => RunSolo("EncounterZone");
+
+        [MenuItem(Root + "EncounterZone (Host + Client, Lag100)")]
+        public static void EncounterZoneDuo() => RunDuo("EncounterZone", "Lag100");
+
         [MenuItem(Root + "CrystalRun (Host)")]
         public static void CrystalRunSolo() => RunSolo("CrystalRun");
 

@@ -5,6 +5,7 @@
         "TinCan.Core.Domain",
         "TinCan.Features.Atmosphere",
         "TinCan.Features.CloudBoundary.Atmosphere",
+        "TinCan.Features.Encounters",
         "VContainer"
     ],
     "includePlatforms": [],

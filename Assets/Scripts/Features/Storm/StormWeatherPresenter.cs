@@ -1,18 +1,20 @@
 #nullable enable
 using TinCan.Core.Domain;
 using TinCan.Features.Atmosphere;
+using TinCan.Features.CloudBoundary.Atmosphere;
 using UnityEngine;
 using VContainer.Unity;
 
 namespace TinCan.Features.Storm
 {
     /// <summary>
-    /// Every peer with a view, presentation only: the storm as the atmosphere's weather (<see cref="IAtmosphereWeather"/>).
+    /// Every peer with a view, presentation only: the storm as the atmosphere's weather (<see cref="IAtmosphereWeather"/>)
+    /// and the volumetric clouds' (<see cref="ICloudWeather"/>).
     /// Each frame it reads the storm's depth and strength (<see cref="IStormIntensity"/>), weighs the config's look by
     /// them, and runs the lightning on the shared clock (<see cref="StormProcessor"/>): a strike flashes the air and asks
     /// <see cref="StormSoundPresenter"/> for its thunder, later the farther it is.
     /// </summary>
-    public sealed class StormWeatherPresenter : IAtmosphereWeather, ITickable
+    public sealed class StormWeatherPresenter : IAtmosphereWeather, ICloudWeather, ITickable
     {
         private readonly StormConfig _config;
         private readonly IStormIntensity _intensity;
@@ -32,6 +34,7 @@ namespace TinCan.Features.Storm
         public float Weight { get; private set; }
         public WeatherLook Look => _config.Look;
         public float Flash { get; private set; }
+        public CloudWeatherTarget Clouds => _config.Clouds;
 
         public void Tick() => Step(_time.Time);
 

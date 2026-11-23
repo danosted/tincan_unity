@@ -25,6 +25,7 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
     {
         private ITimeService? _timeService;
         private bool _sunOwnedElsewhere;
+        private ICloudWeather? _weather;
 
         [Inject]
         public void Construct(ITimeService timeService, IObjectResolver resolver)
@@ -32,6 +33,8 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
             _timeService = timeService;
             // In Play the atmosphere, when a scene has one, owns the sun's colour and intensity.
             _sunOwnedElsewhere = resolver.TryResolve<IAtmosphereOwner>(out _);
+            // A weather (the Storm feature), when the scene loads one: the clouds blend toward it in Play.
+            resolver.TryResolve(out _weather);
         }
 
 
@@ -166,7 +169,7 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
             // Read by the vendored cloud shader (VolumetricClouds.hlsl, "TinCan: painted look"): x on, y the light gain.
             Shader.SetGlobalVector(PaintedId, new Vector4(_paintedLook ? 1f : 0f, _paintedLightGain, 0f, 0f));
             // Read by VolumetricCloudsUtilities.hlsl ("TinCan: the height tiers", "TinCan: the opacity variation").
-            Shader.SetGlobalVector(VarietyId, new Vector4(_heightTiers, _opacityVariation, _heightJitter, 0f));
+            Shader.SetGlobalVector(VarietyId, new Vector4(_heightTiers, Blend(_opacityVariation, Weather.OpacityVariation), _heightJitter, 0f));
             ApplyClouds(markDirty);
             ApplyRendererFeature(markDirty);
             ApplyLight(markDirty);
@@ -206,8 +209,8 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
             Set(_clouds.cloudMap, _cloudMap);
             Set(_clouds.cloudMapTiling, new Vector4(1f / _cloudMapTileSize, 1f / _cloudMapTileSize, _cloudMapOffset.x, _cloudMapOffset.y));
             Set(_clouds.cloudMapSpeedMultiplier, _cloudMapSpeedMultiplier);
-            Set(_clouds.densityMultiplier, _densityMultiplier);
-            Set(_clouds.shapeFactor, _shapeFactor);
+            Set(_clouds.densityMultiplier, Blend(_densityMultiplier, Weather.Density));
+            Set(_clouds.shapeFactor, Blend(_shapeFactor, Weather.ShapeFactor));
             Set(_clouds.shapeScale, _shapeScale);
             Set(_clouds.erosionFactor, _erosionFactor);
             Set(_clouds.erosionScale, _erosionScale);
@@ -223,7 +226,7 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
             Set(_clouds.verticalShapeWindSpeed, _verticalShapeWindSpeed);
             Set(_clouds.verticalErosionWindSpeed, _verticalErosionWindSpeed);
             Set(_clouds.altitudeDistortion, _altitudeDistortion);
-            Set(_clouds.ambientLightProbeDimmer, _ambientLightProbeDimmer);
+            Set(_clouds.ambientLightProbeDimmer, Blend(_ambientLightProbeDimmer, Weather.AmbientDimmer));
             Set(_clouds.sunLightDimmer, _sunLightDimmer);
             Set(_clouds.multiScattering, _multiScattering);
             Set(_clouds.powderEffectIntensity, _powderEffectIntensity);
@@ -287,6 +290,12 @@ namespace TinCan.Features.CloudBoundary.Atmosphere
 
         // Records whether anything actually changed, so the targets are marked dirty only for real edits. Unity calls
         // OnValidate on every domain reload too; dirtying unconditionally made the scene look modified after each recompile.
+        private CloudWeatherTarget Weather => _weather?.Clouds ?? default;
+
+        // The scene's value, blended toward the weather's by its weight; in Play only, so Edit mode shows and saves the tuning.
+        private float Blend(float own, float weather) =>
+            Application.isPlaying && _weather != null ? Mathf.Lerp(own, weather, Mathf.Clamp01(_weather.Weight)) : own;
+
         private void Set<T>(VolumeParameter<T> parameter, T value)
         {
             if (parameter.overrideState && EqualityComparer<T>.Default.Equals(parameter.value, value)) return;

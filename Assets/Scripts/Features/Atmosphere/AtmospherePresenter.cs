@@ -107,6 +107,7 @@ namespace TinCan.Features.Atmosphere
 
             AtmosphereShaderGlobals.Apply(frame, look);
             AtmosphereShaderGlobals.ApplyWhiteout(_submersion?.Whiteout ?? 0f);
+            AtmosphereShaderGlobals.ApplyWeatherShade(_weather?.Look.CloudShade ?? Color.white, _weather?.Weight ?? 0f);
             SkyShaderGlobals.SetEnabled(day);
             if (day) SkyShaderGlobals.Apply(light);
             LookShaderGlobals.Apply(_profile.Shading, _surface.Evaluate());
@@ -143,6 +144,7 @@ namespace TinCan.Features.Atmosphere
         public void Dispose()
         {
             AtmosphereShaderGlobals.SetEnabled(false);
+            AtmosphereShaderGlobals.ApplyWeatherShade(Color.white, 0f);
             LookShaderGlobals.SetEnabled(false);
             SkyShaderGlobals.SetEnabled(false);
             if (_volume != null) Object.Destroy(_volume);

@@ -132,9 +132,20 @@ bin), and `spirit-talents.md` T1 to T3 (a spirit that can learn Ward).
   - **Sound** (developer: synthesized stand-ins): a storm wind, rain, the heart's deep double beat near the eye, and
     three thunderclaps, sooner after the flash the deeper the storm, through the Ambience group
     (`DevTools/Editor/StormSynth.cs`). Real clips go on `StormConfig` without code changes.
-  - **Not yet (step 2): the clouds.** The overcast lid closing in (the lab's volumetric cloud profile), and the sea
-    darkening. The sea's swell height is also the cloud flight's surface (`CloudSurfaceQuery`), so a taller storm swell
-    waits for ST2, where every peer must agree on it; the lab changes only its colour and light.
+  - Played 2026-11-23 (captures `Logs/storm/depth-*.png`). The builder now puts the lab on the build list (Netcode stopped
+    Play with a dialog without it) and loads its profile after opening the scene (the reference died, so every
+    feature loaded).
+- **2026-11-23, ST1 step 2: the clouds (built; EditMode 1729/1729; played, captures `Logs/storm/clouds-depth-*.png`).**
+  - **The overcast closes in:** CloudBoundary's volumetric cloud director blends toward a weather's targets by its
+    weight, in Play only (`ICloudWeather`, `CloudWeatherTarget`: density, shape, opacity variation, the light inside),
+    so the scene's tuning is never written over. The storm's first guess is on `StormConfig.Clouds`. Wind speed is not
+    blended: the clouds' place is time times speed, so changing it would jump them.
+  - **The clouds darken:** the weather's `CloudShade` reaches the shared cloud look (`_TinCanWeatherShade` in
+    `TinCanCloudLook.hlsl`), so the drawn sea and the painted sky darken toward slate and plum on their shadow sides
+    too, not only where the sun lit them.
+  - **Not in the lab:** a taller swell. The sea's swell is also the cloud flight's surface (`CloudSurfaceQuery`), so it
+    waits for ST2, where every peer must agree on it.
+  - **Next:** your eye on the look and the mix (StormConfig), then the encounter zone (E1).
 
 ## Tests
 EditMode: the depth function (outside, the wall, the bands, the eye), the blend by depth and strength, the gust waves

@@ -31,6 +31,10 @@ namespace TinCan.Features.Atmosphere
         [Min(0f)] public float HazeDensity;
         [Range(0f, 1f)] public float MaxFog;
 
+        [Header("Clouds")]
+        [Tooltip("What the clouds (the drawn sea and the painted sky) are multiplied toward at full weight: their shadow sides darken too.")]
+        public Color CloudShade;
+
         [Header("Flash")]
         [Tooltip("What a flash (lightning) adds to the ambient at its peak.")]
         public Color FlashColour;

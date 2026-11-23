@@ -1,5 +1,6 @@
 #nullable enable
 using TinCan.Features.Atmosphere;
+using TinCan.Features.CloudBoundary.Atmosphere;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -15,6 +16,9 @@ namespace TinCan.Features.Storm
     {
         [Tooltip("The light and air at full weight (the heart of a raging storm). Slate and plum, never grey (ART_DIRECTION pillar 3).")]
         public WeatherLook Look;
+
+        [Tooltip("The volumetric clouds at full weight: the overcast closing in (denser, more of the sky covered, even, dark cores).")]
+        public CloudWeatherTarget Clouds;
 
         [Header("Lightning (mood only)")]
         [Tooltip("Strikes per minute at full weight; fewer as the weight falls, none below MinWeight.")]

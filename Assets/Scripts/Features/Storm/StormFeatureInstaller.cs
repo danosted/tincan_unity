@@ -1,6 +1,7 @@
 #nullable enable
 using TinCan.Core.Domain.Features;
 using TinCan.Features.Atmosphere;
+using TinCan.Features.CloudBoundary.Atmosphere;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -31,7 +32,7 @@ namespace TinCan.Features.Storm
             builder.RegisterInstance(_config);
             builder.RegisterInstance<IStormIntensity>(_lab);
             builder.Register<StormSoundPresenter>(Lifetime.Singleton);
-            builder.Register<StormWeatherPresenter>(Lifetime.Singleton).AsSelf().As<IAtmosphereWeather>().As<ITickable>();
+            builder.Register<StormWeatherPresenter>(Lifetime.Singleton).AsSelf().As<IAtmosphereWeather>().As<ICloudWeather>().As<ITickable>();
         }
     }
 }

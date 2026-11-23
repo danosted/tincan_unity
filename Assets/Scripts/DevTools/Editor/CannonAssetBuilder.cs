@@ -27,7 +27,7 @@ namespace TinCan.DevTools.Editor
     /// slice's data is reviewable as code: tags, effects, abilities, the sweep and interaction definitions, configs, the
     /// cannon and hazard prefabs, the fixture, the installers, and the profiles that load them. Scriptable objects are
     /// re-applied on every run; prefabs are built only when missing (delete one to rebuild it), so their network ids stay
-    /// stable. Plan: .docs/plans/cannon-and-hazards.md.
+    /// stable. Plans: .docs/plans/cannon-and-hazards.md, .docs/plans/ray-cannons.md (the beam: its material and sound).
     /// </summary>
     public static class CannonAssetBuilder
     {
@@ -86,7 +86,11 @@ namespace TinCan.DevTools.Editor
                 effect.GrantedTags = new List<GameplayTag> { reloading };
                 effect.Modifiers = new List<AttributeModifier>();
             });
-            var hit = Asset<GameplayEffectDefinition>(Effects + "GE_CannonballHit.asset", effect =>
+            // The cannon fires a beam of spirit energy now (ray-cannons.md, R1): its hit and sweep keep their assets (and
+            // GUIDs) under new names.
+            Rename(Effects + "GE_CannonballHit.asset", "GE_SpiritBeamHit");
+            Rename("Assets/Targeting/TD_CannonballSweep.asset", "TD_SpiritBeamSweep");
+            var hit = Asset<GameplayEffectDefinition>(Effects + "GE_SpiritBeamHit.asset", effect =>
             {
                 effect.DurationType = DurationType.Instant;
                 effect.GrantedTags = new List<GameplayTag>();
@@ -148,7 +152,7 @@ namespace TinCan.DevTools.Editor
             });
 
             // Queries and interactions
-            var sweep = Asset<TargetingDefinition>("Assets/Targeting/TD_CannonballSweep.asset", definition =>
+            var sweep = Asset<TargetingDefinition>("Assets/Targeting/TD_SpiritBeamSweep.asset", definition =>
             {
                 definition.Shape = TargetShape.Ray;
                 definition.Radius = 0.3f;
@@ -164,7 +168,8 @@ namespace TinCan.DevTools.Editor
                 config.FireAbility = fireAbility;
                 config.HitEffect = hit;
                 config.Sweep = sweep;
-                config.BallMaterial = Material("M_CannonIron", new Color(0.18f, 0.18f, 0.2f)); // an asset, so builds include its shader
+                config.BeamMaterial = BeamMaterial(); // an asset, so builds include its shader
+                config.FireSound = BeamSound();
                 config.YawLimit = CannonAimLimits.FullTurn;
             });
 
@@ -366,6 +371,51 @@ namespace TinCan.DevTools.Editor
             EnsureFolder(path);
             AssetDatabase.CreateAsset(material, path);
             return material;
+        }
+
+        // The beam and its glows: soft and additive, coloured by the line's (or the glow's) colour, a little over 1 so the
+        // bloom picks it up softly ("Magic is soft light", ART_DIRECTION.md pillar 5). Re-applied on every run.
+        private static Material BeamMaterial()
+        {
+            const string path = Materials + "M_SpiritBeam.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit")) { name = "M_SpiritBeam" };
+                EnsureFolder(path);
+                AssetDatabase.CreateAsset(material, path);
+            }
+
+            material.SetFloat("_Surface", 1f); // transparent
+            material.SetFloat("_Blend", 2f); // additive
+            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+            material.SetFloat("_ZWrite", 0f);
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            material.SetColor("_BaseColor", new Color(1.6f, 1.6f, 1.6f, 1f));
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        // A synthesized stand-in (BeamSynth); a recording replaces it on the config without code changes.
+        private static AudioClip BeamSound()
+        {
+            const string path = "Assets/Audio/Cues/cue_spirit_beam.wav";
+            if (!File.Exists(path))
+            {
+                File.WriteAllBytes(path, AudioLabSynth.Wav(BeamSynth.SpiritBeam()));
+                AssetDatabase.ImportAsset(path);
+            }
+            return Load<AudioClip>(path);
+        }
+
+        // Renames an asset in place (its GUID, and so every reference to it, stays); nothing to do once it is renamed.
+        private static void Rename(string path, string newName)
+        {
+            if (AssetDatabase.LoadMainAssetAtPath(path) == null) return;
+            string error = AssetDatabase.RenameAsset(path, newName);
+            if (!string.IsNullOrEmpty(error)) throw new InvalidOperationException($"Renaming {path} to {newName}: {error}");
         }
 
         private static GameplayTag Tag(string name, GameplayTag? parent = null) =>

@@ -2,6 +2,8 @@
 using TinCan.Core.Domain.Features;
 using TinCan.Features.Atmosphere;
 using TinCan.Features.CloudBoundary.Atmosphere;
+using TinCan.Features.Weapons.Cannon;
+using TinCan.Core.Domain;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -11,8 +13,10 @@ namespace TinCan.Features.Storm
     /// <summary>
     /// The storm (plan: .docs/plans/storm-crossing.md): its light and air as the atmosphere's weather and the volumetric
     /// clouds', its region for the shaders (it towers and darkens where it stands, seen from afar), its lightning and its
-    /// sound, all driven by the nearest encounter zone (<see cref="StormIntensity"/>), or by the lab's controls in Lab_Storm.
-    /// Needs the Atmosphere feature; in the game's profile with Encounters. Built by TinCan > Dev > Storm > Build Lab.
+    /// sound, and its heart and the cure (the beam hits its targets, <see cref="StormCureUseCase"/>), all driven by the
+    /// nearest encounter zone (<see cref="StormIntensity"/>), or by the lab's controls in Lab_Storm. Needs the Atmosphere
+    /// feature, Encounters with a zone, and the cannons (the cure); in the game's profile. Built by TinCan > Dev > Storm >
+    /// Build Lab; the heart's parts by TinCan > Dev > Storm > Build Heart.
     /// </summary>
     [CreateAssetMenu(fileName = "StormFeatureInstaller", menuName = "TinCan/Features/Storm Feature Installer")]
     public sealed class StormFeatureInstaller : FeatureInstaller
@@ -32,6 +36,9 @@ namespace TinCan.Features.Storm
             builder.Register<StormSoundPresenter>(Lifetime.Singleton);
             builder.Register<StormWeatherPresenter>(Lifetime.Singleton).AsSelf().As<IAtmosphereWeather>().As<ICloudWeather>().As<ITickable>()
                 .As<System.IDisposable>();
+            // The heart and its cure (ST5): the server answers the beam; every peer draws the heart and its target.
+            builder.Register<StormCureUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>().As<ISpiritBeamTargets>();
+            builder.Register<StormHeartPresenter>(Lifetime.Singleton).AsSelf().As<ITickable>().As<System.IDisposable>();
         }
     }
 }

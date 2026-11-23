@@ -17,8 +17,8 @@ namespace TinCan.DevTools.Scenarios
     /// <summary>
     /// Scenario steps for the cannon and sky hazards. Commands: put a hazard on the deck (server), point the barrel along
     /// the cannon's rest direction (subject peer, through the gunner's aim as the mouse would), and put a target on the
-    /// arc the barrel points along now (server), so a shot with no further aiming hits it. Probes read replicated state
-    /// on this peer: who mans the cannon, how many hazards exist, and how many balls this peer drew; the server also
+    /// line the barrel points along now (server), so a shot with no further aiming hits it. Probes read replicated state
+    /// on this peer: who mans the cannon, how many hazards exist, and how many beams this peer drew; the server also
     /// counts hazards shot down. The subject peer can also point the barrel at an exact aim, check that aiming turns the
     /// barrel past the back (a turret wraps, and the replicated barrel follows) and leaves the body facing where it was (the
     /// Gunner input context).
@@ -63,7 +63,7 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioCommand("AimCannon", Aim),
             new ScenarioCommand("AimCannonAt", AimAt),
             new ScenarioCommand("RecordSubjectFacing", _ => RecordFacing()),
-            new ScenarioCommand("SpawnTargetOnArc", SpawnOnArc),
+            new ScenarioCommand("SpawnTargetOnBeam", SpawnOnBeam),
             new ScenarioCommand("SpawnHazardOnDeck", _ => SpawnOnDeck())
         };
 
@@ -74,7 +74,7 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("CannonFree", which => CheckManned(expected: false, which)),
             new ScenarioProbe("HazardsVisible", CheckVisible),
             new ScenarioProbe("HazardsDestroyed", CheckDestroyed),
-            new ScenarioProbe("BallsShown", CheckBalls),
+            new ScenarioProbe("BeamsShown", CheckBeams),
             new ScenarioProbe("HazardHits", CheckHits),
             new ScenarioProbe("ShipHealthBelow", CheckShipHealthBelow),
             new ScenarioProbe("GunnerAimYaw", CheckGunnerYaw),
@@ -178,22 +178,18 @@ namespace TinCan.DevTools.Scenarios
             return Vector3.SignedAngle(Vector3.ProjectOnPlane(cannon.forward, cannon.up), Vector3.ProjectOnPlane(body.forward, cannon.up), cannon.up);
         }
 
-        /// <summary>Server: a target this far along the arc the barrel points along now.</summary>
-        private ScenarioCheck SpawnOnArc(string metres)
+        /// <summary>Server: a target this far along the line the barrel points along now (the beam goes straight).</summary>
+        private ScenarioCheck SpawnOnBeam(string metres)
         {
             if (!_network.IsServer) return ScenarioCheck.Fail("server-only command");
             var cannon = Cannon();
             if (cannon?.Base == null || cannon.Muzzle == null) return ScenarioCheck.Fail("no cannon");
 
             float distance = Parse(metres);
-            var arc = BallisticArc.FromMuzzle(cannon.Muzzle.position, _aim.MuzzleDirection(cannon.Base.rotation, cannon.Yaw, cannon.Elevation),
-                _config.MuzzleSpeed, Vector3.zero, _config.GravityVector, 0);
-            float t = 0f;
-            while (t < _config.MaxLifetime && Vector3.Distance(arc.PositionAt(t), arc.Origin) < distance) t += 0.01f;
-
-            var hazard = _hazards.SpawnAt(arc.PositionAt(t));
+            Vector3 direction = _aim.MuzzleDirection(cannon.Base.rotation, cannon.Yaw, cannon.Elevation);
+            var hazard = _hazards.SpawnAt(cannon.Muzzle.position + direction * distance);
             return hazard != null
-                ? ScenarioCheck.Pass($"target {distance} m down the arc (yaw {cannon.Yaw:0.#}, elevation {cannon.Elevation:0.#})")
+                ? ScenarioCheck.Pass($"target {distance} m down the beam (yaw {cannon.Yaw:0.#}, elevation {cannon.Elevation:0.#})")
                 : ScenarioCheck.Fail("hazard spawn failed (no SkyHazardConfig prefab?)");
         }
 
@@ -282,18 +278,21 @@ namespace TinCan.DevTools.Scenarios
             return _hazards.Destroyed >= int.Parse(count, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
-        private ScenarioCheck CheckBalls(string count)
+        private ScenarioCheck CheckBeams(string count)
         {
-            string detail = $"{_presenter.BallsShown} ball(s) drawn on this peer";
-            return _presenter.BallsShown >= int.Parse(count, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+            string detail = $"{_presenter.BeamsShown} beam(s) drawn on this peer";
+            return _presenter.BeamsShown >= int.Parse(count, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
         // The ship carries a cannon on each side; scenarios use the starboard one. Picked by where it sits on the ship, so
         // every peer names the same cannon whatever order they spawned in. "aft" picks the aftmost (then starboard) one,
         // for ships with cannons fore and aft (the Galleon).
-        private ICannon? Cannon(string which = "")
+        private ICannon? Cannon(string which = "") => FindCannon(_actors, which);
+
+        /// <summary>The starboard cannon, or with "aft" the aftmost; the same one on every peer. Shared with other libraries.</summary>
+        public static ICannon? FindCannon(IActorRegistry actors, string which = "")
         {
-            var cannons = _actors.GetActors<ICannon>().Where(cannon => cannon.Base != null);
+            var cannons = actors.GetActors<ICannon>().Where(cannon => cannon.Base != null);
             return which == "aft"
                 ? cannons.OrderBy(cannon => ShipLocal(cannon).z).ThenByDescending(cannon => ShipLocal(cannon).x).FirstOrDefault()
                 : cannons.OrderByDescending(cannon => ShipLocal(cannon).x).FirstOrDefault();

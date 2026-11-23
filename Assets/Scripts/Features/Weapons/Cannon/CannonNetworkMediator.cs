@@ -16,8 +16,8 @@ namespace TinCan.Features.Weapons.Cannon
     /// <summary>
     /// Infrastructure Layer: a cannon fixture on the ship. It is a station (interact to occupy, IA_OccupyCannon) and a
     /// cannon. Server-written state: the occupant's client id and the barrel angles, so every peer and a late joiner
-    /// sees who mans it and where it points. Shots are events, not state: one RPC when fired and one when it ends; each
-    /// peer draws the ball from the arc. Parts are found by name: YawPivot > PitchPivot > Muzzle, Seat, AimPreview
+    /// sees who mans it and where it points. Shots are events, not state: one RPC when the charge starts and one when
+    /// the beam fires, with where it went; each peer draws the beam itself. Parts are found by name: YawPivot > PitchPivot > Muzzle, Seat, AimPreview
     /// (a LineRenderer), and PitchPivot > CameraMount (a disabled Camera the gunner looks through, over the barrel).
     /// </summary>
     public class CannonNetworkMediator : NetworkBehaviour, ICannon, IStation
@@ -92,21 +92,21 @@ namespace TinCan.Features.Weapons.Cannon
             if (Mathf.Abs(_elevation.Value - elevation) > 0.05f) _elevation.Value = elevation;
         }
 
-        public void ServerShotFired(int shotId, Vector3 origin, Vector3 velocity)
+        public void ServerShotCharging(int shotId)
         {
-            if (IsServer) ShotFiredRpc(shotId, origin, velocity);
+            if (IsServer) ShotChargingRpc(shotId);
         }
 
-        public void ServerShotEnded(int shotId, Vector3 point)
+        public void ServerShotFired(int shotId, Vector3 origin, Vector3 end)
         {
-            if (IsServer) ShotEndedRpc(shotId, point);
+            if (IsServer) ShotFiredRpc(shotId, origin, end);
         }
 
         [Rpc(SendTo.Everyone)]
-        private void ShotFiredRpc(int shotId, Vector3 origin, Vector3 velocity) => Enqueue(CannonShotEvent.Fired(shotId, origin, velocity));
+        private void ShotChargingRpc(int shotId) => Enqueue(CannonShotEvent.Charging(shotId));
 
         [Rpc(SendTo.Everyone)]
-        private void ShotEndedRpc(int shotId, Vector3 point) => Enqueue(CannonShotEvent.Finished(shotId, point));
+        private void ShotFiredRpc(int shotId, Vector3 origin, Vector3 end) => Enqueue(CannonShotEvent.Fired(shotId, origin, end));
 
         private void Enqueue(CannonShotEvent shotEvent)
         {

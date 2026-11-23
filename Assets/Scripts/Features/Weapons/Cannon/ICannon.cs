@@ -5,26 +5,27 @@ using UnityEngine;
 
 namespace TinCan.Features.Weapons.Cannon
 {
-    /// <summary>What every peer learns about one shot: sent once when it is fired, and once when it ends.</summary>
+    /// <summary>
+    /// What every peer learns about one shot: sent once when the charge starts, and once when the beam fires, with
+    /// where it went (from the muzzle to what it hit, or to its range).
+    /// </summary>
     public readonly struct CannonShotEvent
     {
         public readonly int ShotId;
-        public readonly bool Ended;
+        public readonly bool HasFired;
         public readonly Vector3 Origin;
-        public readonly Vector3 Velocity;
-        public readonly Vector3 Point;
+        public readonly Vector3 End;
 
-        private CannonShotEvent(int shotId, bool ended, Vector3 origin, Vector3 velocity, Vector3 point)
+        private CannonShotEvent(int shotId, bool hasFired, Vector3 origin, Vector3 end)
         {
             ShotId = shotId;
-            Ended = ended;
+            HasFired = hasFired;
             Origin = origin;
-            Velocity = velocity;
-            Point = point;
+            End = end;
         }
 
-        public static CannonShotEvent Fired(int shotId, Vector3 origin, Vector3 velocity) => new(shotId, false, origin, velocity, origin);
-        public static CannonShotEvent Finished(int shotId, Vector3 point) => new(shotId, true, default, default, point);
+        public static CannonShotEvent Charging(int shotId) => new(shotId, false, default, default);
+        public static CannonShotEvent Fired(int shotId, Vector3 origin, Vector3 end) => new(shotId, true, origin, end);
     }
 
     /// <summary>
@@ -49,8 +50,8 @@ namespace TinCan.Features.Weapons.Cannon
         float Elevation { get; }
 
         void ServerSetAim(float yaw, float elevation);
-        void ServerShotFired(int shotId, Vector3 origin, Vector3 velocity);
-        void ServerShotEnded(int shotId, Vector3 point);
+        void ServerShotCharging(int shotId);
+        void ServerShotFired(int shotId, Vector3 origin, Vector3 end);
 
         /// <summary>Every peer: the next shot event received, oldest first.</summary>
         bool TryTakeShotEvent(out CannonShotEvent shotEvent);
@@ -58,7 +59,7 @@ namespace TinCan.Features.Weapons.Cannon
         /// <summary>Presentation: turns the barrel.</summary>
         void ApplyAim(float yaw, float elevation);
 
-        /// <summary>Presentation: the aiming arc for the local occupant (null hides it).</summary>
+        /// <summary>Presentation: the aiming line for the local occupant (null hides it).</summary>
         void ShowAimPreview(Vector3[]? points, int count);
     }
 }

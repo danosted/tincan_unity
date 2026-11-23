@@ -9,8 +9,9 @@ namespace TinCan.Features.Storm
 {
     /// <summary>
     /// Every peer with a view: the storm's depth, strength and region. From the nearest encounter zone
-    /// (<see cref="IEncounterZones"/>): its region, the camera's depth in it, and a strength that calms over
-    /// <see cref="CalmSeconds"/> while the zone rests or is gone and builds again when it returns. In the lab, its
+    /// (<see cref="IEncounterZones"/>): its region, the camera's depth in it, and a strength that follows the heart's
+    /// replicated strength (<see cref="IStormHeart"/>: each hit of the cure lowers it) and calms to 0 while the zone rests
+    /// or is gone, over <see cref="CalmSeconds"/> a step, and builds again when it returns. In the lab, its
     /// <see cref="StormLabControls"/> drive it instead unless they follow the zone.
     /// </summary>
     public sealed class StormIntensity : IStormIntensity, ITickable
@@ -67,8 +68,10 @@ namespace TinCan.Features.Storm
 
             Depth = EncounterZoneProcessor.Depth(zone.Centre, zone.Radius, camera!.Value);
             Region = (zone.Centre, zone.Radius);
+            // The cure's hits lower the heart's replicated strength; a spent zone is calm.
             bool spent = zone.State is EncounterZoneState.Resting or EncounterZoneState.Gone;
-            Strength = Mathf.MoveTowards(Strength, spent ? 0f : 1f, deltaTime / CalmSeconds);
+            float target = spent ? 0f : StormHearts.Of(zone)?.Strength ?? 1f;
+            Strength = Mathf.MoveTowards(Strength, target, deltaTime / CalmSeconds);
         }
     }
 }

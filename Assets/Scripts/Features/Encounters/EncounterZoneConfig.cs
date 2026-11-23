@@ -24,5 +24,8 @@ namespace TinCan.Features.Encounters
         public EncounterAfterEnd AfterEnd = EncounterAfterEnd.Rest;
         [Tooltip("How long it rests before it can be entered again (with AfterEnd Rest).")]
         [Min(0f)] public float RestSeconds = 120f;
+        [Tooltip("How hard its event is, 1 to 3. The storm: at 1 its heart is still; harder storms' hearts move, their " +
+                 "targets stay up less long and the cure needs more hits (storm-crossing.md, \"Difficulty\").")]
+        [Range(1, 3)] public int Severity = 1;
     }
 }

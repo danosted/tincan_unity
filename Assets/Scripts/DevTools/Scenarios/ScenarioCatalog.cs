@@ -398,15 +398,15 @@ namespace TinCan.DevTools.Scenarios
         /// <summary>
         /// The cannon with real input: the subject walks up to the cannon, presses Interact to man it (it stays in its
         /// body: State.Occupying.Cannon, which turns the Gunner input context on), aims the barrel along its rest
-        /// direction, and the server puts a target on the arc the barrel now points along. One Fire press shoots; the
-        /// server's per-tick sweep hits the target and shoots it down, and the subject's peer drew the ball. Then the mouse
+        /// direction, and the server puts a target on the line the barrel now points along. One Fire press charges the beam; the
+        /// server's one sweep hits the target and shoots it down, and the subject's peer drew the beam. Then the mouse
         /// swings the turret past its back (the yaw wraps) while the body keeps facing where it was, and Leave steps away.
-        /// Plans: cannon-and-hazards.md, input-contexts.md, hazards-and-boons.md (C1).
+        /// Plans: cannon-and-hazards.md, input-contexts.md, hazards-and-boons.md (C1), ray-cannons.md (R1).
         /// </summary>
         public static readonly ScenarioEntry CannonShot = new(
             new Scenario.Builder("CannonShot")
                 .InScene(TestScenes.Cannon)
-                .Describe("Man the cannon -> target on the barrel's arc -> Fire -> target shot down, ball drawn -> turn past the back, body still -> Leave.")
+                .Describe("Man the cannon -> target on the barrel's line -> Fire -> the beam charges and fires -> target shot down, beam drawn -> turn past the back, body still -> Leave.")
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
@@ -426,7 +426,7 @@ namespace TinCan.DevTools.Scenarios
                     .Checkpoint("manned")
                     .WaitUntil("HazardsVisible", 15f, "1")
                     .Hold(0.3f, ScriptedAction.GunnerFire)
-                    .WaitUntil("BallsShown", 5f, "1")
+                    .WaitUntil("BeamsShown", 5f, "1")
                     .WaitUntil("HazardsVisible", 10f, "0")
                     .Checkpoint("shot-down")
                     // A turret: an aim past the back wraps (190 is -170), and the server's barrel follows it there. The
@@ -445,7 +445,7 @@ namespace TinCan.DevTools.Scenarios
                 .Assert(s => s
                     .WaitUntil("CannonManned", 60f)
                     .Wait(1.5f, "the barrel follows the subject's aim")
-                    .Do("SpawnTargetOnArc", "35")
+                    .Do("SpawnTargetOnBeam", "35")
                     .WaitUntil("HazardsDestroyed", 15f, "1")
                     .WaitUntil("CannonFree", 15f))
                 .Build(),
@@ -481,13 +481,13 @@ namespace TinCan.DevTools.Scenarios
 
         /// <summary>
         /// A misfire: the subject mans the starboard cannon, turns the turret inboard and down at its own deck (yaw 180,
-        /// the lowest elevation), and fires. The ball hits our own ship (the deck or the port cannon) and the ship loses
-        /// health on every peer (GE_CannonballHit, applied to the ship). Plan: hazards-and-boons.md (C1).
+        /// the lowest elevation), and fires. The beam hits our own ship (the deck or the port cannon) and the ship loses
+        /// health on every peer (GE_SpiritBeamHit, applied to the ship). Plans: hazards-and-boons.md (C1), ray-cannons.md (R1).
         /// </summary>
         public static readonly ScenarioEntry CannonMisfire = new(
             new Scenario.Builder("CannonMisfire")
                 .InScene(TestScenes.Cannon)
-                .Describe("Man the cannon -> turn it inboard at our own deck -> Fire -> the ball hits our ship -> ship health drops on every peer.")
+                .Describe("Man the cannon -> turn it inboard at our own deck -> Fire -> the beam hits our ship -> ship health drops on every peer.")
                 .Timeout(90f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
@@ -505,7 +505,7 @@ namespace TinCan.DevTools.Scenarios
                     .Wait(0.5f, "the barrel turns inboard")
                     .Checkpoint("aimed-at-own-deck")
                     .Hold(0.3f, ScriptedAction.GunnerFire)
-                    .WaitUntil("BallsShown", 5f, "1")
+                    .WaitUntil("BeamsShown", 5f, "1")
                     .WaitUntil("ShipHealthBelow", 10f, "1000")
                     .WaitUntil("CueCount", 3f, "Cue.Hit:Execute:1")
                     .Checkpoint("misfire-seen")
@@ -2176,6 +2176,70 @@ namespace TinCan.DevTools.Scenarios
             });
 
         /// <summary>
+        /// The storm's cure (plans: storm-crossing.md ST5, ray-cannons.md R2) on the Galleon, at severity 1 (three hits).
+        /// The subject mans the aft cannon; the server puts the storm's heart 55 m off to starboard, so the ship is in its
+        /// eye. The round warns, then runs: targets come one at a time round the heart. For each of three, the subject
+        /// aims at the target its peer draws and fires; the beam hits it (no collider: the storm answers the beam) and the
+        /// heart's strength falls on every peer. The last hit cures the storm: the round ends and the zone rests.
+        /// </summary>
+        public static readonly ScenarioEntry StormCure = new(
+            new Scenario.Builder("StormCure")
+                .InScene(TestScenes.Galleon)
+                .Describe("On the Galleon: man the aft cannon -> the storm's heart off to starboard -> the round runs -> hit three targets -> the storm is cured, the zone rests, on every peer.")
+                .Timeout(180f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn; the design builds")
+                    .WaitUntil("SocketFitted", 15f, "weapon.cannon")
+                    .WaitUntil("ZoneSpawned", 30f)
+                    .Do("PlaceSubjectAtCannon", "aft"))
+                .Act(s => s
+                    .WaitUntil("SubjectAtCannon", 45f, "aft")
+                    .Wait(0.5f, "teleport settles")
+                    .Do("FaceCannon", "aft")
+                    .WaitUntil("InteractTargetIs", 5f, "CannonStation")
+                    .Hold(0.3f, ScriptedAction.Interact)
+                    .WaitUntil("SubjectHasTag", 5f, "State.Occupying.Cannon")
+                    .WaitUntil("CannonManned", 5f, "aft")
+                    .WaitUntil("ZoneState", 30f, "Running")
+                    .Checkpoint("round-runs")
+                    .WaitUntil("StormTargetUpFor", 15f, "2")
+                    .Do("AimCannonAtStormTarget")
+                    .Wait(0.5f, "the barrel turns")
+                    .Hold(0.3f, ScriptedAction.GunnerFire)
+                    .WaitUntil("HeartStrengthBelow", 10f, "0.9")
+                    .Checkpoint("first-hit")
+                    .WaitUntil("StormTargetUpFor", 15f, "2")
+                    .Do("AimCannonAtStormTarget")
+                    .Wait(0.5f, "the barrel turns")
+                    .Hold(0.3f, ScriptedAction.GunnerFire)
+                    .WaitUntil("HeartStrengthBelow", 10f, "0.5")
+                    .WaitUntil("StormTargetUpFor", 15f, "2")
+                    .Do("AimCannonAtStormTarget")
+                    .Wait(0.5f, "the barrel turns")
+                    .Hold(0.3f, ScriptedAction.GunnerFire)
+                    .WaitUntil("HeartStrengthBelow", 10f, "0.01")
+                    .WaitUntil("ZoneState", 10f, "Resting")
+                    .Checkpoint("cured")
+                    .Hold(0.3f, ScriptedAction.GunnerLeave)
+                    .WaitUntil("SubjectLacksTag", 5f, "State.Occupying.Cannon"))
+                .Assert(s => s
+                    .WaitUntil("CannonManned", 60f, "aft")
+                    .Do("PlaceHeartOffCannon", "55 aft 90")
+                    .WaitUntil("ZoneState", 30f, "Running")
+                    .WaitUntil("ZoneState", 120f, "Resting")
+                    .WaitUntil("HeartStrengthBelow", 5f, "0.01"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<EncounterScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<StormScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<CannonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<TargetingScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
+        /// <summary>
         /// An encounter zone's round (plan: encounters.md, E1). The server moves the zone around the ship to stand in for
         /// sailing in and out: in, the warning shows on both peers; out again during it, nothing starts; in for good, it
         /// runs once the warning ends; out, it is abandoned and rests.
@@ -2284,7 +2348,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone, StormInWorld };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone, StormInWorld, StormCure };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

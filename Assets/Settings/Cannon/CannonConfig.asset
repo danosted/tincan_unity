@@ -16,17 +16,18 @@ MonoBehaviour:
   FireAbility: {fileID: 11400000, guid: 3d6b067c0cce506428c919f6575f76ed, type: 2}
   HitEffect: {fileID: 11400000, guid: f1660795b39f3184f897b36279ce1fcf, type: 2}
   Sweep: {fileID: 11400000, guid: 25b41cd27ef18964fb593ba4f7093e3b, type: 2}
-  MuzzleSpeed: 70
-  Gravity: 9.81
-  MaxLifetime: 6
-  MaxRange: 400
+  ChargeSeconds: 0.4
+  BeamRange: 400
   YawLimit: 180
   MinElevation: -15
   MaxElevation: 40
   AimSensitivity: 0.3
   ProxyAimSharpness: 15
-  BallDiameter: 0.5
-  BallMaterial: {fileID: 2100000, guid: 8aa49ad5a0d944f479f826a2861f7539, type: 2}
-  MuzzleBlendSeconds: 0.2
-  AimPreviewSeconds: 2.5
-  AimPreviewPoints: 40
+  BeamMaterial: {fileID: 2100000, guid: e89470c45cdc22a4e9d4449f23bf759d, type: 2}
+  MuzzleColor: {r: 0.55, g: 0.95, b: 1, a: 1}
+  EndColor: {r: 1, g: 0.8, b: 0.45, a: 1}
+  BeamWidth: 0.35
+  BeamSeconds: 0.35
+  GlowDiameter: 0.8
+  FireSound: {fileID: 8300000, guid: b83daa9cdbca1e846a29a0cc1acdcbf2, type: 3}
+  FireVolume: 0.8

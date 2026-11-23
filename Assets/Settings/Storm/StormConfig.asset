@@ -23,7 +23,13 @@ MonoBehaviour:
     FogDensity: 0.006
     HazeDensity: 0.0025
     MaxFog: 0.94
+    CloudShade: {r: 0.2882353, g: 0.26544118, b: 0.38750005, a: 0.75}
     FlashColour: {r: 0.70235294, g: 0.8505882, b: 0.8735294, a: 0.9}
+  Clouds:
+    Density: 0.45
+    ShapeFactor: 0.35
+    OpacityVariation: 0.1
+    AmbientDimmer: 1
   StrikesPerMinute: 12
   LightningMinWeight: 0.25
   FlashSeconds: 0.35

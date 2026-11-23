@@ -4,6 +4,7 @@
     "references": [
         "TinCan.Core.Domain",
         "TinCan.Features.Atmosphere",
+        "TinCan.Features.CloudBoundary.Atmosphere",
         "VContainer"
     ],
     "includePlatforms": [],

@@ -31,6 +31,10 @@ float TinCanCloudBillow(float3 p)
     return 1.0 - abs(TinCanCloudNoise(p) * 2.0 - 1.0);
 }
 
+// The weather's shade (AtmosphereShaderGlobals.ApplyWeatherShade): rgb the colour the clouds darken toward, a how much. 0
+// until a weather sets it, so the clouds are untouched.
+float4 _TinCanWeatherShade;
+
 struct TinCanCloudLook
 {
     half3 lit;
@@ -74,6 +78,7 @@ half3 TinCanCloudShadeLit(TinCanCloudLook look, half lit, half3 skyFill, half gr
     colour = lerp(colour, SampleSH(float3(0, 1, 0)) + sun.color * 0.25h, grazing * look.rim);
     half toward = (half)pow(saturate(dot(-view, sun.direction)), look.silverFocus);
     colour += sun.color * toward * (grazing * look.silverLining + thin * look.translucency);
+    colour = lerp(colour, colour * _TinCanWeatherShade.rgb, _TinCanWeatherShade.a);
     return colour;
 }
 

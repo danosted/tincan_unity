@@ -5,6 +5,7 @@ using System.Linq;
 using TinCan.Core.Audio;
 using TinCan.Core.Domain.Features;
 using TinCan.Features.Atmosphere;
+using TinCan.Features.CloudBoundary.Atmosphere;
 using TinCan.Features.Storm;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -98,6 +99,9 @@ namespace TinCan.DevTools.Editor
             return Asset<StormConfig>(ConfigPath, config =>
             {
                 if (made) config.Look = PaletteLook();
+                // Fields added after the config was first made get their first guess too (the rest of the tuning is kept).
+                if (config.Look.CloudShade == default) config.Look.CloudShade = PaletteLook().CloudShade;
+                if (config.Clouds.Density <= 0f) config.Clouds = StormClouds();
                 config.Output = Load<AudioConfig>(AudioConfigPath).Ambience;
                 config.WindLoop = Load<AudioClip>(AudioFolder + "storm_wind_loop.wav");
                 config.RainLoop = Load<AudioClip>(AudioFolder + "storm_rain_loop.wav");
@@ -127,9 +131,22 @@ namespace TinCan.DevTools.Editor
                 FogDensity = 0.006f,
                 HazeDensity = 0.0025f,
                 MaxFog = 0.94f,
+                CloudShade = Color.Lerp(slate, plum, 0.25f) * 0.75f,
                 FlashColour = Color.Lerp(cyan, Color.white, 0.5f) * 0.9f
             };
         }
+
+        /// <summary>
+        /// The overcast at the heart, against the game's clouds (density 0.15, shape 0.6, ambient 3, variation 0.6 in
+        /// cheesed_scene): denser, more of the sky covered, even, with darker cores. A first guess, tuned by eye.
+        /// </summary>
+        private static CloudWeatherTarget StormClouds() => new()
+        {
+            Density = 0.45f,
+            ShapeFactor = 0.35f,
+            OpacityVariation = 0.1f,
+            AmbientDimmer = 1f
+        };
 
         private static void BuildScene()
         {

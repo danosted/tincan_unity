@@ -15,6 +15,7 @@ namespace TinCan.Features.Atmosphere
         private static readonly int FogParams = Shader.PropertyToID("_TinCanFogParams");
         private static readonly int FogShape = Shader.PropertyToID("_TinCanFogShape");
         private static readonly int Whiteout = Shader.PropertyToID("_TinCanWhiteout");
+        private static readonly int WeatherShade = Shader.PropertyToID("_TinCanWeatherShade");
 
         /// <summary>Off, TinCan shaders take Unity's plain fog (opaque) or none (clouds).</summary>
         public static void SetEnabled(bool enabled)
@@ -27,6 +28,13 @@ namespace TinCan.Features.Atmosphere
         /// to the air's colour by it, so under the cloud sea you do not see a clear sky (plan .docs/plans/cloud-sea.md,
         /// step 3).</summary>
         public static void ApplyWhiteout(float whiteout) => Shader.SetGlobalFloat(Whiteout, Mathf.Clamp01(whiteout));
+
+        /// <summary>
+        /// The weather's shade on the clouds (Shaders/Include/TinCanCloudLook.hlsl): rgb the colour they darken toward, a how
+        /// much (the weather's weight). 0 when there is no weather, which also is the global's value before anything sets it.
+        /// </summary>
+        public static void ApplyWeatherShade(Color shade, float weight) =>
+            Shader.SetGlobalVector(WeatherShade, new Vector4(shade.r, shade.g, shade.b, Mathf.Clamp01(weight)));
 
         public static void Apply(in AtmosphereFrame frame, in LookSettings look)
         {

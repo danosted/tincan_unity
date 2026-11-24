@@ -6,7 +6,7 @@ namespace TinCan.Features.CloudBoundary
 {
     /// <summary>
     /// The globals the sea shader reads (Shaders/Include/TinCanCloudSea.hlsl): the shared time, the base altitude, the
-    /// swell, and each hole's shape now. Set each frame by <see cref="CloudSeaPresenter"/>.
+    /// swell, each hole's shape now, and the web of rifts. Set each frame by <see cref="CloudSeaPresenter"/>.
     /// </summary>
     public static class CloudSeaShaderGlobals
     {
@@ -16,15 +16,20 @@ namespace TinCan.Features.CloudBoundary
         private static readonly int HoleOpenness = Shader.PropertyToID("_TinCanCloudHoleOpenness");
         private static readonly int HoleReach = Shader.PropertyToID("_TinCanCloudHoleReach");
         private static readonly int HoleCount = Shader.PropertyToID("_TinCanCloudHoleCount");
+        private static readonly int Web = Shader.PropertyToID("_TinCanCloudWeb");
+        private static readonly int WebMotion = Shader.PropertyToID("_TinCanCloudWebMotion");
         private static readonly Vector4[] HoleBuffer = new Vector4[ICloudHoles.MaxHoles];
         private static readonly float[] OpennessBuffer = new float[ICloudHoles.MaxHoles];
         private static readonly Vector4[] ReachBuffer = new Vector4[ICloudHoles.MaxHoles];
 
         /// <param name="fadeOut">Metres from the camera where the drawn surface has faded out.</param>
-        public static void Apply(float time, float baseAltitude, in CloudSwell swell, IReadOnlyList<CloudHoleShape> holes, float fadeOut)
+        public static void Apply(float time, float baseAltitude, in CloudSwell swell, IReadOnlyList<CloudHoleShape> holes,
+            in CloudWeb web, float fadeOut)
         {
             Shader.SetGlobalVector(Sea, new Vector4(time, baseAltitude, swell.Amplitude, swell.Wavelength));
             Shader.SetGlobalVector(Swell, new Vector4(swell.Speed, swell.Offset.x, swell.Offset.y, fadeOut));
+            Shader.SetGlobalVector(Web, new Vector4(web.Cell, web.Width, web.Rim, web.Ragged));
+            Shader.SetGlobalVector(WebMotion, new Vector4(web.OpenShare, web.Drift, web.Offset.x, web.Offset.y));
 
             int count = Mathf.Min(holes.Count, ICloudHoles.MaxHoles);
             for (int i = 0; i < ICloudHoles.MaxHoles; i++)
@@ -71,6 +76,7 @@ namespace TinCan.Features.CloudBoundary
         public static void Clear()
         {
             Shader.SetGlobalFloat(HoleCount, 0f);
+            Shader.SetGlobalVector(WebMotion, Vector4.zero);
             Shader.SetGlobalFloat(LookOn, 0f);
         }
     }

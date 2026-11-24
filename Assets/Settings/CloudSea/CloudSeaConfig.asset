@@ -20,8 +20,18 @@ MonoBehaviour:
   _ambientHoles: 4
   _ambientInterval: 8
   _radius: {x: 25, y: 180}
-  _distance: {x: 200, y: 900}
+  _distance: {x: 150, y: 1400}
   _openSeconds: {x: 10, y: 20}
   _lifeSeconds: {x: 40, y: 90}
   _closeSeconds: {x: 10, y: 20}
   _maxDrift: 3
+  _riftChance: 0.6
+  _riftLength: {x: 400, y: 1400}
+  _riftRadius: {x: 15, y: 50}
+  _riftRagged: {x: 0.4, y: 0.8}
+  _webOpenShare: 0.6
+  _webCell: 900
+  _webWidth: 60
+  _webRim: 30
+  _webRagged: 0.6
+  _webDrift: 1

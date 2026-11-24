@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Features;
+using TinCan.Core.Ship;
 using TinCan.Core.UI;
 using UnityEngine;
 using VContainer;
@@ -10,8 +11,9 @@ using VContainer.Unity;
 namespace TinCan.Features.Voyage
 {
     /// <summary>
-    /// Voyage: a play session from here to a destination ahead, won on arrival and lost when the ship's health runs out,
-    /// with an end screen and Restart. It resets and paces the other features through <see cref="ISessionParticipant"/>
+    /// Voyage: a play session from here to a destination ahead, won on arrival and lost with the ship (its health run
+    /// out, or an <see cref="IShipLossSource"/> such as the cloud boundary), with an end screen: Restart, and on a loss
+    /// Respawn at the ship's last safe spot. It resets and paces the other features through <see cref="ISessionParticipant"/>
     /// and references none of them. The VoyageState fixture on the ship carries the replicated state.
     /// Plan: .docs/plans/voyage-session.md.
     /// </summary>
@@ -32,12 +34,13 @@ namespace TinCan.Features.Voyage
 
             builder.RegisterInstance(_config);
             builder.Register<VoyageRouteProcessor>(Lifetime.Transient);
-            builder.Register<VoyageUseCase>(Lifetime.Singleton).As<IVoyage>().As<ISimulationTickable>();
+            builder.Register<VoyageUseCase>(Lifetime.Singleton).As<IVoyage>().As<ISimulationTickable>().As<IAirshipHold>();
             builder.Register<VoyageHudPresenter>(Lifetime.Singleton).As<ITickable>();
             builder.Register<VoyageSessionProgress>(Lifetime.Singleton).As<ISessionProgress>();
             builder.Register<VoyageEndScreenPresenter>(Lifetime.Singleton).As<ITickable>();
             builder.Register<VoyageBeaconPresenter>(Lifetime.Singleton).As<ITickable>();
             builder.Register<RestartVoyageMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
+            builder.Register<RespawnShipMenuCommand>(Lifetime.Singleton).As<IMenuCommand>();
         }
 
         public override IEnumerable<GameObject> NetworkedPrefabs

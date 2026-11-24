@@ -16,7 +16,8 @@ namespace TinCan.Features.Voyage
         /// <summary>Won: the ship reached the destination.</summary>
         Arrived = 3,
 
-        /// <summary>Lost: the ship's health ran out.</summary>
+        /// <summary>Lost, with the whole crew: the ship's health ran out, or a loss source lost it (sunk too deep in the
+        /// cloud). The ship is held still until the crew respawns it or restarts.</summary>
         Lost = 4
     }
 }

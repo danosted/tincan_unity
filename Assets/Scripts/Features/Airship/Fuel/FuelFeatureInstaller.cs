@@ -6,6 +6,7 @@ using TinCan.Core.Domain.Abilities.Inputs;
 using TinCan.Core.Domain.Features;
 using TinCan.Core.Humanoid;
 using TinCan.Core.Interaction;
+using TinCan.Core.Ship;
 using TinCan.Core.Ship.Sockets;
 using UnityEngine;
 using VContainer;
@@ -37,7 +38,8 @@ namespace TinCan.Features.Airship.Fuel
         public override void Install(IContainerBuilder builder)
         {
             builder.Register<FuelConsumptionProcessor>(Lifetime.Transient);
-            builder.Register<FuelConsumptionUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>().As<ISessionParticipant>();
+            builder.Register<FuelConsumptionUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>().As<ISessionParticipant>()
+                .As<IShipRecovery>();
             builder.Register<FuelHudPresenter>(Lifetime.Singleton).As<ITickable>();
             builder.Register<CrankTurnUseCase>(Lifetime.Singleton).AsSelf().As<IHumanoidMotionContributor>().WithParameter(new CrankInput(_crankInput));
         }

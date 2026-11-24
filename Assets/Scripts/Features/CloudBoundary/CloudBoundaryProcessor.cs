@@ -48,5 +48,12 @@ namespace TinCan.Features.CloudBoundary
             float remainingTime = Mathf.Max(0f, currentState.RemainingTime - Mathf.Max(0f, deltaTime));
             return new CloudEmergencyState(true, remainingTime <= 0f, remainingTime);
         }
+
+        /// <summary>
+        /// Whether a ship there is a safe place to respawn: above the surface, over the open sea. A hole or a rift cuts
+        /// the surface far below the sea's lowest trough (<paramref name="lowestSea"/>), and a ship over one is falling.
+        /// </summary>
+        public bool IsSafe(float altitude, float surfaceHeight, float lowestSea) =>
+            altitude >= surfaceHeight && surfaceHeight >= lowestSea;
     }
 }

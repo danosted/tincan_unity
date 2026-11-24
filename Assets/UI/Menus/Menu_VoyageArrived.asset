@@ -21,9 +21,13 @@ MonoBehaviour:
     CommandId: VoyageRestart
     Submenu: {fileID: 0}
     DefaultValue: 
+    SettingsGroup: 0
+    RowSource: 
   - ItemId: quit
     Label: Quit
     Kind: 0
     CommandId: Quit
     Submenu: {fileID: 0}
     DefaultValue: 
+    SettingsGroup: 0
+    RowSource: 

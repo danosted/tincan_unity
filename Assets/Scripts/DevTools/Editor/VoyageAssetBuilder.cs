@@ -36,7 +36,7 @@ namespace TinCan.DevTools.Editor
         public static void Build()
         {
             var arrived = Menu("Menu_VoyageArrived", "voyage_arrived", "Voyage complete! The ship made it.");
-            var lost = Menu("Menu_VoyageLost", "voyage_lost", "The ship is lost.");
+            var lost = Menu("Menu_VoyageLost", "voyage_lost", "The ship is lost, and its whole crew.", respawn: true);
             var beacon = Material("Assets/Materials/Voyage/M_VoyageBeacon.mat", new Color(1f, 0.8f, 0.25f));
 
             var config = Asset<VoyageConfig>("Assets/Settings/Voyage/VoyageConfig.asset", voyage =>
@@ -80,16 +80,19 @@ namespace TinCan.DevTools.Editor
             Debug.Log("[VoyageAssetBuilder] Voyage assets built.");
         }
 
-        private static MenuDefinition Menu(string file, string id, string title) =>
+        // A loss also offers Respawn (first): the ship back at its last safe spot, the voyage going on.
+        private static MenuDefinition Menu(string file, string id, string title, bool respawn = false) =>
             Asset<MenuDefinition>(Menus + file + ".asset", menu =>
             {
                 var serialized = new SerializedObject(menu);
                 serialized.FindProperty("_menuId").stringValue = id;
                 serialized.FindProperty("_title").stringValue = title;
                 var items = serialized.FindProperty("_items");
-                items.arraySize = 2;
-                SetItem(items.GetArrayElementAtIndex(0), "restart", "Restart Voyage", RestartVoyageMenuCommand.Id);
-                SetItem(items.GetArrayElementAtIndex(1), "quit", "Quit", QuitMenuCommand.Id);
+                int row = 0;
+                items.arraySize = respawn ? 3 : 2;
+                if (respawn) SetItem(items.GetArrayElementAtIndex(row++), "respawn", "Respawn", RespawnShipMenuCommand.Id);
+                SetItem(items.GetArrayElementAtIndex(row++), "restart", "Restart Voyage", RestartVoyageMenuCommand.Id);
+                SetItem(items.GetArrayElementAtIndex(row), "quit", "Quit", QuitMenuCommand.Id);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
             });
 

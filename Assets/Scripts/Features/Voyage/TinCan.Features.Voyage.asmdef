@@ -4,6 +4,7 @@
     "references": [
         "TinCan.Core.Domain",
         "TinCan.Gas",
+        "TinCan.Humanoid",
         "TinCan.Ship",
         "TinCan.UI",
         "Unity.Netcode.Runtime",

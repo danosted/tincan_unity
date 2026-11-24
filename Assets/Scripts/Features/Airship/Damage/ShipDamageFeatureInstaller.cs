@@ -1,4 +1,5 @@
 #nullable enable
+using TinCan.Core.Ship;
 using TinCan.Core.Ship.Sockets;
 using System.Collections.Generic;
 using TinCan.Core.Domain;
@@ -50,7 +51,8 @@ namespace TinCan.Features.Airship.Damage
 
             builder.RegisterInstance(config);
             builder.Register<ShipBreakageProcessor>(Lifetime.Transient);
-            builder.Register<ShipBreakageUseCase>(Lifetime.Singleton).AsSelf().As<IShipBreakage>().As<ISimulationTickable>().As<ISessionParticipant>();
+            builder.Register<ShipBreakageUseCase>(Lifetime.Singleton).AsSelf().As<IShipBreakage>().As<ISimulationTickable>().As<ISessionParticipant>()
+                .As<IShipRecovery>();
             builder.Register<ShipRepairUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
             builder.Register<ShipDamageSpotProcessor>(Lifetime.Transient);
             builder.Register<ShipDamagePointSpawnUseCase>(Lifetime.Singleton).As<ITickable>();

@@ -62,9 +62,10 @@ Shader "TinCan/Environment/Cloud Sea Swell"
 
         // A/B (temporary, 2026-11-24): how the soft tops are drawn. Layers: today's shells. Metre Edges: the shells, each
         // edge fading over Edge Metres of real distance. Fog Pass: no shells; the surface adds the fog a view ray crosses
-        // above it, up to Fog Height. The loser and this switch go once one is picked.
+        // above it, up to Fog Height. Off: the drawn sea is not drawn at all, to judge the mist near the camera alone
+        // (plan cloud-sea-fog.md, F4). The loser and this switch go once one is picked.
         [Header(AB Sea Look)]
-        [Enum(Layers, 0, Metre Edges, 1, Fog Pass, 2)] _SeaLook ("Sea Look", Float) = 0
+        [Enum(Layers, 0, Metre Edges, 1, Fog Pass, 2, Off, 3)] _SeaLook ("Sea Look", Float) = 0
         _EdgeMetres ("Edge Metres (Metre Edges)", Range(0.1, 30)) = 4
         _FogHeight ("Fog Height (m, Fog Pass)", Range(1, 60)) = 18
         _FogWind ("Fog Wind (m/s on the ground, Fog Pass)", Vector) = (2.5, 0.8, 0, 0)
@@ -297,6 +298,8 @@ Shader "TinCan/Environment/Cloud Sea Swell"
 
             half4 Frag(Varyings input, bool front : SV_IsFrontFace) : SV_Target
             {
+                if (_SeaLook > 2.5) discard; // Off: the mist alone (A/B)
+
                 // The underside (plan cloud-sea.md, step 3) only where the camera is below this point of the sea, so
                 // diving under shows a cloud ceiling, and from above nothing changes (no back of a hole's wall shows).
                 bool underside = !front;

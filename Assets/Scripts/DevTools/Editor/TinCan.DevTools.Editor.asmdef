@@ -7,6 +7,7 @@
         "TinCan.Entities",
         "TinCan.Features.CloudBoundary",
         "TinCan.Features.CloudFlight",
+        "TinCan.Features.CloudMist",
         "TinCan.Features.Atmosphere",
         "TinCan.Features.Storm",
         "TinCan.Features.CloudBoundary.Atmosphere",

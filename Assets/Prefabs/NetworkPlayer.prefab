@@ -112,7 +112,7 @@ MonoBehaviour:
   _deceleration: 200
   _jumpForce: 8
   _gravity: 20
-  _eyeHeight: 0.7
+  _eyeHeight: 0.85
   _interactableMask:
     serializedVersion: 2
     m_Bits: 4294967295

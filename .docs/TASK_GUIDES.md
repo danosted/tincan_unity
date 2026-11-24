@@ -65,7 +65,7 @@ used, a toggle, a station), and use the shared handler and, where one fits, the 
   `Assets/Interactions/IA_<Verb>.asset`, pick the handler from the dropdown, write its `Prompt` (the HUD line) and,
   for work that takes time, its `HoldSeconds`.
 - Prefab: add the target component and a collider at chest height (the interaction ray starts at the
-  player's eye, `HumanoidControllerView` Eye Height 0.7 m above the capsule-centre pivot, so about 1.7 m above the feet; 3 m range), assign the `IA_` asset.
+  player's eye, `HumanoidControllerView` Eye Height 0.85 m above the capsule-centre pivot, so about 1.85 m above the feet; 3 m range), assign the `IA_` asset.
 
 **Verify:** a test of your target's rule (copy `Features/Airship/Fuel/Tests/FuelFeedTests.cs`) or, for a new
 handler, a test with fake targets (copy `Core/Items/Tests/ItemInteractionHandlerTests.cs`); then Play, Start

@@ -21,10 +21,10 @@ them; keep the volumetric clouds.
 Each step leaves every scene and scenario working; compile, EditMode tests, and the affected scenarios after each.
 1. **The old cannon module.** Confirm nothing spawns `Cannon_Module` (code, fixtures, scenes); remove it from
    `DefaultNetworkPrefabs.asset` and delete the prefab.
-2. **Our own helm.** A Blender helm (wheel and stand) to the mesh contract and the art direction, built by a script in
-   `.tools/blender/`; `HelmAssetBuilder` wraps it instead of the pack's meshes. The wheel is a moving part (it turns
-   with the rudder), which fits the ship part motion work. The helm's footprint and seat pose stay as they are, so
-   designs and the helm scenarios hold.
+2. **Our own helm.** Done 2026-11-24: `.tools/blender/helm.py` builds an airship console sized for the crew body
+   (`Assets/Models/ShipParts/Helm/`, manifest beside it): a 1.1 m wheel (yaw) and two levers (throttle, pitch) as
+   moving parts for steering motion later. `HelmAssetBuilder` wraps it on the library materials; footprint and seat
+   pose unchanged.
 3. **A ship root without the pirate ship.** Make the ship root that `TestShip_Prefab` and `ModularShip_Prefab` derive
    from free of `StylShip_Unity` (strip the nested model, or rebase both on a new geometry-free root), keeping every
    component, the NetworkObject's hash rules (`ShipDesignsAssetBuilder.Rehash`) and the on-board volume. Check every

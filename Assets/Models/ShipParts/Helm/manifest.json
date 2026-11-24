@@ -1,0 +1,36 @@
+{
+  "scene": "helm",
+  "formats": [
+    "fbx"
+  ],
+  "source": ".tools/blender/helm.py (Blender 5.2, builds the model from nothing)",
+  "coordinate_system": "Y-up, -Z forward; one exported unit is one meter",
+  "asset_contract": {
+    "title": "Helm",
+    "summary": "An airship helm console: a wooden plinth and banded iron column carrying a brass gearbox with a 1.1 m spoked wheel on its aft face, a spirit-lit binnacle on top, and two levers on brass quadrants (throttle starboard, pitch port). Core part core.helm; the HelmStation fixture.",
+    "asset_type": "ship_part",
+    "placement": "Pivot at the centre of the deck under the column. The helmsman stands aft (-Z) facing the bow (+Z); the Seat is at (0, 1.05, -1.2). Height 1.74 m (the wheel's top handle), under the crew body's 1.85 m eye line.",
+    "nodes": [
+      {
+        "name": "Helm_Stand",
+        "role": "Static: plinth, column, gearbox and axle, binnacle, both lever brackets and quadrant plates."
+      },
+      {
+        "name": "Helm_Wheel",
+        "role": "Moving part (yaw). Pivot on its hub at (0, 1.15, -0.33); turns about local Z. 1.1 m across the handles."
+      },
+      {
+        "name": "Helm_ThrottleLever",
+        "role": "Moving part (throttle). Pivot on its axle at (0.42, 0.86, -0.05), starboard; swings about local X, upright at rest."
+      },
+      {
+        "name": "Helm_PitchLever",
+        "role": "Moving part (pitch). Pivot on its axle at (-0.42, 0.86, -0.05), port; swings about local X, upright at rest."
+      }
+    ],
+    "materials": "Helm_Wood, Helm_Brass, Helm_Iron, Helm_Paint, Helm_Spirit; HelmAssetBuilder swaps each for the shared ship material (M_ShipHull, M_ShipEngine, M_ShipIron, M_ShipPennant, M_ShipSpirit).",
+    "footprint_blocks": "Fits one block; the part keeps its 3 x 2 x 5 footprint so the designs and the helm scenarios hold.",
+    "collision": "One box round the console on the prefab (1.2 x 1.75 x 0.75 m): what Interact hits and what blocks walking. No mesh collider.",
+    "movable_parts": "All three are static for now; drive them from the helmsman's station axes (x throttle, y yaw, z pitch) for steering motion."
+  }
+}

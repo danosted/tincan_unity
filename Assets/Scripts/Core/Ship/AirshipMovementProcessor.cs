@@ -52,17 +52,22 @@ namespace TinCan.Core.Ship
             float currentSpeed,
             float maxForwardSpeed,
             float currentRoll,
+            float pitchAngle,
             float turnSpeed,
             float pitchSpeed,
             float angularAccel,
             float angularDecel,
             float maxBankAngle,
             float bankSpeed,
+            float pitchLevelSpeed,
             float deltaTime)
         {
             // Calculate local rotations (Degrees per second) for Pitch and Yaw
             float targetYawAmount = input.Yaw * turnSpeed;
-            float targetPitchAmount = input.Pitch * pitchSpeed;
+            // Let go of the pitch and the nose eases back to level (pitchAngle: degrees off level, above zero nose down;
+            // level is the horizon, or the sea's slope on the cloud), so a nose left a little down does not keep feeding
+            // the dive's momentum forever.
+            float targetPitchAmount = input.Pitch != 0 ? input.Pitch * pitchSpeed : -pitchAngle * pitchLevelSpeed;
 
             // Apply angular momentum (acceleration / deceleration)
             float yawRate = input.Yaw != 0 ? angularAccel : angularDecel;

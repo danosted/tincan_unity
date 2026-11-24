@@ -64,6 +64,45 @@ namespace TinCan.Features.CloudFlight.Tests
         }
 
         [Test]
+        public void OnTheSea_LevelIsItsSlope_AndRidingItNeitherBuildsNorSpendsSpeed()
+        {
+            float downhill = -6f;
+            float nose = Mathf.Sin(downhill * Mathf.Deg2Rad);
+
+            var riding = _flight.Evaluate(nose, InCloud, 15f, 0f, 0f, Step, _config, seaTilt: downhill);
+
+            Assert.That(riding.Level, Is.EqualTo(6f).Within(1e-4f), "level is the slope, nose down");
+            Assert.That(riding.MomentumChange, Is.EqualTo(0f).Within(1e-5f), "riding the swell is neutral");
+        }
+
+        [Test]
+        public void OnTheSea_ANoseLaggingTheSwellALittle_DoesNotCreepAStillShipOn()
+        {
+            // Engine off, nose level, the sea rising 2 degrees ahead: the nose has not caught up yet. No speed from that.
+            Assert.That(_flight.Evaluate(0f, InCloud, 0f, 0f, 0f, Step, _config, seaTilt: 2f).MomentumChange,
+                Is.EqualTo(0f).Within(1e-6f));
+        }
+
+        [Test]
+        public void OnTheSea_ANosePushedBelowItsSlope_StillCharges()
+        {
+            float nose = Mathf.Sin(-20f * Mathf.Deg2Rad);
+
+            Assert.That(_flight.Evaluate(nose, InCloud, 15f, 0f, 0f, Step, _config, seaTilt: -6f).MomentumChange,
+                Is.GreaterThan(0f));
+        }
+
+        [Test]
+        public void TheSeaSlopeFollowed_IsCapped_AndInOpenAirLevelIsTheHorizon()
+        {
+            var rim = _flight.Evaluate(0f, InCloud, 15f, 0f, 0f, Step, _config, seaTilt: -40f);
+            var air = _flight.Evaluate(0f, InAir, 15f, 0f, 0f, Step, _config, seaTilt: -6f);
+
+            Assert.That(rim.Level, Is.EqualTo(_config.MaxContourTilt).Within(1e-4f), "a hole's rim is a lip, not a slide");
+            Assert.That(air.Level, Is.EqualTo(0f));
+        }
+
+        [Test]
         public void TheReading_ShowsTheSpeedAndWhetherItIsCharging()
         {
             var diving = _flight.Read(-0.5f, InCloud, 15f, 5f, 0f, Step, _config);

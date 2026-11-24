@@ -89,14 +89,15 @@ namespace TinCan.Core.Ship
                 airship.DecelerationRate,
                 deltaTime);
 
-            // 2. The features' forces: momentum on top of the engine, a vertical push, a nose drop.
-            float vertical = 0f, noseDrop = 0f;
+            // 2. The features' forces: momentum on top of the engine, a vertical push, a nose drop, where level is.
+            float vertical = 0f, noseDrop = 0f, level = 0f;
             foreach (var source in _forces)
             {
                 var force = source.Evaluate(airship, state.CurrentSpeed, state.Momentum, deltaTime);
                 state.Momentum += force.MomentumChange;
                 vertical += force.Vertical;
                 noseDrop += force.NoseDrop;
+                level += force.Level;
             }
 
             // 3. Calculate Drift Velocity (the vertical push blends in the same way: the lerp toward forward + up).
@@ -114,12 +115,14 @@ namespace TinCan.Core.Ship
                 state.CurrentSpeed,
                 airship.MaxForwardSpeed,
                 airship.Transform.rotation.eulerAngles.z,
+                -Mathf.Asin(Mathf.Clamp(airship.Transform.forward.y, -1f, 1f)) * Mathf.Rad2Deg - level,
                 airship.TurnSpeed,
                 airship.PitchSpeed,
                 airship.AngularAcceleration,
                 airship.AngularDeceleration,
                 airship.MaxBankAngle,
                 airship.BankSpeed,
+                airship.PitchLevelSpeed,
                 deltaTime);
 
             // 5. Apply to view (the nose drop is applied, not kept: it never builds up in the pitch momentum).

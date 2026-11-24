@@ -34,6 +34,17 @@ namespace TinCan.Features.ShipDesigns.Tests
         {
             var shape = ShipFrameShape.From(ShipFrameTestDesigns.DeckFrame(ShipFrameFill.Open));
             Assert.That(ShipHullSurfaceProcessor.Surfaces(shape), Is.Empty);
+            Assert.That(ShipHullSurfaceProcessor.Keel(shape), Is.Null, "no planks, no keel");
+        }
+
+        [Test]
+        public void TheKeel_IsTheLowestPlankedCorner()
+        {
+            var shape = ShipFrameShape.From(ShipFrameTestDesigns.TwoStoryBox());
+            float lowest = shape.PlankFaces.SelectMany(f => f.Corners).Min(c => c.y);
+
+            Assert.That(ShipHullSurfaceProcessor.Keel(shape), Is.EqualTo(lowest));
+            Assert.That(ShipHullSurfaceProcessor.Surfaces(shape).Min(s => s.LocalPoint.y), Is.GreaterThanOrEqualTo(lowest));
         }
     }
 }

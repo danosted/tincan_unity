@@ -48,6 +48,8 @@ namespace TinCan.Features.Airship.Damage.Tests
 
             public IReadOnlyList<ShipHullSurface> SurfacesOf(Guid shipId) =>
                 Ships.TryGetValue(shipId, out var surfaces) ? surfaces : (IReadOnlyList<ShipHullSurface>)Array.Empty<ShipHullSurface>();
+
+            public float? KeelOf(Guid shipId) => null;
         }
 
         private sealed class Fittings : IMountedFittings

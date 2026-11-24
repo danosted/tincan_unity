@@ -107,6 +107,23 @@ the reward of the dive, not a mode you switch on.
   - soaring is earned: the height comes from speed built by diving, and fuel is a boost to climb or stretch a glide;
   - the glide always sinks slowly, so every flight comes back to the cloud (fuel can hold height a while);
   - the sky has a soft ceiling: high up the air thins and climbing gets weaker, so speed is not the only limit.
+- **Decided (developer, 2026-11-24):** let go of the pitch and the nose eases back to level (`PitchLevelSpeed` on
+  `AirshipControllerView`). Before, a nose left a few degrees down kept feeding the dive's momentum, and the ship flew
+  on at a steady speed with the throttle off. A dive is now held with the pitch input, and a ship's momentum fades
+  once the dive ends.
+- **Decided (developer, 2026-11-24): on the sea the ship rides the swell, and riding it is neutral.** On the cloud,
+  level is the sea's slope along the heading (read `ContourReach` ahead of and behind the ship, capped at
+  `MaxContourTilt` so a hole's rim is a lip; `CloudFlightUseCase.SeaTilt`), handed to the core as
+  `AirshipFlightForce.Level`. The dive and the climb are measured from that slope, so following the swell neither
+  builds nor spends momentum; only a nose pushed below it charges. In open air level stays the horizon. Within
+  `RideBand` (3°) of the slope no momentum is built or spent: the nose lags the rolling swell a little, and without
+  the band that lag counted as a small dive that nothing spent, so a still ship crept forward.
+- **Tuned (developer, 2026-11-24):** the pitch is left almost wholly to the helmsman ("very invasive"): the nose
+  levels barely at all (`PitchLevelSpeed` 0.03 on `Airship_Prefab`, was 0.2, first 0.5; it halves a tilt in about
+  23 s, so a nose left down feeds the dive for a while, to playtest), and the swell tips it by at most 2°
+  (`MaxContourTilt` 2, was 12; below `RideBand`, so riding the swell never builds or spends momentum). There is more cloud to dive in (`CloudBoundaryConfig`): a player goes overboard 40 m below the surface
+  (`CharacterResetDepth`, was 10, which caught the crew on deck mid-dive) and the ship's sinking emergency starts at
+  30 m (`EmergencyDepth`, was 5).
 - **Built as forces on today's movement** (approach A; decided by the developer, 2026-11-15): the core gets a hook the cloud feature
   fills (a speed change and a vertical push each tick), the way `IAirshipPilotInput` is a hook. Where the feature is
   not loaded (the test areas), ships fly exactly as today. A new movement model (mass, momentum, gravity from first
@@ -126,7 +143,8 @@ the reward of the dive, not a mode you switch on.
 playtested).** The feature `CloudFlight` (its own assembly, `Profile_FuelSandbox` and `Profile_Test_Look`) adds forces
 through the core hook `IAirshipFlightForces`; the core keeps each ship's momentum (speed along the nose beyond the
 engine's) and a collision takes it away with the engine's. A ship counts as in the cloud below its rest height
-(`CloudFlightConfig.RestHeight`, 25 m above the cloud surface: the hull on the drawn tops, the deck clear of the fog),
+(`CloudFlightConfig.RestHeight`, 25 m above the cloud surface: the hull on the drawn tops, the deck clear of the fog;
+since 2026-11-24 measured from the keel, 6 m, see below),
 so a ship nobody steers settles there. Tuned by numbers first: a 4 s dive at 30 deg launches about 100 m above the
 tops (scenario `SoarFromDive` asks 30 m from a gentler, unpowered dive). Not yet: the fuel boost, the camera and
 sound at speed, the shelves (step 2), and the existing cloud emergency still counts a deep dive (5 m below the
@@ -146,6 +164,11 @@ rest height, moving or not (`Buoyancy` m/s per metre, up to `MaxHeave`), so it r
 harder the deeper it goes; off the sea the pull builds (`Gravity`) to a slow fall at speed (`GlideFall`) or a fast one
 stalled (`StallFall`), and the cloud takes the fall away on return (`CloudCatch`). This replaces the constant glide
 sink and the slow ship's rise.
+Then (2026-11-24, the developer: "the airship floats quite a bit above the cloud sea"): the rest height was tuned for
+the old `Airship_Prefab`, whose hull hangs 11.5 m below its origin; the designed ships hang 0.5 to 3.5 m, so the
+Galleon's keel rode about 20 m over the tops. The rest height is now measured from the keel (6 m): the hull's lowest
+planked corner, from the core contract `IShipHullSurfaces.KeelOf` (the Ship Designs feature), so every design sits
+alike. A ship without a designed hull still measures from its origin.
 
 ### Depth bands
 Band edges are measured from the local surface, so they move with the swell.

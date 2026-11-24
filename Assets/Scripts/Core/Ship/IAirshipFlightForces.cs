@@ -18,11 +18,12 @@ namespace TinCan.Core.Ship
     /// <summary>What one <see cref="IAirshipFlightForces"/> source adds this tick.</summary>
     public readonly struct AirshipFlightForce
     {
-        public AirshipFlightForce(float momentumChange, float vertical, float noseDrop)
+        public AirshipFlightForce(float momentumChange, float vertical, float noseDrop, float level = 0f)
         {
             MomentumChange = momentumChange;
             Vertical = vertical;
             NoseDrop = noseDrop;
+            Level = level;
         }
 
         /// <summary>Change of the momentum this tick, m/s.</summary>
@@ -33,5 +34,11 @@ namespace TinCan.Core.Ship
 
         /// <summary>Pitch toward nose down, degrees per second (a stall).</summary>
         public float NoseDrop { get; }
+
+        /// <summary>
+        /// Where level is for the nose, degrees (above zero nose down; zero: the horizon): with no pitch input the nose
+        /// eases there. The cloud sets it to the sea's slope, so a ship on the sea rides its swell.
+        /// </summary>
+        public float Level { get; }
     }
 }

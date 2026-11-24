@@ -92,12 +92,14 @@ namespace TinCan.Core.Ship.Tests
                 currentSpeed: 5f,
                 maxForwardSpeed: 10f,
                 currentRoll: 0f,
+                pitchAngle: 0f,
                 turnSpeed: 30f,
                 pitchSpeed: 20f,
                 angularAccel: 10f,
                 angularDecel: 5f,
                 maxBankAngle: 20f,
                 bankSpeed: 1f,
+                pitchLevelSpeed: 0.5f,
                 deltaTime: 0.1f);
 
             // targetYaw = 30, accel rate 10 applies since input.Yaw != 0: MoveTowards(0, 30, 1) = 1
@@ -115,12 +117,14 @@ namespace TinCan.Core.Ship.Tests
                 currentSpeed: 10f,
                 maxForwardSpeed: 10f,
                 currentRoll: 0f,
+                pitchAngle: 0f,
                 turnSpeed: 30f,
                 pitchSpeed: 20f,
                 angularAccel: 10f,
                 angularDecel: 5f,
                 maxBankAngle: 20f,
                 bankSpeed: 1f,
+                pitchLevelSpeed: 0.5f,
                 deltaTime: 0.1f);
 
             // targetBankAngle = -1 * 20 * 1(speedFactor) = -20; rollDifference = -20 - 0 = -20; rollVel = -20 * 1
@@ -139,16 +143,53 @@ namespace TinCan.Core.Ship.Tests
                 currentSpeed: 0f,
                 maxForwardSpeed: 0f,
                 currentRoll: 0f,
+                pitchAngle: 0f,
                 turnSpeed: 45f,
                 pitchSpeed: 30f,
                 angularAccel: 15f,
                 angularDecel: 20f,
                 maxBankAngle: 15f,
                 bankSpeed: 2f,
+                pitchLevelSpeed: 0.5f,
                 deltaTime: 0.1f);
 
             Assert.That(float.IsNaN(result.x) || float.IsNaN(result.y) || float.IsNaN(result.z), Is.False);
             Assert.That(result.z, Is.EqualTo(0f).Within(0.0001f));
         }
+
+        [Test]
+        public void CalculateAngularVelocity_NoPitchInput_NoseEasesBackToLevel()
+        {
+            // Nose 10 degrees down, let go: the target pitch rate is -10 * 0.5 = -5 (nose up), reached at decel 5 * 0.1.
+            Vector3 result = Pitch(new AirshipInputState(), pitchAngle: 10f);
+
+            Assert.That(result.x, Is.EqualTo(-0.5f).Within(0.0001f));
+        }
+
+        [Test]
+        public void CalculateAngularVelocity_PitchInput_OverridesTheLevelling()
+        {
+            // Held pitch input steers as before: target 1 * 20, accel 10 * 0.1 = 1, whatever the nose's angle.
+            Vector3 result = Pitch(new AirshipInputState { Pitch = 1f }, pitchAngle: 10f);
+
+            Assert.That(result.x, Is.EqualTo(1f).Within(0.0001f));
+        }
+
+        private Vector3 Pitch(AirshipInputState input, float pitchAngle) =>
+            _processor.CalculateAngularVelocity(
+                currentAngularVelocity: Vector3.zero,
+                input: input,
+                currentSpeed: 5f,
+                maxForwardSpeed: 10f,
+                currentRoll: 0f,
+                pitchAngle: pitchAngle,
+                turnSpeed: 30f,
+                pitchSpeed: 20f,
+                angularAccel: 10f,
+                angularDecel: 5f,
+                maxBankAngle: 20f,
+                bankSpeed: 1f,
+                pitchLevelSpeed: 0.5f,
+                deltaTime: 0.1f);
     }
 }

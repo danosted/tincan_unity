@@ -25,6 +25,8 @@ namespace TinCan.Core.Ship
         [SerializeField] private float _pitchSpeed = 30f;
         [SerializeField] private float _maxBankAngle = 15f;
         [SerializeField] private float _bankSpeed = 2f;
+        [Tooltip("How fast the nose eases back to level with no pitch input, per second of the angle off level.")]
+        [SerializeField, Min(0f)] private float _pitchLevelSpeed = 0.2f;
 
         [Header("Visual Hierarchy")]
         [SerializeField] private Transform _visualRoot;
@@ -50,6 +52,7 @@ namespace TinCan.Core.Ship
         public float PitchSpeed => _pitchSpeed;
         public float MaxBankAngle => _maxBankAngle;
         public float BankSpeed => _bankSpeed;
+        public float PitchLevelSpeed => _pitchLevelSpeed;
 
         // IMovingGround data
         public Vector3 Velocity => _velocity;

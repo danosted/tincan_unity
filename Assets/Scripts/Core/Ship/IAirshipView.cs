@@ -23,6 +23,8 @@ namespace TinCan.Core.Ship
         float PitchSpeed { get; }
         float MaxBankAngle { get; }
         float BankSpeed { get; }
+        /// <summary>How fast the nose eases back to level with no pitch input, per second (of the angle off level).</summary>
+        float PitchLevelSpeed { get; }
 
         /// <summary>
         /// Apply the calculated physical velocities to the view.

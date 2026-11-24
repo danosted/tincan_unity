@@ -11,13 +11,13 @@ namespace TinCan.Core.Settings
 {
     /// <summary>
     /// Player settings (core: loads in every scene). Registers <see cref="IPlayerSettings"/> over the core settings listed
-    /// here plus those the loaded features contribute. With <c>-defaultsettings</c> (every harness run) nothing is read or
-    /// saved. See .docs/plans/player-settings.md.
+    /// here plus those the loaded features contribute, and applies the view distance (<see cref="ViewDistancePresenter"/>).
+    /// With <c>-defaultsettings</c> (every harness run) nothing is read or saved. See .docs/plans/player-settings.md.
     /// </summary>
     [CreateAssetMenu(fileName = "SettingsFeatureInstaller", menuName = "TinCan/Features/Settings Feature Installer")]
     public class SettingsFeatureInstaller : FeatureInstaller
     {
-        [Tooltip("Settings every scene has (Assets/Settings/PlayerSettings): look sensitivity, invert Y.")]
+        [Tooltip("Settings every scene has (Assets/Settings/PlayerSettings): look sensitivity, invert Y, view distance.")]
         [SerializeField] private List<SettingDefinition> _settings = new();
 
         public override int Order => -20;
@@ -33,6 +33,7 @@ namespace TinCan.Core.Settings
                 builder.Register<PlayerPrefsSettingsStore>(Lifetime.Singleton).As<ISettingsStore>();
 
             builder.Register<PlayerSettingsUseCase>(Lifetime.Singleton).As<IPlayerSettings>().As<ITickable>();
+            builder.Register<ViewDistancePresenter>(Lifetime.Singleton).As<ITickable>();
         }
     }
 }

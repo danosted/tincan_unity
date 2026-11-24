@@ -31,6 +31,14 @@ MonoBehaviour:
     DefaultValue: 
     SettingsGroup: 0
     RowSource: 
+  - ItemId: graphics
+    Label: Graphics
+    Kind: 3
+    CommandId: 
+    Submenu: {fileID: 11400000, guid: 71a1052def9a73442a2046efcc90922b, type: 2}
+    DefaultValue: 
+    SettingsGroup: 0
+    RowSource: 
   - ItemId: audio
     Label: Audio
     Kind: 3

@@ -1648,6 +1648,11 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
         private static readonly int cameraPositionPS = Shader.PropertyToID("_CameraPositionPS");
         private static readonly int volumetricCloudsShadowOriginToggle = Shader.PropertyToID("_VolumetricCloudsShadowOriginToggle");
         private static readonly int volumetricCloudsShadowScale = Shader.PropertyToID("_VolumetricCloudsShadowScale");
+
+        // TinCan: the sun's height (sine of its elevation) where the cloud shadows are gone (about 6 degrees) and whole
+        // (about 24 degrees); see the fade in RecordRenderGraph.
+        private const float SunLowFade = 0.1f;
+        private const float SunHighFade = 0.4f;
         //private static readonly int shadowPlaneOffset = Shader.PropertyToID("_ShadowPlaneOffset");
 
         private const string _VolumetricCloudsShadowTexture = "_VolumetricCloudsShadowTexture";
@@ -1935,7 +1940,10 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
             }
 
             // Check if we need shadow cookie
-            bool hasVolumetricCloudsShadows = targetLight != null && targetLight.isActiveAndEnabled && targetLight.intensity != 0.0f;
+            // TinCan: no longer off when the light's intensity reaches 0. The day cycle (AtmospherePresenter) dims the sun
+            // to 0 at dusk, and the vendored check dropped the shadows in one frame then and brought them back at dawn,
+            // leaving the last cookie standing in between. The shadows fade with the sun's height instead (below).
+            bool hasVolumetricCloudsShadows = targetLight != null && targetLight.isActiveAndEnabled;
             if (!hasVolumetricCloudsShadows)
             {
                 ResetShadowCookie();
@@ -2013,8 +2021,14 @@ public class VolumetricCloudsURP : ScriptableRendererFeature
                 // Update material properties
                 cloudsMaterial.SetFloat(shadowCookieResolution, shadowResolution);
                 //cloudsMaterial.SetFloat(shadowPlaneOffset, cloudsVolume.shadowPlaneHeightOffset.value);
-                cloudsMaterial.SetFloat(shadowIntensity, cloudsVolume.shadowOpacity.value);
-                cloudsMaterial.SetFloat(shadowOpacityFallback, 1.0f - cloudsVolume.shadowOpacityFallback.value);
+                // TinCan: the cloud shadows fade out as the sun sinks: gone below SunLowFade, whole above SunHighFade. A
+                // low sun lays each shadow texel along a long strip of ground, so the sun's slow turn swept the shadows
+                // across the world and they flickered and tore at dawn and dusk; in the evening light, clouds cast no
+                // hard shadows anyway. At 0 the cookie is all lit, so nothing switches.
+                float sunHeight = -targetLight.transform.forward.y;
+                float sunFade = Mathf.SmoothStep(0.0f, 1.0f, Mathf.InverseLerp(SunLowFade, SunHighFade, sunHeight));
+                cloudsMaterial.SetFloat(shadowIntensity, cloudsVolume.shadowOpacity.value * sunFade);
+                cloudsMaterial.SetFloat(shadowOpacityFallback, 1.0f - cloudsVolume.shadowOpacityFallback.value * sunFade);
                 cloudsMaterial.SetVector(cloudShadowSunOrigin, float4(c0 - planetCenterPos, 1.0f));
                 cloudsMaterial.SetVector(cloudShadowSunRight, float4(dirX, 0.0f));
                 cloudsMaterial.SetVector(cloudShadowSunUp, float4(dirY, 0.0f));

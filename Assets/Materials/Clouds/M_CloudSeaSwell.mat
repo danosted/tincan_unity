@@ -32,9 +32,13 @@ Material:
     - _BillowScale: 14
     - _BillowStrength: 0.4
     - _EdgeFade: 0.2
+    - _EdgeMetres: 0.1
     - _FluffMorph: 0.03
     - _FluffScale: 22
     - _FluffSoftness: 0.3
+    - _FogCoverage: 0.55
+    - _FogDepth: 12
+    - _FogHeight: 15
     - _HoleClear: 0.55
     - _HoleSink: 60
     - _HollowDarken: 0.55
@@ -48,6 +52,8 @@ Material:
     - _MottleScale: 220
     - _Rim: 0.35
     - _RimPower: 3
+    - _SeaLook: 2
+    - _SeeThrough: 0.5
     - _ShellCount: 0
     - _ShellFade: 500
     - _ShellHalf: 600
@@ -60,9 +66,12 @@ Material:
     - _Translucency: 0.6
     - _TroughDarken: 0.45
     - _VoidDarken: 0.85
+    - _WispStrength: 1.8
     - _Wrap: 0.3
     - _ZWrite: 1
     m_Colors:
+    - _DeepColour: {r: 0.62, g: 0.7, b: 0.85, a: 1}
+    - _FogWind: {r: 2.5, g: 0.8, b: 0, a: 0}
     - _HollowColour: {r: 0.6, g: 0.6, b: 0.76, a: 1}
     - _LitColour: {r: 0.984, g: 0.965, b: 0.925, a: 1}
     - _ShadowColour: {r: 0.794, g: 0.767, b: 0.767, a: 1}

@@ -58,7 +58,8 @@ namespace TinCan.Features.CloudBoundary
             // The surface fades out by real distance before the grid's edge and before the camera's flat far plane,
             // so turning the camera never cuts it.
             float fadeOut = FadeOut(_config.GridSize * 0.5f, camera.farClipPlane);
-            CloudSeaShaderGlobals.Apply(_time.Time, _boundary.BaseAltitude, _boundary.Swell, _holes.ShapesNow, fadeOut);
+            CloudSeaShaderGlobals.Apply(_time.Time, _boundary.BaseAltitude, _boundary.Swell, _holes.ShapesNow,
+                _config.Web(_boundary.WorldSeed), fadeOut);
             CloudSeaShaderGlobals.ApplyLook(_material);
         }
 

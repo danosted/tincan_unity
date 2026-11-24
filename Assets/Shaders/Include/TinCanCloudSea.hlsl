@@ -14,6 +14,8 @@ float4 _TinCanCloudHoles[TINCAN_CLOUD_MAX_HOLES]; // xy centre, z radius now, w 
 float _TinCanCloudHoleOpenness[TINCAN_CLOUD_MAX_HOLES];
 float4 _TinCanCloudHoleReach[TINCAN_CLOUD_MAX_HOLES]; // xy from the centre to one end of a rift (zero: a round hole), z how ragged its edge is
 float _TinCanCloudHoleCount;
+float4 _TinCanCloudWeb;       // x cell size, y rift width, z rim, w ragged (CloudWeb)
+float4 _TinCanCloudWebMotion; // x open share (0: no web), y drift per hour, zw seed offset
 
 // The swell at xz: -1..1 times the amplitude. Three long, slow waves at different angles.
 float TinCanCloudSwellAt(float2 xz, float time, float amplitude, float wavelength, float speed, float2 offset)
@@ -71,15 +73,96 @@ float TinCanCloudHoleCutOne(float2 xz, float4 hole, float openness, float3 reach
     return openness * inside;
 }
 
+// The web of rifts (plan .docs/plans/cloud-sea-fog.md, F3): CloudSeaFormula.WebCut, which the game reads. Plain hashes,
+// no sin in them, so C# and the GPU agree.
+float2 TinCanCloudWebHash(float2 p)
+{
+    float3 q = frac(float3(p.xyx) * float3(0.1031, 0.1030, 0.0973));
+    q += dot(q, q.yzx + 33.33);
+    return frac((q.xx + q.yz) * q.zy);
+}
+
+float TinCanCloudWebNoise(float2 p)
+{
+    float2 cell = floor(p);
+    float2 f = frac(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return lerp(lerp(TinCanCloudWebHash(cell).x, TinCanCloudWebHash(cell + float2(1, 0)).x, f.x),
+                lerp(TinCanCloudWebHash(cell + float2(0, 1)).x, TinCanCloudWebHash(cell + 1.0).x, f.x), f.y);
+}
+
+// How far xz is inside a rift of the web, 0..1. The sea is cut into cells about cell metres across, like the plates of
+// a cracked crust; their borders, made ragged, are the rifts, width metres wide (wandering along them), rolling shut
+// over rim metres. Not every border is open: each one opens and closes on its own slow cycle, about openShare of them
+// open at a time, so neighbouring cells join into larger cloud islands. The cells' centres drift too; drift is in
+// cycles per hour, so the web changes over many minutes.
+float TinCanCloudWebCutAt(float2 xz, float time, float cell, float width, float rim, float ragged, float openShare,
+    float drift, float2 offset)
+{
+    if (openShare <= 0.0 || cell <= 1.0) return 0.0;
+
+    float2 p = (xz + offset) / cell;
+    float2 warp = float2(TinCanCloudWebNoise(p * 1.7 + 3.1), TinCanCloudWebNoise(p * 1.7 + 11.7)) - 0.5;
+    warp += 0.5 * (float2(TinCanCloudWebNoise(p * 4.3 + 5.3), TinCanCloudWebNoise(p * 4.3 + 19.1)) - 0.5);
+    p += warp * ragged;
+
+    float turn = time * drift * (2.0 * TINCAN_PI / 3600.0);
+    float2 base = floor(p);
+    float2 sites[9];
+    float2 ids[9];
+    int nearest = 0;
+    float nearestSq = 1e9;
+    for (int k = 0; k < 9; k++)
+    {
+        float2 id = base + float2(k % 3 - 1, k / 3 - 1);
+        float2 h = TinCanCloudWebHash(id);
+        ids[k] = id;
+        sites[k] = id + 0.5 + 0.38 * float2(sin(turn + 6.2832 * h.x), cos(turn * 0.83 + 6.2832 * h.y));
+        float d = dot(sites[k] - p, sites[k] - p);
+        if (d < nearestSq)
+        {
+            nearestSq = d;
+            nearest = k;
+        }
+    }
+
+    // Every border of the cell this point is in: metres to it (exact for a straight border), and whether it is open on
+    // its own slow cycle (the same for both cells that share it). The strongest cut wins, so where three cells meet
+    // nothing switches from one border to another.
+    float halfWidth = 0.5 * width * (0.5 + TinCanCloudWebNoise(p * 3.0 + 7.7));
+    float2 own = sites[nearest];
+    float2 ownId = ids[nearest];
+    float cut = 0.0;
+    for (int n = 0; n < 9; n++)
+    {
+        if (n == nearest) continue;
+        float2 other = sites[n];
+        float border = (dot(other - p, other - p) - nearestSq) / max(2.0 * length(other - own), 1e-4) * cell;
+        float key = TinCanCloudWebHash(ownId + ids[n] + 0.37 * abs(ownId - ids[n])).x;
+        float cycle = 0.5 + 0.5 * sin(turn * 0.5 + 6.2832 * key);
+        float open = smoothstep(1.0 - openShare - 0.12, 1.0 - openShare + 0.12, cycle);
+        cut = max(cut, open * (1.0 - smoothstep(halfWidth, halfWidth + max(rim, 1e-3), border)));
+    }
+
+    return cut;
+}
+
 float TinCanCloudSwell(float2 xz)
 {
     return TinCanCloudSwellAt(xz, _TinCanCloudSea.x, _TinCanCloudSea.z, _TinCanCloudSea.w, _TinCanCloudSwell.x, _TinCanCloudSwell.yz);
 }
 
-// How far xz is inside the holes now, 0..1.
+// How far xz is inside a rift of the web now, 0..1.
+float TinCanCloudWebCut(float2 xz)
+{
+    return TinCanCloudWebCutAt(xz, _TinCanCloudSea.x, _TinCanCloudWeb.x, _TinCanCloudWeb.y, _TinCanCloudWeb.z,
+        _TinCanCloudWeb.w, _TinCanCloudWebMotion.x, _TinCanCloudWebMotion.y, _TinCanCloudWebMotion.zw);
+}
+
+// How far xz is inside the holes or the web's rifts now, 0..1 (CloudSurfaceQuery's cut).
 float TinCanCloudHoleCut(float2 xz)
 {
-    float cut = 0.0;
+    float cut = TinCanCloudWebCut(xz);
     int count = (int)_TinCanCloudHoleCount;
     for (int i = 0; i < TINCAN_CLOUD_MAX_HOLES; i++)
     {

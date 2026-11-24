@@ -38,9 +38,10 @@ change the plan's status line, then run `.\.tools\plans.ps1`.
 - [Targeting subsystem (cross-cutting), first slice: repair](targeting-subsystem.md) — (2026-09-27)
 - [UI and menus: layers, one owner per screen, and tests for what is drawn](ui-and-menus.md) — (2026-10-31); U0-U5 done 2026-11-01 (see Progress); first in [core-systems-roadmap.md](core-systems-roadmap.md)
 
-## Draft (15)
+## Draft (16)
 
 - [The art pipeline: make the look a system, keep taste a quick choice](artstyle-pipeline-breakdown.md) — (2026-11-01)
+- [Cloud sea as fog: airy, alive, sailable](cloud-sea-fog.md)
 - [Cloud sea: sailing on and in the clouds](cloud-sea.md)
 - [Designed events (new feature; replaces the deleted coordinated events)](designed-events.md) — (parked 2026-09-28)
 - [Encounter zones: challenges that unfold in the world, entered and left by sailing](encounters.md) — (2026-11-22)

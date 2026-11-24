@@ -50,6 +50,30 @@ namespace TinCan.Features.CloudBoundary
         [Tooltip("How much a rift's width wanders along it: 0 straight edges, 1 from a quarter to twice its width.")]
         [SerializeField] private Vector2 _riftRagged = new(0.4f, 0.8f);
 
+        [Header("Web of rifts (cuts the sea into cloud islands; plan .docs/plans/cloud-sea-fog.md, F3)")]
+        [Tooltip("The share of cell borders open as rifts at a time. 0 turns the web off.")]
+        [SerializeField, Range(0f, 1f)] private float _webOpenShare;
+        [Tooltip("How far across a cell (a cloud island) is, in metres.")]
+        [SerializeField, Range(100f, 4000f)] private float _webCell = 900f;
+        [Tooltip("A rift's width in metres; it wanders between half and one and a half times this along the rift.")]
+        [SerializeField, Range(5f, 400f)] private float _webWidth = 60f;
+        [Tooltip("Metres over which a rift's edge rolls shut.")]
+        [SerializeField, Range(1f, 200f)] private float _webRim = 30f;
+        [Tooltip("0: straight borders like cracked glass; above 1 they wind like rivers.")]
+        [SerializeField, Range(0f, 1.5f)] private float _webRagged = 0.6f;
+        [Tooltip("How often a rift opens or closes and the cells shift, in cycles per hour.")]
+        [SerializeField, Range(0f, 6f)] private float _webDrift = 1f;
+
+        /// <summary>The web of rifts for a world seed: placed by the swell's offset, kept within 20 km so the shader and
+        /// the game work on small numbers and round alike.</summary>
+        public CloudWeb Web(int worldSeed)
+        {
+            Vector2 offset = CloudSwell.OffsetOf(worldSeed);
+            return new CloudWeb(_webCell, _webWidth, _webRim, _webRagged, _webOpenShare, _webDrift,
+                new Vector2(offset.x % 20000f, offset.y % 20000f));
+        }
+
+        public float WebOpenShare { get => _webOpenShare; set => _webOpenShare = value; }
         public float GridSize { get => _gridSize; set => _gridSize = value; }
         public float GridStep { get => _gridStep; set => _gridStep = value; }
         public int Shells { get => _shells; set => _shells = value; }

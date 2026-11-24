@@ -13,6 +13,7 @@ namespace TinCan.DevTools.Scenarios
     /// Command: OpenScenarioHole (server: opens a hole of a radius no ambient hole has, beside the first ship). Probe:
     /// ScenarioHoleOpen: on this peer that hole is fully open, the cloud surface at its centre has dropped by the hole
     /// depth below the swell there, and, where this peer has a view, the sea shader has been handed the holes.
+    /// WebRiftIsReal: the web of rifts is in the game's surface on this peer (<c>CheckWeb</c>).
     /// </summary>
     public sealed class CloudSeaScenarioLibrary : IScenarioLibrary
     {
@@ -26,9 +27,10 @@ namespace TinCan.DevTools.Scenarios
         private readonly IActorRegistry _actors;
         private readonly ITimeService _time;
         private readonly ILocalViewCamera _view;
+        private readonly IReadOnlyList<CloudSeaConfig> _sea;
 
         public CloudSeaScenarioLibrary(ICloudHoles holes, ICloudSurfaceQuery surface, CloudBoundaryConfig boundary,
-            IActorRegistry actors, ITimeService time, ILocalViewCamera view)
+            IActorRegistry actors, ITimeService time, ILocalViewCamera view, IReadOnlyList<CloudSeaConfig> sea)
         {
             _holes = holes;
             _surface = surface;
@@ -36,6 +38,7 @@ namespace TinCan.DevTools.Scenarios
             _actors = actors;
             _time = time;
             _view = view;
+            _sea = sea;
         }
 
         public IEnumerable<ScenarioCommand> Commands => new[]
@@ -46,7 +49,48 @@ namespace TinCan.DevTools.Scenarios
         public IEnumerable<ScenarioProbe> Probes => new[]
         {
             new ScenarioProbe("ScenarioHoleOpen", _ => CheckOpen()),
+            new ScenarioProbe("WebRiftIsReal", _ => CheckWeb()),
         };
+
+        // The web of rifts (plan .docs/plans/cloud-sea-fog.md, F3) is the game's surface on this peer: near the first
+        // ship, a point deep in a rift has the surface down by the hole depth, a point on a cloud island has it at the
+        // swell, and where this peer has a view the sea shader has the web.
+        private ScenarioCheck CheckWeb()
+        {
+            if (_sea.Count == 0) return ScenarioCheck.Fail("no Cloud Sea feature");
+            CloudWeb web = _sea[0].Web(_boundary.WorldSeed);
+            if (!web.IsOn) return ScenarioCheck.Fail("the web is off (Open Share 0)");
+
+            IAirshipView? ship = _actors.GetActors<IAirshipView>().FirstOrDefault(airship => airship.Transform != null);
+            if (ship == null) return ScenarioCheck.Fail("no ship");
+
+            Vector3 at = ship.Transform.position;
+            float now = _time.Time;
+            Vector2? rift = null, cloud = null;
+            for (int i = 0; i < 160 * 160 && (rift == null || cloud == null); i++)
+            {
+                float x = at.x + (i % 160 - 80) * 25f, z = at.z + (i / 160 - 80) * 25f;
+                float cut = CloudSeaFormula.WebCut(x, z, now, web);
+                if (cut > 0.999f) rift ??= new Vector2(x, z);
+                else if (cut < 0.001f && CloudSeaFormula.HoleCut(x, z, _holes.ShapesNow) < 0.001f) cloud ??= new Vector2(x, z);
+            }
+
+            if (rift == null) return ScenarioCheck.Fail("no rift within 2 km of the ship");
+            if (cloud == null) return ScenarioCheck.Fail("no cloud island within 2 km of the ship");
+
+            float Swell(Vector2 p) => _boundary.BaseAltitude + CloudSeaFormula.Swell(p.x, p.y, now, _boundary.Swell);
+            float inRift = _surface.GetSurfaceHeight(rift.Value.x, rift.Value.y);
+            float onCloud = _surface.GetSurfaceHeight(cloud.Value.x, cloud.Value.y);
+            if (Mathf.Abs(inRift - (Swell(rift.Value) - _boundary.HoleDepth)) > 1f)
+                return ScenarioCheck.Fail($"surface in the rift at {rift} is {inRift:0.0}, not {Swell(rift.Value) - _boundary.HoleDepth:0.0}");
+            if (Mathf.Abs(onCloud - Swell(cloud.Value)) > 1f)
+                return ScenarioCheck.Fail($"surface on the cloud at {cloud} is {onCloud:0.0}, not {Swell(cloud.Value):0.0}");
+
+            if (_view.Camera != null && Shader.GetGlobalVector("_TinCanCloudWebMotion").x <= 0f)
+                return ScenarioCheck.Fail("the sea shader has no web");
+
+            return ScenarioCheck.Pass($"rift at {rift} ({inRift:0}), cloud at {cloud} ({onCloud:0})");
+        }
 
         private ScenarioCheck Open()
         {

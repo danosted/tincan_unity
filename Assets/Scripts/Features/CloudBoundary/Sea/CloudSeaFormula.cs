@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -87,6 +88,83 @@ namespace TinCan.Features.CloudBoundary
                 + 0.2f * Mathf.Sin(along * 41.3f + phase * 7f);
             return Mathf.Max(1f + ragged * wave, 0.25f);
         }
+
+        /// <summary>
+        /// How far (x, z) is inside a rift of the web at <paramref name="time"/> on the shared clock, 0..1
+        /// (TinCanCloudWebCutAt in the shader). The sea is cut into cells; their borders, made ragged, are the rifts;
+        /// each border opens and closes on its own slow cycle, so cells join into larger cloud islands.
+        /// </summary>
+        public static float WebCut(float x, float z, float time, in CloudWeb web)
+        {
+            if (!web.IsOn) return 0f;
+
+            Vector2 p = (new Vector2(x, z) + web.Offset) / web.Cell;
+            Vector2 warp = new Vector2(WebNoise(p * 1.7f + new Vector2(3.1f, 3.1f)), WebNoise(p * 1.7f + new Vector2(11.7f, 11.7f))) - new Vector2(0.5f, 0.5f);
+            warp += 0.5f * (new Vector2(WebNoise(p * 4.3f + new Vector2(5.3f, 5.3f)), WebNoise(p * 4.3f + new Vector2(19.1f, 19.1f))) - new Vector2(0.5f, 0.5f));
+            p += warp * web.Ragged;
+
+            float turn = time * web.Drift * (2f * Mathf.PI / 3600f);
+            var basis = new Vector2(Mathf.Floor(p.x), Mathf.Floor(p.y));
+            Span<Vector2> sites = stackalloc Vector2[9];
+            Span<Vector2> ids = stackalloc Vector2[9];
+            int nearest = 0;
+            float nearestSq = 1e9f;
+            for (int k = 0; k < 9; k++)
+            {
+                Vector2 id = basis + new Vector2(k % 3 - 1, k / 3 - 1);
+                Vector2 h = WebHash(id);
+                ids[k] = id;
+                sites[k] = id + new Vector2(0.5f, 0.5f)
+                    + 0.38f * new Vector2(Mathf.Sin(turn + 6.2832f * h.x), Mathf.Cos(turn * 0.83f + 6.2832f * h.y));
+                float d = (sites[k] - p).sqrMagnitude;
+                if (d < nearestSq)
+                {
+                    nearestSq = d;
+                    nearest = k;
+                }
+            }
+
+            // Every border of the cell the point is in, the strongest cut winning, so where three cells meet nothing
+            // switches from one border to another.
+            float halfWidth = 0.5f * web.Width * (0.5f + WebNoise(p * 3f + new Vector2(7.7f, 7.7f)));
+            Vector2 own = sites[nearest];
+            Vector2 ownId = ids[nearest];
+            float cut = 0f;
+            for (int n = 0; n < 9; n++)
+            {
+                if (n == nearest) continue;
+                Vector2 other = sites[n];
+                float border = ((other - p).sqrMagnitude - nearestSq) / Mathf.Max(2f * (other - own).magnitude, 1e-4f) * web.Cell;
+                Vector2 pair = ownId + ids[n] + 0.37f * new Vector2(Mathf.Abs(ownId.x - ids[n].x), Mathf.Abs(ownId.y - ids[n].y));
+                float cycle = 0.5f + 0.5f * Mathf.Sin(turn * 0.5f + 6.2832f * WebHash(pair).x);
+                float open = SmoothStep(1f - web.OpenShare - 0.12f, 1f - web.OpenShare + 0.12f, cycle);
+                cut = Mathf.Max(cut, open * (1f - SmoothStep(halfWidth, halfWidth + Mathf.Max(web.Rim, 1e-3f), border)));
+            }
+
+            return cut;
+        }
+
+        // TinCanCloudWebHash: a hash with no sin in it, so C# and the GPU agree.
+        private static Vector2 WebHash(Vector2 p)
+        {
+            var q = new Vector3(Frac(p.x * 0.1031f), Frac(p.y * 0.1030f), Frac(p.x * 0.0973f));
+            float d = q.x * (q.y + 33.33f) + q.y * (q.z + 33.33f) + q.z * (q.x + 33.33f);
+            q += new Vector3(d, d, d);
+            return new Vector2(Frac((q.x + q.y) * q.z), Frac((q.x + q.z) * q.y));
+        }
+
+        // TinCanCloudWebNoise: smooth value noise on WebHash.
+        private static float WebNoise(Vector2 p)
+        {
+            var cell = new Vector2(Mathf.Floor(p.x), Mathf.Floor(p.y));
+            Vector2 f = p - cell;
+            f = new Vector2(f.x * f.x * (3f - 2f * f.x), f.y * f.y * (3f - 2f * f.y));
+            float a = Mathf.Lerp(WebHash(cell).x, WebHash(cell + new Vector2(1f, 0f)).x, f.x);
+            float b = Mathf.Lerp(WebHash(cell + new Vector2(0f, 1f)).x, WebHash(cell + Vector2.one).x, f.x);
+            return Mathf.Lerp(a, b, f.y);
+        }
+
+        private static float Frac(float value) => value - Mathf.Floor(value);
 
         /// <summary>The surface height: the base, the swell, and the drop into the holes.</summary>
         public static float Height(float x, float z, float time, float baseAltitude, in CloudSwell swell,

@@ -5,13 +5,15 @@
 #include "Assets/Shaders/Include/TinCanCloudSea.hlsl"
 
 StructuredBuffer<float2> Points;
-RWStructuredBuffer<float2> Results; // x swell, y hole cut
+RWStructuredBuffer<float3> Results; // x swell, y hole cut, z web cut
 uint PointCount;
 float4 SwellParams; // x amplitude, y wavelength, z speed, w time
 float4 SwellOffset; // xy seed offset
 float4 Hole;        // xy centre, z radius now, w rim
 float HoleOpenness;
 float4 HoleReach;   // xy from the centre to one end of a rift, z how ragged
+float4 WebShape;    // x cell, y width, z rim, w ragged
+float4 WebMotion;   // x open share, y drift per hour, zw offset
 
 [numthreads(64, 1, 1)]
 void Evaluate(uint3 id : SV_DispatchThreadID)
@@ -20,5 +22,7 @@ void Evaluate(uint3 id : SV_DispatchThreadID)
 
     float2 xz = Points[id.x];
     float swell = TinCanCloudSwellAt(xz, SwellParams.w, SwellParams.x, SwellParams.y, SwellParams.z, SwellOffset.xy);
-    Results[id.x] = float2(swell, TinCanCloudHoleCutOne(xz, Hole, HoleOpenness, HoleReach.xyz));
+    float web = TinCanCloudWebCutAt(xz, SwellParams.w, WebShape.x, WebShape.y, WebShape.z, WebShape.w, WebMotion.x,
+        WebMotion.y, WebMotion.zw);
+    Results[id.x] = float3(swell, TinCanCloudHoleCutOne(xz, Hole, HoleOpenness, HoleReach.xyz), web);
 }

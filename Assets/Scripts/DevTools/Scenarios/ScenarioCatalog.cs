@@ -1066,6 +1066,24 @@ namespace TinCan.DevTools.Scenarios
                 .Build(),
             builder => builder.Register<CloudSeaScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
 
+        // The web of rifts (.docs/plans/cloud-sea-fog.md, F3): a pattern from the world seed and the shared clock, so
+        // every peer cuts the same rifts into the game's surface and the drawn sea, with nothing replicated.
+        public static readonly ScenarioEntry CloudWebReal = new(
+            new Scenario.Builder("CloudWebReal")
+                .InScene(TestScenes.Look)
+                .Describe("Host and client spawn in the look's test area -> on each peer, near the ship, the cloud surface in a rift of the web has dropped by the hole depth, on a cloud island it is at the swell, and the sea shader has the web.")
+                .Timeout(90f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f))
+                .Act(s => s
+                    .WaitUntil("WebRiftIsReal", 20f)
+                    .Checkpoint("web"))
+                .Assert(s => s
+                    .Wait(2f, "the subject checks its own peer")
+                    .Expect("WebRiftIsReal"))
+                .Build(),
+            builder => builder.Register<CloudSeaScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
         public static readonly ScenarioEntry SoarFromDive = new(
             new Scenario.Builder("SoarFromDive")
                 .InScene(TestScenes.Look)
@@ -2350,7 +2368,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone, StormInWorld, StormCure };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, CloudWebReal, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone, StormInWorld, StormCure };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

@@ -45,6 +45,7 @@
         "TinCan.Features.Boarding",
         "TinCan.Features.Camping",
         "TinCan.Features.IslandDetails",
+        "TinCan.Features.CrewBody",
         "TinCan.UI",
         "Unity.Netcode.Runtime",
         "Unity.RenderPipelines.Core.Runtime",

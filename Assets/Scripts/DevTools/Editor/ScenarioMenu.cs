@@ -220,6 +220,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "CompassCourse (Host + Client, Lag100)")]
         public static void CompassCourseDuo() => RunDuo("CompassCourse", "Lag100");
 
+        [MenuItem(Root + "CrewBodyMoves (Host)")]
+        public static void CrewBodyMovesSolo() => RunSolo("CrewBodyMoves");
+
+        [MenuItem(Root + "CrewBodyMoves (Host + Client, Lag100)")]
+        public static void CrewBodyMovesDuo() => RunDuo("CrewBodyMoves", "Lag100");
+
         [MenuItem(Root + "ChartPlot (Host)")]
         public static void ChartPlotSolo() => RunSolo("ChartPlot");
 

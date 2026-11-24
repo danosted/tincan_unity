@@ -9,7 +9,7 @@ change the plan's status line, then run `.\.tools\plans.ps1`.
 - [Audio: a mixer, channels, a pooled one-shot player and volume settings](audio-mixer.md) — (2026-10-31); S1 done 2026-11-06, with an audio lab; S2 done 2026-11-07 (see Progress); "Later" is open; third in [core-systems-roadmap.md](core-systems-roadmap.md)
 - [Cannon + sky hazards](cannon-and-hazards.md)
 - [Core systems roadmap](core-systems-roadmap.md) — (2026-10-31)
-- [Crewmates you can read: a body that moves, holds and works](crew-animation.md) — (2026-10-31: S1 and S2 with a placeholder body; S3 asks again); sixth in [core-systems-roadmap.md](core-systems-roadmap.md)
+- [Crewmates you can read: a body that moves, holds and works](crew-animation.md) — (2026-10-31: S1 and S2 with a placeholder body; S3 asks again. 2026-11-23: movement-only S1 + S2 built, see Progress); sixth in [core-systems-roadmap.md](core-systems-roadmap.md)
 - [Crew pings, world markers and names](crew-pings-and-markers.md) — (2026-10-31); fourth in [core-systems-roadmap.md](core-systems-roadmap.md)
 - [Day cycle: a low northern sun, the light that follows it, and the clouds judged under it](day-cycle.md)
 - [Next chapter: "First Voyage", a playable session to test fun](first-voyage.md) — (2026-09-29)

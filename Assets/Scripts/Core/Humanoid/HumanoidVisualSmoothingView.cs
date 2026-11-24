@@ -9,7 +9,15 @@ namespace TinCan.Core.Humanoid
     {
         Vector3 VisualPosition { get; }
 
-        /// <summary>The body's own renderers (on the visual root itself, not what it holds), for rigs that hide the body.</summary>
+        /// <summary>
+        /// Where the body is drawn: the placeholder capsule, and the body a feature puts here (CrewBody). Null without one.
+        /// </summary>
+        Transform? VisualRoot { get; }
+
+        /// <summary>
+        /// The body's own renderers (under the visual root, not what it holds), for rigs that hide the body. Read when
+        /// a rig takes the camera, so a body attached at spawn is included.
+        /// </summary>
         IReadOnlyList<Renderer> BodyRenderers { get; }
 
         /// <summary>
@@ -34,7 +42,21 @@ namespace TinCan.Core.Humanoid
 
         public Vector3 VisualPosition => _visualRoot != null ? _visualRoot.position : transform.position;
 
-        public IReadOnlyList<Renderer> BodyRenderers => _visualRoot != null ? _visualRoot.GetComponents<Renderer>() : System.Array.Empty<Renderer>();
+        public Transform? VisualRoot => _visualRoot;
+
+        public IReadOnlyList<Renderer> BodyRenderers
+        {
+            get
+            {
+                if (_visualRoot == null) return System.Array.Empty<Renderer>();
+                var body = new List<Renderer>();
+                foreach (var renderer in _visualRoot.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (HeldSocket == null || !renderer.transform.IsChildOf(HeldSocket)) body.Add(renderer);
+                }
+                return body;
+            }
+        }
 
         /// <summary>The held-items socket's name; the equipment mediator finds it by this name.</summary>
         public const string HeldSocketName = "HeldItems";

@@ -1710,6 +1710,44 @@ namespace TinCan.DevTools.Scenarios
         public static readonly ScenarioEntry CompassCourse = new(
             new Scenario.Builder("CompassCourse")
                 .InScene(TestScenes.Navigation)
+        /// <summary>
+        /// The crew body (plan: crew-animation.md, S2) on the Galleon, where the game's profile loads it. The subject
+        /// stands on the main deck facing the ship's centre, runs forward, stops, jumps. Its own peer checks the body is
+        /// hidden from its first-person camera and stands, flies and lands again; the server sees it run, fly and stand.
+        /// </summary>
+        public static readonly ScenarioEntry CrewBodyMoves = new(
+            new Scenario.Builder("CrewBodyMoves")
+                .InScene(TestScenes.Galleon)
+                .Describe("On the Galleon: the crew body stands -> runs while forward is held -> stands -> jumps -> lands, on both peers.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn; the design builds")
+                    .Do("PlaceSubjectAtShipLocal", "0,0.55,6"))
+                .Act(s => s
+                    .WaitUntil("SubjectNearShipLocal", 45f, "0,0.55,6,1")
+                    .Wait(1f, "teleport settles")
+                    .Expect("SubjectBodyHiddenFromOwner")
+                    .WaitUntil("SubjectBodyGait", 5f, "Idle")
+                    .Checkpoint("standing")
+                    .Hold(1f, ScriptedAction.MoveForward)
+                    .WaitUntil("SubjectBodyGait", 3f, "Idle")
+                    .Tap(ScriptedAction.Jump, 0.05f)
+                    .WaitUntil("SubjectBodyGait", 1f, "Airborne")
+                    .WaitUntil("SubjectBodyGait", 3f, "Idle")
+                    .Checkpoint("landed"))
+                .Assert(s => s
+                    .WaitUntil("SubjectBodyGait", 60f, "Run")
+                    .WaitUntil("SubjectBodyGait", 10f, "Airborne")
+                    .WaitUntil("SubjectBodyGait", 5f, "Idle"))
+                .Build(),
+            builder =>
+            {
+                builder.Register<CrewBodyScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<GrappleHookScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<RespawnScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
+
                 .Describe("Voyage -> course to the destination on both peers, compass at the helm -> a route via starboard -> " +
                           "take the helm, compass points starboard -> waypoint reached -> compass points at the destination.")
                 .Timeout(120f)
@@ -2368,7 +2406,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, CloudWebReal, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone, StormInWorld, StormCure };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, CloudWebReal, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone, CrewBodyMoves, StormInWorld, StormCure };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

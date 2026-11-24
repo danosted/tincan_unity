@@ -1,0 +1,18 @@
+{
+  "scene": "crew_body",
+  "formats": [
+    "fbx"
+  ],
+  "source": ".tools/blender/crew_body.py (Blender 5.2, builds the model and its clips from nothing)",
+  "coordinate_system": "Y-up, faces +Z; one exported unit is one meter",
+  "asset_contract": {
+    "title": "Crew body",
+    "summary": "A chunky, rounded 2 m crewmate (about 5.5 heads): canvas tunic, teal trousers, russet boots and belt, a red scarf. Placeholder body for crew-animation S2.",
+    "asset_type": "character",
+    "placement": "Pivot between the feet, on the ground. Height 2.0 m, matching the player's 2 m capsule.",
+    "skeleton": "Unity humanoid bone names (Hips, Spine, Chest, Neck, Head, Left/Right Shoulder, UpperArm, LowerArm, Hand, UpperLeg, LowerLeg, Foot, Toes); T-pose rest.",
+    "clips": "Idle (3 s), Run (0.6 s, 7 m/s), Sprint (0.4 s, 12.6 m/s), Jump (1 s, rising), Fall (1 s); in place, looping, 60 fps.",
+    "materials": "CrewBody_Tunic, CrewBody_Trousers, CrewBody_Skin, CrewBody_Boots, CrewBody_Scarf, CrewBody_Hair; CrewBodyAssetBuilder swaps each for a library material (M_ShipCanvas, M_ShipIron, M_ShipDeck, M_CampLeather, M_ShipPennant, M_ShipWalls).",
+    "collision": "None; the player's CharacterController is the body's collider."
+  }
+}

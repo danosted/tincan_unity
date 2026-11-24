@@ -1,4 +1,4 @@
-Status: Approved (2026-11-23: R1 and R2 built)
+Status: Approved (2026-11-23: R1 and R2 built; 2026-11-24: R3 built)
 
 # Ray cannons: the ship's guns fire spirit energy, and what it does depends on what it hits
 
@@ -34,8 +34,9 @@ than iron balls ("Magic is soft light", `ART_DIRECTION.md` pillar 5).
   - the ship's own hull still takes a misfire.
 
   So a new use of the beam is a new kind of target, never a change to the cannon.
-- **Firing rhythm:** a short charge on Primary, then a cooldown, so shots are aimed, not sprayed. Whether the beam
-  also costs energy is open question 1.
+- **Firing rhythm (R3, developer 2026-11-24):** the beam fires the instant Primary is pressed and pulses for as
+  long as it is held. It is free, and it overheats over time: at full heat it stops and vents until it is cold.
+  (R1's charge and cooldown are gone.)
 - **The look:** a beam of pale cyan and warm gold with a soft falloff, a glow at the muzzle, a bloom where it hits,
   and a hum. No hard neon. Its cue replaces the cannonball's bang.
 - **Names:** the station, feature and assets get a new name (open question 2). Until then the code keeps `Cannon`, so
@@ -46,8 +47,34 @@ than iron balls ("Magic is soft light", `ART_DIRECTION.md` pillar 5).
   kept, and its look and cue. `CannonShot` and `CannonMisfire` follow; `GalleonSternCannon` is unchanged.
 - **R2 Targets answer the beam.** A hazard (debris) breaks on the beam's hit; targets that are no collider answer it. The storm's heart targets come with the
   storm (`storm-crossing.md`, ST5).
+- **R3 A held, pulsing beam that overheats.** It fires on the press and pulses while the trigger is held. Heat rises
+  with each pulse, and at full heat it vents until cold. The gunner's own peer shows the beam at once.
 
 ## Progress
+- **2026-11-24, R3 the held, pulsing beam (built; EditMode 1722/1722; scenarios not yet run).**
+  - **Decisions (developer, 2026-11-24):** an overheated cannon fires again only once it is fully cold. Each pulse
+    counts as a hit on a storm heart target (no change to the storm). The heat shows as the muzzle glow only (no HUD).
+    The gunner's peer draws the beam the instant Fire is held, and the server still decides what it hits.
+  - **Server (`CannonFireUseCase`):** while the Primary bit is held, a pulse fires on the press tick and then every
+    `PulseSeconds` (0.125 s). Each pulse activates `GA_FireCannon` (who may fire; its cooldown and
+    `GE_CannonReload` are gone) and is R1's sweep and hit. Each pulse adds `PulseSeconds / SecondsToOverheat` heat
+    (3 s of held fire). At full heat it overheats, the beam stops, and it cools over `SecondsToCool` (2 s), firing
+    again only when cold. It cools whenever it is not firing. Tapping fires no faster than the pulse.
+  - **Damage:** `GE_SpiritBeamHit` is -25 per pulse, so a hazard (100) breaks after 4 pulses, half a second held.
+  - **Network:** `CannonNetworkMediator` replicates `BeamOn`, `Heat` and `Overheated`. Each pulse is one RPC with
+    its origin and end; R1's Charging/Fired pair is gone.
+  - **Presentation (`CannonShotPresenter`):** one beam per cannon, drawn along this peer's barrel, as long as the
+    server's last pulse reached. The local gunner's beam is on from `GunnerAimUseCase.LocalFiring` (the Gunner
+    context's Fire); everyone else's from `BeamOn`. It throbs on this peer's own pulse clock, and each pulse plays a
+    thrum (`cue_spirit_beam_pulse`). There is a bloom where it hits, and it fades over `FadeSeconds` on release. The
+    muzzle glow grows and turns from cyan to `HotColor` as the heat rises, and flickers while venting; overheating
+    plays `cue_spirit_beam_vent`. Both sounds are synthesized stand-ins (`BeamSynth`).
+  - **Scenarios:** `CannonShot` holds Fire for 1 s to break the hazard, then holds on until it overheats
+    (`CannonOverheated`) and vents cold (`CannonCold`). The other peer sees the overheat too. `StormCure`'s waits
+    between hits no longer stand for a cooldown; they wait for the spent target to go.
+  - **Next:** your eye and ear in Play: the throb, the heat glow and the sounds, and the tuning (pulse rate, 3 s to
+    overheat, 2 s to cool, 25 per pulse).
+
 - **2026-11-23, R1 the beam (built; EditMode 1702/1702; `CannonShot` and `CannonMisfire` pass solo and host + client, 2026-11-23).**
   - **Defaults taken** (developer, 2026-11-23: R1 before the storm's heart, `storm-crossing.md` ST5): the beam is
     free, with a charge and a cooldown and no overheat (open question 1, kept simple). The code keeps `Cannon` (open
@@ -88,10 +115,8 @@ the beam. Scenarios `CannonShot` (a hazard breaks on the beam) and `CannonMisfir
 solo and host + client, in their test-range scenes.
 
 ## Open questions (for the developer)
-1. **Does the beam cost energy?** Options:
-   - Free, with a cooldown and an overheat when fired too fast. Recommended to start.
-   - It draws from the same crystals as the shield and the engine, so firing, shielding and sailing compete for one
-     stockpile.
+1. ~~**Does the beam cost energy?**~~ Answered 2026-11-24: it is free and overheats (R3). Drawing from the crystals
+   stays an option for later.
 2. **A name:** for example "spirit lance" or "ray cannon". The station and the gunner's role get the same name.
 3. **Other uses to plan for:** a tractor beam that pulls things in, lighting beacons from afar, or cutting crystal
    from veins at range?

@@ -12,8 +12,8 @@ using VContainer.Unity;
 namespace TinCan.Features.Weapons.Cannon
 {
     /// <summary>
-    /// Ship cannons: the cannon fixture(s) on the ship, charging and firing beams on the server, and drawing barrels,
-    /// the aiming line and the beams on every peer. A player mans a cannon by interacting with it (a station, so the Stations
+    /// Ship cannons: the cannon fixture(s) on the ship, the held, pulsing beam and its heat on the server, and drawing
+    /// barrels, the aiming line and the beams on every peer. A player mans a cannon by interacting with it (a station, so the Stations
     /// installer must be in the profile too). While manning it the Gunner input context is live: the mouse swings the
     /// barrel (<see cref="GunnerAimUseCase"/>) while the body holds still, Fire shoots and Leave steps away.
     /// Add a fixture to add a cannon: placement is data. Plans: .docs/plans/cannon-and-hazards.md, .docs/plans/ray-cannons.md.

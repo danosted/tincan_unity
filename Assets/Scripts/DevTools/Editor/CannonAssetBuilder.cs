@@ -58,7 +58,6 @@ namespace TinCan.DevTools.Editor
             // Tags
             var occupying = Tag("State.Occupying");
             var occupyingCannon = Tag("State.Occupying.Cannon", occupying);
-            var reloading = Tag("State.Cannon.Reloading");
             var fireTag = Tag("Ability.Cannon.Fire");
             var occupyTag = Tag("Ability.Occupy.Cannon");
             var hitCue = Tag("Cue.Hit"); // a burst on whatever was hit: GCN_Hit blinks it and bangs
@@ -79,15 +78,9 @@ namespace TinCan.DevTools.Editor
                     new() { Attribute = jumpForce, Operation = ModifierOp.Override, Value = 0f }
                 };
             });
-            var reload = Asset<GameplayEffectDefinition>(Effects + "GE_CannonReload.asset", effect =>
-            {
-                effect.DurationType = DurationType.Duration;
-                effect.DurationSeconds = 1.5f;
-                effect.GrantedTags = new List<GameplayTag> { reloading };
-                effect.Modifiers = new List<AttributeModifier>();
-            });
             // The cannon fires a beam of spirit energy now (ray-cannons.md, R1): its hit and sweep keep their assets (and
-            // GUIDs) under new names.
+            // GUIDs) under new names. The beam pulses while held and its heat limits it (R3): no reload cooldown, and each
+            // pulse does a quarter of a hazard's health.
             Rename(Effects + "GE_CannonballHit.asset", "GE_SpiritBeamHit");
             Rename("Assets/Targeting/TD_CannonballSweep.asset", "TD_SpiritBeamSweep");
             var hit = Asset<GameplayEffectDefinition>(Effects + "GE_SpiritBeamHit.asset", effect =>
@@ -96,7 +89,7 @@ namespace TinCan.DevTools.Editor
                 effect.GrantedTags = new List<GameplayTag>();
                 effect.Modifiers = new List<AttributeModifier>
                 {
-                    new() { Attribute = health, Operation = ModifierOp.Add, Value = -100f, ClampMaxAttribute = maxHealth }
+                    new() { Attribute = health, Operation = ModifierOp.Add, Value = -25f, ClampMaxAttribute = maxHealth }
                 };
                 effect.Cues = new List<GameplayTag> { hitCue };
             });
@@ -147,9 +140,10 @@ namespace TinCan.DevTools.Editor
                 Reset(ability);
                 ability.AbilityTag = fireTag;
                 ability.EndsImmediately = true;
-                ability.CooldownEffect = reload;
+                ability.CooldownEffect = null!; // the heat limits the beam (CannonConfig)
                 ability.ActivationRequiredTagsOnActor.Add(occupyingCannon);
             });
+            AssetDatabase.DeleteAsset(Effects + "GE_CannonReload.asset"); // R1's reload; nothing uses it now
 
             // Queries and interactions
             var sweep = Asset<TargetingDefinition>("Assets/Targeting/TD_SpiritBeamSweep.asset", definition =>
@@ -169,7 +163,9 @@ namespace TinCan.DevTools.Editor
                 config.HitEffect = hit;
                 config.Sweep = sweep;
                 config.BeamMaterial = BeamMaterial(); // an asset, so builds include its shader
-                config.FireSound = BeamSound();
+                config.PulseSound = Sound("cue_spirit_beam_pulse", BeamSynth.Pulse);
+                config.VentSound = Sound("cue_spirit_beam_vent", BeamSynth.Vent);
+                AssetDatabase.DeleteAsset("Assets/Audio/Cues/cue_spirit_beam.wav"); // R1's charge-and-release; the pulse replaced it
                 config.YawLimit = CannonAimLimits.FullTurn;
             });
 
@@ -399,12 +395,12 @@ namespace TinCan.DevTools.Editor
         }
 
         // A synthesized stand-in (BeamSynth); a recording replaces it on the config without code changes.
-        private static AudioClip BeamSound()
+        private static AudioClip Sound(string name, Func<float[]> synthesize)
         {
-            const string path = "Assets/Audio/Cues/cue_spirit_beam.wav";
+            string path = $"Assets/Audio/Cues/{name}.wav";
             if (!File.Exists(path))
             {
-                File.WriteAllBytes(path, AudioLabSynth.Wav(BeamSynth.SpiritBeam()));
+                File.WriteAllBytes(path, AudioLabSynth.Wav(synthesize()));
                 AssetDatabase.ImportAsset(path);
             }
             return Load<AudioClip>(path);

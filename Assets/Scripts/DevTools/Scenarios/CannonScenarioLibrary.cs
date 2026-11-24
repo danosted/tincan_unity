@@ -18,7 +18,8 @@ namespace TinCan.DevTools.Scenarios
     /// Scenario steps for the cannon and sky hazards. Commands: put a hazard on the deck (server), point the barrel along
     /// the cannon's rest direction (subject peer, through the gunner's aim as the mouse would), and put a target on the
     /// line the barrel points along now (server), so a shot with no further aiming hits it. Probes read replicated state
-    /// on this peer: who mans the cannon, how many hazards exist, and how many beams this peer drew; the server also
+    /// on this peer: who mans the cannon, how many hazards exist, how many beam pulses this peer drew, and whether the
+    /// cannon is overheated or cold again; the server also
     /// counts hazards shot down. The subject peer can also point the barrel at an exact aim, check that aiming turns the
     /// barrel past the back (a turret wraps, and the replicated barrel follows) and leaves the body facing where it was (the
     /// Gunner input context).
@@ -75,6 +76,8 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("HazardsVisible", CheckVisible),
             new ScenarioProbe("HazardsDestroyed", CheckDestroyed),
             new ScenarioProbe("BeamsShown", CheckBeams),
+            new ScenarioProbe("CannonOverheated", _ => CheckOverheated(expected: true)),
+            new ScenarioProbe("CannonCold", _ => CheckOverheated(expected: false)),
             new ScenarioProbe("HazardHits", CheckHits),
             new ScenarioProbe("ShipHealthBelow", CheckShipHealthBelow),
             new ScenarioProbe("GunnerAimYaw", CheckGunnerYaw),
@@ -276,6 +279,15 @@ namespace TinCan.DevTools.Scenarios
             if (!_network.IsServer) return ScenarioCheck.Fail("server-only probe");
             string detail = $"{_hazards.Destroyed} shot down";
             return _hazards.Destroyed >= int.Parse(count, CultureInfo.InvariantCulture) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
+
+        /// <summary>The scenario cannon's replicated heat on this peer: overheated (venting), or cold again.</summary>
+        private ScenarioCheck CheckOverheated(bool expected)
+        {
+            if (Cannon() is not { } cannon) return ScenarioCheck.Fail("no cannon");
+            string detail = $"heat {cannon.Heat:0.00}{(cannon.Overheated ? ", overheated" : "")} on this peer";
+            bool pass = expected ? cannon.Overheated : !cannon.Overheated && cannon.Heat <= 0f;
+            return pass ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
         private ScenarioCheck CheckBeams(string count)

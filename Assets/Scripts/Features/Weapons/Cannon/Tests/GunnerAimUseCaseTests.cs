@@ -36,9 +36,12 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             public ulong? OccupantClientId { get; set; }
 
             public void ServerSetAim(float yaw, float elevation) { }
-            public void ServerShotCharging(int shotId) { }
-            public void ServerShotFired(int shotId, Vector3 origin, Vector3 end) { }
-            public bool TryTakeShotEvent(out CannonShotEvent shotEvent) { shotEvent = default; return false; }
+            public bool BeamOn => false;
+            public float Heat => 0f;
+            public bool Overheated => false;
+            public void ServerSetBeam(bool on, float heat, bool overheated) { }
+            public void ServerPulse(int pulseId, Vector3 origin, Vector3 end) { }
+            public bool TryTakePulse(out CannonPulseEvent pulse) { pulse = default; return false; }
             public void ApplyAim(float yaw, float elevation) { }
             public void ShowAimPreview(Vector3[]? points, int count) { }
             public Transform? Seat => null;
@@ -152,6 +155,24 @@ namespace TinCan.Features.Weapons.Cannon.Tests
 
             Assert.That(_useCase.LocalAim, Is.Null);
             Assert.That(_useCase.TrySetAim(Vector2.zero), Is.False);
+        }
+
+        [Test]
+        public void LocalFiring_FollowsFire_OnlyWhileManning()
+        {
+            _controls.Fire = InputActionId.Create("Gunner/Fire");
+            _input.Pressed.Add(_controls.Fire);
+
+            _useCase.Tick();
+            Assert.That(_useCase.LocalFiring, Is.False, "the Gunner context is off");
+
+            _contexts.Live.Add(_controls);
+            _useCase.Tick();
+            Assert.That(_useCase.LocalFiring, Is.True);
+
+            _input.Pressed.Clear();
+            _useCase.Tick();
+            Assert.That(_useCase.LocalFiring, Is.False);
         }
 
         [Test]

@@ -18,7 +18,10 @@ using Object = UnityEngine.Object;
 
 namespace TinCan.Features.Weapons.Cannon.Tests
 {
-    /// <summary><see cref="CannonFireUseCase"/>: aiming, the charge on the press, the cooldown, the beam's one sweep, hits and misfires.</summary>
+    /// <summary>
+    /// <see cref="CannonFireUseCase"/>: aiming, the beam firing on the press and pulsing while held, the heat and the
+    /// overheat, each pulse's one sweep, hits and misfires.
+    /// </summary>
     public class CannonFireUseCaseTests
     {
         private sealed class FakeCannon : ICannon, IStation
@@ -38,13 +41,15 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             public TinCan.Core.Domain.Abilities.IAbilityControllerBase? ShipController { get; set; }
             public float Yaw { get; private set; }
             public float Elevation { get; private set; }
-            public List<int> Charging { get; } = new();
+            public bool BeamOn { get; private set; }
+            public float Heat { get; private set; }
+            public bool Overheated { get; private set; }
             public List<(int Id, Vector3 Origin, Vector3 End)> Fired { get; } = new();
 
             public void ServerSetAim(float yaw, float elevation) => (Yaw, Elevation) = (yaw, elevation);
-            public void ServerShotCharging(int shotId) => Charging.Add(shotId);
-            public void ServerShotFired(int shotId, Vector3 origin, Vector3 end) => Fired.Add((shotId, origin, end));
-            public bool TryTakeShotEvent(out CannonShotEvent shotEvent) { shotEvent = default; return false; }
+            public void ServerSetBeam(bool on, float heat, bool overheated) => (BeamOn, Heat, Overheated) = (on, heat, overheated);
+            public void ServerPulse(int pulseId, Vector3 origin, Vector3 end) => Fired.Add((pulseId, origin, end));
+            public bool TryTakePulse(out CannonPulseEvent pulse) { pulse = default; return false; }
             public void ApplyAim(float yaw, float elevation) { }
             public void ShowAimPreview(Vector3[]? points, int count) { }
 
@@ -106,8 +111,10 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             }
         }
 
-        // 0.4 s at 30 ticks a second.
-        private const int ChargeTicks = 12;
+        // At 30 ticks a second: a pulse every 0.1 s is every 3 ticks; 0.4 s to overheat is 4 pulses; 0.5 s to cool is 15 ticks.
+        private const int PulseTicks = 3;
+        private const int PulsesToOverheat = 4;
+        private const int CoolTicks = 15;
 
         private readonly List<Object> _assets = new();
         private FakeTimeService _time = null!;
@@ -136,9 +143,11 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             _fireInput.BitIndex = 1;
             _config = Create<CannonConfig>("CannonConfig");
             _config.FireInput = _fireInput;
-            _config.FireAbility = FireAbility(reloadSeconds: 1f);
+            _config.FireAbility = FireAbility();
             _config.Sweep = Create<TargetingDefinition>("TD_SpiritBeamSweep");
-            _config.ChargeSeconds = 0.4f;
+            _config.PulseSeconds = 0.1f;
+            _config.SecondsToOverheat = 0.4f;
+            _config.SecondsToCool = 0.5f;
             _config.BeamRange = 100f;
 
             _cannon = new FakeCannon();
@@ -166,42 +175,79 @@ namespace TinCan.Features.Weapons.Cannon.Tests
         {
             for (int i = 0; i < 20; i++) Step(fire: true);
 
-            Assert.That(_cannon.Charging, Is.Empty);
             Assert.That(_cannon.Fired, Is.Empty);
+            Assert.That(_cannon.BeamOn, Is.False);
         }
 
         [Test]
-        public void Press_Charges_ThenFiresOnce_AfterTheCharge()
+        public void Press_FiresOnTheSameTick()
         {
             _occupancy.Occupant = _gunner;
 
             Step(fire: true);
-            Assert.That(_cannon.Charging, Has.Count.EqualTo(1), "the press starts the charge");
-            Assert.That(_useCase.ShotsCharging, Is.EqualTo(1));
 
-            for (int i = 1; i < ChargeTicks; i++) Step(fire: true);
-            Assert.That(_cannon.Fired, Is.Empty, "still charging");
-
-            Step(fire: true);
-            Assert.That(_cannon.Fired, Has.Count.EqualTo(1));
-            Assert.That(_cannon.Fired[0].Id, Is.EqualTo(_cannon.Charging[0]));
-            Assert.That(_useCase.ShotsCharging, Is.Zero);
-            Assert.That(_cannon.Charging, Has.Count.EqualTo(1), "holding the button fires once");
+            Assert.That(_cannon.Fired, Has.Count.EqualTo(1), "no charge: the press fires");
+            Assert.That(_cannon.BeamOn, Is.True);
         }
 
         [Test]
-        public void Cooldown_BlocksTheNextShot_UntilItEnds()
+        public void Held_PulsesEveryInterval_AndReleaseStopsIt()
         {
             _occupancy.Occupant = _gunner;
-            Step(fire: true);
+
+            for (int i = 0; i < PulseTicks * 2 + 1; i++) Step(fire: true);
+            Assert.That(_cannon.Fired, Has.Count.EqualTo(3), "pulses on ticks 0, 3 and 6");
+            Assert.That(_cannon.BeamOn, Is.True);
+
             Step(fire: false);
+            Assert.That(_cannon.BeamOn, Is.False);
+            for (int i = 0; i < PulseTicks * 2; i++) Step(fire: false);
+            Assert.That(_cannon.Fired, Has.Count.EqualTo(3));
+        }
+
+        [Test]
+        public void Tapping_FiresNoFasterThanThePulse()
+        {
+            _occupancy.Occupant = _gunner;
+
+            for (int i = 0; i < PulseTicks * 2; i++) Step(fire: i % 2 == 0);
+
+            Assert.That(_cannon.Fired, Has.Count.EqualTo(2), "presses on ticks 0, 2 and 4: 2 is too soon after 0");
+        }
+
+        [Test]
+        public void Heat_RisesWithEachPulse_AndFallsWhileIdle()
+        {
+            _occupancy.Occupant = _gunner;
 
             Step(fire: true);
-            Assert.That(_cannon.Charging, Has.Count.EqualTo(1), "cooling down");
+            Assert.That(_cannon.Heat, Is.EqualTo(_config.HeatPerPulse).Within(1e-4f));
 
-            while (_time.Tick < 31) Step(fire: false);
+            Step(fire: false);
+            Assert.That(_cannon.Heat, Is.LessThan(_config.HeatPerPulse));
+            for (int i = 0; i < CoolTicks; i++) Step(fire: false);
+            Assert.That(_cannon.Heat, Is.Zero);
+        }
+
+        [Test]
+        public void HeldTooLong_Overheats_AndVentsUntilCold()
+        {
+            _occupancy.Occupant = _gunner;
+
+            for (int i = 0; i < PulseTicks * PulsesToOverheat * 2; i++) Step(fire: true);
+            Assert.That(_cannon.Fired, Has.Count.EqualTo(PulsesToOverheat), "the last pulse overheats it, and holding fires no more");
+            Assert.That(_cannon.Overheated, Is.True);
+            Assert.That(_cannon.BeamOn, Is.False);
+
+            // Venting: a press part-way through cooling does nothing.
+            while (_cannon.Heat > 0.5f) Step(fire: false);
             Step(fire: true);
-            Assert.That(_cannon.Charging, Has.Count.EqualTo(2));
+            Assert.That(_cannon.Fired, Has.Count.EqualTo(PulsesToOverheat), "an overheated cannon waits until it is cold");
+
+            while (_cannon.Overheated) Step(fire: false);
+            Assert.That(_cannon.Heat, Is.Zero);
+            Step(fire: true);
+            Assert.That(_cannon.Fired, Has.Count.EqualTo(PulsesToOverheat + 1), "cold: it fires again");
         }
 
         [Test]
@@ -247,18 +293,18 @@ namespace TinCan.Features.Weapons.Cannon.Tests
         }
 
         [Test]
-        public void Beam_IsOneSweep_FromTheMuzzle_AlongTheAimAtTheEndOfTheCharge()
+        public void EachPulse_IsOneSweep_FromTheMuzzle_AlongTheAimThen()
         {
             _occupancy.Occupant = _gunner;
             Step(fire: true);
-            // The gunner turns the barrel to 90 (right) while it charges: the beam goes where it points when it fires.
-            for (int i = 1; i <= ChargeTicks; i++) Step(fire: false, aim: new Vector2(90f, 0f));
+            // The gunner turns the barrel to 90 (right) while holding: the next pulse goes where it points then.
+            for (int i = 1; i <= PulseTicks; i++) Step(fire: true, aim: new Vector2(90f, 0f));
 
-            Assert.That(_targeting.Sweeps, Has.Count.EqualTo(1));
-            var (from, to) = _targeting.Sweeps[0];
+            Assert.That(_targeting.Sweeps, Has.Count.EqualTo(2));
+            var (from, to) = _targeting.Sweeps[1];
             Assert.That(Vector3.Distance(from, _cannon.Muzzle!.position), Is.LessThan(1e-3f));
             Assert.That(Vector3.Distance(to, from + Vector3.right * _config.BeamRange), Is.LessThan(1e-3f));
-            Assert.That(Vector3.Distance(_cannon.Fired[0].End, to), Is.LessThan(1e-3f), "a miss ends at its range");
+            Assert.That(Vector3.Distance(_cannon.Fired[1].End, to), Is.LessThan(1e-3f), "a miss ends at its range");
         }
 
         [Test]
@@ -279,7 +325,7 @@ namespace TinCan.Features.Weapons.Cannon.Tests
 
             try
             {
-                FireAndWait();
+                FireOnePulse();
 
                 Assert.That(_targeting.Ignored[carriageCollider], Is.True, "the beam starts inside its own cannon");
                 Assert.That(_targeting.Ignored[hullCollider], Is.False, "its own ship is hit, not passed");
@@ -311,7 +357,7 @@ namespace TinCan.Features.Weapons.Cannon.Tests
 
             try
             {
-                FireAndWait();
+                FireOnePulse();
 
                 Assert.That(shipController.HasTag(hitTag), Is.True, "the misfire hurts the ship");
                 Assert.That(_cannon.Fired, Has.Count.EqualTo(1));
@@ -323,7 +369,7 @@ namespace TinCan.Features.Weapons.Cannon.Tests
         }
 
         [Test]
-        public void Hit_AppliesTheHitEffect_AndTheBeamEndsThere()
+        public void Hit_AppliesTheHitEffect_AndThePulseEndsThere()
         {
             var hitTag = Create<GameplayTag>("State.Hit");
             _config.HitEffect = TagEffect("GE_Hit", hitTag);
@@ -332,7 +378,7 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             _targeting.HitAt = 30f;
             _occupancy.Occupant = _gunner;
 
-            FireAndWait();
+            FireOnePulse();
 
             Assert.That(target.HasTag(hitTag), Is.True);
             var (_, origin, end) = _cannon.Fired[0];
@@ -340,7 +386,7 @@ namespace TinCan.Features.Weapons.Cannon.Tests
         }
 
         [Test]
-        public void BeamTarget_NearerThanAnythingSolid_AnswersTheHit_AndEndsTheBeam()
+        public void BeamTarget_NearerThanAnythingSolid_AnswersThePulse_AndEndsIt()
         {
             var hitTag = Create<GameplayTag>("State.Hit");
             _config.HitEffect = TagEffect("GE_Hit", hitTag);
@@ -351,7 +397,7 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             _beamTargets.Add(targets);
             _occupancy.Occupant = _gunner;
 
-            FireAndWait();
+            FireOnePulse();
 
             Assert.That(targets.Answered, Is.EqualTo(new[] { 20f }));
             Assert.That(targets.AskedLength, Is.EqualTo(50f).Within(1e-3f), "asked as far as the first solid thing");
@@ -372,10 +418,22 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             _beamTargets.Add(targets);
             _occupancy.Occupant = _gunner;
 
-            FireAndWait();
+            FireOnePulse();
 
             Assert.That(targets.Answered, Is.Empty);
             Assert.That(solid.HasTag(hitTag), Is.True);
+        }
+
+        [Test]
+        public void HeldOnABeamTarget_EveryPulseAnswers()
+        {
+            var targets = new FakeBeamTargets { At = 20f };
+            _beamTargets.Add(targets);
+            _occupancy.Occupant = _gunner;
+
+            for (int i = 0; i < PulseTicks * 2 + 1; i++) Step(fire: true);
+
+            Assert.That(targets.Answered, Has.Count.EqualTo(3));
         }
 
         /// <summary>A beam target <see cref="At"/> metres along any beam that reaches it.</summary>
@@ -394,10 +452,10 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             public void Answer(Vector3 origin, Vector3 direction, float distance) => Answered.Add(distance);
         }
 
-        private void FireAndWait()
+        private void FireOnePulse()
         {
             Step(fire: true);
-            for (int i = 0; i < ChargeTicks; i++) Step(fire: false);
+            Step(fire: false);
         }
 
         private void Step(bool fire, Vector2 aim = default)
@@ -407,7 +465,7 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             _time.Tick++;
         }
 
-        private AbilityDefinition FireAbility(float reloadSeconds)
+        private AbilityDefinition FireAbility()
         {
             var ability = Create<AbilityDefinition>("GA_FireCannon");
             ability.EndsImmediately = true;
@@ -418,12 +476,6 @@ namespace TinCan.Features.Weapons.Cannon.Tests
             ability.ActivationRequiredTagsOnTarget = new List<GameplayTag>();
             ability.ActivationBlockedTagsOnTarget = new List<GameplayTag>();
             ability.TimingTagWindows = new List<AbilityTagWindow>();
-            var reload = Create<GameplayEffectDefinition>("GE_CannonReload");
-            reload.DurationType = DurationType.Duration;
-            reload.DurationSeconds = reloadSeconds;
-            reload.Modifiers = new List<AttributeModifier>();
-            reload.GrantedTags = new List<GameplayTag>();
-            ability.CooldownEffect = reload;
             return ability;
         }
 

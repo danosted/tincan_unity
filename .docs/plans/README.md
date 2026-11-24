@@ -28,7 +28,7 @@ change the plan's status line, then run `.\.tools\plans.ps1`.
 - [Performance budgets and continuous perf checks](performance-budgets.md)
 - [Player settings: one store, one Settings menu, features add their own](player-settings.md) — (2026-10-31); second in [core-systems-roadmap.md](core-systems-roadmap.md)
 - [Player vitality: can the world hurt a crew member?](player-vitality.md) — (2026-10-31: try option B); fifth in [core-systems-roadmap.md](core-systems-roadmap.md)
-- [Ray cannons: the ship's guns fire spirit energy, and what it does depends on what it hits](ray-cannons.md) — (2026-11-23: R1 and R2 built)
+- [Ray cannons: the ship's guns fire spirit energy, and what it does depends on what it hits](ray-cannons.md) — (2026-11-23: R1 and R2 built; 2026-11-24: R3 built)
 - [Ship damage & repair, and the item/equipment layer under it](ship-damage-repair.md) — (2026-09-26)
 - [Ship fitting loadouts: a ship's stations saved beside its design](ship-fitting-loadouts.md) — (2026-10-15): slice 1 built; slice 2 (the shipyard's fitting tool) is open
 - [Ship frames: draw the hull, place the rest](ship-frames.md) — (2026-10-16); S1 to S4 done (play runs passed 2026-10-17); continued in frame-only-ships.md, which replaces S5 and S6 below

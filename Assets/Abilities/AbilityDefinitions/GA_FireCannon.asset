@@ -29,5 +29,5 @@ MonoBehaviour:
   ActiveEffect: {fileID: 0}
   ActiveEffectTarget: 0
   CostEffect: {fileID: 0}
-  CooldownEffect: {fileID: 11400000, guid: e0e41a9057cae0144a4c0d247f11c883, type: 2}
+  CooldownEffect: {fileID: 0}
   Targeting: {fileID: 0}

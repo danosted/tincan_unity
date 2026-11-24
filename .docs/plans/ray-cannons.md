@@ -51,7 +51,7 @@ than iron balls ("Magic is soft light", `ART_DIRECTION.md` pillar 5).
   with each pulse, and at full heat it vents until cold. The gunner's own peer shows the beam at once.
 
 ## Progress
-- **2026-11-24, R3 the held, pulsing beam (built; EditMode 1722/1722; scenarios not yet run).**
+- **2026-11-24, R3 the held, pulsing beam (built; EditMode 1722/1722; `CannonShot`, `CannonMisfire`, `StormCure` and `GalleonSternCannon` pass solo and host + client, 2026-11-24).**
   - **Decisions (developer, 2026-11-24):** an overheated cannon fires again only once it is fully cold. Each pulse
     counts as a hit on a storm heart target (no change to the storm). The heat shows as the muzzle glow only (no HUD).
     The gunner's peer draws the beam the instant Fire is held, and the server still decides what it hits.

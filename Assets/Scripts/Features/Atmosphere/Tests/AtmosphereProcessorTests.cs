@@ -70,5 +70,16 @@ namespace TinCan.Features.Atmosphere.Tests
             float high = frame.UniformDensityAt(_look.FogBaseHeight + 100f, _look.FogBaseHeight);
             Assert.That(high, Is.EqualTo(_look.FogDensity * Mathf.Exp(-_look.FogFalloff * 100f) + _look.HazeDensity).Within(1e-6f));
         }
+
+        [Test]
+        public void TheSky_WhitensLikeTheFarthestFog_SoAGapInTheCloudDoesNotShow()
+        {
+            Assert.That(AtmosphereProcessor.SkyWhiteout(0f, 0.08f, 0.85f), Is.Zero, "clear air leaves the sky alone");
+            float slightlyIn = AtmosphereProcessor.SkyWhiteout(0.1f, 0.08f, 0.85f);
+            Assert.That(slightlyIn, Is.GreaterThan(0.6f), "just inside, the sky is already far whiter than the raw whiteout");
+            Assert.That(slightlyIn, Is.LessThanOrEqualTo(Mathf.Lerp(0.85f, 1f, 0.1f)), "never past the scene's fog cap");
+            Assert.That(AtmosphereProcessor.SkyWhiteout(1f, 0.08f, 0.85f), Is.EqualTo(1f).Within(1e-6f), "deep in, all white");
+            Assert.That(AtmosphereProcessor.SkyWhiteout(3f, -1f, 0.85f), Is.Zero, "a negative density clears nothing");
+        }
     }
 }

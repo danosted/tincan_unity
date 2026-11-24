@@ -90,8 +90,9 @@ namespace TinCan.Features.Airship.Damage.Tests
 
         private float LeakRate => _shipController.TryGetAttribute(_leak, out var value) ? value.CurrentValue : -1f;
 
-        [Test]
-        public void ResetForSession_RestoresBrokenParts_AndTheShipsHealth()
+        [TestCase(false, TestName = "ResetForSession_RestoresBrokenParts_AndTheShipsHealth")]
+        [TestCase(true, TestName = "Recover_RestoresBrokenParts_AndTheShipsHealth")]
+        public void Restore_RestoresBrokenParts_AndTheShipsHealth(bool recover)
         {
             var useCase = UseCase();
             useCase.TryBreak(1);
@@ -99,7 +100,8 @@ namespace TinCan.Features.Airship.Damage.Tests
             shipHealth.InitializeBaseValues(1000f);
             _shipController.SetAttribute(_health, new AttributeValue(400f));
 
-            useCase.ResetForSession();
+            if (recover) useCase.Recover(_airship);
+            else useCase.ResetForSession();
 
             Assert.That(_points[1].Controller.IsDamaged(), Is.False);
             Assert.That(useCase.BrokenCount, Is.Zero, "the breach went with the repair");

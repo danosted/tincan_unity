@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: VoyageConfig
   m_EditorClassIdentifier: TinCan.Features.Voyage::TinCan.Features.Voyage.VoyageConfig
   AutoStart: 1
+  MinCrew: 1
   BriefingSeconds: 10
   RouteLength: 4000
   ArrivalRadius: 60

@@ -121,5 +121,18 @@ namespace TinCan.Core.Ship
             _targetLinearVelocity = linearVelocity;
             _targetAngularVelocity = angularVelocity;
         }
+
+        /// <summary>Put the ship there at rest: no movement this tick, so nothing standing on it is carried by the jump.</summary>
+        public void Teleport(Vector3 position, Quaternion rotation)
+        {
+            transform.SetPositionAndRotation(position, rotation);
+            _targetLinearVelocity = Vector3.zero;
+            _targetAngularVelocity = Vector3.zero;
+            _velocity = Vector3.zero;
+            _positionDelta = Vector3.zero;
+            _rotationDelta = Quaternion.identity;
+            _lastPosition = position;
+            _lastRotation = rotation;
+        }
     }
 }

@@ -15,7 +15,8 @@ namespace TinCan.DevTools.Scenarios
     /// <summary>
     /// Scenario steps for the voyage session.
     /// <list type="bullet">
-    /// <item>Server commands begin a voyage, cast off, put the destination on the ship (arrive) or sink it.</item>
+    /// <item>Server commands begin a voyage, cast off, put the destination on the ship (arrive), hurt it, sink it (its
+    /// health to 0) or drop it deep into the cloud (lost to the cloud boundary).</item>
     /// <item><c>PressMenuItem</c> runs on any peer: it invokes a row of the menu open there, as a click on it would.</item>
     /// <item>Probes read the replicated voyage state and this peer's menu, so they answer on host and client alike.</item>
     /// </list>
@@ -42,6 +43,8 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioCommand("VoyageCastOff", _ => ServerOnly(_voyage.CastOff, "cast off")),
             new ScenarioCommand("VoyageArriveNow", _ => ServerOnly(ArriveNow, "destination moved onto the ship")),
             new ScenarioCommand("SinkShip", _ => ServerOnly(Sink, "ship health set to 0")),
+            new ScenarioCommand("HurtShip", _ => ServerOnly(Hurt, "ship health halved")),
+            new ScenarioCommand("SinkShipInCloud", _ => ServerOnly(SinkInCloud, $"ship dropped to {DeepInCloud:0} m, far below the cloud surface")),
             new ScenarioCommand("PressMenuItem", Press),
             new ScenarioCommand("RecordVoyage", _ => Record())
         };
@@ -54,8 +57,44 @@ namespace TinCan.DevTools.Scenarios
             new ScenarioProbe("NoMenuShown", _ => _menus.IsOpen
                 ? ScenarioCheck.Fail($"menu '{_menus.Current?.MenuId}' is open")
                 : ScenarioCheck.Pass("no menu open")),
-            new ScenarioProbe("ShipHealthFull", _ => CheckHealthFull())
+            new ScenarioProbe("ShipHealthFull", _ => CheckHealthFull()),
+            new ScenarioProbe("ShipBackWhereItSank", _ => CheckBack())
         };
+
+        /// <summary>Far below the test sea (a swell of ±20 m about 0, no holes in the voyage test area).</summary>
+        private const float DeepInCloud = -300f;
+
+        private UnityEngine.Vector3? _sankFrom;
+
+        private bool Hurt()
+        {
+            var controller = (Ship() as IShipState)?.Controller;
+            if (controller == null || !controller.TryGetHealth(out var health)) return false;
+            controller.SetAttribute(health.HealthDef, new AttributeValue(health.MaxHealth * 0.5f));
+            return true;
+        }
+
+        // The ship was flying safely above the sea until now, so this is the last safe spot it respawns at.
+        private bool SinkInCloud()
+        {
+            var ship = Ship();
+            if (ship == null) return false;
+            var from = ship.Transform.position;
+            _sankFrom = from;
+            var to = new UnityEngine.Vector3(from.x, DeepInCloud, from.z);
+            if (ship is IAirshipTeleport teleport) teleport.Teleport(to, ship.Transform.rotation);
+            else ship.Transform.position = to;
+            return true;
+        }
+
+        private ScenarioCheck CheckBack()
+        {
+            var ship = Ship();
+            if (ship == null || _sankFrom == null) return ScenarioCheck.Fail("no ship, or it was not sunk on this peer");
+            float off = UnityEngine.Vector3.Distance(ship.Transform.position, _sankFrom.Value);
+            string detail = $"ship {off:0.0} m from where it sank ({ship.Transform.position}) on this peer";
+            return off < 5f ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
 
         private ScenarioCheck ServerOnly(Func<bool> action, string success)
         {

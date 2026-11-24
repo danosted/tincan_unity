@@ -24,6 +24,8 @@ namespace TinCan.Features.Voyage.Tests
             public int BriefingSecondsLeft => 0;
             public void RequestRestart() { }
             public bool ConsumeRestartRequest() => false;
+            public void RequestRespawn() { }
+            public bool ConsumeRespawnRequest() => false;
             public void ServerSetPhase(VoyagePhase phase) => Phase = phase;
             public void ServerSetVoyage(int voyage) { }
             public void ServerSetDestination(Vector3 destination) { }

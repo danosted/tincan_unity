@@ -97,7 +97,6 @@ namespace TinCan.Features.CloudBoundary.Tests
                 _timeService,
                 _events,
                 new CloudSurfaceQuery(_config),
-                new NoOpCloudBoundaryExpiryHandler(),
                 _respawnService,
                 new CloudBoundaryProcessor(),
                 _config,
@@ -203,6 +202,56 @@ namespace TinCan.Features.CloudBoundary.Tests
             _useCase.Tick();
 
             Assert.That(_respawnService.CallCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void EmergencyRunningOut_LosesTheShip_AndRecoveringIt_StartsAfresh()
+        {
+            FakeAirshipView airship = AddAirship(new Vector3(0f, -6f, 0f));
+
+            for (int tick = 0; tick < 17; tick++) _useCase.Tick();
+            Assert.That(_useCase.IsLost(airship), Is.True);
+
+            _useCase.Recover(airship);
+            Assert.That(_useCase.IsLost(airship), Is.False);
+            _useCase.Tick();
+            Assert.That(_useCase.IsLost(airship), Is.False, "a fresh countdown, not the old one");
+        }
+
+        [Test]
+        public void SafePose_IsTheLastPoseAboveTheSea_Upright()
+        {
+            FakeAirshipView airship = AddAirship(new Vector3(0f, -30f, 0f));
+            _useCase.Tick();
+            Assert.That(_useCase.TryGetSafePose(airship, out _, out _), Is.False, "never seen safe yet");
+
+            airship.Transform.SetPositionAndRotation(new Vector3(40f, 2f, 0f), Quaternion.Euler(20f, 90f, 5f));
+            _useCase.Tick();
+            airship.Transform.position = new Vector3(60f, -8f, 0f); // in the cloud: not safe
+            _useCase.Tick();
+
+            Assert.That(_useCase.TryGetSafePose(airship, out var position, out var rotation), Is.True);
+            Assert.That(position, Is.EqualTo(new Vector3(40f, 2f, 0f)));
+            Assert.That(Vector3.Angle(rotation * Vector3.up, Vector3.up), Is.LessThan(0.01f), "upright");
+            Assert.That(Vector3.Angle(rotation * Vector3.forward, Vector3.right), Is.LessThan(0.01f), "the heading it flew");
+        }
+
+        [Test]
+        public void CrewAboardASinkingShip_DoNotGoOverboard_TheyShareItsFate()
+        {
+            FakeAirshipView airship = AddAirship(new Vector3(0f, -30f, 0f));
+            var movement = new FakeHumanoidMovementView("Crew");
+            movement.Transform.position = new Vector3(0f, -28f, 0f);
+            movement.UpdateGroundData(new GroundData { MovingGroundTransform = airship.Transform });
+            _movementViews.Add(movement);
+            _registry.Register(new FakeHumanoidCharacterView(movement));
+            var handler = new TakingHandler();
+            _overboard.Add(handler);
+
+            _useCase.Tick();
+
+            Assert.That(handler.Taken, Is.Empty, "not overboard");
+            Assert.That(_respawnService.CallCount, Is.Zero, "not teleported");
         }
 
         private sealed class TakingHandler : IOverboardHandler

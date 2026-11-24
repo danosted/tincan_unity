@@ -13,7 +13,7 @@ namespace TinCan.Features.Airship.Fuel
     /// Application Layer: burns fuel while an airship is being driven and toggles the engine-stall ability
     /// when the tank runs dry. Ticked from the network tick right after airship movement; server only.
     /// </summary>
-    public class FuelConsumptionUseCase : ISimulationTickable, ISessionParticipant
+    public class FuelConsumptionUseCase : ISimulationTickable, ISessionParticipant, IShipRecovery
     {
         public SimulationPhase Phase => SimulationPhase.AfterAirship;
 
@@ -59,6 +59,15 @@ namespace TinCan.Features.Airship.Fuel
                 if (supply.Count < start) supply.Add(start - supply.Count);
                 while (supply.Count > start && supply.TryTake()) { } // cans caught last voyage go back
             }
+        }
+
+        /// <summary>A lost ship is brought back with a full tank; its jerry-can crate stays as it was.</summary>
+        public void Recover(IAirshipView ship)
+        {
+            if (!_networkService.IsServer) return;
+
+            var tank = ResolveTank(ship);
+            if (tank?.Config != null) tank.Refill(tank.Capacity);
         }
 
         /// <summary>Fuel keeps working between voyages: nothing to switch.</summary>

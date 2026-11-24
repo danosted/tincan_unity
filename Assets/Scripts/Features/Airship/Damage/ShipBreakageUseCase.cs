@@ -18,7 +18,7 @@ namespace TinCan.Features.Airship.Damage
     /// itself (State.Damaged); a fully repaired part releases both. Reconciling rather than reacting keeps breaks and
     /// repairs from any source (timer, repair tool, other damage effects, scenarios) consistent.
     /// </summary>
-    public class ShipBreakageUseCase : ISimulationTickable, IShipBreakage, ISessionParticipant
+    public class ShipBreakageUseCase : ISimulationTickable, IShipBreakage, ISessionParticipant, IShipRecovery
     {
         public SimulationPhase Phase => SimulationPhase.AfterAirship;
 
@@ -100,6 +100,9 @@ namespace TinCan.Features.Airship.Damage
             Reconcile(airship, points);
             _nextBreakAt = _elapsed + _config.FirstBreakDelay;
         }
+
+        /// <summary>A lost ship is brought back whole: the same restore as a new session (there is one ship).</summary>
+        public void Recover(IAirshipView ship) => ResetForSession();
 
         /// <summary>Random breakage runs only while the session is underway, and only where the config switches it on.</summary>
         public void SetSessionActive(bool active) => AutoBreak = active && _config.AutoBreak;

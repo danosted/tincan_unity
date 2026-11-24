@@ -86,5 +86,13 @@ namespace TinCan.Features.CloudBoundary.Tests
             Assert.That(result.IsActive, Is.True);
             Assert.That(result.RemainingTime, Is.EqualTo(9f));
         }
+
+        [TestCase(105f, 100f, true, TestName = "IsSafe_AboveTheOpenSea")]
+        [TestCase(95f, 100f, false, TestName = "IsSafe_NotInTheCloud")]
+        [TestCase(80f, -300f, false, TestName = "IsSafe_NotOverAHole")]
+        public void IsSafe(float altitude, float surfaceHeight, bool safe)
+        {
+            Assert.That(_processor.IsSafe(altitude, surfaceHeight, lowestSea: 79f), Is.EqualTo(safe));
+        }
     }
 }

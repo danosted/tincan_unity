@@ -13,17 +13,29 @@ MonoBehaviour:
   m_Name: Menu_VoyageLost
   m_EditorClassIdentifier: TinCan.UI::TinCan.Core.UI.MenuDefinition
   _menuId: voyage_lost
-  _title: The ship is lost.
+  _title: The ship is lost, and its whole crew.
   _items:
+  - ItemId: respawn
+    Label: Respawn
+    Kind: 0
+    CommandId: VoyageRespawn
+    Submenu: {fileID: 0}
+    DefaultValue: 
+    SettingsGroup: 0
+    RowSource: 
   - ItemId: restart
     Label: Restart Voyage
     Kind: 0
     CommandId: VoyageRestart
     Submenu: {fileID: 0}
     DefaultValue: 
+    SettingsGroup: 0
+    RowSource: 
   - ItemId: quit
     Label: Quit
     Kind: 0
     CommandId: Quit
     Submenu: {fileID: 0}
     DefaultValue: 
+    SettingsGroup: 0
+    RowSource: 

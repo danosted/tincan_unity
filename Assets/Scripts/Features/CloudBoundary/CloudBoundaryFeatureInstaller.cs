@@ -2,6 +2,7 @@
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Atmosphere;
 using TinCan.Core.Domain.Features;
+using TinCan.Core.Ship;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -9,7 +10,8 @@ using VContainer.Unity;
 namespace TinCan.Features.CloudBoundary
 {
     /// <summary>
-    /// The cloud deck as a boundary: ships and players that sink into it are pushed out or respawned, on the server's
+    /// The cloud deck as a boundary: a ship that sinks too deep for too long is lost with its crew (the voyage ends on
+    /// it, <see cref="IShipLossSource"/>), and a player who falls overboard is respawned, on the server's
     /// simulation tick (<see cref="SimulationPhase.BeforeHumanoid"/>). Reads the deck from the scene's
     /// <see cref="CloudEnvironmentView"/>, so the scene needs one (the test-range scenes have it).
     /// </summary>
@@ -26,8 +28,8 @@ namespace TinCan.Features.CloudBoundary
             builder.RegisterComponentInHierarchy<CloudEnvironmentView>().AsSelf().As<IViewSubmersion>();
             builder.Register<CloudBoundaryProcessor>(Lifetime.Singleton);
             builder.Register<CloudSurfaceQuery>(Lifetime.Singleton).As<ICloudSurfaceQuery>();
-            builder.Register<NoOpCloudBoundaryExpiryHandler>(Lifetime.Singleton).As<ICloudBoundaryExpiryHandler>();
-            builder.Register<CloudBoundaryUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>();
+            builder.Register<CloudBoundaryUseCase>(Lifetime.Singleton).AsSelf().As<ISimulationTickable>()
+                .As<IShipLossSource>().As<IShipRecovery>();
         }
     }
 }

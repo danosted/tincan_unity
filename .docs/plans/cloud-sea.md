@@ -20,8 +20,9 @@ purpose, hide in it, cross holes in it, and climb out again. Four ideas carry th
   noise (`CloudBoundaryConfig`: flat, rolling or layered; base altitude 0, amplitude 20). It has no thickness, holes or
   time.
 - **Going under is failure:** `CloudBoundaryProcessor` / `CloudBoundaryUseCase` start an emergency when a ship sinks
-  `EmergencyDepth` below the surface, and when it runs out the expiry handler takes over. Characters deeper than
-  `CharacterResetDepth` are moved back onto their ship.
+  `EmergencyDepth` below the surface, and when it runs out the ship is lost with its whole crew (the voyage's Lost
+  screen: Respawn at its last safe spot, or Restart; `.docs/plans/ship-lost-and-respawn.md`). Characters deeper than
+  `CharacterResetDepth` who are not with a ship fall overboard; the crew aboard shares the ship's fate.
 - **Submersion feel exists:** `CloudSubmersionProcessor` turns depth below the surface into whiteout, vapour, dimmer
   light and muffled audio, and `CloudEnvironmentView` applies it to fog and the sun (fog and sun only so far).
 - **Ships have no buoyancy:** the airship's rigidbody has no gravity (`Core/Ship/AirshipControllerView.cs`), and

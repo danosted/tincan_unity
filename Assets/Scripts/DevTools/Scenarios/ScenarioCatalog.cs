@@ -529,6 +529,45 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<CannonScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
+        /// <summary>
+        /// The ship sinks too deep in the cloud and stays there: the cloud boundary's countdown runs out and the ship is
+        /// lost with its whole crew (the subject on deck is not sent overboard on their own). The subject presses Respawn
+        /// on the Lost screen (a server RPC from the client): the ship comes back whole where it was last safe, and the
+        /// same voyage goes on. Plan: ship-lost-and-respawn.md.
+        /// </summary>
+        public static readonly ScenarioEntry ShipLostRespawn = new(
+            new Scenario.Builder("ShipLostRespawn")
+                .InScene(TestScenes.Voyage)
+                .Describe("Voyage underway, ship hurt -> it sinks deep into the cloud -> Lost on both peers after the countdown " +
+                          "-> the subject presses Respawn -> underway again, the ship whole where it sank, the same voyage.")
+                .Timeout(120f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 45f)
+                    .Wait(1.5f, "settle after spawn")
+                    .Do("VoyageBegin")
+                    .WaitUntil("VoyagePhase", 5f, "Briefing")
+                    .Do("VoyageCastOff")
+                    .WaitUntil("VoyagePhase", 5f, "Underway")
+                    .Do("HurtShip")
+                    .Wait(1f, "the boundary sees the ship safe above the sea")
+                    .Do("SinkShipInCloud"))
+                .Act(s => s
+                    .WaitUntil("VoyagePhase", 45f, "Lost")
+                    .WaitUntil("MenuShown", 5f, "voyage_lost")
+                    .Checkpoint("lost")
+                    .Do("PressMenuItem", "respawn")
+                    .WaitUntil("VoyagePhase", 10f, "Underway")
+                    .WaitUntil("NoMenuShown", 5f)
+                    .Expect("ShipHealthFull")
+                    .Checkpoint("respawned"))
+                .Assert(s => s
+                    .WaitUntil("VoyagePhase", 45f, "Lost")
+                    .WaitUntil("VoyagePhase", 30f, "Underway")
+                    .Expect("ShipBackWhereItSank")
+                    .Expect("ShipHealthFull"))
+                .Build(),
+            builder => builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
         // The server arrives, the subject restarts from its end screen (a server RPC from the client), the server sinks
         // the ship. Lanes run side by side and meet on the replicated voyage phase.
         public static readonly ScenarioEntry VoyageLoop = new(
@@ -2415,7 +2454,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, CloudWebReal, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone, CrewBodyMoves, StormInWorld, StormCure };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, ShipLostRespawn, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, CloudWebReal, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone, CrewBodyMoves, StormInWorld, StormCure };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

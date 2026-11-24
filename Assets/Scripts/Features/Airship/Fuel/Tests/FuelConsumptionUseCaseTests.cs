@@ -91,6 +91,19 @@ namespace TinCan.Features.Airship.Fuel.Tests
         }
 
         [Test]
+        public void Recover_FillsTheTank_AndLeavesTheCrate()
+        {
+            _config.InitialSupply = 2;
+            _tank.Inner.Level = 10f;
+            var crate = FakeJerryCanSupplyBehaviour.AttachTo(_airship.GameObject, 5);
+
+            _useCase.Recover(_airship);
+
+            Assert.That(_tank.Inner.Level, Is.EqualTo(_tank.Inner.Capacity));
+            Assert.That(crate.Count, Is.EqualTo(5), "the world's progress stays: only the ship is made whole");
+        }
+
+        [Test]
         public void Tick_NotServer_DoesNothing()
         {
             var clientNetwork = new ClientNetworkService();

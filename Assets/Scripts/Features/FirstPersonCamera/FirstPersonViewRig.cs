@@ -43,8 +43,21 @@ namespace TinCan.Features.FirstPersonCamera
         /// <summary>The field of view to look through: the player's setting where there is one, else the config's.</summary>
         public float FieldOfView => _settings != null && _settings.Has(FieldOfViewKey) ? _settings.GetFloat(FieldOfViewKey) : _config.FieldOfView;
 
+        // The body is hidden first and shown last: the overlay touches the render pipeline, which can throw (a renderer
+        // feature failing to build), and that must not leave the player looking at the inside of their own body.
         public void Take(Camera camera, IReadOnlyList<Renderer> body)
         {
+            _hidden.Clear();
+            if (_config.HideBody)
+            {
+                foreach (var renderer in body)
+                {
+                    if (renderer == null) continue;
+                    _hidden.Add((renderer, renderer.shadowCastingMode));
+                    renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+                }
+            }
+
             _held = camera;
             _savedFieldOfView = camera.fieldOfView;
             _savedNearClip = camera.nearClipPlane;
@@ -52,30 +65,22 @@ namespace TinCan.Features.FirstPersonCamera
             camera.nearClipPlane = _config.NearClip;
             _trailing = null;
             AttachOverlay(camera);
-
-            _hidden.Clear();
-            if (!_config.HideBody) return;
-            foreach (var renderer in body)
-            {
-                if (renderer == null) continue;
-                _hidden.Add((renderer, renderer.shadowCastingMode));
-                renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
-            }
         }
 
         public void Release(Camera camera, IReadOnlyList<Renderer> body)
         {
-            _held = null;
-            camera.fieldOfView = _savedFieldOfView;
-            camera.nearClipPlane = _savedNearClip;
-            _overlay?.Detach();
-            _overlay = null;
-
             foreach (var (renderer, mode) in _hidden)
             {
                 if (renderer != null) renderer.shadowCastingMode = mode;
             }
             _hidden.Clear();
+
+            _held = null;
+            camera.fieldOfView = _savedFieldOfView;
+            camera.nearClipPlane = _savedNearClip;
+            var overlay = _overlay;
+            _overlay = null;
+            overlay?.Detach();
         }
 
         public (Vector3 Position, Quaternion Rotation) Place(in ViewPose pose) => Eyes(pose);

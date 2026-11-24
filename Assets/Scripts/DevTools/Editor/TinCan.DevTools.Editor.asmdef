@@ -28,6 +28,7 @@
         "TinCan.Features.Airship.PhysicalParts",
         "TinCan.Features.DesignedEvents",
         "TinCan.Features.Encounters",
+        "TinCan.Features.CrewBody",
         "TinCan.Features.Anchor",
         "TinCan.Features.Gathering",
         "TinCan.Features.GasChallenge",

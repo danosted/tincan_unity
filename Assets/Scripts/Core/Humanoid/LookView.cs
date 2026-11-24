@@ -103,6 +103,23 @@ namespace TinCan.Core.Humanoid
             if (_cameraPivot != null) _cameraPivot.gameObject.SetActive(false);
         }
 
+        /// <summary>
+        /// The body changed while this view had the camera (a feature attached a body after possession): the rig lets
+        /// the old one go and takes the new one, so a first-person rig hides it too. Nothing happens otherwise.
+        /// </summary>
+        public void RefreshBody()
+        {
+            if (!IsActive || _cameraPivot == null || _rig == null) return;
+            try
+            {
+                _rig.Release(Camera, Body);
+            }
+            finally
+            {
+                _rig.Take(Camera, Body);
+            }
+        }
+
         private IReadOnlyList<Renderer> Body => _anchor?.BodyRenderers ?? System.Array.Empty<Renderer>();
 
         // The ears go with the camera the local player looks through. Scenes hold no camera (it lives on what you

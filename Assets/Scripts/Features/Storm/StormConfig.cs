@@ -21,13 +21,13 @@ namespace TinCan.Features.Storm
         public CloudWeatherTarget Clouds;
 
         [Header("Lightning (mood only)")]
-        [Tooltip("Strikes per minute at full weight; fewer as the weight falls, none below MinWeight.")]
+        [Tooltip("Strikes per minute in a raging storm, seen from anywhere; fewer as it is cured, none below MinWeight. (In the lab's slider mode, by the weight where you are.)")]
         [Min(0f)] public float StrikesPerMinute = 12f;
         [Tooltip("Below this weight there is no lightning.")]
         [Range(0f, 1f)] public float LightningMinWeight = 0.25f;
         [Tooltip("How long a flash lasts, seconds (it flickers twice).")]
         [Min(0.02f)] public float FlashSeconds = 0.35f;
-        [Tooltip("Seconds from a flash to its thunder: near strikes (a heavy storm) sooner, far ones later.")]
+        [Tooltip("The lab's slider mode only: seconds from a flash to its thunder, near strikes (a heavy storm) sooner. In the world the thunder comes at the speed of sound from where the strike is.")]
         public Vector2 ThunderDelay = new(0.4f, 4f);
         [Tooltip("Seeds where the strikes fall in time, the same on every peer.")]
         public int Seed = 1;

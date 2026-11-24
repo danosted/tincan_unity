@@ -7,7 +7,8 @@ namespace TinCan.Features.Storm
     /// <summary>
     /// Every peer with a view, presentation only: the storm's sound. Three looping beds, heard everywhere on the deck
     /// (2D, through the config's mixer group, Ambience): the wind rising with the weight, the rain with it a little
-    /// later, and the heart's pulse near the eye. Thunder plays when its time comes (<see cref="Thunder"/>). Driven by
+    /// later, and the heart's pulse near the eye. Thunder plays when its time comes (<see cref="Thunder"/>), fainter and
+    /// more muffled the farther the strike. Driven by
     /// <see cref="StormWeatherPresenter"/>; its game object is made on first use and kept for the scene.
     /// </summary>
     public sealed class StormSoundPresenter : IDisposable
@@ -18,16 +19,22 @@ namespace TinCan.Features.Storm
         private AudioSource? _rain;
         private AudioSource? _heart;
         private AudioSource? _thunder;
+        private AudioLowPassFilter? _thunderMuffle;
         private float _thunderAt = float.PositiveInfinity;
         private int _thunderSlot;
+        private float _thunderShare;
+        private float _thunderCutoff;
 
         public StormSoundPresenter(StormConfig config) => _config = config;
 
-        /// <summary>Schedules a thunderclap at the shared clock's <paramref name="at"/> (a later strike replaces it).</summary>
-        public void Thunder(float at, int slot)
+        /// <summary>Schedules a thunderclap at the shared clock's <paramref name="at"/> (a later strike replaces it), at
+        /// <paramref name="share"/> of full volume, low-passed at <paramref name="cutoff"/> Hz (far thunder only rumbles).</summary>
+        public void Thunder(float at, int slot, float share, float cutoff)
         {
             _thunderAt = at;
             _thunderSlot = slot;
+            _thunderShare = share;
+            _thunderCutoff = cutoff;
         }
 
         public void Step(float now, float depth, float strength, float weight)
@@ -42,7 +49,9 @@ namespace TinCan.Features.Storm
             _thunderAt = float.PositiveInfinity;
             if (_thunder == null || _config.Thunder.Length == 0) return;
             var clip = _config.Thunder[Math.Abs(_thunderSlot) % _config.Thunder.Length];
-            if (clip != null) _thunder.PlayOneShot(clip, _config.ThunderVolume * Mathf.Clamp01(0.4f + weight));
+            if (clip == null) return;
+            if (_thunderMuffle != null) _thunderMuffle.cutoffFrequency = _thunderCutoff;
+            _thunder.PlayOneShot(clip, _config.ThunderVolume * Mathf.Clamp01(_thunderShare));
         }
 
         public void Dispose()
@@ -58,7 +67,11 @@ namespace TinCan.Features.Storm
             _wind = Bed(_config.WindLoop);
             _rain = Bed(_config.RainLoop);
             _heart = Bed(_config.HeartLoop);
-            _thunder = _root.AddComponent<AudioSource>();
+            // On its own object, so its low-pass muffles only the thunder.
+            var thunder = new GameObject("Thunder");
+            thunder.transform.SetParent(_root.transform, false);
+            _thunder = thunder.AddComponent<AudioSource>();
+            _thunderMuffle = thunder.AddComponent<AudioLowPassFilter>();
             _thunder.playOnAwake = false;
             _thunder.spatialBlend = 0f;
             _thunder.outputAudioMixerGroup = _config.Output;

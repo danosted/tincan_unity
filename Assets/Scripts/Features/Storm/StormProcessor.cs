@@ -59,9 +59,38 @@ namespace TinCan.Features.Storm
             return flicker * (1f - t);
         }
 
-        /// <summary>Seconds from flash to thunder: the deeper the storm, the nearer the strikes.</summary>
+        /// <summary>Seconds from flash to thunder when the storm has no place in the world (the lab's sliders): the deeper
+        /// the storm, the nearer the strikes.</summary>
         public static float ThunderDelay(float weight, Vector2 range, int seed, int slot) =>
             Mathf.Lerp(range.y, range.x, Mathf.Clamp01(weight)) * Mathf.Lerp(0.7f, 1.3f, Hash01(seed, slot, 2));
+
+        /// <summary>How far a strike's glow lights the cloud round it, metres.</summary>
+        public const float GlowRadius = 500f;
+
+        /// <summary>Metres a second: thunder from a strike 2 km off comes about 6 s after its flash.</summary>
+        public const float SpeedOfSound = 343f;
+
+        /// <summary>Within this many metres thunder is heard at full volume; farther, it falls with the distance.</summary>
+        public const float ThunderNear = 400f;
+
+        /// <summary>
+        /// Where the strike in <paramref name="slot"/> is: in the storm's bands (a fifth to three quarters of the way in),
+        /// low in its column (150 to 900 m), round the disc by the seed, so every peer sees it in the same place.
+        /// </summary>
+        public static Vector3 StrikeSpot(Vector2 centre, float radius, int seed, int slot)
+        {
+            float angle = Hash01(seed, slot, 3) * Mathf.PI * 2f;
+            float fromCentre = radius * (1f - Mathf.Lerp(0.2f, 0.75f, Hash01(seed, slot, 4)));
+            float height = Mathf.Lerp(150f, 900f, Hash01(seed, slot, 5));
+            return new Vector3(centre.x + Mathf.Cos(angle) * fromCentre, height, centre.y + Mathf.Sin(angle) * fromCentre);
+        }
+
+        /// <summary>How loud thunder from <paramref name="distance"/> metres is, 0..1: full near, falling with distance.</summary>
+        public static float ThunderShare(float distance) => Mathf.Clamp01(ThunderNear / Mathf.Max(distance, 1f));
+
+        /// <summary>The low-pass cutoff for thunder from <paramref name="distance"/> metres, Hz: near it cracks, far off
+        /// only the rumble arrives.</summary>
+        public static float ThunderCutoff(float distance) => Mathf.Lerp(22000f, 800f, Mathf.Clamp01(distance / 3000f));
 
         /// <summary>The heart's pulse volume share: silent below <paramref name="fromDepth"/>, full at the eye's edge.</summary>
         public static float HeartShare(float depth, float strength, float fromDepth)

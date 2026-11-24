@@ -87,12 +87,15 @@ A launch argument `-defaultsettings` (read through `LaunchArguments`) makes the 
   without a change) and by `perf.ps1`.
 - The menu: `MenuItemKind.Settings` (placeholder with `SettingsGroup`), generated `Slider` and `Choice` rows
   (`MenuItemRow` carries `Min`, `Max`, `Step`, `Options`), `MenuSettingsRows`, `Menu_Settings` with Controls (look
-  settings, then Key bindings) and View pages; the main menu's Controls row became Settings. Graphics and Player
-  pages come with S3. The Audio page came with audio S2 (2026-11-07, [audio-mixer.md](audio-mixer.md)).
+  settings, then Key bindings) and View pages; the main menu's Controls row became Settings. The Player page comes
+  with S3. The Audio page came with audio S2 (2026-11-07, [audio-mixer.md](audio-mixer.md)). The Graphics page came
+  early (2026-11-24, [cloud-sea-fog.md](cloud-sea-fog.md) F4) with the core view distance (`graphics.view_distance`,
+  `ViewDistance`, applied to the local view camera's far plane by `ViewDistancePresenter`) and the cloud mist's
+  `graphics.clouds`; S3's applier adds vsync, frame cap, fullscreen and quality to it.
 - View tests use `com.unity.ui.test-framework` (UI plan U3): `MenuOverlayViewClickTests`.
 - Assets: **TinCan > Dev > Settings > Build Assets** (`DevTools/Editor/SettingsAssetBuilder.cs`).
 
-Next: S3 (graphics applier, `player.name`).
+Next: S3 (graphics applier on the existing Graphics page, `player.name`).
 
 ## Verification
 - EditMode suite green, plus the new tests.

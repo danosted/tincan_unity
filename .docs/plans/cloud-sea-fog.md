@@ -73,9 +73,11 @@ So near the camera the sea becomes a volume, and the layered surface stays for t
   a rift's edge reads the same on every machine. Gameplay keeps the hard cut (`CloudSurfaceQuery`).
 - **Tiers as data.** `CloudMistQuality` holds four tiers (Low, Medium, High, Ultra): resolution, steps, light steps,
   detail octaves, ship shadows, and how far the mist reaches. Picked by the player setting `graphics.clouds` (Auto, Off,
-  Low, Medium, High, Ultra); Auto follows Unity's quality level through the asset's mapping. The setting shows in the
-  menu once the Graphics page exists (player-settings S3); until then Auto applies, and switching the quality level
-  in Project Settings switches the tier.
+  Low, Medium, High, Ultra), on the Settings menu's Graphics page beside the view distance; Auto follows Unity's
+  quality level through the asset's mapping.
+- **View distance** (`graphics.view_distance`: Near 700, Normal 1000, Far 1500, Very Far 2500 m, core
+  `ViewDistance`) sets the local view camera's far plane; the air already fades to it, and the drawn sea's grid grows to
+  reach it (`CloudSeaPresenter.SurfaceGridSize`), so Very Far costs a larger grid only when picked.
 - **The pass.** `CloudMistRendererFeature` on `_MainURPRenderer`, after transparents: a raymarch at the tier's
   resolution, only through the slab the mist can occupy and only up to its reach, with steps finer near the eye, then a
   depth-aware upsample onto the screen. Shading inputs (lit, hollow, thin) are gathered along the ray and shaded once

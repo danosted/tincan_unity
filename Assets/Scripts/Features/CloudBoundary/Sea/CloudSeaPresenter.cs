@@ -34,6 +34,8 @@ namespace TinCan.Features.CloudBoundary
         private readonly List<Object> _owned = new();
         private readonly List<Material> _shellMaterials = new();
         private Transform? _root;
+        private MeshFilter? _surface;
+        private float _surfaceSize;
 
         public CloudSeaPresenter(ILocalViewCamera view, ICloudHoles holes, ITimeService time,
             CloudBoundaryConfig boundary, CloudSeaConfig config, Material? material)
@@ -52,12 +54,15 @@ namespace TinCan.Features.CloudBoundary
             if (_material == null || camera == null) return;
 
             _root ??= Create(_material);
+            // The surface's grid reaches the far plane, however far the player's view distance sets it.
+            float size = SurfaceGridSize(_config.GridSize, camera.farClipPlane);
+            if (size != _surfaceSize) Resize(size);
             Vector3 eye = camera.transform.position;
             _root.position = new Vector3(Snap(eye.x, _config.GridStep), 0f, Snap(eye.z, _config.GridStep));
             for (int i = 0; i < _shellMaterials.Count; i++) MatchShell(_material, _shellMaterials[i], i + 1);
             // The surface fades out by real distance before the grid's edge and before the camera's flat far plane,
             // so turning the camera never cuts it.
-            float fadeOut = FadeOut(_config.GridSize * 0.5f, camera.farClipPlane);
+            float fadeOut = FadeOut(_surfaceSize * 0.5f, camera.farClipPlane);
             CloudSeaShaderGlobals.Apply(_time.Time, _boundary.BaseAltitude, _boundary.Swell, _holes.ShapesNow,
                 _config.Web(_boundary.WorldSeed), fadeOut);
             CloudSeaShaderGlobals.ApplyLook(_material);
@@ -79,11 +84,27 @@ namespace TinCan.Features.CloudBoundary
         /// <summary>The grid's centre for a camera at <paramref name="value"/>: the nearest whole step.</summary>
         public static float Snap(float value, float step) => Mathf.Round(value / step) * step;
 
+        /// <summary>The surface grid's width: the configured one, or wider when the far plane lies past its edge.</summary>
+        public static float SurfaceGridSize(float gridSize, float farClipPlane) => Mathf.Max(gridSize, farClipPlane * 2f);
+
+        // A new surface grid of this width; the old one is destroyed (only when the view distance changes).
+        private void Resize(float size)
+        {
+            if (_surface == null) return;
+            Mesh old = _surface.sharedMesh;
+            _surface.sharedMesh = Grid(size);
+            _surfaceSize = size;
+            if (old == null) return;
+            _owned.Remove(old);
+            Object.Destroy(old);
+        }
+
         private Transform Create(Material material)
         {
             var root = new GameObject("Cloud Sea");
             _owned.Add(root);
-            Draw(root.transform, "Surface", Grid(_config.GridSize), material);
+            _surfaceSize = _config.GridSize;
+            _surface = Draw(root.transform, "Surface", Grid(_surfaceSize), material);
             if (_config.Shells <= 0) return root.transform;
 
             Mesh shellGrid = Grid(_config.ShellGridSize);
@@ -112,15 +133,17 @@ namespace TinCan.Features.CloudBoundary
             shell.renderQueue = surface.renderQueue + layer;
         }
 
-        private static void Draw(Transform root, string name, Mesh mesh, Material material)
+        private static MeshFilter Draw(Transform root, string name, Mesh mesh, Material material)
         {
             var layer = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer));
             layer.transform.SetParent(root, false);
-            layer.GetComponent<MeshFilter>().sharedMesh = mesh;
+            var filter = layer.GetComponent<MeshFilter>();
+            filter.sharedMesh = mesh;
             var renderer = layer.GetComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
+            return filter;
         }
 
         private Mesh Grid(float size)

@@ -24,9 +24,9 @@ namespace TinCan.Features.Atmosphere
             if (!enabled) Shader.SetGlobalFloat(Whiteout, 0f);
         }
 
-        /// <summary>How far the local view is in the cloud's whiteout, 0..1: the painted sky and the sky's clouds fade
-        /// to the air's colour by it, so under the cloud sea you do not see a clear sky (plan .docs/plans/cloud-sea.md,
-        /// step 3).</summary>
+        /// <summary>How white the sky goes in the cloud's whiteout, 0..1 (<see cref="AtmosphereProcessor.SkyWhiteout"/>):
+        /// the painted sky and the sky's clouds fade to the air's colour by it, so under the cloud sea you do not see a
+        /// clear sky (plan .docs/plans/cloud-sea.md, step 3).</summary>
         public static void ApplyWhiteout(float whiteout) => Shader.SetGlobalFloat(Whiteout, Mathf.Clamp01(whiteout));
 
         /// <summary>

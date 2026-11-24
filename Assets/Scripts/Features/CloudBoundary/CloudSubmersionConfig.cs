@@ -10,7 +10,8 @@ namespace TinCan.Features.CloudBoundary
         [SerializeField, Min(1f)] private float _transitionDepth = 25f;
 
         [Tooltip("How far above the cloud surface submersion starts, in metres: where the drawn cloud is seen to begin " +
-                 "(the drawn sea's heaps and fluff rise above the surface the game uses). Only the view's fog, light " +
+                 "(the drawn sea's heaps and fluff rise above the surface the game uses, less the sea material's Sink; " +
+                 "move this with Sink). Only the view's fog, light " +
                  "and audio read it; the boundary and the holes do not. Plan .docs/plans/cloud-sea.md, step 3.")]
         [SerializeField, Min(0f)] private float _surfaceLift = 15f;
 

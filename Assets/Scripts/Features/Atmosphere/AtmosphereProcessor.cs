@@ -52,6 +52,22 @@ namespace TinCan.Features.Atmosphere
         /// <summary>The least of the ambient light left fully inside a cloud, as a share of the light multiplier's dimming.</summary>
         private const float AmbientInCloud = 0.6f;
 
+        /// <summary>How far away the sky is taken to be inside a cloud, in metres: well past what the whiteout fog lets through.</summary>
+        public const float SkyReach = 300f;
+
+        /// <summary>
+        /// How white the sky and the sky's clouds go in a cloud, 0..1: the whiteout fog over <see cref="SkyReach"/>,
+        /// capped like the scene's fog. The sky lies behind everything, so it whitens as much as the farthest scene
+        /// surface does; with the raw whiteout it stayed clearer than the fogged cloud around it, and a gap in the
+        /// cloud (a rift seen from inside) showed its outline (plan .docs/plans/cloud-sea.md, step 3).
+        /// </summary>
+        public static float SkyWhiteout(float whiteout, float whiteoutDensity, float maxFog)
+        {
+            whiteout = Mathf.Clamp01(whiteout);
+            float cap = Mathf.Lerp(Mathf.Clamp01(maxFog), 1f, whiteout);
+            return Mathf.Min(1f - Mathf.Exp(-whiteout * Mathf.Max(whiteoutDensity, 0f) * SkyReach), cap);
+        }
+
         public AtmosphereFrame Evaluate(in LookSettings look, float whiteout, float lightMultiplier)
         {
             whiteout = Mathf.Clamp01(whiteout);

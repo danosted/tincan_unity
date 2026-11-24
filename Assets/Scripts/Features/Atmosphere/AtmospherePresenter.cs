@@ -106,7 +106,8 @@ namespace TinCan.Features.Atmosphere
             Current = frame;
 
             AtmosphereShaderGlobals.Apply(frame, look);
-            AtmosphereShaderGlobals.ApplyWhiteout(_submersion?.Whiteout ?? 0f);
+            AtmosphereShaderGlobals.ApplyWhiteout(
+                AtmosphereProcessor.SkyWhiteout(_submersion?.Whiteout ?? 0f, look.WhiteoutDensity, look.MaxFog));
             AtmosphereShaderGlobals.ApplyWeatherShade(_weather?.Look.CloudShade ?? Color.white, _weather?.Weight ?? 0f);
             SkyShaderGlobals.SetEnabled(day);
             if (day) SkyShaderGlobals.Apply(light);

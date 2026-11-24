@@ -5,7 +5,9 @@
 //   morphing, so the crests break into cauliflower edges instead of reading as smooth hills.
 // - Shells: the same grid drawn again in thin see-through layers above the surface (_ShellLayer 1..N, set by the
 //   presenter), each cut by one drifting fluff field at a rising threshold, so the tops are soft and fray, light
-//   passes through thin edges, and you see a little way into the cloud. Layer 0 is the surface itself.
+//   passes through thin edges, and you see a little way into the cloud. Layer 0 is the surface itself. The shells end
+//   at a hole's rim; only the surface rolls down its wall. The whole stack sits _Sink metres low, so the game's
+//   surface lies inside the cloud and only the thin tops rise above it.
 // - Fog over ground: every layer thins where the ground lies just behind it (depth texture, _FogDepth), so where the
 //   sea rises over land it reads as fog instead of contour lines.
 // Shaded like the soft clouds, not like water (Include/TinCanCloudLook.hlsl, shared with the volumetric sky): cream lit
@@ -48,6 +50,7 @@ Shader "TinCan/Environment/Cloud Sea Swell"
         _FluffMorph ("Fluff Morph (per s)", Float) = 0.03
         _ShellOpacity ("Shell Opacity", Range(0, 1)) = 0.45
         _ShellFade ("Shell Fade With Distance (m)", Float) = 500
+        _Sink ("Sink (m the drawn sea sits below the game's surface, so only the thin tops rise above it)", Range(0, 30)) = 12
 
         [Header(Holes)]
         _HoleSink ("Drawn Sink (m the rim rolls down)", Float) = 60
@@ -143,6 +146,7 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                 float _FluffMorph;
                 half _ShellOpacity;
                 float _ShellFade;
+                float _Sink;
                 float _HoleSink;
                 float _LipHeight;
                 half4 _VoidColour;
@@ -275,9 +279,13 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                 // The undercut (visual only): down a hole's or rift's wall the cloud tucks back under its own edge, away
                 // from the opening, so the lower wall curls in under the top instead of standing like a cliff. Done by
                 // the visible part of the wall (the rest has dissolved, _HoleClear).
+                // The shells do not follow it: they stay at the uncut height and dissolve as the cut starts (Frag), so
+                // only the surface rolls down the wall; a stack of shells on a near-vertical wall reads as hanging sheets.
+                bool shellLayer = _ShellLayer > 0.5;
+                if (shellLayer) height += cut * _HoleSink;
                 float2 intoHole = float2(cutXp - cutXm, cutZp - cutZm);
                 float slope = length(intoHole);
-                if (slope > 1e-5)
+                if (!shellLayer && slope > 1e-5)
                 {
                     float2 away = -intoHole / slope;
                     float under = smoothstep(0.2, 0.75, cut);
@@ -286,7 +294,7 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                 }
                 output.normalWS = normal;
 
-                world.y = height + _ShellLayer * _ShellSpacing;
+                world.y = height + _ShellLayer * _ShellSpacing - _Sink;
                 output.positionWS = world;
                 output.positionCS = TransformWorldToHClip(world);
                 float amplitude = max(_TinCanCloudSea.z, 1e-3);
@@ -344,6 +352,7 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                 // A hole's wall darkens toward the void as it rolls down.
                 colour = lerp(colour, _VoidColour.rgb, _VoidDarken * smoothstep(0.0, 1.0, cut));
                 colour = TinCanNightShade(colour);
+                colour = TinCanStormGlow(colour, input.positionWS);
 
                 // Fog Pass: the fog standing on the surface up to Fog Height times the top density; a view ray crosses
                 // more of it the flatter it looks, and the fog takes Fog Depth metres to turn solid.
@@ -352,7 +361,6 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                 {
                     float time = _TinCanCloudSea.x;
                     float2 drift = _FogWind.xy * time;
-                colour = TinCanStormGlow(colour, input.positionWS);
                     half top = (half)(FogDensity(xz, drift) * (1.0 - cut));
 
                     // Into it: past where the view ray meets the sea it goes on down; the fog deeper along it slides
@@ -397,6 +405,7 @@ Shader "TinCan/Environment/Cloud Sea Swell"
 
                     fogColour = TinCanWeatherShade(fogColour, input.positionWS);
                     fogColour = TinCanNightShade(fogColour);
+                    fogColour = TinCanStormGlow(fogColour, input.positionWS);
 
                     // See through: under the fog the surface is not ground but the deep, so where the fog is thin it
                     // darkens toward the deep and lets what lies below show a little. The fog itself stays as solid
@@ -405,7 +414,6 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                     // there is none of it, the hazy deep.
                     half3 lower = TinCanCloudShade(look, float3(0, 1, 0), view, 0.7h, 0.2h);
                     half3 deep = lerp(_DeepColour.rgb, lower, saturate(inner * 1.5h));
-                    fogColour = TinCanStormGlow(fogColour, input.positionWS);
                     deep = TinCanNightShade(TinCanWeatherShade(deep, input.positionWS));
                     colour = lerp(colour, deep, _SeeThrough);
                     half surfaceAlpha = 1.0h - _SeeThrough * 0.7h;
@@ -426,7 +434,8 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                 {
                     // One fluff field cut at a rising threshold: each layer keeps less, so the stack rounds into soft
                     // heaps, densest above the surface's own heaps.
-                    float density = saturate(fluff * 0.65 + heaps * 0.55) * (1.0 - cut);
+                    // They end at a hole's rim (Vert keeps them off the wall).
+                    float density = saturate(fluff * 0.65 + heaps * 0.55) * (1.0 - smoothstep(0.0, 0.15, cut));
                     half coverage = (half)smoothstep(layer, layer + _FluffSoftness, density);
                     if (_SeaLook > 0.5)
                     {

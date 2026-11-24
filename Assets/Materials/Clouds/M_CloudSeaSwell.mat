@@ -31,6 +31,7 @@ Material:
     - _BillowDrift: 1.5
     - _BillowScale: 14
     - _BillowStrength: 0.4
+    - _Curl: 25
     - _EdgeFade: 0.2
     - _EdgeMetres: 0.1
     - _FluffMorph: 0.03
@@ -39,6 +40,7 @@ Material:
     - _FogCoverage: 0.55
     - _FogDepth: 12
     - _FogHeight: 15
+    - _FogShape: 0.3
     - _HoleClear: 0.55
     - _HoleSink: 60
     - _HollowDarken: 0.55
@@ -52,7 +54,7 @@ Material:
     - _MottleScale: 220
     - _Rim: 0.35
     - _RimPower: 3
-    - _SeaLook: 2
+    - _SeaLook: 3
     - _SeeThrough: 0.5
     - _ShellCount: 0
     - _ShellFade: 500
@@ -62,6 +64,7 @@ Material:
     - _ShellSpacing: 1.5
     - _SilverFocus: 6
     - _SilverLining: 0.8
+    - _Sink: 12
     - _SunTint: 0.5
     - _Translucency: 0.6
     - _TroughDarken: 0.45

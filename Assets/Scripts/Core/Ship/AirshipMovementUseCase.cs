@@ -14,7 +14,8 @@ namespace TinCan.Core.Ship
     /// Something solid can push the ship out of itself (<see cref="IAirshipCollisionResponse"/>).
     /// Features can add forces to the flight (<see cref="IAirshipFlightForces"/>: momentum, a vertical push, a nose drop);
     /// with none, the ship flies on its engine alone. A feature can hold the ship still (<see cref="IAirshipHold"/>: the
-    /// anchor), which comes before all of it.
+    /// anchor), which comes before all of it. With no pilot the ship winds down to neutral: the nose levels quickly and
+    /// the forces' momentum fades at the deceleration rate, so a nose left pitched down does not dive on.
     /// </summary>
     public class AirshipMovementUseCase : SimulationUseCase<IAirshipView, AirshipInputState>, IAirshipCollisionResponse
     {
@@ -29,6 +30,10 @@ namespace TinCan.Core.Ship
 
         /// <summary>How much of the velocity into a surface comes back out of it when the ship is pushed.</summary>
         public const float Bounce = 0.3f;
+
+        /// <summary>With nobody piloting, how fast the nose eases back to level, per second of tilt (about a second to
+        /// level, capped at the ship's pitch speed). A pilot gets the ship's own, gentler pitch level speed.</summary>
+        public const float UnpilotedPitchLevelSpeed = 1f;
 
         private readonly AirshipMovementProcessor _processor;
         private readonly IReadOnlyList<IAirshipPilotInput> _pilots;
@@ -58,7 +63,7 @@ namespace TinCan.Core.Ship
 
         protected override void ProcessSimulation(IAirshipView airship, AirshipInputState _, bool isCaptured)
         {
-            var input = PilotInput(airship);
+            bool piloted = TryGetPilotInput(airship, out var input);
             airship.InputState = input;
 
             if (!_states.ContainsKey(airship.Id))
@@ -100,6 +105,10 @@ namespace TinCan.Core.Ship
                 level += force.Level;
             }
 
+            // Unpiloted, the ship winds down to neutral: the speed the forces gave it fades like the engine's.
+            if (!piloted)
+                state.Momentum = Mathf.MoveTowards(state.Momentum, 0f, airship.DecelerationRate * deltaTime);
+
             // 3. Calculate Drift Velocity (the vertical push blends in the same way: the lerp toward forward + up).
             state.CurrentVelocity = _processor.CalculateVelocityWithDrift(
                 state.CurrentVelocity,
@@ -122,7 +131,7 @@ namespace TinCan.Core.Ship
                 airship.AngularDeceleration,
                 airship.MaxBankAngle,
                 airship.BankSpeed,
-                airship.PitchLevelSpeed,
+                piloted ? airship.PitchLevelSpeed : UnpilotedPitchLevelSpeed,
                 deltaTime);
 
             // 5. Apply to view (the nose drop is applied, not kept: it never builds up in the pitch momentum).
@@ -161,13 +170,14 @@ namespace TinCan.Core.Ship
             return false;
         }
 
-        private AirshipInputState PilotInput(IAirshipView airship)
+        private bool TryGetPilotInput(IAirshipView airship, out AirshipInputState input)
         {
             foreach (var pilot in _pilots)
             {
-                if (pilot.TryGetInput(airship, out var input)) return input;
+                if (pilot.TryGetInput(airship, out input)) return true;
             }
-            return default;
+            input = default;
+            return false;
         }
     }
 }

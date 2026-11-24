@@ -112,6 +112,10 @@ the reward of the dive, not a mode you switch on.
   `AirshipControllerView`). Before, a nose left a few degrees down kept feeding the dive's momentum, and the ship flew
   on at a steady speed with the throttle off. A dive is now held with the pitch input, and a ship's momentum fades
   once the dive ends.
+- **Decided (developer, 2026-11-24): an unmanned ship winds down to neutral.** With nobody at the helm the nose levels
+  within about a second (`AirshipMovementUseCase.UnpilotedPitchLevelSpeed`, capped at the pitch speed) and the dive's
+  momentum fades at the ship's deceleration rate, like the engine. A helmsman keeps the gentle `PitchLevelSpeed`
+  (the ease-back was found invasive at the helm).
 - **Decided (developer, 2026-11-24): on the sea the ship rides the swell, and riding it is neutral.** On the cloud,
   level is the sea's slope along the heading (read `ContourReach` ahead of and behind the ship, capped at
   `MaxContourTilt` so a hole's rim is a lip; `CloudFlightUseCase.SeaTilt`), handed to the core as

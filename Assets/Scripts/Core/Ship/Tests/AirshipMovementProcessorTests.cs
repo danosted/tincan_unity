@@ -175,6 +175,17 @@ namespace TinCan.Core.Ship.Tests
             Assert.That(result.x, Is.EqualTo(1f).Within(0.0001f));
         }
 
+        [Test]
+        public void CalculateAngularVelocity_Levelling_NeverTurnsFasterThanThePitchSpeed()
+        {
+            // Nose 80 degrees down: -80 * 0.5 = -40 would outrun the helm, so the target is capped at -20; from -19.9 at
+            // decel 5 * 0.1 it reaches the cap, not past it.
+            Vector3 result = _processor.CalculateAngularVelocity(new Vector3(-19.9f, 0f, 0f), new AirshipInputState(),
+                5f, 10f, 0f, 80f, 30f, 20f, 10f, 5f, 20f, 1f, 0.5f, 0.1f);
+
+            Assert.That(result.x, Is.EqualTo(-20f).Within(0.0001f));
+        }
+
         private Vector3 Pitch(AirshipInputState input, float pitchAngle) =>
             _processor.CalculateAngularVelocity(
                 currentAngularVelocity: Vector3.zero,

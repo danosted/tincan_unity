@@ -71,7 +71,7 @@ than iron balls ("Magic is soft light", `ART_DIRECTION.md` pillar 5).
   - **Next:** your eye on the beam, its glows and its sound in Play (the scenario captures come after the beam has
     faded, so they don't show it). Then R2, and with it how a target answers `Beam.Hit`.
 
-- **2026-11-23, R2 targets answer the beam (built with `storm-crossing.md` ST5; EditMode 1714/1714).**
+- **2026-11-23, R2 targets answer the beam (built with `storm-crossing.md` ST5; EditMode 1714/1714; `StormCure` passes solo and host + client, 2026-11-24).**
   - **No `Beam.Hit` tag.** A target answers the beam in one of two ways, and neither needs a change to the cannon:
     - **A collider target** answers through the hit effect on its controller. A hazard (debris) has health, so
       `GE_SpiritBeamHit` breaks it, as before (`CannonShot`).

@@ -192,6 +192,40 @@ namespace TinCan.Core.Ship.Tests
             Assert.That(_ship.AppliedVelocity.magnitude, Is.LessThan(flying * 0.25f), "no leap away with the old speed");
         }
 
+        [Test]
+        public void Unpiloted_TheNoseLevelsFasterThanWhenAPilotLetsGo()
+        {
+            // Nose 20 degrees down (the fake never turns, so the tilt stays): a pilot letting go eases it at the
+            // ship's pitch level speed, an empty helm much faster.
+            _ship.Transform.rotation = Quaternion.Euler(20f, 0f, 0f);
+            var helm = new FixedPilot { Answer = default(AirshipInputState) };
+            var manned = Create(helm);
+            for (int i = 0; i < 90; i++) manned.Tick();
+            float mannedPitch = _ship.AppliedAngularVelocity.x;
+
+            helm.Answer = null;
+            for (int i = 0; i < 90; i++) manned.Tick();
+
+            Assert.That(mannedPitch, Is.LessThan(0f), "the nose comes up either way");
+            Assert.That(_ship.AppliedAngularVelocity.x, Is.LessThan(mannedPitch - 2f));
+        }
+
+        [Test]
+        public void Unpiloted_TheForcesMomentumFades_SoADiveDoesNotCarryOn()
+        {
+            var helm = new FixedPilot { Answer = new AirshipInputState { Throttle = 1f } };
+            var dive = new FixedForce { Force = new AirshipFlightForce(momentumChange: 0.05f, vertical: 0f, noseDrop: 0f) };
+            var movement = Create(new IAirshipPilotInput[] { helm }, new IAirshipFlightForces[] { dive });
+            for (int i = 0; i < 120; i++) movement.Tick();
+            Assume.That(_ship.AppliedVelocity.z, Is.GreaterThan(_ship.MaxForwardSpeed + 2f));
+
+            helm.Answer = null;
+            dive.Force = default;
+            for (int i = 0; i < 150; i++) movement.Tick();
+
+            Assert.That(_ship.AppliedVelocity.z, Is.LessThan(1f), "engine and momentum both wound down");
+        }
+
         /// <summary>Full throttle for a while: the ship flies along +z.</summary>
         private AirshipMovementUseCase FlyAhead(out FixedPilot helm)
         {

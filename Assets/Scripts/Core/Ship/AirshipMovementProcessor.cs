@@ -66,8 +66,10 @@ namespace TinCan.Core.Ship
             float targetYawAmount = input.Yaw * turnSpeed;
             // Let go of the pitch and the nose eases back to level (pitchAngle: degrees off level, above zero nose down;
             // level is the horizon, or the sea's slope on the cloud), so a nose left a little down does not keep feeding
-            // the dive's momentum forever.
-            float targetPitchAmount = input.Pitch != 0 ? input.Pitch * pitchSpeed : -pitchAngle * pitchLevelSpeed;
+            // the dive's momentum forever. It never turns faster than the helm can pitch it.
+            float targetPitchAmount = input.Pitch != 0
+                ? input.Pitch * pitchSpeed
+                : Mathf.Clamp(-pitchAngle * pitchLevelSpeed, -pitchSpeed, pitchSpeed);
 
             // Apply angular momentum (acceleration / deceleration)
             float yawRate = input.Yaw != 0 ? angularAccel : angularDecel;

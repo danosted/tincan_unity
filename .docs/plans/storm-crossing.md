@@ -181,7 +181,7 @@ beam: `ray-cannons.md` R1 comes first (developer, 2026-11-23; built the same day
   - **Next:** your eye on the storm in `cheesed_scene` (sail north 750 m), then ST5 the heart and the cure, after `ray-cannons.md` R1 (gusts and debris are left out for now).
 
 - **2026-11-23, ST5 the heart and the cure (built with `ray-cannons.md` R2; EditMode 1714/1714; scenario `StormCure`
-  play run pending).**
+  passes solo and host + client, 2026-11-24).**
   - **Severity** is on the zone's config (`EncounterZoneConfig.Severity`, 1 to 3; the game's zone is 1).
   - **Nothing about the heart is sent but three numbers.** `StormHeartNetworkMediator` sits on the zone's object beside
     its mediator and replicates the storm's strength (1 raging, 0 cured), the heart's height and the last target slot

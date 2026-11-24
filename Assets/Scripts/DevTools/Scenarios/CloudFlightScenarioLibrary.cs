@@ -75,11 +75,7 @@ namespace TinCan.DevTools.Scenarios
             return height >= least ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
         }
 
-        private float Height(IAirshipView ship)
-        {
-            Vector3 at = ship.Transform.position;
-            return _flight.HeightAboveRest(at.x, at.y, at.z);
-        }
+        private float Height(IAirshipView ship) => _flight.HeightAboveRest(ship);
 
         private IAirshipView? Ship() =>
             _actors.GetActors<IAirshipView>().FirstOrDefault(airship => airship.Transform != null);

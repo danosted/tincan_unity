@@ -12,8 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a1b348a59ae40e40a69df1eed4f0cf9, type: 3}
   m_Name: CloudFlightConfig
   m_EditorClassIdentifier: TinCan.Features.CloudFlight::TinCan.Features.CloudFlight.CloudFlightConfig
-  _restHeight: 25
+  _restHeight: 6
   _cloudBlend: 4
+  _contourReach: 30
+  _maxContourTilt: 2
+  _rideBand: 3
   _pull: 9.8
   _diveGain: 2.5
   _freeClimb: 10

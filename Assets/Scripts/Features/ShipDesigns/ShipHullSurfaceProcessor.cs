@@ -34,5 +34,15 @@ namespace TinCan.Features.ShipDesigns
 
             return surfaces;
         }
+
+        /// <summary>The lowest corner of a frame's planked faces, ship-local y (the keel); null with no planks.</summary>
+        public static float? Keel(ShipFrameShape shape)
+        {
+            float? keel = null;
+            foreach (var face in shape.PlankFaces)
+            foreach (var corner in face.Corners)
+                if (keel == null || corner.y < keel) keel = corner.y;
+            return keel;
+        }
     }
 }

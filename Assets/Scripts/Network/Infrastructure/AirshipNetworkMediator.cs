@@ -54,6 +54,7 @@ namespace TinCan.Network.Infrastructure
         public float PitchSpeed => _view.PitchSpeed;
         public float MaxBankAngle => _view.MaxBankAngle;
         public float BankSpeed => _view.BankSpeed;
+        public float PitchLevelSpeed => _view.PitchLevelSpeed;
 
         /// <summary>Server: the pilot's input this tick, set by AirshipMovementUseCase (fuel reads the throttle). Not replicated.</summary>
         public AirshipInputState InputState { get; set; }

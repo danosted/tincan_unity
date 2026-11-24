@@ -90,6 +90,7 @@ MonoBehaviour:
   _pitchSpeed: 30
   _maxBankAngle: 15
   _bankSpeed: 2
+  _pitchLevelSpeed: 0.03
   _visualRoot: {fileID: 8838695524504686579}
 --- !u!114 &544907830611805058
 MonoBehaviour:

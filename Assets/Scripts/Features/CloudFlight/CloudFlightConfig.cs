@@ -11,11 +11,22 @@ namespace TinCan.Features.CloudFlight
     public class CloudFlightConfig : ScriptableObject
     {
         [Header("Where the cloud is")]
-        [Tooltip("How far above the cloud surface a ship's origin counts as in the cloud, in metres: where a slow ship " +
-                 "comes to rest, its hull on the drawn tops and its deck clear of the fog.")]
-        [SerializeField] private float _restHeight = 25f;
+        [Tooltip("How far above the cloud surface a ship's keel counts as in the cloud, in metres: where a slow ship " +
+                 "comes to rest, its hull among the drawn heaps. Measured from the keel of a designed hull, so every " +
+                 "design sits alike; a ship without one measures from its origin.")]
+        [SerializeField] private float _restHeight = 6f;
         [Tooltip("Metres over which a ship goes from open air to fully in the cloud, so the change is never a step.")]
         [SerializeField, Min(0.1f)] private float _cloudBlend = 4f;
+
+        [Header("Riding the sea")]
+        [Tooltip("How far ahead of and behind the ship the sea's slope is read, in metres: on the sea the nose follows " +
+                 "that slope. Longer smooths out smaller bumps.")]
+        [SerializeField, Min(1f)] private float _contourReach = 30f;
+        [Tooltip("The steepest slope of the sea the nose follows, in degrees (a hole's rim reads as a lip, not a slide).")]
+        [SerializeField, Range(0f, 45f)] private float _maxContourTilt = 12f;
+        [Tooltip("Within this many degrees of the sea's slope the ship is riding it: no momentum is built or spent, so " +
+                 "the nose catching up with the swell never creeps the ship along. A dive counts beyond it.")]
+        [SerializeField, Range(0f, 15f)] private float _rideBand = 3f;
 
         [Header("Speed and height")]
         [Tooltip("How hard the nose's slope pulls on the speed, m/s² at straight down (gravity along the path).")]
@@ -68,6 +79,9 @@ namespace TinCan.Features.CloudFlight
 
         public float RestHeight { get => _restHeight; set => _restHeight = value; }
         public float CloudBlend { get => _cloudBlend; set => _cloudBlend = value; }
+        public float ContourReach { get => _contourReach; set => _contourReach = value; }
+        public float MaxContourTilt { get => _maxContourTilt; set => _maxContourTilt = value; }
+        public float RideBand { get => _rideBand; set => _rideBand = value; }
         public float Pull { get => _pull; set => _pull = value; }
         public float DiveGain { get => _diveGain; set => _diveGain = value; }
         public float FreeClimb { get => _freeClimb; set => _freeClimb = value; }

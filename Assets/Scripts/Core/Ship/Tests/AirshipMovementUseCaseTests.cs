@@ -146,6 +146,18 @@ namespace TinCan.Core.Ship.Tests
         }
 
         [Test]
+        public void AFlightForcesLevel_IsWhereTheNoseEasesWithNoPitchInput()
+        {
+            // The sea slopes away ahead: level is 6 degrees nose down, and the level ship's nose turns down towards it.
+            var force = new FixedForce { Force = new AirshipFlightForce(0f, 0f, noseDrop: 0f, level: 6f) };
+            var movement = Create(System.Array.Empty<IAirshipPilotInput>(), new IAirshipFlightForces[] { force });
+
+            movement.Tick();
+
+            Assert.That(_ship.AppliedAngularVelocity.x, Is.GreaterThan(0f));
+        }
+
+        [Test]
         public void AHeldShip_StandsStill_DespiteThrottleAndFlightForces()
         {
             var helm = new FixedPilot { Answer = new AirshipInputState { Throttle = 1f, Yaw = 1f } };

@@ -17,10 +17,10 @@ MonoBehaviour:
   _baseAltitude: 0
   _heightAmplitude: 20
   _heightFrequency: 0.001
-  _emergencyDepth: 5
+  _emergencyDepth: 30
   _recoveryMargin: 2
   _emergencyDuration: 15
-  _characterResetDepth: 10
+  _characterResetDepth: 40
   _fallbackRespawnOffset: {x: 0, y: 3, z: 0}
   _swellSpeed: 3
   _holeDepth: 400

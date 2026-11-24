@@ -14,6 +14,9 @@ namespace TinCan.Features.CloudFlight
     /// and the most.</item>
     /// <item>On the sea the cloud carries the ship to its rest height, moving or not, so it rides the swell: pushed in
     /// deeper, it is pushed out harder.</item>
+    /// <item>On the sea, level is the sea's slope ahead (up to the most it follows): with no pitch input the nose rides the
+    /// swell, and the dive and the climb are measured from that slope, so riding the swell neither builds nor spends
+    /// momentum; only a nose pushed below it charges.</item>
     /// <item>Off the sea there is no updraft: the pull towards it builds, up to a slow fall at speed (the glide), a fast
     /// one when stalled, faster where the sky thins. Back on the sea the cloud takes the fall away. A stalled ship's
     /// raised nose drops back to level.</item>
@@ -24,20 +27,29 @@ namespace TinCan.Features.CloudFlight
         /// <param name="slope">The nose's slope, -1 straight down .. 1 straight up (its forward vector's y).</param>
         /// <param name="height">The ship's height above its rest height over the cloud, in metres (below zero: in the cloud).</param>
         /// <param name="fall">How fast the ship was falling, m/s (the last step's <see cref="CloudFlightReading.Fall"/>).</param>
+        /// <param name="seaTilt">The sea's slope along the ship's heading, degrees (above zero: it rises ahead).</param>
         public AirshipFlightForce Evaluate(float slope, float height, float engineSpeed, float momentum, float fall,
-            float deltaTime, CloudFlightConfig config) =>
-            Read(slope, height, engineSpeed, momentum, fall, deltaTime, config).Force;
+            float deltaTime, CloudFlightConfig config, float seaTilt = 0f) =>
+            Read(slope, height, engineSpeed, momentum, fall, deltaTime, config, seaTilt).Force;
 
         /// <summary>The same step, with the parts of it a dashboard shows (and the fall, for the next step).</summary>
         public CloudFlightReading Read(float slope, float height, float engineSpeed, float momentum, float fall,
-            float deltaTime, CloudFlightConfig config)
+            float deltaTime, CloudFlightConfig config, float seaTilt = 0f)
         {
             float inCloud = Mathf.Clamp01(-height / config.CloudBlend + 0.5f);
             float air = 1f - inCloud;
 
+            // On the sea, level is its slope: the nose eases to it, and the dive and the climb are measured from it.
+            float tilt = inCloud * Mathf.Clamp(seaTilt, -config.MaxContourTilt, config.MaxContourTilt);
+            float along = slope - Mathf.Sin(tilt * Mathf.Deg2Rad);
+            // Close to the slope it is riding the sea: the nose lags the rolling swell a little, and a dive-side lag
+            // would build speed that nothing spends (the climb side is inside the free climb), creeping a still ship on.
+            float band = inCloud * Mathf.Sin(config.RideBand * Mathf.Deg2Rad);
+            along = along > 0f ? Mathf.Max(along - band, 0f) : Mathf.Min(along + band, 0f);
+
             float freeClimb = Mathf.Sin(config.FreeClimb * Mathf.Deg2Rad);
-            float cost = slope < 0f ? slope : Mathf.Max(slope - freeClimb, 0f);
-            float gain = slope < 0f ? Mathf.Lerp(1f, config.DiveGain, inCloud) : Mathf.Lerp(1f, config.ClimbCost, inCloud);
+            float cost = along < 0f ? along : Mathf.Max(along - freeClimb, 0f);
+            float gain = along < 0f ? Mathf.Lerp(1f, config.DiveGain, inCloud) : Mathf.Lerp(1f, config.ClimbCost, inCloud);
             float pull = -config.Pull * cost * gain;
             float drag = Mathf.Lerp(config.AirDrag, config.CloudDrag, inCloud);
             float next = momentum + (pull - drag * momentum) * deltaTime;
@@ -59,7 +71,7 @@ namespace TinCan.Features.CloudFlight
             float vertical = heave - nextFall;
             float noseDrop = air * stall * config.NoseDrop * Mathf.Clamp01(slope / 0.1f);
 
-            var force = new AirshipFlightForce(next - momentum, vertical, noseDrop);
+            var force = new AirshipFlightForce(next - momentum, vertical, noseDrop, level: -tilt);
             return new CloudFlightReading(force, slope, height, inCloud, engine, next, stall, thin, heave, nextFall, deltaTime);
         }
 

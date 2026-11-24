@@ -124,6 +124,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "CloudHoleOpens (Host + Client, Lag100)")]
         public static void CloudHoleOpensDuo() => RunDuo("CloudHoleOpens", "Lag100");
 
+        [MenuItem(Root + "CloudWebReal (Host)")]
+        public static void CloudWebRealSolo() => RunSolo("CloudWebReal");
+
+        [MenuItem(Root + "CloudWebReal (Host + Client, Lag100)")]
+        public static void CloudWebRealDuo() => RunDuo("CloudWebReal", "Lag100");
+
         [MenuItem(Root + "SoarFromDive (Host)")]
         public static void SoarFromDiveSolo() => RunSolo("SoarFromDive");
 
@@ -214,17 +220,17 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "GalleonLeashClimb (Host + Client, Lag100)")]
         public static void GalleonLeashClimbDuo() => RunDuo("GalleonLeashClimb", "Lag100");
 
-        [MenuItem(Root + "CompassCourse (Host)")]
-        public static void CompassCourseSolo() => RunSolo("CompassCourse");
-
-        [MenuItem(Root + "CompassCourse (Host + Client, Lag100)")]
-        public static void CompassCourseDuo() => RunDuo("CompassCourse", "Lag100");
-
         [MenuItem(Root + "CrewBodyMoves (Host)")]
         public static void CrewBodyMovesSolo() => RunSolo("CrewBodyMoves");
 
         [MenuItem(Root + "CrewBodyMoves (Host + Client, Lag100)")]
         public static void CrewBodyMovesDuo() => RunDuo("CrewBodyMoves", "Lag100");
+
+        [MenuItem(Root + "CompassCourse (Host)")]
+        public static void CompassCourseSolo() => RunSolo("CompassCourse");
+
+        [MenuItem(Root + "CompassCourse (Host + Client, Lag100)")]
+        public static void CompassCourseDuo() => RunDuo("CompassCourse", "Lag100");
 
         [MenuItem(Root + "ChartPlot (Host)")]
         public static void ChartPlotSolo() => RunSolo("ChartPlot");

@@ -58,7 +58,7 @@ namespace TinCan.DevTools.Editor
         private const int TentItemId = 6;
         private const int BundleItemId = 7;
 
-        // Under the player's Visual (origin at the capsule centre, eyes about 0.7 m up): low in front, in both arms.
+        // Under the player's Visual (origin at the capsule centre, eyes 0.85 m up): low in front, in both arms.
         private static readonly Vector3 HeldLocalPosition = new(0f, -0.15f, 0.5f);
 
         [MenuItem("TinCan/Dev/Camping/Build Assets")]

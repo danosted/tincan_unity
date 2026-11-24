@@ -20,8 +20,8 @@ namespace TinCan.Core.Humanoid
         [SerializeField] private float _deceleration = 200f;
         [SerializeField] private float _jumpForce = 8f;
         [SerializeField] private float _gravity = 20f;
-        [Tooltip("Eye height above the body root (the capsule centre, not the feet). Targeting aims from here.")]
-        [SerializeField] private float _eyeHeight = 0.7f;
+        [Tooltip("Eye height above the body root (the capsule centre, not the feet). Targeting aims from here. 0.85 puts the eyes 1.85 m above the feet of the 2 m crew body, mid-head.")]
+        [SerializeField] private float _eyeHeight = 0.85f;
         [SerializeField] private LayerMask _interactableMask = ~0; // Default: hit everything
 
         private CharacterController _controller;

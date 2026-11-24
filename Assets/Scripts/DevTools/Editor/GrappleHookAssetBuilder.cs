@@ -53,7 +53,7 @@ namespace TinCan.DevTools.Editor
         private static readonly Vector3 RackLocalPosition = new(-3f, -3.49f, 2.5f);
         private static readonly Vector3 RackLocalEuler = new(0f, 90f, 0f);
 
-        // Under the player's Visual (origin at the capsule centre, eyes about 0.7 m up): low and to the right of the view.
+        // Under the player's Visual (origin at the capsule centre, eyes 0.85 m up): low and to the right of the view.
         private static readonly Vector3 HeldLocalPosition = new(0.35f, 0.25f, 0.6f);
 
         [MenuItem("TinCan/Dev/Grapple Hook/Build Assets")]

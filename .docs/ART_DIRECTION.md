@@ -167,8 +167,8 @@ An asset is done when a turntable or in-game render shows it and each answer is 
 6. Did the developer see the render and accept it?
 
 ## Today, and the gap
-- Ship parts are greybox primitives, except the rotor mast (the first Blender part); all are on the stylized shader
-  and the library materials. The helm still uses the pirate pack's meshes and material.
+- Ship parts are greybox primitives, except the rotor mast and the helm (Blender parts, `.tools/blender/`); all are on
+  the stylized shader and the library materials.
 - The frame hull has three materials: deck floors, timber-dark walls, timber-warm beams and railings.
 - Sky islands share the ships' light model; clouds have their own shaders. The volumetric clouds look too realistic
   for the style (developer, 2026-11-01): fine eroded detail, photographic light.

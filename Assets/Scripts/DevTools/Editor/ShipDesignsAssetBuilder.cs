@@ -88,7 +88,8 @@ namespace TinCan.DevTools.Editor
             var cairn = Part("PART_Cairn", Cairn, "Cairn", "Spirit", ShipPartAttach.Face, CairnPrefab(stone, spirit), null, Vector3.zero,
                 new ShipPartStats(40f, hull: 40f), new Vector3Int(0, 0, 0), new Vector3Int(0, 1, 0));
             SetFlag(cairn, "_isCairn");
-            // The helm stand is about 4.5 x 2.2 x 3.9 m with its pivot at its base, reaching 2.35 m forward: 3 x 2 x 5 blocks.
+            // The helm console (.tools/blender/helm.py) fits one block, but keeps the 3 x 2 x 5 blocks of the pirate stand it
+            // replaced, so the designs and the room round the helmsman hold.
             var helm = Part("PART_CoreHelm", CoreHelm, "Helm", "Core", ShipPartAttach.Face, null, Load<GameObject>(HelmStationPath), Vector3.zero,
                 new ShipPartStats(30f, hull: 100f), Box(3, 2, 5));
             SetFlag(helm, "_isCore");

@@ -12,12 +12,10 @@ namespace TinCan.DevTools.Editor.Tests
 {
     /// <summary>
     /// The material library (plan .docs/plans/look-slice.md, L1): every library material is on TinCan/Stylized with its
-    /// palette colours, and the ship parts and the frame hull use library materials only. The helm is left out until
-    /// its third-party meshes are replaced (.docs/plans/remove-old-third-party-content.md, step 2).
+    /// palette colours, and the ship parts (the helm included) and the frame hull use library materials only.
     /// </summary>
     public class LookMaterialsTests
     {
-        private static readonly string[] NotYetOnTheLibrary = { ShipDesignsAssetBuilder.CoreHelm };
 
         private static Material Load(LookMaterials.Entry entry) =>
             AssetDatabase.LoadAssetAtPath<Material>(entry.Path) ?? throw new AssertionException($"missing {entry.Path}: run TinCan > Dev > Look > Build Materials");
@@ -51,7 +49,6 @@ namespace TinCan.DevTools.Editor.Tests
                 .Select(guid => AssetDatabase.LoadAssetAtPath<FeatureInstaller>(AssetDatabase.GUIDToAssetPath(guid)))
                 .OfType<FeatureInstaller.IExtension<ShipPartDefinition>>()
                 .SelectMany(e => e.Contributions)
-                .Where(p => !NotYetOnTheLibrary.Contains(p.PartId))
                 .ToList();
             Assert.That(parts, Is.Not.Empty);
             foreach (var part in parts)

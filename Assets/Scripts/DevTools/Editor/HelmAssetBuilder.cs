@@ -20,9 +20,10 @@ namespace TinCan.DevTools.Editor
     /// <summary>
     /// TinCan > Dev > Helm > Build Assets: creates (or re-tunes) every asset of the helm station, so its data is
     /// reviewable as code: the occupying tag, effect and ability, the interaction, the helm prefab and its fixture, the
-    /// installer, and the profiles that load it. Scriptable objects are re-applied on every run; the prefab is built only
-    /// when missing (delete it to rebuild), so its network id stays stable. Run TinCan > Dev > Input > Build Assets
-    /// afterwards: it builds Context_Helmsman (which needs the tag) and points the installer at it.
+    /// installer, and the profiles that load it. Scriptable objects are re-applied on every run. The prefab's root is
+    /// created only when missing, so its network id stays stable; its look (the Blender helm, .tools/blender/helm.py),
+    /// collider and seat are rebuilt on every run. Run TinCan > Dev > Input > Build Assets afterwards: it builds
+    /// Context_Helmsman (which needs the tag) and points the installer at it.
     /// Plan: .docs/plans/helm-station.md.
     /// </summary>
     public static class HelmAssetBuilder
@@ -34,16 +35,17 @@ namespace TinCan.DevTools.Editor
         private const string HelmPrefab = "Assets/Prefabs/Airship/Parts/HelmStation.prefab";
         private const string Installers = "Assets/Resources/Installers/";
 
-        // Where the ship model had its wheel (StylShip_Wheel at x 1.06, z -8.12 in ship space), on the stand's base (deck y
-        // 1.087, raycast 2026-10-03). The test ship has a quarterdeck at the same height. The seat is behind the wheel, facing
-        // the bow, on the stand base (it reaches z -9.3). The wheel and stand keep the exact ship-space poses the model gave
-        // them (measured 2026-10-03), so the airship looks as before; the airship's own copies are switched off.
+        // Where the ship model had its wheel (StylShip_Wheel at x 1.06, z -8.12 in ship space), on the deck (y 1.087,
+        // raycast 2026-10-03). The test ship has a quarterdeck at the same height. The seat is behind the wheel, facing the
+        // bow; the body's root is the middle of its 2 m capsule, so 1.05 m up stands it on the deck.
         private static readonly Vector3 HelmLocalPosition = new(1.05f, 1.087f, -8.1f);
         private static readonly Vector3 SeatLocalPosition = new(0f, 1.05f, -1.2f);
-        private static readonly Vector3 WheelLocalPosition = new(0.0125f, 1.7522f, -0.0206f);
-        private static readonly Vector3 StandLocalPosition = new(-0.0164f, 0.9944f, 0.7674f);
-        private const string ShipModel = "Assets/Stylized_Pirate_Ship/StylShip_3dModel/StylShip_Unity.fbx";
-        private const string ShipMaterial = "Assets/Stylized_Pirate_Ship/StylShip_MatTextures/StylShip_Elements_Mat.mat";
+        // The console's box (manifest beside the model): wheel, levers and column, from the deck to the wheel's top handle.
+        private static readonly Vector3 ConsoleCentre = new(0f, 0.875f, -0.12f);
+        private static readonly Vector3 ConsoleSize = new(1.2f, 1.75f, 0.75f);
+        private const string HelmModel = "Assets/Models/ShipParts/Helm/helm.fbx";
+        // The children BuildLook owns: today's look and seat, and the pirate pack's wheel and stand it replaced.
+        private static readonly string[] LookChildren = { "Mesh", "Seat", "Wheel", "Stand" };
         private const string AirshipPrefab = "Assets/Prefabs/Airship/Airship_Prefab.prefab";
         private static readonly string[] ShipWheelParts = { "Mesh/StylShip_Wheel", "Mesh/StylShip_WheelStand" };
 
@@ -107,29 +109,31 @@ namespace TinCan.DevTools.Editor
 
         private static GameObject BuildHelmPrefab(InteractionDefinition interaction, AbilityDefinition occupy)
         {
-            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(HelmPrefab);
-            if (existing != null) return existing;
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(HelmPrefab) == null) CreateHelmRoot();
 
+            var root = PrefabUtility.LoadPrefabContents(HelmPrefab);
+            try
+            {
+                var mediator = root.GetComponent<HelmNetworkMediator>();
+                SetField(mediator, "_interactionDefinition", interaction);
+                SetField(mediator, "_occupyAbility", occupy);
+                BuildLook(root);
+                PrefabUtility.SaveAsPrefabAsset(root, HelmPrefab);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+            return Load<GameObject>(HelmPrefab);
+        }
+
+        /// <summary>The networked root, once: its NetworkObject's id must not change between runs.</summary>
+        private static void CreateHelmRoot()
+        {
             var root = new GameObject("HelmStation");
             root.AddComponent<NetworkObject>();
             root.AddComponent<EntityNetworkMediator>();
-            var mediator = root.AddComponent<HelmNetworkMediator>();
-            SetField(mediator, "_interactionDefinition", interaction);
-            SetField(mediator, "_occupyAbility", occupy);
-
-            // The helm's own meshes: the wheel (its box collider is what Interact sees and what is outlined) and the stand
-            // the helmsman stands on (solid, like the deck).
-            var material = Load<Material>(ShipMaterial);
-            var wheel = Part(root.transform, "Wheel", "StylShip_Wheel", WheelLocalPosition, material);
-            var box = wheel.AddComponent<BoxCollider>();
-            box.center = new Vector3(-0.029f, 0f, 0.187f);
-            box.size = new Vector3(2.055f, 2.084f, 0.452f);
-            var stand = Part(root.transform, "Stand", "StylShip_WheelStand", StandLocalPosition, material);
-            stand.AddComponent<MeshCollider>().sharedMesh = stand.GetComponent<MeshFilter>().sharedMesh;
-
-            var seat = new GameObject("Seat").transform;
-            seat.SetParent(root.transform, false);
-            seat.localPosition = SeatLocalPosition;
+            root.AddComponent<HelmNetworkMediator>();
 
             EnsureFolder(HelmPrefab);
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, HelmPrefab);
@@ -140,19 +144,60 @@ namespace TinCan.DevTools.Editor
             typeof(NetworkObject).GetMethod("OnValidate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)
                 ?.Invoke(networkObject, null);
             EditorUtility.SetDirty(networkObject);
-            return prefab;
         }
 
-        private static GameObject Part(Transform parent, string name, string meshName, Vector3 localPosition, Material material)
+        /// <summary>
+        /// The Blender helm under the root as "Mesh", its imported materials swapped for the shared ship materials; one box
+        /// round the console (what Interact hits and outlines, and solid to walk into); and the Seat. Whatever was there
+        /// before (the pirate pack's wheel and stand, an older collider) is replaced. The wheel and levers are separate
+        /// children (Helm_Wheel, Helm_ThrottleLever, Helm_PitchLever) for steering motion later.
+        /// </summary>
+        private static void BuildLook(GameObject root)
         {
-            var mesh = Array.Find(AssetDatabase.LoadAllAssetsAtPath(ShipModel), asset => asset is Mesh && asset.name == meshName) as Mesh
-                       ?? throw new InvalidOperationException($"{ShipModel} has no mesh {meshName}.");
-            var part = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer));
-            part.transform.SetParent(parent, false);
-            part.transform.localPosition = localPosition;
-            part.GetComponent<MeshFilter>().sharedMesh = mesh;
-            part.GetComponent<MeshRenderer>().sharedMaterial = material;
-            return part;
+            foreach (var name in LookChildren)
+            {
+                var old = root.transform.Find(name);
+                if (old != null) Object.DestroyImmediate(old.gameObject);
+            }
+            foreach (var collider in root.GetComponents<Collider>()) Object.DestroyImmediate(collider);
+
+            var importer = AssetImporter.GetAtPath(HelmModel) as ModelImporter
+                           ?? throw new InvalidOperationException($"Missing model {HelmModel}: run .tools/blender/helm.py.");
+            importer.globalScale = 1f;
+            importer.addCollider = false;
+            importer.importCameras = false;
+            importer.importLights = false;
+            importer.importAnimation = false;
+            importer.animationType = ModelImporterAnimationType.None;
+            importer.SaveAndReimport();
+
+            var shared = new Dictionary<string, Material>
+            {
+                ["Helm_Wood"] = LookMaterials.Get("M_ShipHull"),
+                ["Helm_Brass"] = LookMaterials.Get("M_ShipEngine"),
+                ["Helm_Iron"] = LookMaterials.Get("M_ShipIron"),
+                ["Helm_Paint"] = LookMaterials.Get("M_ShipPennant"),
+                ["Helm_Spirit"] = LookMaterials.Get("M_ShipSpirit"),
+            };
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(Load<GameObject>(HelmModel), root.transform);
+            model.name = "Mesh";
+            foreach (var renderer in model.GetComponentsInChildren<MeshRenderer>())
+            {
+                var materials = renderer.sharedMaterials;
+                for (int i = 0; i < materials.Length; i++)
+                {
+                    if (materials[i] != null && shared.TryGetValue(materials[i].name, out var ship)) materials[i] = ship;
+                }
+                renderer.sharedMaterials = materials;
+            }
+
+            var box = root.AddComponent<BoxCollider>();
+            box.center = ConsoleCentre;
+            box.size = ConsoleSize;
+
+            var seat = new GameObject("Seat").transform;
+            seat.SetParent(root.transform, false);
+            seat.localPosition = SeatLocalPosition;
         }
 
         /// <summary>The airship model's own wheel and stand are switched off: the helm fixture brings them (an override on the model instance).</summary>

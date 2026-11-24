@@ -38,6 +38,7 @@ namespace TinCan.Features.Storm
         public float Depth { get; private set; }
         public float Strength { get; private set; } = 1f;
         public (Vector2 Centre, float Radius)? Region { get; private set; }
+        public Vector3? Camera { get; private set; }
 
         /// <summary>The lab scene's controls, handed over when the scope injects them (only Lab_Storm has them).</summary>
         public void UseLab(StormLabControls lab) => _lab = lab;
@@ -50,6 +51,7 @@ namespace TinCan.Features.Storm
         /// <summary>One frame with the camera at <paramref name="camera"/> (null: no view yet).</summary>
         public void Step(Vector3? camera, float deltaTime)
         {
+            Camera = camera;
             if (_lab != null && !_lab.FollowZone)
             {
                 Depth = _lab.Depth;

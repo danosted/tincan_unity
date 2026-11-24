@@ -208,6 +208,20 @@ beam: `ray-cannons.md` R1 comes first (developer, 2026-11-23; built the same day
     and the eye's ring of cloud walls. Open questions 1 to 3 still stand.
   - **Next:** the `StormCure` play run (with `CannonShot`, `CannonMisfire` and `StormInWorld` again), then your
     eye on the heart in `cheesed_scene`.
+
+- **2026-11-24, ST2 follow-up: the storm from afar (developer: it hovered above the pillars, and wanted lightning seen
+  from outside; glow only, one spot per strike).**
+  - **It stands on the cloud sea:** where the storm stands, the volumetric clouds' height bands give way to one column
+    (`VolumetricCloudsUtilities.hlsl`, "TinCan: the storm"): the floors stop lifting and the band's height becomes the
+    layer's, so the storm rises from the layer's floor (10 m, just above the sea) to its top instead of sitting on a
+    band's floor up to ~300 m up, with a seam between two towers.
+  - **Lightning seen from anywhere:** in the world the storm strikes as hard as it rages (its strength), not as deep as
+    you are in it. Each strike has a spot from the seed and slot (`StormProcessor.StrikeSpot`: in the bands, 150 to
+    900 m up), so every peer sees it in the same place. The clouds and the drawn sea round it glow in the look's flash
+    colour (`TinCanStormGlow` in `TinCanStorm.hlsl`, 500 m, after the night shade); the air round you flashes as deep
+    as you are in it. The lab's slider mode keeps striking by the weight where you are.
+  - **Thunder from where it struck:** at the speed of sound from the spot, fainter past 400 m, and low-passed with
+    distance, so far strikes only rumble. `StormConfig.ThunderDelay` is now the lab slider mode's only.
 ## Tests
 EditMode: the depth function (outside, the wall, the bands, the eye), the blend by depth and strength, the gust waves
 (the same push from the same seed and time), the heart's path by severity (still at 1; the same path on every peer),

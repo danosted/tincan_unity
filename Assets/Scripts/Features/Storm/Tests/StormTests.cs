@@ -12,7 +12,8 @@ namespace TinCan.Features.Storm.Tests
         {
             public float Depth { get; set; }
             public float Strength { get; set; } = 1f;
-            public (Vector2 Centre, float Radius)? Region => null;
+            public (Vector2 Centre, float Radius)? Region { get; set; }
+            public Vector3? Camera { get; set; }
         }
 
         private StormConfig _config = null!;
@@ -102,6 +103,44 @@ namespace TinCan.Features.Storm.Tests
             }
             Assert.That(_weather.Weight, Is.EqualTo(1f));
             Assert.That(stormFlash, Is.GreaterThan(0.5f), "lightning at the heart");
+        }
+
+        [Test]
+        public void AStormInTheWorld_StrikesSeenFromAfar_WithoutFlashingTheAirThere()
+        {
+            _intensity.Region = (Vector2.zero, 750f);
+            _intensity.Camera = new Vector3(0f, 10f, 3000f);
+            _intensity.Depth = 0f;
+            float airFlash = 0f;
+            for (float t = 0f; t < 120f; t += 0.05f)
+            {
+                _weather.Step(t);
+                airFlash = Mathf.Max(airFlash, _weather.Flash);
+            }
+            Assert.That(airFlash, Is.Zero, "the air outside stays still; the strikes light the storm's cloud (the shaders)");
+        }
+
+        [Test]
+        public void AStrike_IsInTheStormsBands_LowInItsColumn_TheSameOnEveryPeer()
+        {
+            var centre = new Vector2(100f, 1500f);
+            for (int slot = 0; slot < 200; slot++)
+            {
+                Vector3 spot = StormProcessor.StrikeSpot(centre, 750f, 7, slot);
+                float depth = 1f - Vector2.Distance(new Vector2(spot.x, spot.z), centre) / 750f;
+                Assert.That(depth, Is.InRange(0.2f - 1e-3f, 0.75f + 1e-3f), "in the bands, not the eye or the wall's foot");
+                Assert.That(spot.y, Is.InRange(150f, 900f));
+                Assert.That(spot, Is.EqualTo(StormProcessor.StrikeSpot(centre, 750f, 7, slot)));
+            }
+        }
+
+        [Test]
+        public void Thunder_ComesLater_Fainter_AndMoreMuffled_TheFartherTheStrike()
+        {
+            Assert.That(2000f / StormProcessor.SpeedOfSound, Is.EqualTo(5.83f).Within(0.01f), "2 km: about 6 s");
+            Assert.That(StormProcessor.ThunderShare(100f), Is.EqualTo(1f), "near: full");
+            Assert.That(StormProcessor.ThunderShare(4000f), Is.LessThan(StormProcessor.ThunderShare(1000f)));
+            Assert.That(StormProcessor.ThunderCutoff(3000f), Is.LessThan(StormProcessor.ThunderCutoff(200f)));
         }
     }
 }

@@ -442,6 +442,11 @@ void EvaluateCloudProperties(float3 positionPS, float noiseMipOffset, float eros
     // The floors rise and fall slowly across the sky by up to _TinCanCloudVariety.z of a band (the map's alpha read at a
     // fifth of its scale, so over kilometres: flat under one cloud, but no two distant clouds share a base, and no floor
     // shows as a line at the horizon). The layer holds tiers + z bands, so a lifted floor stays inside it.
+    // TinCan: the storm (plan .docs/plans/storm-crossing.md, ST2). Where the storm stands (TinCanStorm.hlsl) the bands give
+    // way to one column: the floors stop lifting and the height within the band becomes the height in the whole layer,
+    // so the storm stands on the layer's floor, just above the cloud sea, instead of hovering on a band's floor.
+    half tinCanStorm = TinCanStormWeightAt(positionPS);
+
     half profileHeight = properties.height;
     float3 mapPositionPS = positionPS;
     if (_TinCanCloudVariety.x > 1.5 || _TinCanCloudVariety.z > 0.0)
@@ -452,15 +457,15 @@ void EvaluateCloudProperties(float3 positionPS, float noiseMipOffset, float eros
         {
             float2 liftUV = AnimateCloudMapPosition(positionPS).xz * _CloudMapTiling.xy * 0.2 + float2(0.37, 0.61);
             half liftMap = SAMPLE_TEXTURE2D_LOD(_CloudMapTexture, s_linear_repeat_sampler, liftUV, 0).a;
-            lift = saturate((liftMap - 0.3h) / 0.7h) * _TinCanCloudVariety.z;
+            lift = saturate((liftMap - 0.3h) / 0.7h) * _TinCanCloudVariety.z * (1.0 - tinCanStorm);
         }
 
         float scaled = properties.height * (tiers + _TinCanCloudVariety.z) - lift;
         float tier = clamp(floor(scaled), 0.0, tiers - 1.0);
         float within = scaled - tier;
-        if (within < 0.0 || within > 1.0)
+        if ((within < 0.0 || within > 1.0) && tinCanStorm <= 0.0h)
             return;
-        profileHeight = within;
+        profileHeight = lerp((half)saturate(within), properties.height, tinCanStorm);
         mapPositionPS.xz += tier * float2(3731.0, 1979.0);
     }
 
@@ -468,9 +473,8 @@ void EvaluateCloudProperties(float3 positionPS, float noiseMipOffset, float eros
     CloudCoverageData cloudCoverageData;
     GetCloudCoverageData(mapPositionPS, cloudCoverageData);
 
-    // TinCan: the storm (plan .docs/plans/storm-crossing.md, ST2). Where the storm stands (TinCanStorm.hlsl) the sky closes:
-    // more coverage, the tallest cloud type, reaching to the top of the layer, so its wall towers and reads from afar.
-    half tinCanStorm = TinCanStormWeightAt(positionPS);
+    // TinCan: the storm, continued: more coverage, the tallest cloud type, reaching to the top of the layer, so its wall
+    // towers and reads from afar.
     if (tinCanStorm > 0.0h)
     {
         cloudCoverageData.coverage = lerp(cloudCoverageData.coverage, 1.0h, tinCanStorm * 0.85h);

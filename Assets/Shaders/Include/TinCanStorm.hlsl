@@ -22,4 +22,18 @@ half TinCanStormWeightAt(float3 positionWS)
     return TinCanStormProfile(depth) * (half)_TinCanStormRegion.w;
 }
 
+// The lightning (StormShaderGlobals.ApplyFlash): xyz where the strike is, w how far its glow reaches (0: no flash now).
+float4 _TinCanStormFlash;
+// rgb the glow's colour times how bright the flash is at this moment.
+float4 _TinCanStormFlashColour;
+
+// The strike lighting the cloud round it from inside, so a storm seen from afar flickers. Added after the night shade, so
+// it shows as bright at night.
+half3 TinCanStormGlow(half3 colour, float3 positionWS)
+{
+    if (_TinCanStormFlash.w <= 0.0) return colour;
+    half near = (half)saturate(1.0 - distance(positionWS, _TinCanStormFlash.xyz) / _TinCanStormFlash.w);
+    return colour + (half3)_TinCanStormFlashColour.rgb * (near * near);
+}
+
 #endif

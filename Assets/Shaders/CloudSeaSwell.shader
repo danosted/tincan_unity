@@ -352,6 +352,7 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                 {
                     float time = _TinCanCloudSea.x;
                     float2 drift = _FogWind.xy * time;
+                colour = TinCanStormGlow(colour, input.positionWS);
                     half top = (half)(FogDensity(xz, drift) * (1.0 - cut));
 
                     // Into it: past where the view ray meets the sea it goes on down; the fog deeper along it slides
@@ -404,6 +405,7 @@ Shader "TinCan/Environment/Cloud Sea Swell"
                     // there is none of it, the hazy deep.
                     half3 lower = TinCanCloudShade(look, float3(0, 1, 0), view, 0.7h, 0.2h);
                     half3 deep = lerp(_DeepColour.rgb, lower, saturate(inner * 1.5h));
+                    fogColour = TinCanStormGlow(fogColour, input.positionWS);
                     deep = TinCanNightShade(TinCanWeatherShade(deep, input.positionWS));
                     colour = lerp(colour, deep, _SeeThrough);
                     half surfaceAlpha = 1.0h - _SeeThrough * 0.7h;

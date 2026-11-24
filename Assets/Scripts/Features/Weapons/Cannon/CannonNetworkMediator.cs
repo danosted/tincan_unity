@@ -16,8 +16,8 @@ namespace TinCan.Features.Weapons.Cannon
     /// <summary>
     /// Infrastructure Layer: a cannon fixture on the ship. It is a station (interact to occupy, IA_OccupyCannon) and a
     /// cannon. Server-written state: the occupant's client id and the barrel angles, so every peer and a late joiner
-    /// sees who mans it and where it points. Shots are events, not state: one RPC when the charge starts and one when
-    /// the beam fires, with where it went; each peer draws the beam itself. Parts are found by name: YawPivot > PitchPivot > Muzzle, Seat, AimPreview
+    /// sees who mans it and where it points; and the beam's state (on, heat, overheated), so every peer draws and hears
+    /// it. Each pulse of a held beam is an event, not state: one RPC with where it went. Parts are found by name: YawPivot > PitchPivot > Muzzle, Seat, AimPreview
     /// (a LineRenderer), and PitchPivot > CameraMount (a disabled Camera the gunner looks through, over the barrel).
     /// </summary>
     public class CannonNetworkMediator : NetworkBehaviour, ICannon, IStation
@@ -34,7 +34,10 @@ namespace TinCan.Features.Weapons.Cannon
         private readonly NetworkVariable<ulong> _occupantClientId = new(NoOccupant);
         private readonly NetworkVariable<float> _yaw = new();
         private readonly NetworkVariable<float> _elevation = new();
-        private readonly Queue<CannonShotEvent> _shotEvents = new();
+        private readonly NetworkVariable<bool> _beamOn = new();
+        private readonly NetworkVariable<float> _heat = new();
+        private readonly NetworkVariable<bool> _overheated = new();
+        private readonly Queue<CannonPulseEvent> _pulses = new();
         private ActorIdentity? _identity;
         private LineRenderer? _aimPreview;
 
@@ -59,6 +62,9 @@ namespace TinCan.Features.Weapons.Cannon
 
         public float Yaw => _yaw.Value;
         public float Elevation => _elevation.Value;
+        public bool BeamOn => _beamOn.Value;
+        public float Heat => _heat.Value;
+        public bool Overheated => _overheated.Value;
 
         private void Awake()
         {
@@ -92,30 +98,29 @@ namespace TinCan.Features.Weapons.Cannon
             if (Mathf.Abs(_elevation.Value - elevation) > 0.05f) _elevation.Value = elevation;
         }
 
-        public void ServerShotCharging(int shotId)
+        public void ServerSetBeam(bool on, float heat, bool overheated)
         {
-            if (IsServer) ShotChargingRpc(shotId);
+            if (!IsServer) return;
+            if (_beamOn.Value != on) _beamOn.Value = on;
+            if (_overheated.Value != overheated) _overheated.Value = overheated;
+            // Skip small steps so a cooling barrel sends little; cold and full always land exactly.
+            if (Mathf.Abs(_heat.Value - heat) > 0.02f || ((heat <= 0f || heat >= 1f) && _heat.Value != heat)) _heat.Value = heat;
         }
 
-        public void ServerShotFired(int shotId, Vector3 origin, Vector3 end)
+        public void ServerPulse(int pulseId, Vector3 origin, Vector3 end)
         {
-            if (IsServer) ShotFiredRpc(shotId, origin, end);
+            if (IsServer) PulseRpc(pulseId, origin, end);
         }
 
         [Rpc(SendTo.Everyone)]
-        private void ShotChargingRpc(int shotId) => Enqueue(CannonShotEvent.Charging(shotId));
-
-        [Rpc(SendTo.Everyone)]
-        private void ShotFiredRpc(int shotId, Vector3 origin, Vector3 end) => Enqueue(CannonShotEvent.Fired(shotId, origin, end));
-
-        private void Enqueue(CannonShotEvent shotEvent)
+        private void PulseRpc(int pulseId, Vector3 origin, Vector3 end)
         {
             // Nothing drains the queue without the presenter (a dedicated server); keep it bounded.
-            if (_shotEvents.Count >= MaxQueuedEvents) _shotEvents.Dequeue();
-            _shotEvents.Enqueue(shotEvent);
+            if (_pulses.Count >= MaxQueuedEvents) _pulses.Dequeue();
+            _pulses.Enqueue(new CannonPulseEvent(pulseId, origin, end));
         }
 
-        public bool TryTakeShotEvent(out CannonShotEvent shotEvent) => _shotEvents.TryDequeue(out shotEvent);
+        public bool TryTakePulse(out CannonPulseEvent pulse) => _pulses.TryDequeue(out pulse);
 
         public void ApplyAim(float yaw, float elevation)
         {

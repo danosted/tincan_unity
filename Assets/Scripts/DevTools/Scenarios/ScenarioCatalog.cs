@@ -406,7 +406,7 @@ namespace TinCan.DevTools.Scenarios
         public static readonly ScenarioEntry CannonShot = new(
             new Scenario.Builder("CannonShot")
                 .InScene(TestScenes.Cannon)
-                .Describe("Man the cannon -> target on the barrel's line -> Fire -> the beam charges and fires -> target shot down, beam drawn -> turn past the back, body still -> Leave.")
+                .Describe("Man the cannon -> target on the barrel's line -> hold Fire -> the beam pulses -> target shot down, beam drawn -> hold on until it overheats -> it vents cold -> turn past the back, body still -> Leave.")
                 .Timeout(120f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
@@ -425,10 +425,16 @@ namespace TinCan.DevTools.Scenarios
                     .Do("AimCannon", "0")
                     .Checkpoint("manned")
                     .WaitUntil("HazardsVisible", 15f, "1")
-                    .Hold(0.3f, ScriptedAction.GunnerFire)
-                    .WaitUntil("BeamsShown", 5f, "1")
+                    // Each pulse takes a quarter of a hazard's health; a second's hold is 8 pulses.
+                    .Hold(1f, ScriptedAction.GunnerFire)
+                    .WaitUntil("BeamsShown", 5f, "4")
                     .WaitUntil("HazardsVisible", 10f, "0")
                     .Checkpoint("shot-down")
+                    // Held fire overheats it (3 s from cold); then it vents until it is cold (2 s).
+                    .Hold(3.5f, ScriptedAction.GunnerFire)
+                    .WaitUntil("CannonOverheated", 3f)
+                    .Checkpoint("overheated")
+                    .WaitUntil("CannonCold", 6f)
                     // A turret: an aim past the back wraps (190 is -170), and the server's barrel follows it there. The
                     // mouse sweep per frame depends on frame rate, so the mouse wrap itself is an EditMode test
                     // (GunnerAimUseCaseTests); here the mouse swings the barrel and the body holds still.
@@ -447,7 +453,8 @@ namespace TinCan.DevTools.Scenarios
                     .Wait(1.5f, "the barrel follows the subject's aim")
                     .Do("SpawnTargetOnBeam", "35")
                     .WaitUntil("HazardsDestroyed", 15f, "1")
-                    .WaitUntil("CannonFree", 15f))
+                    .WaitUntil("CannonOverheated", 30f)
+                    .WaitUntil("CannonFree", 30f))
                 .Build(),
             builder =>
             {
@@ -487,7 +494,7 @@ namespace TinCan.DevTools.Scenarios
         public static readonly ScenarioEntry CannonMisfire = new(
             new Scenario.Builder("CannonMisfire")
                 .InScene(TestScenes.Cannon)
-                .Describe("Man the cannon -> turn it inboard at our own deck -> Fire -> the beam hits our ship -> ship health drops on every peer.")
+                .Describe("Man the cannon -> turn it inboard at our own deck -> tap Fire -> one pulse hits our ship -> ship health drops on every peer.")
                 .Timeout(90f)
                 .Arrange(s => s
                     .WaitUntil("SubjectReady", 45f)
@@ -504,7 +511,8 @@ namespace TinCan.DevTools.Scenarios
                     .Do("AimCannonAt", "180 -15")
                     .Wait(0.5f, "the barrel turns inboard")
                     .Checkpoint("aimed-at-own-deck")
-                    .Hold(0.3f, ScriptedAction.GunnerFire)
+                    // A tap, shorter than one pulse (0.125 s): exactly one pulse, so exactly one hit cue.
+                    .Hold(0.1f, ScriptedAction.GunnerFire)
                     .WaitUntil("BeamsShown", 5f, "1")
                     .WaitUntil("ShipHealthBelow", 10f, "1000")
                     .WaitUntil("CueCount", 3f, "Cue.Hit:Execute:1")
@@ -1703,14 +1711,6 @@ namespace TinCan.DevTools.Scenarios
             });
 
         /// <summary>
-        /// The compass at the helm follows the ship's route: a voyage lays a course to its destination, the server plots a
-        /// route through a point off to starboard, the subject takes the helm and sees the compass point there, then the
-        /// server puts that waypoint on the ship and the compass moves on to the destination. Plan: navigation-compass.md (S1).
-        /// </summary>
-        public static readonly ScenarioEntry CompassCourse = new(
-            new Scenario.Builder("CompassCourse")
-                .InScene(TestScenes.Navigation)
-        /// <summary>
         /// The crew body (plan: crew-animation.md, S2) on the Galleon, where the game's profile loads it. The subject
         /// stands on the main deck facing the ship's centre, runs forward, stops, jumps. Its own peer checks the body is
         /// hidden from its first-person camera and stands, flies and lands again; the server sees it run, fly and stand.
@@ -1748,6 +1748,14 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<RespawnScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
+        /// <summary>
+        /// The compass at the helm follows the ship's route: a voyage lays a course to its destination, the server plots a
+        /// route through a point off to starboard, the subject takes the helm and sees the compass point there, then the
+        /// server puts that waypoint on the ship and the compass moves on to the destination. Plan: navigation-compass.md (S1).
+        /// </summary>
+        public static readonly ScenarioEntry CompassCourse = new(
+            new Scenario.Builder("CompassCourse")
+                .InScene(TestScenes.Navigation)
                 .Describe("Voyage -> course to the destination on both peers, compass at the helm -> a route via starboard -> " +
                           "take the helm, compass points starboard -> waypoint reached -> compass points at the destination.")
                 .Timeout(120f)
@@ -2265,13 +2273,14 @@ namespace TinCan.DevTools.Scenarios
                     .Hold(0.3f, ScriptedAction.GunnerFire)
                     .WaitUntil("HeartStrengthBelow", 10f, "0.9")
                     .Checkpoint("first-hit")
-                    .Wait(1.6f, "the cooldown (1.5 s); the spent target goes")
+                    // A held beam's later pulses miss: a hit target is spent. Wait for it to go before aiming at the next.
+                    .Wait(1.6f, "the spent target goes")
                     .WaitUntil("StormTargetUpFor", 15f, "2")
                     .Do("AimCannonAtStormTarget")
                     .Wait(0.5f, "the barrel turns")
                     .Hold(0.3f, ScriptedAction.GunnerFire)
                     .WaitUntil("HeartStrengthBelow", 10f, "0.5")
-                    .Wait(1.6f, "the cooldown (1.5 s); the spent target goes")
+                    .Wait(1.6f, "the spent target goes")
                     .WaitUntil("StormTargetUpFor", 15f, "2")
                     .Do("AimCannonAtStormTarget")
                     .Wait(0.5f, "the barrel turns")

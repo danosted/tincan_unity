@@ -54,9 +54,16 @@ namespace TinCan.Features.Weapons.Cannon
         /// <summary>The cannon this player aims and its aim (x yaw, y elevation, degrees, base frame); null when not gunning.</summary>
         public (Guid Cannon, Vector2 Aim)? LocalAim => _manned is { } cannon ? (cannon, _current) : null;
 
+        /// <summary>
+        /// This player holds Fire on the cannon they man, read this frame: the local beam shows at once from it, before
+        /// the server's pulses arrive (<see cref="CannonShotPresenter"/>). The server decides what the beam hits.
+        /// </summary>
+        public bool LocalFiring { get; private set; }
+
         public void Tick()
         {
             var cannon = _contexts.IsActive(_controls) ? MannedCannon() : null;
+            LocalFiring = cannon != null && _input.IsPressed(_controls.Fire);
             if (cannon == null)
             {
                 _manned = null;

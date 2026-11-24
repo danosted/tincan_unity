@@ -16,8 +16,10 @@ MonoBehaviour:
   FireAbility: {fileID: 11400000, guid: 3d6b067c0cce506428c919f6575f76ed, type: 2}
   HitEffect: {fileID: 11400000, guid: f1660795b39f3184f897b36279ce1fcf, type: 2}
   Sweep: {fileID: 11400000, guid: 25b41cd27ef18964fb593ba4f7093e3b, type: 2}
-  ChargeSeconds: 0.4
+  PulseSeconds: 0.125
   BeamRange: 400
+  SecondsToOverheat: 3
+  SecondsToCool: 2
   YawLimit: 180
   MinElevation: -15
   MaxElevation: 40
@@ -26,8 +28,12 @@ MonoBehaviour:
   BeamMaterial: {fileID: 2100000, guid: e89470c45cdc22a4e9d4449f23bf759d, type: 2}
   MuzzleColor: {r: 0.55, g: 0.95, b: 1, a: 1}
   EndColor: {r: 1, g: 0.8, b: 0.45, a: 1}
+  HotColor: {r: 1, g: 0.42, b: 0.2, a: 1}
   BeamWidth: 0.35
-  BeamSeconds: 0.35
+  PulseThrob: 0.55
+  FadeSeconds: 0.12
   GlowDiameter: 0.8
-  FireSound: {fileID: 8300000, guid: b83daa9cdbca1e846a29a0cc1acdcbf2, type: 3}
-  FireVolume: 0.8
+  PulseSound: {fileID: 8300000, guid: d4f27bb83d08dc44cb26866c12db54f3, type: 3}
+  PulseVolume: 0.6
+  VentSound: {fileID: 8300000, guid: 1b0877f209ee3e54d8de167cfd7fffe2, type: 3}
+  VentVolume: 0.8

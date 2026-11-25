@@ -16,7 +16,11 @@ namespace TinCan.Features.CloudFlight.Tests
         private CloudFlightConfig _config = null!;
 
         [SetUp]
-        public void SetUp() => _config = ScriptableObject.CreateInstance<CloudFlightConfig>();
+        public void SetUp()
+        {
+            _config = ScriptableObject.CreateInstance<CloudFlightConfig>();
+            _config.LiftLean = 0f; // the lean with the rise and fall is tested on its own, below
+        }
 
         [TearDown]
         public void TearDown() => Object.DestroyImmediate(_config);
@@ -100,6 +104,34 @@ namespace TinCan.Features.CloudFlight.Tests
 
             Assert.That(rim.Level, Is.EqualTo(_config.MaxContourTilt).Within(1e-4f), "a hole's rim is a lip, not a slide");
             Assert.That(air.Level, Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void TheNoseLeans_UpAsTheCloudLiftsTheShip_DownAsItFalls_Capped()
+        {
+            _config.LiftLean = 1f;
+            _config.MaxLiftLean = 6f;
+
+            var lifted = _flight.Evaluate(0f, -2f, 15f, 0f, 0f, Step, _config);
+            var falling = _flight.Evaluate(0f, InAir, 15f, 0f, fall: 4f, Step, _config);
+            var deep = _flight.Evaluate(0f, -100f, 15f, 0f, 0f, Step, _config);
+
+            Assert.That(lifted.Level, Is.EqualTo(-2f).Within(1e-3f), "lifted 2 m/s: the nose 2 degrees up");
+            Assert.That(falling.Level, Is.EqualTo(4f).Within(1e-3f), "falling 4 m/s: the nose 4 degrees down");
+            Assert.That(deep.Level, Is.EqualTo(-6f).Within(1e-3f), "never more than the most");
+        }
+
+        [Test]
+        public void ANoseLeaningWithTheRiseAndFall_NeitherBuildsNorSpendsSpeed()
+        {
+            _config.LiftLean = 1f;
+            float down = Mathf.Sin(-4f * Mathf.Deg2Rad);
+            float up = Mathf.Sin(2f * Mathf.Deg2Rad);
+
+            Assert.That(_flight.Evaluate(down, InAir, 15f, 0f, fall: 4f, Step, _config).MomentumChange,
+                Is.EqualTo(0f).Within(1e-5f), "nose down with the fall is no dive");
+            Assert.That(_flight.Evaluate(up, -2f, 15f, 0f, 0f, Step, _config).MomentumChange,
+                Is.EqualTo(0f).Within(1e-5f), "nose up with the lift is no climb");
         }
 
         [Test]

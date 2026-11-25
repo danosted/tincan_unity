@@ -39,8 +39,14 @@ namespace TinCan.Features.CloudFlight
             float inCloud = Mathf.Clamp01(-height / config.CloudBlend + 0.5f);
             float air = 1f - inCloud;
 
-            // On the sea, level is its slope: the nose eases to it, and the dive and the climb are measured from it.
-            float tilt = inCloud * Mathf.Clamp(seaTilt, -config.MaxContourTilt, config.MaxContourTilt);
+            // On the sea the cloud carries the ship back to its rest height, so it rides the swell.
+            float heave = inCloud * Mathf.Clamp(-config.Buoyancy * height, -config.MaxHeave, config.MaxHeave);
+            // The nose leans with the rise and fall (the last step's fall), so the crew sees which way the ship goes.
+            float lean = Mathf.Clamp((heave - Mathf.Max(fall, 0f)) * config.LiftLean, -config.MaxLiftLean, config.MaxLiftLean);
+
+            // Level is the sea's slope on the sea, and the lean: the nose eases to it, and the dive and the climb are
+            // measured from it, so neither the swell nor the lean builds or spends speed.
+            float tilt = inCloud * Mathf.Clamp(seaTilt, -config.MaxContourTilt, config.MaxContourTilt) + lean;
             float along = slope - Mathf.Sin(tilt * Mathf.Deg2Rad);
             // Close to the slope it is riding the sea: the nose lags the rolling swell a little, and a dive-side lag
             // would build speed that nothing spends (the climb side is inside the free climb), creeping a still ship on.
@@ -66,8 +72,6 @@ namespace TinCan.Features.CloudFlight
             float rate = fall < terminal ? config.Gravity * air : config.CloudCatch;
             float nextFall = Mathf.MoveTowards(Mathf.Max(fall, 0f), terminal, rate * deltaTime);
 
-            // On the sea the cloud carries the ship back to its rest height, so it rides the swell.
-            float heave = inCloud * Mathf.Clamp(-config.Buoyancy * height, -config.MaxHeave, config.MaxHeave);
             float vertical = heave - nextFall;
             float noseDrop = air * stall * config.NoseDrop * Mathf.Clamp01(slope / 0.1f);
 

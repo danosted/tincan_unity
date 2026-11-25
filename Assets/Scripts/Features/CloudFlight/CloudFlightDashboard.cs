@@ -85,7 +85,7 @@ namespace TinCan.Features.CloudFlight
             _text.Append(string.Format(c, "speed     {0,5:0.0} m/s  (engine {1:0.0} + momentum {2:+0.0;-0.0})\n", r.Speed, r.Engine, r.Momentum));
             _text.Append("          ").Append(Bar(r.Speed / _config.MaxSpeed, _config.StallSpeed / _config.MaxSpeed)).Append('\n');
             _text.Append(string.Format(c, "momentum  {0,5:+0.0;-0.0} m/s²  {1}\n", r.Charge, charge));
-            _text.Append(string.Format(c, "nose      {0,5:+0;-0}°   (sea {1:+0;-0;0}°, free climb up to {2:0}°)\n", nose, -r.Force.Level, _config.FreeClimb));
+            _text.Append(string.Format(c, "nose      {0,5:+0;-0}°   (level {1:+0;-0;0}°: sea + lean, free climb up to {2:0}°)\n", nose, -r.Force.Level, _config.FreeClimb));
             _text.Append(string.Format(c, "height    {0,5:+0.0;-0.0} m above rest  (in cloud {1:0}%)\n", r.Height, r.InCloud * 100f));
             _text.Append(string.Format(c, "vertical  {0,5:+0.0;-0.0} m/s  (cloud lift {1:+0.0;-0.0}, fall {2:0.0})  stall {3:0}%\n", r.Force.Vertical, r.Heave, r.Fall, r.Stall * 100f));
             _text.Append("launch    ");

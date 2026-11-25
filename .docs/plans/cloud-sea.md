@@ -129,6 +129,16 @@ the reward of the dive, not a mode you switch on.
   (`MaxContourTilt` 2, was 12; below `RideBand`, so riding the swell never builds or spends momentum). There is more cloud to dive in (`CloudBoundaryConfig`): a player goes overboard 40 m below the surface
   (`CharacterResetDepth`, was 10, which caught the crew on deck mid-dive) and the ship's sinking emergency starts at
   30 m (`EmergencyDepth`, was 5).
+- **Decided (developer, 2026-11-24): each ship says how much the world pitches it.** `ExternalPitchInfluence` (0..1,
+  default 1) on `AirshipControllerView` scales the summed `AirshipFlightForce.Level` and `NoseDrop` in
+  `AirshipMovementUseCase`, so every flight-force source is covered without knowing of it. 0: the nose keeps to the
+  horizon over the swell and never noses over in a stall. Lift and momentum are not scaled (a heavier hull's lift would
+  be its own field).
+- **Decided (developer, 2026-11-24): the nose leans with the rise and fall, a cue for the crew.** Nose up as the
+  cloud lifts the ship, down as it sinks or falls (`LiftLean` 1°/m/s, capped at `MaxLiftLean` 6° on
+  `CloudFlightConfig`; the last step's fall, so a step behind). The lean is part of `Level`, and the dive and climb are
+  measured from it, so leaning builds and spends no speed. The ship still flies along its nose, so a glide leaning down
+  sinks a little faster (to playtest). `ExternalPitchInfluence` scales it per ship.
 - **Built as forces on today's movement** (approach A; decided by the developer, 2026-11-15): the core gets a hook the cloud feature
   fills (a speed change and a vertical push each tick), the way `IAirshipPilotInput` is a hook. Where the feature is
   not loaded (the test areas), ships fly exactly as today. A new movement model (mass, momentum, gravity from first

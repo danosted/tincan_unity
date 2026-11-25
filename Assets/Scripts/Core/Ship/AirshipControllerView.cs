@@ -27,6 +27,9 @@ namespace TinCan.Core.Ship
         [SerializeField] private float _bankSpeed = 2f;
         [Tooltip("How fast the nose eases back to level with no pitch input, per second of the angle off level.")]
         [SerializeField, Min(0f)] private float _pitchLevelSpeed = 0.2f;
+        [Tooltip("How much the world pitches this ship: the level the features set (the cloud sea's slope) and a stall's " +
+                 "nose drop. 1: fully, 0: the nose keeps to the horizon.")]
+        [SerializeField, Range(0f, 1f)] private float _externalPitchInfluence = 1f;
 
         [Header("Visual Hierarchy")]
         [SerializeField] private Transform _visualRoot;
@@ -53,6 +56,7 @@ namespace TinCan.Core.Ship
         public float MaxBankAngle => _maxBankAngle;
         public float BankSpeed => _bankSpeed;
         public float PitchLevelSpeed => _pitchLevelSpeed;
+        public float ExternalPitchInfluence => _externalPitchInfluence;
 
         // IMovingGround data
         public Vector3 Velocity => _velocity;

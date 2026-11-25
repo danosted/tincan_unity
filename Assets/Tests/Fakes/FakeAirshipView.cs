@@ -39,6 +39,7 @@ namespace TinCan.Tests.Fakes
         public float MaxBankAngle => 20f;
         public float BankSpeed => 1f;
         public float PitchLevelSpeed => 0.5f;
+        public float ExternalPitchInfluence { get; set; } = 1f;
         public Vector3 Velocity => Vector3.zero;
         public Vector3 PositionDelta => Vector3.zero;
         public Quaternion RotationDelta => Quaternion.identity;

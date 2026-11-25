@@ -158,6 +158,25 @@ namespace TinCan.Core.Ship.Tests
         }
 
         [Test]
+        public void TheShipsExternalPitchInfluence_ScalesTheLevelAndNoseDrop_NotTheLift()
+        {
+            var force = new FixedForce { Force = new AirshipFlightForce(0f, vertical: 2f, noseDrop: 4f, level: 6f) };
+            var movement = Create(System.Array.Empty<IAirshipPilotInput>(), new IAirshipFlightForces[] { force });
+            movement.Tick();
+            float fullPitch = _ship.AppliedAngularVelocity.x;
+            float fullLift = _ship.AppliedVelocity.y;
+
+            _ship.ExternalPitchInfluence = 0f;
+            _ship.Transform.rotation = Quaternion.identity;
+            var deaf = Create(System.Array.Empty<IAirshipPilotInput>(), new IAirshipFlightForces[] { force });
+            deaf.Tick();
+
+            Assert.That(fullPitch, Is.GreaterThan(4f), "fully influenced: the nose drop plus the turn towards the sea's slope");
+            Assert.That(_ship.AppliedAngularVelocity.x, Is.EqualTo(0f).Within(1e-4f), "no influence: the nose keeps level");
+            Assert.That(_ship.AppliedVelocity.y, Is.EqualTo(fullLift).Within(1e-4f), "the lift is the world's either way");
+        }
+
+        [Test]
         public void AHeldShip_StandsStill_DespiteThrottleAndFlightForces()
         {
             var helm = new FixedPilot { Answer = new AirshipInputState { Throttle = 1f, Yaw = 1f } };

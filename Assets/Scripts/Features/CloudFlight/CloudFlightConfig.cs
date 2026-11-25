@@ -27,6 +27,11 @@ namespace TinCan.Features.CloudFlight
         [Tooltip("Within this many degrees of the sea's slope the ship is riding it: no momentum is built or spent, so " +
                  "the nose catching up with the swell never creeps the ship along. A dive counts beyond it.")]
         [SerializeField, Range(0f, 15f)] private float _rideBand = 3f;
+        [Tooltip("The nose leans with the ship's rise and fall, degrees per m/s: up as the cloud lifts it, down as it " +
+                 "sinks or falls, so the crew sees which way it goes. Part of level, so the lean builds and spends no speed.")]
+        [SerializeField, Min(0f)] private float _liftLean = 1f;
+        [Tooltip("The most the nose leans with the rise and fall, degrees.")]
+        [SerializeField, Range(0f, 30f)] private float _maxLiftLean = 6f;
 
         [Header("Speed and height")]
         [Tooltip("How hard the nose's slope pulls on the speed, m/s² at straight down (gravity along the path).")]
@@ -82,6 +87,8 @@ namespace TinCan.Features.CloudFlight
         public float ContourReach { get => _contourReach; set => _contourReach = value; }
         public float MaxContourTilt { get => _maxContourTilt; set => _maxContourTilt = value; }
         public float RideBand { get => _rideBand; set => _rideBand = value; }
+        public float LiftLean { get => _liftLean; set => _liftLean = value; }
+        public float MaxLiftLean { get => _maxLiftLean; set => _maxLiftLean = value; }
         public float Pull { get => _pull; set => _pull = value; }
         public float DiveGain { get => _diveGain; set => _diveGain = value; }
         public float FreeClimb { get => _freeClimb; set => _freeClimb = value; }

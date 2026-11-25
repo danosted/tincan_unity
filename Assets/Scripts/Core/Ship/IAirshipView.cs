@@ -25,6 +25,11 @@ namespace TinCan.Core.Ship
         float BankSpeed { get; }
         /// <summary>How fast the nose eases back to level with no pitch input, per second (of the angle off level).</summary>
         float PitchLevelSpeed { get; }
+        /// <summary>
+        /// How much the flight forces pitch the ship, 0..1: scales the level they set and their nose drop (1: fully,
+        /// 0: the nose keeps to the horizon). Their lift and momentum are not scaled.
+        /// </summary>
+        float ExternalPitchInfluence => 1f;
 
         /// <summary>
         /// Apply the calculated physical velocities to the view.

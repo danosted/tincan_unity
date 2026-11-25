@@ -105,6 +105,11 @@ namespace TinCan.Core.Ship
                 level += force.Level;
             }
 
+            // The ship's own say in how much the world pitches it (lift and momentum stay whole).
+            float influence = Mathf.Clamp01(airship.ExternalPitchInfluence);
+            noseDrop *= influence;
+            level *= influence;
+
             // Unpiloted, the ship winds down to neutral: the speed the forces gave it fades like the engine's.
             if (!piloted)
                 state.Momentum = Mathf.MoveTowards(state.Momentum, 0f, airship.DecelerationRate * deltaTime);

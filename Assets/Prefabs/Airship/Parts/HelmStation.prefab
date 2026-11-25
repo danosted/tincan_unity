@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5405576647377455464}
   - component: {fileID: 1314858745815237448}
   - component: {fileID: 8283344269892043078}
-  - component: {fileID: 2026214976837379015}
+  - component: {fileID: 2448004057932663668}
   m_Layer: 0
   m_Name: HelmStation
   m_TagString: Untagged
@@ -33,8 +33,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 7006346223156261894}
-  - {fileID: 3880620780986341549}
+  - {fileID: 990484011750582339}
+  - {fileID: 9165494555755070725}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5405576647377455464
@@ -90,7 +90,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _interactionDefinition: {fileID: 11400000, guid: 9a72d6cf7a981274985c101aa88489fe, type: 2}
   _occupyAbility: {fileID: 11400000, guid: b9abe16f5bbab2c45bd9167368476680, type: 2}
---- !u!65 &2026214976837379015
+--- !u!65 &2448004057932663668
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -111,7 +111,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.2, y: 1.75, z: 0.75}
   m_Center: {x: 0, y: 0.875, z: -0.12}
---- !u!1 &6296904826866499774
+--- !u!1 &1913331338591019008
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -119,7 +119,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 3880620780986341549}
+  - component: {fileID: 9165494555755070725}
   m_Layer: 0
   m_Name: Seat
   m_TagString: Untagged
@@ -127,13 +127,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &3880620780986341549
+--- !u!4 &9165494555755070725
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6296904826866499774}
+  m_GameObject: {fileID: 1913331338591019008}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 1.05, z: -1.2}
@@ -142,7 +142,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 8518756737534887370}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &7399752535396684781
+--- !u!1001 &735316579568684968
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -202,10 +202,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[2]'
       value: 
       objectReference: {fileID: 2100000, guid: 2ef5f17016e89674d96d9579aebd954f, type: 2}
-    - target: {fileID: -3480195875475349550, guid: 5540dea774474d94ea9e2c3ba0ada2ed, type: 3}
-      propertyPath: 'm_Materials.Array.data[3]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 606f8cbc2e51520458bb745af8b3f3a1, type: 2}
     - target: {fileID: 595090575388578687, guid: 5540dea774474d94ea9e2c3ba0ada2ed, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -251,8 +247,8 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5540dea774474d94ea9e2c3ba0ada2ed, type: 3}
---- !u!4 &7006346223156261894 stripped
+--- !u!4 &990484011750582339 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 5540dea774474d94ea9e2c3ba0ada2ed, type: 3}
-  m_PrefabInstance: {fileID: 7399752535396684781}
+  m_PrefabInstance: {fileID: 735316579568684968}
   m_PrefabAsset: {fileID: 0}

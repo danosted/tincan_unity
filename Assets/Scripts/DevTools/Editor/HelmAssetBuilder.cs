@@ -40,7 +40,8 @@ namespace TinCan.DevTools.Editor
         // bow; the body's root is the middle of its 2 m capsule, so 1.05 m up stands it on the deck.
         private static readonly Vector3 HelmLocalPosition = new(1.05f, 1.087f, -8.1f);
         private static readonly Vector3 SeatLocalPosition = new(0f, 1.05f, -1.2f);
-        // The console's box (manifest beside the model): wheel, levers and column, from the deck to the wheel's top handle.
+        // The console's box (manifest beside the model): wheel, levers, column and the compass on the gearbox, from the deck
+        // to the wheel's top handle.
         private static readonly Vector3 ConsoleCentre = new(0f, 0.875f, -0.12f);
         private static readonly Vector3 ConsoleSize = new(1.2f, 1.75f, 0.75f);
         private const string HelmModel = "Assets/Models/ShipParts/Helm/helm.fbx";
@@ -177,7 +178,6 @@ namespace TinCan.DevTools.Editor
                 ["Helm_Brass"] = LookMaterials.Get("M_ShipEngine"),
                 ["Helm_Iron"] = LookMaterials.Get("M_ShipIron"),
                 ["Helm_Paint"] = LookMaterials.Get("M_ShipPennant"),
-                ["Helm_Spirit"] = LookMaterials.Get("M_ShipSpirit"),
             };
             var model = (GameObject)PrefabUtility.InstantiatePrefab(Load<GameObject>(HelmModel), root.transform);
             model.name = "Mesh";

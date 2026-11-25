@@ -21,8 +21,8 @@ namespace TinCan.Features.Navigation
         [Tooltip("The compass shown at every helm (presentation only; a plain prefab, no NetworkObject).")]
         public GameObject? CompassPrefab;
 
-        [Tooltip("Where the compass sits, in the helm's own space (the helm faces +z; its wheel is at about y 1.75).")]
-        public Vector3 CompassLocalPosition = new(1.1f, 2.05f, -0.15f);
+        [Tooltip("Where the compass sits, in the helm's own space (the helm faces +z): in the cup on the helm's gearbox, behind the wheel (.tools/blender/helm.py, COMPASS_SEAT).")]
+        public Vector3 CompassLocalPosition = new(0f, 1.55f, 0.05f);
 
         [Tooltip("Degrees per second the arrow turns toward a new heading, so a waypoint change swings it visibly.")]
         [Min(1f)] public float ArrowTurnSpeed = 240f;

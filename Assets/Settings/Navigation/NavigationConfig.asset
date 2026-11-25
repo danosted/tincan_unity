@@ -15,7 +15,7 @@ MonoBehaviour:
   MaxWaypoints: 8
   WaypointRadius: 60
   CompassPrefab: {fileID: 6348670063291263810, guid: 528f2c6b09a08cb44b3a809ce6bd47e6, type: 3}
-  CompassLocalPosition: {x: 1.1, y: 2.05, z: -0.15}
+  CompassLocalPosition: {x: 0, y: 1.55, z: 0.05}
   ArrowTurnSpeed: 240
   ChartRange: 3000
   ChartRangeLimits: {x: 500, y: 8000}

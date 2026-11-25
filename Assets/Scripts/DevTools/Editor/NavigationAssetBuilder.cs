@@ -66,7 +66,6 @@ namespace TinCan.DevTools.Editor
         [MenuItem("TinCan/Dev/Navigation/Build Assets")]
         public static void Build()
         {
-            var brass = Material("M_Compass_Brass", new Color(0.78f, 0.6f, 0.25f));
             var glass = Material("M_Compass_Glass", new Color(0.8f, 0.92f, 1f, 0.18f), transparent: true);
             var water = Material("M_Compass_Water", new Color(0.2f, 0.55f, 0.9f, 0.45f), transparent: true);
             var needle = Material("M_Compass_Needle", new Color(0.9f, 0.15f, 0.1f), unlit: true);
@@ -78,7 +77,9 @@ namespace TinCan.DevTools.Editor
 
             var config = Asset<NavigationConfig>(ConfigPath, c =>
             {
-                c.CompassPrefab = CompassPrefab(brass, glass, water, needle, tail, bow);
+                c.CompassPrefab = CompassPrefab(glass, water, needle, tail, bow);
+                // In the cup on the helm's gearbox, behind the wheel (.tools/blender/helm.py, COMPASS_SEAT).
+                c.CompassLocalPosition = new Vector3(0f, 1.55f, 0.05f);
                 // The chart fills the table's paper; the two go together.
                 c.ChartRadius = ChartRadius;
                 c.ShipMarkMaterial = Material("M_Chart_Ship", new Color(0.12f, 0.2f, 0.45f), unlit: true);
@@ -185,33 +186,32 @@ namespace TinCan.DevTools.Editor
         }
 
         /// <summary>
-        /// The compass, about 0.4 m across, on a post down to the helm stand. Its +z is the bow. Children the view looks up
-        /// by name: Arrow (pivot at the centre, +z points) and WaterLine (kept level). No colliders: it never blocks Interact.
+        /// The compass, a glass ball 0.30 m across: it rests in the cup on the helm's gearbox, behind the wheel
+        /// (.tools/blender/helm.py, COMPASS_SEAT), whose brass ring round the glass's equator is the ship-fixed reference (no
+        /// solid disc, so nothing hides the arrow). Its +z is the bow, marked on the ring. Children the view looks up by
+        /// name: Arrow (pivot at the centre, +z points) and WaterLine (kept level). No colliders: it never blocks Interact.
+        /// A plain prefab (no network id), so it is rebuilt on every run.
         /// </summary>
-        private static GameObject CompassPrefab(Material brass, Material glass, Material water, Material needle, Material tail, Material bow)
+        private static GameObject CompassPrefab(Material glass, Material water, Material needle, Material tail, Material bow)
         {
-            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(CompassPrefabPath);
-            if (existing != null) return existing;
-
+            const float radius = 0.15f;
+            const float s = radius * 2f / 0.38f; // the glass was 0.38 m across; everything inside keeps its proportions
             var root = new GameObject("Compass");
             root.AddComponent<CompassView>();
 
-            Visual(PrimitiveType.Cylinder, "Post", root.transform, new Vector3(0f, -0.55f, 0f), Vector3.zero, new Vector3(0.06f, 0.45f, 0.06f), brass);
-            Visual(PrimitiveType.Cylinder, "Disc", root.transform, Vector3.zero, Vector3.zero, new Vector3(0.3f, 0.004f, 0.3f), brass);
-            Visual(PrimitiveType.Cube, "BowMark", root.transform, new Vector3(0f, 0.004f, 0.135f), new Vector3(0f, 45f, 0f), new Vector3(0.025f, 0.006f, 0.025f), bow);
-            Visual(PrimitiveType.Cylinder, "Gimbal", root.transform, new Vector3(0f, -0.2f, 0f), Vector3.zero, new Vector3(0.12f, 0.02f, 0.12f), brass);
+            Visual(PrimitiveType.Cube, "BowMark", root.transform, new Vector3(0f, 0.012f, radius + 0.006f), new Vector3(0f, 45f, 0f), new Vector3(0.022f, 0.012f, 0.022f), bow);
 
             var waterLine = new GameObject("WaterLine").transform;
             waterLine.SetParent(root.transform, false);
-            Visual(PrimitiveType.Cylinder, "Surface", waterLine, Vector3.zero, Vector3.zero, new Vector3(0.34f, 0.0015f, 0.34f), water, shadows: false);
+            Visual(PrimitiveType.Cylinder, "Surface", waterLine, Vector3.zero, Vector3.zero, new Vector3(0.34f * s, 0.0015f, 0.34f * s), water, shadows: false);
 
             var arrow = new GameObject("Arrow").transform;
             arrow.SetParent(root.transform, false);
-            Visual(PrimitiveType.Cube, "Shaft", arrow, new Vector3(0f, 0f, 0.01f), Vector3.zero, new Vector3(0.014f, 0.014f, 0.22f), needle);
-            Visual(PrimitiveType.Cube, "Tip", arrow, new Vector3(0f, 0f, 0.12f), new Vector3(0f, 45f, 0f), new Vector3(0.04f, 0.014f, 0.04f), needle);
-            Visual(PrimitiveType.Cube, "Tail", arrow, new Vector3(0f, 0f, -0.1f), Vector3.zero, new Vector3(0.03f, 0.03f, 0.03f), tail);
+            Visual(PrimitiveType.Cube, "Shaft", arrow, new Vector3(0f, 0f, 0.01f * s), Vector3.zero, new Vector3(0.014f, 0.014f, 0.22f * s), needle);
+            Visual(PrimitiveType.Cube, "Tip", arrow, new Vector3(0f, 0f, 0.12f * s), new Vector3(0f, 45f, 0f), new Vector3(0.04f * s, 0.014f, 0.04f * s), needle);
+            Visual(PrimitiveType.Cube, "Tail", arrow, new Vector3(0f, 0f, -0.1f * s), Vector3.zero, new Vector3(0.03f * s, 0.03f * s, 0.03f * s), tail);
 
-            Visual(PrimitiveType.Sphere, "Glass", root.transform, Vector3.zero, Vector3.zero, new Vector3(0.38f, 0.38f, 0.38f), glass, shadows: false);
+            Visual(PrimitiveType.Sphere, "Glass", root.transform, Vector3.zero, Vector3.zero, Vector3.one * radius * 2f, glass, shadows: false);
 
             EnsureFolder(CompassPrefabPath);
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, CompassPrefabPath);

@@ -7,10 +7,10 @@ namespace TinCan.Features.CloudMist.Tests
     {
         private static readonly CloudMistTier[] Tiers =
         {
-            new("Low", 0.25f, 10, 0, 0, false, 250f),
-            new("Medium", 0.25f, 16, 0, 1, true, 300f),
-            new("High", 0.5f, 24, 0, 1, true, 400f),
-            new("Ultra", 0.5f, 32, 3, 2, true, 500f),
+            new("Low", 0.25f, 16f, 12, 0, 0, false),
+            new("Medium", 0.25f, 10f, 24, 0, 1, true),
+            new("High", 0.5f, 6f, 40, 0, 1, true),
+            new("Ultra", 0.5f, 4f, 64, 3, 2, true),
         };
 
         // Very Low has none; Very High and Ultra both draw Ultra.
@@ -55,5 +55,20 @@ namespace TinCan.Features.CloudMist.Tests
         [Test]
         public void NoTiers_DrawsNoMist() =>
             Assert.That(_processor.Pick("Low", new CloudMistTier[0], 3, ByLevel), Is.EqualTo(-1));
+
+        [TestCase(1000f, 600f)] // Normal view distance
+        [TestCase(2500f, 1500f)] // Very Far: the mist reaches further, whatever the tier
+        public void TheMistReaches_AShareOfTheViewDistance(float farClipPlane, float reach)
+        {
+            var quality = UnityEngine.ScriptableObject.CreateInstance<CloudMistQuality>();
+            try
+            {
+                Assert.That(quality.Reach(farClipPlane), Is.EqualTo(reach).Within(0.01f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(quality);
+            }
+        }
     }
 }

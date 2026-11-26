@@ -12,7 +12,8 @@ namespace TinCan.Features.CloudMist
     /// .docs/plans/cloud-sea-fog.md, F4; shader Shaders/CloudSeaMist.shader). Two render-graph passes after transparents:
     /// a raymarch through the slab the mist can fill, at the active tier's resolution, then a depth-aware upsample onto the
     /// camera's colour. The mist's look is its material (<see cref="_material"/>, copied each frame so tuning it in Play
-    /// shows); the tier (<see cref="CloudMistQuality.Active"/>) only sets how well it is sampled. Draws nothing while no
+    /// shows); the tier (<see cref="CloudMistQuality.Active"/>) only sets how well it is sampled, and the mist reaches a
+    /// share of the camera's far plane, the player's view distance (<see cref="CloudMistQuality.Reach"/>). Draws nothing while no
     /// tier is active, and only for game cameras that are not overlays.
     /// </summary>
     public sealed class CloudMistRendererFeature : ScriptableRendererFeature
@@ -40,6 +41,7 @@ namespace TinCan.Features.CloudMist
 
             _runtime.CopyPropertiesFromMaterial(_material);
             _pass.Tier = tier;
+            _pass.Reach = _quality.Reach(renderingData.cameraData.camera.farClipPlane);
             _pass.ConfigureInput(ScriptableRenderPassInput.Depth);
             renderer.EnqueuePass(_pass);
         }
@@ -50,7 +52,8 @@ namespace TinCan.Features.CloudMist
         {
             private const int MarchPass = 0;
             private const int CompositePass = 1;
-            private static readonly int StepsId = Shader.PropertyToID("_MistSteps");
+            private static readonly int StepLengthId = Shader.PropertyToID("_MistStepLength");
+            private static readonly int MaxStepsId = Shader.PropertyToID("_MistMaxSteps");
             private static readonly int LightStepsId = Shader.PropertyToID("_MistLightSteps");
             private static readonly int OctavesId = Shader.PropertyToID("_MistOctaves");
             private static readonly int ShadowsId = Shader.PropertyToID("_MistShadows");
@@ -63,6 +66,9 @@ namespace TinCan.Features.CloudMist
             public CloudMistPass(Material material) => _material = material;
 
             public CloudMistTier Tier { get; set; }
+
+            /// <summary>How far the mist reaches, in metres (a share of the view distance).</summary>
+            public float Reach { get; set; }
 
             private sealed class MarchData
             {
@@ -91,11 +97,12 @@ namespace TinCan.Features.CloudMist
                 desc.filterMode = FilterMode.Point;
                 TextureHandle mist = renderGraph.CreateTexture(desc);
 
-                _material.SetFloat(StepsId, Tier.Steps);
+                _material.SetFloat(StepLengthId, Tier.StepLength);
+                _material.SetFloat(MaxStepsId, Tier.MaxSteps);
                 _material.SetFloat(LightStepsId, Tier.LightSteps);
                 _material.SetFloat(OctavesId, Tier.DetailOctaves);
                 _material.SetFloat(ShadowsId, Tier.Shadows ? 1f : 0f);
-                _material.SetFloat(RangeId, Tier.Range);
+                _material.SetFloat(RangeId, Reach);
                 _material.SetFloat(FrameId, Time.frameCount % 64);
                 _material.SetVector(SizeId, new Vector4(desc.width, desc.height, 1f / desc.width, 1f / desc.height));
 

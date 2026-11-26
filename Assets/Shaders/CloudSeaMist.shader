@@ -34,7 +34,14 @@ Shader "TinCan/Environment/Cloud Sea Mist"
 
         [Header(Light)]
         _Hollow ("Hollow (deep mist leans to the sea's hollow colour)", Range(0, 1)) = 0.6
+        _DepthDarken ("Depth Darken (how much darker the mist is deep under the sea's surface, in holes and rifts; 0 off)", Range(0, 1)) = 0.5
+        _DepthRange ("Depth Range (m under the surface until fully dark)", Range(1, 200)) = 50
         _Absorb ("Absorb (how fast the sun dims inside)", Range(0, 4)) = 1
+        _Form ("Form (the top's shape lit by the sun: hole and rift walls; 0 off)", Range(0, 1)) = 0.8
+        _ShadowDarken ("Shadow Darken (how dark the ship's and islands' shadows land on the top; 0 off)", Range(0, 1)) = 0.45
+        // Temporary (plan cloud-sea-fog.md, F4 1b): where the top is in the sun's shadow, painted red, to see whether the
+        // shadows reach the mist at all.
+        [Toggle] _ShadowDebug ("Shadow Debug (red where the top is in the sun's shadow)", Float) = 0
     }
 
     SubShader
@@ -79,10 +86,16 @@ Shader "TinCan/Environment/Cloud Sea Mist"
             float _Coverage;
             float4 _Wind;
             float _Hollow;
+            float _DepthDarken;
+            float _DepthRange;
             float _Absorb;
+            float _Form;
+            float _ShadowDebug;
+            float _ShadowDarken;
 
-            // The tier (CloudMistRendererFeature).
-            float _MistSteps;
+            // The tier and the reach, a share of the view distance (CloudMistRendererFeature).
+            float _MistStepLength;
+            float _MistMaxSteps;
             float _MistLightSteps;
             float _MistOctaves;
             float _MistShadows;
@@ -96,15 +109,26 @@ Shader "TinCan/Environment/Cloud Sea Mist"
                 return frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715))));
             }
 
-            // The mist's density at p, 0..1, and how many metres under the mist's top p lies (negative above it).
-            float MistDensity(float3 p, float time, out float below)
+            // The mist's top over xz (m): the swell and its heaps, sunk by _HoleDrop inside a hole or rift; also the rim
+            // (the top as if there were no opening) and how far xz is inside one (0..1).
+            float MistTop(float2 xz, float time, out float rim, out float cut)
+            {
+                cut = TinCanCloudHoleCut(xz);
+                rim = _TinCanCloudSea.y + _TopLift + TinCanCloudSwell(xz);
+                float heaps = TinCanCloudBillow(float3(xz / max(_HeapScale, 0.01), time * 0.01));
+                return rim + (heaps - 0.5) * _HeapHeight * (1.0 - cut) - cut * _HoleDrop;
+            }
+
+            // The mist's density at p, 0..1, how many metres under the mist's top p lies (negative above it), and how
+            // many under the sea's surface there (the swell's, so only a drop into a hole or rift counts, not a trough).
+            float MistDensity(float3 p, float time, out float below, out float depth)
             {
                 float2 xz = p.xz;
-                float cut = TinCanCloudHoleCut(xz);
-                float rim = _TinCanCloudSea.y + _TopLift + TinCanCloudSwell(xz);
-                float heaps = TinCanCloudBillow(float3(xz / max(_HeapScale, 0.01), time * 0.01));
-                float top = rim + (heaps - 0.5) * _HeapHeight * (1.0 - cut) - cut * _HoleDrop;
+                float rim;
+                float cut;
+                float top = MistTop(xz, time, rim, cut);
                 below = top - p.y;
+                depth = max(rim - p.y, 0.0);
 
                 float band = smoothstep(-_Above, _Below, below);
                 // The spill: from the rim's height down into the opening, thinning as it goes.
@@ -167,10 +191,12 @@ Shader "TinCan/Environment/Cloud Sea Mist"
 
                 if (t1 <= t0) return 0.0h;
 
-                int steps = max((int)_MistSteps, 1);
+                float span = t1 - t0;
+                // As many steps as this ray's path through the mist needs at the tier's step length, up to its cap: a
+                // longer reach costs more, and a short path (looking down through the slab) costs little.
+                int steps = clamp((int)ceil(span / max(_MistStepLength, 0.5)), 1, max((int)_MistMaxSteps, 1));
                 int lightSteps = (int)_MistLightSteps;
                 float jitter = MistJitter(input.positionCS.xy);
-                float span = t1 - t0;
                 float fadeStart = _MistRange * 0.6;
                 float3 sun = _MainLightPosition.xyz;
                 float lightStep = max(_Below * 0.5, 0.5);
@@ -179,8 +205,11 @@ Shader "TinCan/Environment/Cloud Sea Mist"
                 float weightSum = 0.0;
                 float litSum = 0.0;
                 float hollowSum = 0.0;
+                float deepSum = 0.0;
                 float thinSum = 0.0;
                 float distanceSum = 0.0;
+                // Where the ray first meets mist that counts: the top's shape and shadow are read there.
+                float entryT = -1.0;
                 for (int i = 0; i < 64; i++)
                 {
                     if (i >= steps) break;
@@ -193,10 +222,12 @@ Shader "TinCan/Environment/Cloud Sea Mist"
                     float3 p = eye + dir * t;
 
                     float below;
-                    float density = MistDensity(p, time, below) * (1.0 - smoothstep(fadeStart, _MistRange, t));
+                    float depth;
+                    float density = MistDensity(p, time, below, depth) * (1.0 - smoothstep(fadeStart, _MistRange, t));
                     if (density <= 1e-3) continue;
 
                     float alpha = 1.0 - exp(-density * _Density * dt);
+                    if (entryT < 0.0 && density > 0.25) entryT = t;
                     float lit;
                     if (lightSteps > 0)
                     {
@@ -205,7 +236,8 @@ Shader "TinCan/Environment/Cloud Sea Mist"
                         {
                             if (k > lightSteps) break;
                             float ignore;
-                            optical += MistDensity(p + sun * (lightStep * k), time, ignore) * lightStep;
+                            float ignoreDepth;
+                            optical += MistDensity(p + sun * (lightStep * k), time, ignore, ignoreDepth) * lightStep;
                         }
 
                         lit = exp(-optical * _Density * _Absorb);
@@ -215,11 +247,13 @@ Shader "TinCan/Environment/Cloud Sea Mist"
                         lit = exp(-max(below, 0.0) / max(_Below, 0.01) * _Absorb);
                     }
 
-                    if (_MistShadows > 0.5) lit *= MainLightRealtimeShadow(TransformWorldToShadowCoord(p));
+                    // No sun shadow per step: it read the (soft, many-tap) shadow map at every step for a shading
+                    // nobody could see; the shadow is read once where the ray meets the top (Shadow Darken).
 
                     float weight = transmittance * alpha;
                     litSum += lit * weight;
                     hollowSum += saturate(below / (_Below * 1.5)) * weight;
+                    deepSum += smoothstep(0.0, _DepthRange, depth) * weight;
                     thinSum += (1.0 - density) * weight;
                     distanceSum += t * weight;
                     weightSum += weight;
@@ -231,11 +265,61 @@ Shader "TinCan/Environment/Cloud Sea Mist"
 
                 half lit = (half)(litSum / weightSum);
                 half hollow = (half)(hollowSum / weightSum * _Hollow);
+                half deep = (half)(deepSum / weightSum);
                 half thin = (half)(thinSum / weightSum);
                 float3 position = eye + dir * (distanceSum / weightSum);
 
                 TinCanCloudLook look = TinCanCloudLookFromGlobals();
+
+                // The sun's shadow (ship, islands) where the ray meets the top: how much of the light it takes, 0..1,
+                // with the light's own shadow strength divided out (the sunset light's is low, for soft shadows on deck;
+                // on the mist that left a shadow a few percent dark), so _ShadowDarken alone says how dark it lands.
+                half shaded = 0.0h;
+                #if defined(_MAIN_LIGHT_SHADOWS) || defined(_MAIN_LIGHT_SHADOWS_CASCADE)
+                    if (_MistShadows > 0.5 && entryT >= 0.0)
+                    {
+                        half shadow = (half)MainLightRealtimeShadow(TransformWorldToShadowCoord(eye + dir * entryT));
+                        shaded = saturate((1.0h - shadow) / max((half)GetMainLightShadowParams().x, 0.01h));
+                    }
+                #endif
+
+                if (_ShadowDebug > 0.5)
+                {
+                    // Red where the top is in shadow; blue where this tier has no shadows or they never reach the pass.
+                    #if defined(_MAIN_LIGHT_SHADOWS) || defined(_MAIN_LIGHT_SHADOWS_CASCADE)
+                        half3 debug = _MistShadows > 0.5 ? lerp(half3(1, 1, 1), half3(1, 0, 0), shaded) : half3(0, 0, 1);
+                    #else
+                        half3 debug = half3(0, 0, 1);
+                    #endif
+                    half debugOpacity = (half)(1.0 - transmittance);
+                    return half4(debug * debugOpacity, debugOpacity);
+                }
+
+                // The top's shape where the ray meets it, lit by the banded sun as the drawn sea is: down a hole's or
+                // rift's wall the top tilts steeply, so the wall facing the sun lights and the far one falls into shadow.
+                // That is what shows where the sea opens. No rim light: looking across the sea nearly all of it is at a
+                // grazing angle, and the rim's pull to the sky's colour made the whole mist read as see-through.
+                // Fades out as the sun nears the horizon: from under it, the light catches the backs of the swells in
+                // stripes (at night the mist read as sand dunes). Full from about 6 degrees up; the day's sun peaks at 12.
+                half form = (half)(_Form * smoothstep(0.0, 0.1, sun.y));
+                if (form > 0.0h && entryT >= 0.0)
+                {
+                    float3 entry = eye + dir * entryT;
+                    float e = 3.0;
+                    float rimIgnore;
+                    float cutIgnore;
+                    float h = MistTop(entry.xz, time, rimIgnore, cutIgnore);
+                    float hx = MistTop(entry.xz + float2(e, 0.0), time, rimIgnore, cutIgnore);
+                    float hz = MistTop(entry.xz + float2(0.0, e), time, rimIgnore, cutIgnore);
+                    float3 normal = normalize(float3(h - hx, e, h - hz));
+                    half band = TinCanBand((half)dot(normal, sun), look.wrap, look.bandSoftness, look.bands);
+                    lit = lerp(lit, min(lit, band), form);                }
+
                 half3 colour = TinCanCloudShadeLit(look, lit, SampleSH(float3(0, 1, 0)), 0.0h, -dir, hollow, thin);
+                // After the shading, so the thin tops' glow and the light through them cannot wash it out.
+                colour *= 1.0h - (half)_ShadowDarken * shaded;
+                // Darker the deeper under the sea's surface the mist is seen: a hole or rift reads as a drop, day or night.
+                colour *= 1.0h - (half)_DepthDarken * deep;
                 colour = TinCanWeatherShade(colour, position);
                 colour = TinCanNightShade(colour);
                 half opacity = (half)(1.0 - transmittance);

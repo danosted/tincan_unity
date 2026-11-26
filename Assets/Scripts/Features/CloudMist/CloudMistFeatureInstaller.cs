@@ -38,6 +38,7 @@ namespace TinCan.Features.CloudMist
 
             builder.RegisterInstance(_quality);
             builder.Register<CloudMistTierProcessor>(Lifetime.Singleton);
+            builder.Register<CloudMistShadowRange>(Lifetime.Singleton);
             builder.Register<CloudMistPresenter>(Lifetime.Singleton).As<ITickable>();
         }
     }

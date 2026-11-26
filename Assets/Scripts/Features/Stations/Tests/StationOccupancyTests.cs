@@ -206,6 +206,47 @@ namespace TinCan.Features.Stations.Tests
         }
 
         [Test]
+        public void Tick_ReleasesTheStation_WhenTheOccupantIsMovedOffTheirPlace()
+        {
+            var player = Player();
+            _occupancy.TryOccupy(player, _station);
+
+            player.Movement.SetPose(_station.Seat!.position + new Vector3(0f, 0f, StationOccupancyUseCase.MaxDrift + 0.5f), Quaternion.identity);
+            _occupancy.Tick();
+
+            Assert.That(_station.Occupant, Is.Null, "a respawn, a ship loss or a knock frees the station");
+            Assert.That(_occupancy.StationOf(player.Id), Is.Null);
+            Assert.That(_abilities.HasAbility(player, _fire), Is.False);
+        }
+
+        [Test]
+        public void Tick_KeepsTheStation_WhenTheShipCarriesTheSeatAndTheOccupantTogether()
+        {
+            var player = Player();
+            _occupancy.TryOccupy(player, _station);
+
+            var moved = new Vector3(50f, 10f, -20f);
+            _station.Seat!.position += moved;
+            player.Movement.SetPose(player.Movement.Transform.position + moved + new Vector3(0.3f, 0f, 0f), Quaternion.identity);
+            _occupancy.Tick();
+
+            Assert.That(_station.Occupant, Is.SameAs(player));
+        }
+
+        [Test]
+        public void Tick_WithAnUnsafeSeat_MeasuresFromWhereThePlayerStood()
+        {
+            var player = Player();
+            player.Movement.SetPose(new Vector3(-2f, 1f, 0f), Quaternion.identity);
+            _seats.Safe = false;
+            _occupancy.TryOccupy(player, _station);
+
+            _occupancy.Tick();
+
+            Assert.That(_station.Occupant, Is.SameAs(player), "occupying where they stand, away from the seat, is not drifting");
+        }
+
+        [Test]
         public void Handler_OccupiesTheTargetStation()
         {
             var player = Player();

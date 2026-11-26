@@ -42,7 +42,9 @@ namespace TinCan.Features.Stations
     /// other abilities), its granted abilities are added, and the station records the occupant. Leaving undoes exactly
     /// that. The player is put on the seat only when <see cref="IStationSeatCheck"/> finds a floor and room there;
     /// otherwise they occupy the station where they stand. Pressing Interact while occupying leaves (<see cref="IInteractOverride"/>), so leaving is an input bit on the
-    /// same tick as everything else. Every tick it also releases a station whose occupant or station has gone.
+    /// same tick as everything else. Every tick it also releases a station whose occupant or station has gone, or whose
+    /// occupant was moved off their place (more than <see cref="MaxDrift"/> from where they sat, measured on the seat so it
+    /// travels with the ship): a respawn, a ship loss, going overboard or a knock all free the station, whatever caused it.
     /// Grants are server-only: the occupant's client does not predict the station's abilities (S3 polish).
     /// </summary>
     public class StationOccupancyUseCase : IStationOccupancy, IInteractOverride, ISimulationTickable
@@ -51,10 +53,15 @@ namespace TinCan.Features.Stations
 
         private const string LogSource = "Stations";
 
+        /// <summary>How far (m) the occupant may move from where they sat before they leave; walking is locked, so only a reset or a knock gets there.</summary>
+        public const float MaxDrift = 1.5f;
+
         private sealed class Occupancy
         {
             public IHumanoidCharacterView Player = null!;
             public IStation Station = null!;
+            public Transform? Anchor;
+            public Vector3 SatAt;
             public readonly List<AbilityDefinition> Granted = new();
         }
 
@@ -112,6 +119,8 @@ namespace TinCan.Features.Stations
             var seat = station.Seat;
             if (seat != null && _seats.CanSeat(player, station, seat)) _respawn.ResetCharacter(player, seat.position, seat.rotation);
             else if (seat != null) _events.LogInfo(LogSource, $"{Name(station)}'s seat has no floor or no room; player {player.Id} stays where they stand.");
+            occupancy.Anchor = seat;
+            if (seat != null) occupancy.SatAt = seat.InverseTransformPoint(player.Movement.Transform.position);
             station.ServerSetOccupant(player);
 
             _events.Publish(new StationOccupancyChangedEvent(player.Id, Name(station), occupied: true));
@@ -154,8 +163,15 @@ namespace TinCan.Features.Stations
             foreach (var occupancy in _byPlayer.Values.ToArray())
             {
                 bool playerGone = !_actors.TryGetActor(occupancy.Player.Id, out _);
-                if (playerGone || !IsAlive(occupancy.Station)) Leave(occupancy.Player.Id);
+                if (playerGone || !IsAlive(occupancy.Station) || MovedOff(occupancy)) Leave(occupancy.Player.Id);
             }
+        }
+
+        private static bool MovedOff(Occupancy occupancy)
+        {
+            if (occupancy.Anchor == null || occupancy.Player is Component component && component == null) return false;
+            Vector3 satAt = occupancy.Anchor.TransformPoint(occupancy.SatAt);
+            return (occupancy.Player.Movement.Transform.position - satAt).sqrMagnitude > MaxDrift * MaxDrift;
         }
 
         private static bool IsAlive(IStation station) => station is not Component component || component != null;

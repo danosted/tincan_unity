@@ -54,7 +54,7 @@ Material:
     - _MottleScale: 220
     - _Rim: 0.35
     - _RimPower: 3
-    - _SeaLook: 3
+    - _SeaLook: 2
     - _SeeThrough: 0.5
     - _ShellCount: 0
     - _ShellFade: 500

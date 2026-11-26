@@ -322,6 +322,10 @@ Coverage is in `Features/Airship/Fuel/Minigame/Tests/FlyingCanUseCaseTests.cs`, 
 `NetCatchUseCaseTests.cs`; tune horizon visibility and catch approach feel with a host/client playtest.
 
 ## Legacy, oddities and traps
+- **A changed shader shows late in the Editor.** Shaders compile in the background (async shader compilation), and
+  until a variant is ready the Editor draws the old one or nothing, with no sign of it. `DevTools/Editor/ShaderCompileNotice.cs`
+  shows "Compiling shaders…" on the Game and Scene views while anything compiles, then "Shaders ready" with the time.
+  Judge a shader change only after that.
 
 - **The vendored volumetric clouds carry TinCan changes.** `ThirdParty/VolumetricCloudsURP/VolumetricClouds/VolumetricClouds.hlsl`
   has a block marked "TinCan: the painted look" that shades the clouds with the cloud sea's look

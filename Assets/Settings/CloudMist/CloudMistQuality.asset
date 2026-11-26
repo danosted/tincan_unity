@@ -15,30 +15,35 @@ MonoBehaviour:
   _tiers:
   - Name: Low
     Resolution: 0.25
-    Steps: 10
+    StepLength: 16
+    MaxSteps: 12
     LightSteps: 0
     DetailOctaves: 0
     Shadows: 0
-    Range: 250
+    ShadowRange: 0
   - Name: Medium
     Resolution: 0.25
-    Steps: 16
+    StepLength: 10
+    MaxSteps: 24
     LightSteps: 0
     DetailOctaves: 1
     Shadows: 1
-    Range: 300
+    ShadowRange: 0
   - Name: High
     Resolution: 0.5
-    Steps: 24
+    StepLength: 6
+    MaxSteps: 40
     LightSteps: 0
     DetailOctaves: 1
     Shadows: 1
-    Range: 400
+    ShadowRange: 400
   - Name: Ultra
     Resolution: 0.5
-    Steps: 32
-    LightSteps: 3
+    StepLength: 4
+    MaxSteps: 64
+    LightSteps: 0
     DetailOctaves: 2
     Shadows: 1
-    Range: 500
+    ShadowRange: 600
   _tierByQualityLevel: ffffffff0000000001000000020000000300000003000000
+  _reachShare: 0.6

@@ -71,13 +71,18 @@ So near the camera the sea becomes a volume, and the layered surface stays for t
   mist's material `M_CloudSeaMist`; the sea's colours and light come from the sea's own look globals
   (`TinCanCloudLookFromGlobals`). A quality tier changes only how well that same mist is sampled, never where it is, so
   a rift's edge reads the same on every machine. Gameplay keeps the hard cut (`CloudSurfaceQuery`).
-- **Tiers as data.** `CloudMistQuality` holds four tiers (Low, Medium, High, Ultra): resolution, steps, light steps,
-  detail octaves, ship shadows, and how far the mist reaches. Picked by the player setting `graphics.clouds` (Auto, Off,
-  Low, Medium, High, Ultra), on the Settings menu's Graphics page beside the view distance; Auto follows Unity's
-  quality level through the asset's mapping.
+- **Quality is compute, view distance is reach (developer, 2026-11-24).** A tier says how finely the mist is sampled,
+  never how far it reaches. `CloudMistQuality` holds four tiers (Low, Medium, High, Ultra): resolution, step length
+  (metres per step along a ray), a cap on steps per ray, light steps, detail octaves, ship shadows. Picked by the
+  player setting `graphics.clouds` (Auto, Off, Low, Medium, High, Ultra), on the Settings menu's Graphics page beside
+  the view distance; Auto follows Unity's quality level through the asset's mapping.
 - **View distance** (`graphics.view_distance`: Near 700, Normal 1000, Far 1500, Very Far 2500 m, core
   `ViewDistance`) sets the local view camera's far plane; the air already fades to it, and the drawn sea's grid grows to
-  reach it (`CloudSeaPresenter.SurfaceGridSize`), so Very Far costs a larger grid only when picked.
+  reach it (`CloudSeaPresenter.SurfaceGridSize`), so Very Far costs a larger grid only when picked. The mist reaches a
+  share of it (`CloudMistQuality` reach share, 0.6) and fades over its last part; the drawn sea carries the rest, where
+  mist would read as flat haze. Each ray takes as many steps as its path through the mist needs at the tier's step
+  length, up to the tier's cap, so a longer view distance costs more steps and a short path (looking down) costs few;
+  past the cap the steps stretch.
 - **The pass.** `CloudMistRendererFeature` on `_MainURPRenderer`, after transparents: a raymarch at the tier's
   resolution, only through the slab the mist can occupy and only up to its reach, with steps finer near the eye, then a
   depth-aware upsample onto the screen. Shading inputs (lit, hollow, thin) are gathered along the ray and shaded once
@@ -89,8 +94,33 @@ Steps:
 1. **The look (done 2026-11-24, judged on High; the developer: "it looks great").** The pass marches the formula
    directly; the upsample blends a 4x4 patch of the march so its grain evens out. Switch the tier with the quality
    level; the sea material's Sea Look **Off** hides the layered sea, to see the mist alone.
+1b. **Danger and shadows (built 2026-11-25, in review; the developer: holes and rifts are "dangerous" and too hard to
+   spot, and the ship's and islands' shadows should fall on the mist).** Where the ray first meets the mist, the top's
+   normal (from the same height field, `MistTop`) is lit by the banded sun with a rim, as on the drawn sea, so a hole's
+   or rift's wall shows its curve: the sunward wall lights, the far one shades, the crest of the drop gets a rim (`Form`
+   on the material; no rim light, which pulled the mist to the sky's colour and made it read see-through). Form fades
+   out as the sun nears the horizon: lit from under it, the swells' backs banded into sand dunes at night (the
+   developer, 2026-11-25: "I like it during the day very much"). **Depth Darken** darkens the mist by how far under
+   the sea's surface it is seen (the swell's surface, so a swell's trough stays light; full at **Depth Range** metres),
+   so a hole or rift reads as a drop at night too, without the sun. The sun's shadow is read at that point too, crisp on the top, and darkens the mist after its
+   shading by **Shadow Darken** (the light's own shadow strength, 0.4 on the sunset light, divided out): read through
+   the lit term it came out a few percent dark, which in play looked like no shadow at all. **Shadow Debug** on the
+   material (temporary) paints the top red where it is in shadow. The day's sun peaks at 12°, so shadows fall about
+   five times their caster's height away, long and thin. The game's shadow distance was 50 m,
+   too short to reach the mist, so each tier has a **Shadow Range** (Low and Medium 0, High 400, Ultra 600 m):
+   `CloudMistPresenter` stretches the URP asset's shadows to it at runtime in four cascades, the first kept at the
+   game's own 50 m so the deck stays sharp (`CloudMistShadowRange`), and puts them back on Off, a tier without range,
+   or exit. The cost is the shadow casters drawn per cascade; to measure in step 3. Judge it only after the Game view's
+   "Shaders ready" notice (`ShaderCompileNotice`): until then the Editor still draws the old mist.
 2. **Hand-off to the layers.** The near surface fades out where the mist takes over (`_TinCanCloudMist`, one global), so
    both never draw the same cloud; tuned so the seam does not show as a moving ring.
+   Measured 2026-11-25 (cheesed_scene, one fixed view at noon, 2075x968, the developer's high-end GPU; ms of GPU time
+   per frame, the march / the shadow map): Low 0.26 / 0.01, Medium 0.42 / 0.01, High 1.7 / 0.72, Ultra 3.3 / 1.0;
+   the whole frame about 7.4 with no mist. Two cuts, no visible loss: no sun shadow per step (the top's single sample
+   carries the visible shadow) and no light steps on Ultra (High never had them). After: Medium 0.32, High 1.3,
+   Ultra 1.8. The stretched shadow map (High 400 m, Ultra 600 m) stays the next largest cost. Note Auto picks the tier
+   from Unity's quality level, which is the same on every machine, so a weaker PC gets Ultra too: choosing the level
+   from the hardware, and a VSync/frame cap setting, are next (the developer, 2026-11-25: a weaker PC tore badly).
 3. **Speed.** Bake the sea's cut height once per frame into a small texture around the camera, so a step reads a texture
    instead of the web and holes; measure each tier's GPU time in one fixed view (a sweep like the look sweeps), cut any
    knob step that costs over about twice for a difference you must hunt for. Then the tiers' numbers are final.

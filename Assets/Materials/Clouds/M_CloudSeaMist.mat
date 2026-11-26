@@ -32,10 +32,13 @@ Material:
     - _Density: 0.12
     - _DetailScale: 18
     - _DetailStrength: 0.6
+    - _Form: 0.8
     - _HeapHeight: 10
     - _HeapScale: 70
     - _HoleDrop: 60
     - _Hollow: 0.6
+    - _ShadowDarken: 0.45
+    - _ShadowDebug: 0
     - _Spill: 0.35
     - _SpillDepth: 40
     - _TopLift: 0

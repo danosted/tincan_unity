@@ -71,8 +71,7 @@ namespace TinCan.Features.Storm
             Depth = EncounterZoneProcessor.Depth(zone.Centre, zone.Radius, camera!.Value);
             Region = (zone.Centre, zone.Radius);
             // The cure's hits lower the heart's replicated strength; a spent zone is calm.
-            bool spent = zone.State is EncounterZoneState.Resting or EncounterZoneState.Gone;
-            float target = spent ? 0f : StormHearts.Of(zone)?.Strength ?? 1f;
+            float target = StormHearts.Raging(zone, StormHearts.Of(zone));
             Strength = Mathf.MoveTowards(Strength, target, deltaTime / CalmSeconds);
         }
     }

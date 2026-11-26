@@ -6,7 +6,7 @@ namespace TinCan.Features.Storm
 {
     /// <summary>
     /// Every peer with a view, presentation only: the storm's sound. Three looping beds, heard everywhere on the deck
-    /// (2D, through the config's mixer group, Ambience): the wind rising with the weight, the rain with it a little
+    /// (2D, through the config's mixer group, Ambience): the wind rising with the weight and swelling with each gust, the rain with it a little
     /// later, and the heart's pulse near the eye. Thunder plays when its time comes (<see cref="Thunder"/>), fainter and
     /// more muffled the farther the strike. Driven by
     /// <see cref="StormWeatherPresenter"/>; its game object is made on first use and kept for the scene.
@@ -37,11 +37,12 @@ namespace TinCan.Features.Storm
             _thunderCutoff = cutoff;
         }
 
-        public void Step(float now, float depth, float strength, float weight)
+        /// <param name="gust">How much of a gust blows where the view is, 0..1: the wind swells with it.</param>
+        public void Step(float now, float depth, float strength, float weight, float gust = 0f)
         {
             if (_root == null) Build();
 
-            SetVolume(_wind, _config.WindVolume * Mathf.Sqrt(weight));
+            SetVolume(_wind, _config.WindVolume * Mathf.Sqrt(weight) * (1f + _config.GustWindSwell * Mathf.Clamp01(gust)));
             SetVolume(_rain, _config.RainVolume * Mathf.Clamp01(weight * 1.4f - 0.2f));
             SetVolume(_heart, _config.HeartVolume * StormProcessor.HeartShare(depth, strength, _config.HeartFromDepth));
 

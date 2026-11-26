@@ -35,7 +35,7 @@ change the plan's status line, then run `.\.tools\plans.ps1`.
 - [Ship lost and respawn](ship-lost-and-respawn.md)
 - [Ship Tasks Prototype: UI framework, Fuel, Jerry Cans, Net Minigame, Gauge](ship-tasks-prototype.md) — (2026-09-05). Living document: tick checkboxes and append to the Progress Log as slices land. Read this first in every session (AI or human).
 - [Sky islands: floating rock the pilot has to steer around](sky-islands.md) — (2026-10-04)
-- [The storm: the first encounter zone, cured at its heart, and weather made of cloud, light and sound](storm-crossing.md) — (2026-11-23: ST1, ST2, ST5 built)
+- [The storm: the first encounter zone, cured at its heart, and weather made of cloud, light and sound](storm-crossing.md) — (2026-11-23: ST1, ST2, ST5 built; 2026-11-26: ST3, ST4 built)
 - [Targeting subsystem (cross-cutting), first slice: repair](targeting-subsystem.md) — (2026-09-27)
 - [UI and menus: layers, one owner per screen, and tests for what is drawn](ui-and-menus.md) — (2026-10-31); U0-U5 done 2026-11-01 (see Progress); first in [core-systems-roadmap.md](core-systems-roadmap.md)
 

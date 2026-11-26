@@ -12,7 +12,7 @@ namespace TinCan.Core.Ship
     /// (<see cref="IAirshipPilotInput"/>, the first source with an answer; the helm station today) and is kept on the
     /// ship as its current input, which other server systems read (fuel burns with the throttle).
     /// Something solid can push the ship out of itself (<see cref="IAirshipCollisionResponse"/>).
-    /// Features can add forces to the flight (<see cref="IAirshipFlightForces"/>: momentum, a vertical push, a nose drop);
+    /// Features can add forces to the flight (<see cref="IAirshipFlightForces"/>: momentum, a vertical and a sideways push, a nose drop);
     /// with none, the ship flies on its engine alone. A feature can hold the ship still (<see cref="IAirshipHold"/>: the
     /// anchor), which comes before all of it. With no pilot the ship winds down to neutral: the nose levels quickly and
     /// the forces' momentum fades at the deceleration rate, so a nose left pitched down does not dive on.
@@ -94,13 +94,16 @@ namespace TinCan.Core.Ship
                 airship.DecelerationRate,
                 deltaTime);
 
-            // 2. The features' forces: momentum on top of the engine, a vertical push, a nose drop, where level is.
+            // 2. The features' forces: momentum on top of the engine, a vertical and a sideways push, a nose drop, where
+            // level is.
             float vertical = 0f, noseDrop = 0f, level = 0f;
+            Vector3 horizontal = Vector3.zero;
             foreach (var source in _forces)
             {
                 var force = source.Evaluate(airship, state.CurrentSpeed, state.Momentum, deltaTime);
                 state.Momentum += force.MomentumChange;
                 vertical += force.Vertical;
+                horizontal += force.Horizontal;
                 noseDrop += force.NoseDrop;
                 level += force.Level;
             }
@@ -114,13 +117,14 @@ namespace TinCan.Core.Ship
             if (!piloted)
                 state.Momentum = Mathf.MoveTowards(state.Momentum, 0f, airship.DecelerationRate * deltaTime);
 
-            // 3. Calculate Drift Velocity (the vertical push blends in the same way: the lerp toward forward + up).
+            // 3. Calculate Drift Velocity (the vertical and sideways pushes blend in the same way: the lerp toward
+            // forward + push).
             state.CurrentVelocity = _processor.CalculateVelocityWithDrift(
                 state.CurrentVelocity,
                 airship.Transform.forward,
                 state.CurrentSpeed + state.Momentum,
                 airship.VelocityBlendRate,
-                deltaTime) + Vector3.up * (vertical * Mathf.Clamp01(airship.VelocityBlendRate * deltaTime));
+                deltaTime) + (Vector3.up * vertical + horizontal) * Mathf.Clamp01(airship.VelocityBlendRate * deltaTime);
 
             // 4. Calculate Angular Velocity with Momentum and Banking
             state.CurrentAngularVelocity = _processor.CalculateAngularVelocity(

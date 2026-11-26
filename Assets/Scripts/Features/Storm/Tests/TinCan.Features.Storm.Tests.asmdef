@@ -6,6 +6,7 @@
     "TinCan.Features.Atmosphere",
     "TinCan.Features.CloudBoundary.Atmosphere",
     "TinCan.Features.Encounters",
+    "TinCan.Features.SkyHazards",
     "TinCan.Features.Storm",
     "TinCan.Features.Weapons.Cannon",
     "TinCan.Ship",

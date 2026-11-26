@@ -81,7 +81,11 @@ namespace TinCan.Features.Storm
             // The strike lights the cloud round it (seen from anywhere) and the air round you as deep as you are in it.
             float flash = StormProcessor.Flash(now - _strikeAt, _config.FlashSeconds);
             Flash = flash * Weight;
-            _sound.Step(now, _intensity.Depth, _intensity.Strength, Weight);
+            // The wind swells with the gust shoving the ship (the server's push, from the same seed and clock).
+            float gust = region != null
+                ? StormWindProcessor.GustShare(StormWindProcessor.Fury(_intensity.Depth, _intensity.Strength), _config.Seed, now, _config)
+                : 0f;
+            _sound.Step(now, _intensity.Depth, _intensity.Strength, Weight, gust);
 
             if (region is { } shown)
             {

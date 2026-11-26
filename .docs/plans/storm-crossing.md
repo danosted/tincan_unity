@@ -1,4 +1,4 @@
-Status: Approved (2026-11-23: ST1, ST2, ST5 built)
+Status: Approved (2026-11-23: ST1, ST2, ST5 built; 2026-11-26: ST3, ST4 built)
 
 # The storm: the first encounter zone, cured at its heart, and weather made of cloud, light and sound
 
@@ -28,7 +28,7 @@ gameplay on top. What it teaches becomes the weather in [cloud-sea.md](cloud-sea
 - **The storm doesn't wait for the shield.** Debris hits the ship's health, which it already has. The shield
   (`ship-shield.md`, with the spirit's Ward from `spirit-talents.md`) comes later as a buffer in front of that
   health, without changing the storm. Until then the crew's fourth job is repair.
-- **Gusts and debris are left out for now** (developer, 2026-11-23). The heart and the cure come next; ST3 and ST4 wait.
+- **Gusts and debris were left out at first** (developer, 2026-11-23), then built after the cure (developer, 2026-11-26: "gusts and debris next", with the targets coming more often).
 
 ## The run
 - **The storm** is a disc of weather about 1.5 km across: a dark wall around it, rougher bands inside, and the
@@ -119,10 +119,10 @@ beam: `ray-cannons.md` R1 comes first (developer, 2026-11-23; built the same day
   gameplay. It can start now, as it needs none of the above.
 - **ST2 The storm in the world.** The zone in `cheesed_scene`: the wall seen from afar, the warning on entering, depth
   driving the look on every peer.
-- **ST3 Gusts (left out for now, 2026-11-23).** `Severity` on the zone. The sideways term on the flight forces, gust waves from the seed and the
+- **ST3 Gusts (built 2026-11-26).** `Severity` on the zone. The sideways term on the flight forces, gust waves from the seed and the
   synced time by depth and severity, server only, and the matching cue on every peer (rigging, sound, a small camera
   shake). It needs nothing else.
-- **ST4 Debris on the wind, against the ship's health (left out for now, 2026-11-23).** `Severity` on the zone, if not there yet. Spawned upwind, carried by the storm's wind, despawned when
+- **ST4 Debris on the wind, against the ship's health (built 2026-11-26).** `Severity` on the zone, if not there yet. Spawned upwind, carried by the storm's wind, despawned when
   they leave. A hit costs the ship's health, and a cannon hit breaks them.
 - **ST5 The heart and the cure.** `Severity` on the zone, if not there yet. The heart in the eye. Strength becomes replicated on the zone (it is per peer
   until now). Then the targets, the hits, strength falling, the heart's movement by severity, the storm coming apart,
@@ -222,6 +222,31 @@ beam: `ray-cannons.md` R1 comes first (developer, 2026-11-23; built the same day
     as you are in it. The lab's slider mode keeps striking by the weight where you are.
   - **Thunder from where it struck:** at the speed of sound from the spot, fainter past 400 m, and low-passed with
     distance, so far strikes only rumble. `StormConfig.ThunderDelay` is now the lab slider mode's only.
+
+- **2026-11-26, ST3 gusts and ST4 debris, and the targets come more often (developer: "gusts and debris next. also
+  turn up the spawn frequency on the targets"). Built; compile, EditMode and the `StormWinds` play run pending.**
+  - **The storm's wind** swirls round its centre (`StormWindProcessor.Wind`), so upwind is always round the disc. How
+    hard it blows is its **fury**: the weight (depth times strength) times the depth, so it is strongest at the eye's
+    edge, nothing in the still eye, and dies as the storm is cured. A spent zone is calm (`StormHearts.Raging`, also
+    used by `StormIntensity` now).
+  - **Gusts** (`StormGustUseCase`, server, a flight force): the flight forces have a sideways term now
+    (`AirshipFlightForce.Horizontal`, a horizontal world velocity that blends in as the vertical push does; generic, for
+    later weather and boons). Gusts come in 8 s slots on the shared clock: a slot holds one with a chance of 0.75 times the
+    fury, rising and falling over 4 s along the wind swung up to 35 degrees, up to 6 m/s at severity 1 (half again a
+    step up). An anchored ship is held, so gusts don't move it. **The cue:** the wind's sound swells with the same gust on
+    every peer (`StormConfig.GustWindSwell`). There is no rigging or camera shake yet: the project has neither system.
+  - **Debris** (`StormDebrisUseCase`, server): sky hazards that move (`ISkyHazards.Launch`: a fixed velocity and a
+    lifetime, carried to clients by the hazard's `NetworkTransformMediator`; H1's comets can build on it). Up to 10 a minute
+    at full fury (half again a step up), each from 140 m upwind at 20 m/s, aimed up to 14 m across and 6 m up or down
+    from where the ship will be, so some hit and some miss. A hit costs the ship's health (`GE_HazardImpact`); the beam
+    or a cannonball breaks one. The prefab is the plain sky hazard for now (no rock, wreckage or ice look yet).
+  - **Targets more often:** up 4 s (was 6) with a 0.5 s gap (was 1.5), so one comes every 4.5 s instead of 7.5 s
+    (`StormConfig.asset`). At severity 2 and 3 they stay up 3.2 and 2.4 s.
+  - **Scenario `StormWinds`** (Galleon): the zone round the ship; a gust felt on the subject's peer and pushed on the
+    server; one piece thrown dead at the ship from 40 m upwind hits it; the storm throws more by itself.
+  - **Not yet:** tuning by feel (ST6). Watch one thing in play: a gust moves only the ship, but an occupant carried more
+    than 1.5 m off the seat leaves the station (`StationOccupancyUseCase.MaxDrift`).
+
 ## Tests
 EditMode: the depth function (outside, the wall, the bands, the eye), the blend by depth and strength, the gust waves
 (the same push from the same seed and time), the heart's path by severity (still at 1; the same path on every peer),

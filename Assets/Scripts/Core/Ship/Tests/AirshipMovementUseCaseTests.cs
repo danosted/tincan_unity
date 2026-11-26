@@ -133,6 +133,19 @@ namespace TinCan.Core.Ship.Tests
         }
 
         [Test]
+        public void ASidewaysPush_DriftsTheShipAcrossItsNose_AndKeepsToTheLevel()
+        {
+            var helm = new FixedPilot { Answer = new AirshipInputState { Throttle = 1f } };
+            var gust = new FixedForce { Force = AirshipFlightForce.Push(new Vector3(4f, 9f, 0f)) };
+            var movement = Create(new IAirshipPilotInput[] { helm }, new IAirshipFlightForces[] { gust });
+            for (int i = 0; i < 120; i++) movement.Tick();
+
+            Assert.That(_ship.AppliedVelocity.x, Is.GreaterThan(3f), "shoved to the side the nose doesn't point");
+            Assert.That(_ship.AppliedVelocity.z, Is.GreaterThan(_ship.MaxForwardSpeed - 1f), "still flying ahead");
+            Assert.That(Mathf.Abs(_ship.AppliedVelocity.y), Is.LessThan(0.01f), "a sideways push has no height");
+        }
+
+        [Test]
         public void ANoseDrop_PitchesTheNoseDown_WithoutBuildingUp()
         {
             var force = new FixedForce { Force = new AirshipFlightForce(0f, 0f, noseDrop: 5f) };

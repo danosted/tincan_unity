@@ -3,7 +3,9 @@ using System.Globalization;
 using System.Linq;
 using TinCan.Core.Domain;
 using TinCan.Core.Domain.Networking;
+using TinCan.Core.Ship;
 using TinCan.Features.Encounters;
+using TinCan.Features.SkyHazards;
 using TinCan.Features.Storm;
 using TinCan.Features.Weapons.Cannon;
 using UnityEngine;
@@ -11,11 +13,14 @@ using UnityEngine;
 namespace TinCan.DevTools.Scenarios
 {
     /// <summary>
-    /// Scenario steps for the storm (plan: storm-crossing.md, ST2 and ST5).
+    /// Scenario steps for the storm (plan: storm-crossing.md, ST2 to ST5).
     /// <list type="bullet">
     /// <item>Probes on any peer with a view: the storm's weight on the light and air there (depth into the zone times
     /// strength), and whether the shaders have its region; the heart's replicated strength; whether this peer draws a
-    /// target with some seconds left on it.</item>
+    /// target with some seconds left on it; the gust blowing (the server's push, or the gust where another peer's view
+    /// is).</item>
+    /// <item>Server probes: debris launched, and hazard hits on the ship.</item>
+    /// <item>Server: throw one piece of debris dead at the ship.</item>
     /// <item>Server: put the zone's centre (the heart, at severity 1) this far out from a cannon along its rest direction,
     /// so the ship is in the eye and the targets are in the cannon's reach.</item>
     /// <item>Subject peer: point the manned cannon at the target this peer draws, as the mouse would.</item>
@@ -32,10 +37,17 @@ namespace TinCan.DevTools.Scenarios
         private readonly IActorRegistry _actors;
         private readonly ITimeService _time;
         private readonly GunnerAimUseCase _gunner;
+        private readonly StormGustUseCase _gusts;
+        private readonly StormDebrisUseCase _debris;
+        private readonly ISkyHazards _hazards;
 
         public StormScenarioLibrary(StormWeatherPresenter weather, IStormIntensity intensity, StormHeartPresenter heart, StormConfig config,
-            EncounterZoneConfig zoneConfig, INetworkService network, IActorRegistry actors, ITimeService time, GunnerAimUseCase gunner)
+            EncounterZoneConfig zoneConfig, INetworkService network, IActorRegistry actors, ITimeService time, GunnerAimUseCase gunner,
+            StormGustUseCase gusts, StormDebrisUseCase debris, ISkyHazards hazards)
         {
+            _gusts = gusts;
+            _debris = debris;
+            _hazards = hazards;
             _weather = weather;
             _intensity = intensity;
             _heart = heart;
@@ -50,7 +62,8 @@ namespace TinCan.DevTools.Scenarios
         public System.Collections.Generic.IEnumerable<ScenarioCommand> Commands => new[]
         {
             new ScenarioCommand("PlaceHeartOffCannon", PlaceHeartOffCannon),
-            new ScenarioCommand("AimCannonAtStormTarget", AimAtTarget)
+            new ScenarioCommand("AimCannonAtStormTarget", AimAtTarget),
+            new ScenarioCommand("ThrowStormDebrisAtShip", ThrowAtShip)
         };
 
         public System.Collections.Generic.IEnumerable<ScenarioProbe> Probes => new[]
@@ -61,8 +74,44 @@ namespace TinCan.DevTools.Scenarios
                 ? ScenarioCheck.Pass($"the storm stands at {region.Centre}, {region.Radius:0} m round")
                 : ScenarioCheck.Fail("no storm region")),
             new ScenarioProbe("HeartStrengthBelow", CheckHeartStrength),
-            new ScenarioProbe("StormTargetUpFor", CheckTargetUp)
+            new ScenarioProbe("StormTargetUpFor", CheckTargetUp),
+            new ScenarioProbe("StormGustAbove", CheckGust),
+            new ScenarioProbe("StormDebrisLaunched", count => _debris.Launched >= Parse(count)
+                ? ScenarioCheck.Pass($"{_debris.Launched} pieces of debris on the wind")
+                : ScenarioCheck.Fail($"{_debris.Launched} pieces of debris on the wind (server-only probe)")),
+            new ScenarioProbe("StormDebrisHits", count => _hazards.Hits >= Parse(count)
+                ? ScenarioCheck.Pass($"{_hazards.Hits} hazard hits on the ship")
+                : ScenarioCheck.Fail($"{_hazards.Hits} hazard hits on the ship (server-only probe)"))
         };
+
+        /// <summary>
+        /// A gust of at least this many m/s: on the server the push the ship got; on another peer the gust where its view
+        /// is (the same seed and clock, so the wind it hears swell matches the push).
+        /// </summary>
+        private ScenarioCheck CheckGust(string speed)
+        {
+            float gust;
+            if (_network.IsServer) gust = _gusts.LastGust.magnitude;
+            else
+            {
+                if (_intensity.Region is not { } region || _intensity.Camera is not { } camera) return ScenarioCheck.Fail("no storm region or no view");
+                float fury = StormWindProcessor.Fury(_intensity.Depth, _intensity.Strength);
+                gust = StormWindProcessor.Gust(region.Centre, camera, fury, _zoneConfig.Severity, _config.Seed, _time.Time, _config).magnitude;
+            }
+            string detail = $"gust {gust:0.0} m/s on this peer";
+            return gust >= Parse(speed) ? ScenarioCheck.Pass(detail) : ScenarioCheck.Fail(detail);
+        }
+
+        /// <summary>Server: "metres": one piece of debris dead at the ship from this far upwind.</summary>
+        private ScenarioCheck ThrowAtShip(string metres)
+        {
+            if (!_network.IsServer) return ScenarioCheck.Fail("server-only command");
+            var ship = _actors.GetActors<IAirshipView>().FirstOrDefault(s => s.IsSimulating && s.Transform != null);
+            if (ship == null) return ScenarioCheck.Fail("no ship");
+            return _debris.ThrowAt(ship, Parse(metres))
+                ? ScenarioCheck.Pass($"debris thrown at the ship from {metres} m upwind")
+                : ScenarioCheck.Fail("the ship is not in a raging storm");
+        }
 
         private ScenarioCheck Compare(string threshold, bool above)
         {

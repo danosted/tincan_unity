@@ -54,8 +54,8 @@ MonoBehaviour:
   TargetRing: {x: 10, y: 20}
   TargetHeight: 5
   TargetRadius: 2.5
-  TargetSeconds: 6
-  TargetGapSeconds: 1.5
+  TargetSeconds: 4
+  TargetGapSeconds: 0.5
   HitsToCure: 3
   GlowMaterial: {fileID: 2100000, guid: 64d0337e7db82574d97b4c9fc477b35b, type: 2}
   HeartColor: {r: 0.55, g: 0.95, b: 1, a: 1}

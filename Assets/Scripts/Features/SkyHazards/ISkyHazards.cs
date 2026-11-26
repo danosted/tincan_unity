@@ -18,5 +18,11 @@ namespace TinCan.Features.SkyHazards
 
         /// <summary>A hazard here. It hangs still: a target to shoot, or something for the ship to hit.</summary>
         ISkyHazard? SpawnAt(Vector3 position);
+
+        /// <summary>
+        /// A moving hazard here: it flies on at <paramref name="velocity"/> (m/s, world) and leaves the sky after
+        /// <paramref name="lifetime"/> seconds unless it hits the ship or is shot down first (a storm's debris on its wind).
+        /// </summary>
+        ISkyHazard? Launch(Vector3 position, Vector3 velocity, float lifetime);
     }
 }

@@ -59,11 +59,35 @@ namespace TinCan.Features.Storm
         [Tooltip("A beam passing this near a target's centre hits it, m.")]
         [Min(0.1f)] public float TargetRadius = 2.5f;
         [Tooltip("How long a target stays up at severity 1, s (less in harder storms). One target at a time.")]
-        [Min(0.5f)] public float TargetSeconds = 6f;
+        [Min(0.5f)] public float TargetSeconds = 4f;
         [Tooltip("The pause before the next target, s.")]
-        [Min(0f)] public float TargetGapSeconds = 1.5f;
+        [Min(0f)] public float TargetGapSeconds = 0.5f;
         [Tooltip("Hits that cure the storm at severity 1 (two more for each step up).")]
         [Min(1)] public int HitsToCure = 3;
+
+        [Header("Gusts (ST3): waves of sideways push on the ship, by the storm's fury (deeper, and raging) and severity")]
+        [Tooltip("A full gust's push at the eye's edge at severity 1, m/s of sideways drift (half again for each step up).")]
+        [Min(0f)] public float GustSpeed = 6f;
+        [Tooltip("A gust rises and falls over this many seconds.")]
+        [Min(0f)] public float GustSeconds = 4f;
+        [Tooltip("Gusts come in slots this long, s: at most one a slot (the rest of it is calm).")]
+        [Min(0.5f)] public float GustSlotSeconds = 8f;
+        [Tooltip("The chance a slot holds a gust at full fury (fewer as the fury falls).")]
+        [Range(0f, 1f)] public float GustChance = 0.75f;
+        [Tooltip("A gust blows along the storm's swirling wind, swung up to this many degrees off it.")]
+        [Range(0f, 90f)] public float GustSwing = 35f;
+        [Tooltip("How much a full gust swells the wind's sound (1: twice as loud).")]
+        [Min(0f)] public float GustWindSwell = 0.8f;
+
+        [Header("Debris (ST4): sky hazards on the wind, thrown at the ship (SkyHazards' prefab and impact)")]
+        [Tooltip("Pieces a minute thrown at a ship at full fury at severity 1 (half again for each step up).")]
+        [Min(0f)] public float DebrisPerMinute = 10f;
+        [Tooltip("They come from this far upwind of the ship, m.")]
+        [Min(10f)] public float DebrisDistance = 140f;
+        [Tooltip("And fly at this speed on the wind, m/s.")]
+        [Min(1f)] public float DebrisSpeed = 20f;
+        [Tooltip("Each is aimed this far off the ship at most, m (across the wind, up or down): some hit, some miss.")]
+        public Vector2 DebrisMiss = new(14f, 6f);
 
         [Header("The heart's look")]
         [Tooltip("The heart and its targets: soft, additive, coloured per object (URP Unlit, transparent, additive).")]

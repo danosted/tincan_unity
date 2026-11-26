@@ -1,4 +1,6 @@
 #nullable enable
+using System;
+using System.Collections.Generic;
 using TinCan.Features.Encounters;
 using UnityEngine;
 
@@ -32,5 +34,29 @@ namespace TinCan.Features.Storm
     {
         public static IStormHeart? Of(IEncounterZone? zone) =>
             zone is Component component && component != null && component.TryGetComponent(out IStormHeart heart) ? heart : null;
+
+        /// <summary>How strong the zone's storm is now, 0..1: its heart's strength (1 with none), and calm once spent.</summary>
+        public static float Raging(IEncounterZone zone, IStormHeart? heart) =>
+            zone.State is EncounterZoneState.Resting or EncounterZoneState.Gone ? 0f : heart?.Strength ?? 1f;
+
+        /// <summary>
+        /// The storm blowing at <paramref name="point"/>: the zone holding it with the most fury
+        /// (<see cref="StormWindProcessor.Fury"/>), or null where none blows.
+        /// </summary>
+        public static (IEncounterZone Zone, float Fury)? WindAt(IEnumerable<IEncounterZone> zones, Vector3 point,
+            Func<IEncounterZone, IStormHeart?> heartOf)
+        {
+            (IEncounterZone Zone, float Fury)? strongest = null;
+            foreach (var zone in zones)
+            {
+                if (!zone.IsSimulating) continue;
+                float depth = EncounterZoneProcessor.Depth(zone.Centre, zone.Radius, point);
+                if (depth <= 0f) continue;
+
+                float fury = StormWindProcessor.Fury(depth, Raging(zone, heartOf(zone)));
+                if (fury > 0f && (strongest is not { } best || fury > best.Fury)) strongest = (zone, fury);
+            }
+            return strongest;
+        }
     }
 }

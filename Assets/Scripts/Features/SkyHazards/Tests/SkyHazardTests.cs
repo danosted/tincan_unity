@@ -170,6 +170,35 @@ namespace TinCan.Features.SkyHazards.Tests
         }
 
         [Test]
+        public void Launched_FliesOnItsVelocity_ThenLeavesTheSky()
+        {
+            var hazards = UseCase(); // ticks of 0.5 s
+            var debris = hazards.Launch(new Vector3(100f, 0f, 0f), new Vector3(0f, 0f, 4f), lifetime: 2f)!;
+
+            hazards.Tick();
+            hazards.Tick();
+            Assert.That(debris.Transform!.position, Is.EqualTo(new Vector3(100f, 0f, 4f)), "two ticks at 4 m/s");
+
+            hazards.Tick();
+            hazards.Tick();
+            Assert.That(_spawner.Despawned, Is.EqualTo(new[] { debris }), "gone after its lifetime");
+            Assert.That(hazards.Alive, Is.Empty);
+            Assert.That(hazards.Hits, Is.Zero);
+        }
+
+        [Test]
+        public void Launched_IntoTheShip_HurtsIt()
+        {
+            var hazards = UseCase();
+            hazards.Launch(new Vector3(0f, 0f, -20f), new Vector3(0f, 0f, 20f), lifetime: 10f);
+
+            for (int i = 0; i < 4; i++) hazards.Tick();
+
+            Assert.That(hazards.Hits, Is.EqualTo(1));
+            Assert.That(ShipHealth, Is.EqualTo(900f).Within(1e-3f));
+        }
+
+        [Test]
         public void ResetForSession_ClearsTheSky()
         {
             var hazards = UseCase();

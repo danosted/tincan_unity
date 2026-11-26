@@ -11,11 +11,13 @@ using UnityEngine;
 namespace TinCan.Features.SkyHazards
 {
     /// <summary>
-    /// Application Layer, server only, after airship movement. Hazards appear only on demand (<see cref="SpawnAt"/>:
-    /// scenarios and events) and hang where they are put. Removes hazards that were shot down (after a short delay, so
-    /// their last health update reaches the clients first). Any hazard the ship touches applies the impact effect to the
-    /// ship (its health) and is removed. The field around the ship and homing were removed in H0
-    /// (.docs/plans/hazards-and-boons.md); comets (H1) are the next moving hazard.
+    /// Application Layer, server only, after airship movement. Hazards appear only on demand: <see cref="SpawnAt"/>
+    /// (scenarios and events) hangs one where it is put; <see cref="Launch"/> sends one flying at a fixed velocity until
+    /// its lifetime runs out (a storm's debris on its wind; the hazard's NetworkTransformMediator carries the motion to
+    /// clients). Removes hazards that were shot down (after a short delay, so their last health update reaches the
+    /// clients first). Any hazard the ship touches applies the impact effect to the ship (its health) and is removed. The
+    /// field around the ship and homing were removed in H0 (.docs/plans/hazards-and-boons.md); comets (H1) build on the
+    /// moving hazard.
     /// </summary>
     public class SkyHazardUseCase : ISimulationTickable, ISkyHazards, ISessionParticipant
     {
@@ -33,6 +35,7 @@ namespace TinCan.Features.SkyHazards
         private readonly SkyHazardConfig _config;
         private readonly List<ISkyHazard> _alive = new();
         private readonly Dictionary<ISkyHazard, float> _destroyedAt = new();
+        private readonly Dictionary<ISkyHazard, (Vector3 Velocity, float GoneAt)> _flying = new();
         private float _elapsed;
 
         public SkyHazardUseCase(INetworkService network, IActorRegistry actors, ITimeService time, IEventPublisher events,
@@ -59,6 +62,7 @@ namespace TinCan.Features.SkyHazards
             foreach (var hazard in _alive) _spawner.Despawn(hazard);
             _alive.Clear();
             _destroyedAt.Clear();
+            _flying.Clear();
         }
 
         /// <summary>Nothing runs on its own, so the session's pressure starting or stopping changes nothing here.</summary>
@@ -74,13 +78,21 @@ namespace TinCan.Features.SkyHazards
             return hazard;
         }
 
+        public ISkyHazard? Launch(Vector3 position, Vector3 velocity, float lifetime)
+        {
+            var hazard = SpawnAt(position);
+            if (hazard != null) _flying[hazard] = (velocity, _elapsed + Mathf.Max(0f, lifetime));
+            return hazard;
+        }
+
         public void Tick()
         {
             if (!_network.IsServer) return;
             _elapsed += _time.DeltaTime;
 
-            _alive.RemoveAll(hazard => hazard.Transform == null);
+            _alive.RemoveAll(Vanished);
             RemoveDestroyed();
+            Fly();
 
             var ship = _actors.GetActors<IAirshipView>().FirstOrDefault(candidate => candidate.IsSimulating && candidate.Transform != null);
             if (ship != null) Strike(ship);
@@ -104,10 +116,43 @@ namespace TinCan.Features.SkyHazards
                 }
 
                 if (_elapsed - at < _config.DespawnDelay) continue;
-                _destroyedAt.Remove(hazard);
                 _alive.RemoveAt(i);
-                _spawner.Despawn(hazard);
+                Remove(hazard);
             }
+        }
+
+        // Moving hazards fly on, and leave the sky when their time is up. A shot-down one stops where it broke.
+        private void Fly()
+        {
+            for (int i = _alive.Count - 1; i >= 0; i--)
+            {
+                var hazard = _alive[i];
+                if (!_flying.TryGetValue(hazard, out var flight) || IsShotDown(hazard)) continue;
+
+                if (_elapsed >= flight.GoneAt)
+                {
+                    _alive.RemoveAt(i);
+                    Remove(hazard);
+                    continue;
+                }
+                hazard.Transform!.position += flight.Velocity * _time.DeltaTime;
+            }
+        }
+
+        // Gone from the world by other means (its object destroyed): forget it.
+        private bool Vanished(ISkyHazard hazard)
+        {
+            if (hazard.Transform != null) return false;
+            _flying.Remove(hazard);
+            _destroyedAt.Remove(hazard);
+            return true;
+        }
+
+        private void Remove(ISkyHazard hazard)
+        {
+            _flying.Remove(hazard);
+            _destroyedAt.Remove(hazard);
+            _spawner.Despawn(hazard);
         }
 
         // Every live hazard the ship touches hurts it once and is removed.
@@ -127,7 +172,7 @@ namespace TinCan.Features.SkyHazards
                 _events.LogInfo(LogSource, $"A hazard hit the ship ({Hits} so far).");
 
                 _alive.RemoveAt(i);
-                _spawner.Despawn(hazard);
+                Remove(hazard);
             }
         }
 

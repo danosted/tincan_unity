@@ -138,6 +138,27 @@ namespace TinCan.Features.CloudBoundary.Tests
         }
 
         [Test]
+        public void AirshipFallingIntoAHole_CountsItsDepthFromTheSeaAround_AndIsNotSafeThere()
+        {
+            _useCase = new CloudBoundaryUseCase(new FakeNetworkService(), _registry, _timeService, _events, new HoleEverywhere(),
+                _respawnService, new CloudBoundaryProcessor(), _config, _overboard);
+            AddAirship(new Vector3(0f, -50f, 0f));
+
+            _useCase.Tick();
+
+            Assert.That(_events.Events.Exists(evt => evt is CloudEmergencyStartedEvent), Is.True,
+                "50 m under the sea's level, although the hole's floor is 400 m down");
+            Assert.That(_useCase.TryGetSafePose(_airships[0], out _, out _), Is.False, "over a hole is no safe spot");
+        }
+
+        /// <summary>A sea at 0 with a hole open under every point.</summary>
+        private sealed class HoleEverywhere : ICloudSurfaceQuery
+        {
+            public float GetSurfaceHeight(float worldX, float worldZ) => -400f;
+            public float GetSeaHeight(float worldX, float worldZ) => 0f;
+        }
+
+        [Test]
         public void FallenCharacter_ResetsAboveNearestAirshipUsingFallbackOffset()
         {
             AddAirship(new Vector3(100f, 20f, 0f));

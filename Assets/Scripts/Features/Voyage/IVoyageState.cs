@@ -6,7 +6,7 @@ namespace TinCan.Features.Voyage
 {
     /// <summary>
     /// The voyage as every peer sees it: replicated by the VoyageState fixture on the ship, so hosts, clients and late
-    /// joiners agree. The server writes it (the Server* calls do nothing elsewhere); anyone may ask for a restart or a respawn. It is
+    /// joiners agree. The server writes it (the Server* calls do nothing elsewhere); anyone may ask for a restart. It is
     /// also the session's <see cref="ISessionLayout"/>: the seed and start that per-voyage world features build from.
     /// </summary>
     public interface IVoyageState : IActor, ISessionLayout
@@ -24,12 +24,6 @@ namespace TinCan.Features.Voyage
 
         /// <summary>Server: true once per restart request since the last call.</summary>
         bool ConsumeRestartRequest();
-
-        /// <summary>Any peer: ask the server to bring the lost ship back at its last safe spot, the voyage carrying on.</summary>
-        void RequestRespawn();
-
-        /// <summary>Server: true once per respawn request since the last call.</summary>
-        bool ConsumeRespawnRequest();
 
         void ServerSetPhase(VoyagePhase phase);
         void ServerSetVoyage(int voyage);

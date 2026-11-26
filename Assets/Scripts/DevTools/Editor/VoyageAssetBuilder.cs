@@ -18,7 +18,7 @@ namespace TinCan.DevTools.Editor
     /// TinCan > Dev > Voyage > Build Assets: creates (or re-applies) every asset of the voyage session, so its data is
     /// reviewable as code:
     /// <list type="bullet">
-    /// <item>the config (tuning), the two end-screen menus and the beacon material;</item>
+    /// <item>the config (tuning), the arrival end-screen menu and the beacon material (a loss shows Ship Loss's screen);</item>
     /// <item>the VoyageState prefab and its ship fixture;</item>
     /// <item>the installer, and the profiles that load it (the sandbox and the Test_Voyage area).</item>
     /// </list>
@@ -36,13 +36,11 @@ namespace TinCan.DevTools.Editor
         public static void Build()
         {
             var arrived = Menu("Menu_VoyageArrived", "voyage_arrived", "Voyage complete! The ship made it.");
-            var lost = Menu("Menu_VoyageLost", "voyage_lost", "The ship is lost, and its whole crew.", respawn: true);
             var beacon = Material("Assets/Materials/Voyage/M_VoyageBeacon.mat", new Color(1f, 0.8f, 0.25f));
 
             var config = Asset<VoyageConfig>("Assets/Settings/Voyage/VoyageConfig.asset", voyage =>
             {
                 voyage.ArrivedMenu = arrived;
-                voyage.LostMenu = lost;
                 voyage.BeaconMaterial = beacon;
             });
 
@@ -80,19 +78,17 @@ namespace TinCan.DevTools.Editor
             Debug.Log("[VoyageAssetBuilder] Voyage assets built.");
         }
 
-        // A loss also offers Respawn (first): the ship back at its last safe spot, the voyage going on.
-        private static MenuDefinition Menu(string file, string id, string title, bool respawn = false) =>
+        // A loss shows Ship Loss's Lost screen instead; the voyage adds its Restart row there (VoyageLostChoices).
+        private static MenuDefinition Menu(string file, string id, string title) =>
             Asset<MenuDefinition>(Menus + file + ".asset", menu =>
             {
                 var serialized = new SerializedObject(menu);
                 serialized.FindProperty("_menuId").stringValue = id;
                 serialized.FindProperty("_title").stringValue = title;
                 var items = serialized.FindProperty("_items");
-                int row = 0;
-                items.arraySize = respawn ? 3 : 2;
-                if (respawn) SetItem(items.GetArrayElementAtIndex(row++), "respawn", "Respawn", RespawnShipMenuCommand.Id);
-                SetItem(items.GetArrayElementAtIndex(row++), "restart", "Restart Voyage", RestartVoyageMenuCommand.Id);
-                SetItem(items.GetArrayElementAtIndex(row), "quit", "Quit", QuitMenuCommand.Id);
+                items.arraySize = 2;
+                SetItem(items.GetArrayElementAtIndex(0), "restart", "Restart Voyage", RestartVoyageMenuCommand.Id);
+                SetItem(items.GetArrayElementAtIndex(1), "quit", "Quit", QuitMenuCommand.Id);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
             });
 

@@ -32,6 +32,7 @@
         "TinCan.Features.Anchor",
         "TinCan.Features.Gathering",
         "TinCan.Features.GasChallenge",
+        "TinCan.Features.ShipLoss",
         "TinCan.Features.Voyage",
         "TinCan.Features.SkyIslands",
         "TinCan.Features.ShipDesigns",

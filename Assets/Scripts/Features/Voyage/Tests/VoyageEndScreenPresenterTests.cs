@@ -9,7 +9,7 @@ using TinCan.Tests.Fakes;
 
 namespace TinCan.Features.Voyage.Tests
 {
-    /// <summary><see cref="VoyageEndScreenPresenter"/>: the end screen stays up while the voyage is over, and goes with a new voyage.</summary>
+    /// <summary><see cref="VoyageEndScreenPresenter"/>: the end screen stays up after an arrival, and goes with a new voyage.</summary>
     public class VoyageEndScreenPresenterTests
     {
         private sealed class FakeState : IVoyageState
@@ -24,8 +24,6 @@ namespace TinCan.Features.Voyage.Tests
             public int BriefingSecondsLeft => 0;
             public void RequestRestart() { }
             public bool ConsumeRestartRequest() => false;
-            public void RequestRespawn() { }
-            public bool ConsumeRespawnRequest() => false;
             public void ServerSetPhase(VoyagePhase phase) => Phase = phase;
             public void ServerSetVoyage(int voyage) { }
             public void ServerSetDestination(Vector3 destination) { }
@@ -44,7 +42,6 @@ namespace TinCan.Features.Voyage.Tests
         {
             _config = ScriptableObject.CreateInstance<VoyageConfig>();
             _config.ArrivedMenu = MenuDefinition.Create("voyage_arrived", "Arrived");
-            _config.LostMenu = MenuDefinition.Create("voyage_lost", "Lost");
             _main = MenuDefinition.Create("main", "TinCan");
             _menus = new MenuUseCase(new MenuCommandRegistry(Array.Empty<IMenuCommand>()));
             _state = new FakeState { Phase = VoyagePhase.Underway };
@@ -57,7 +54,6 @@ namespace TinCan.Features.Voyage.Tests
         public void TearDown()
         {
             UnityEngine.Object.DestroyImmediate(_config.ArrivedMenu);
-            UnityEngine.Object.DestroyImmediate(_config.LostMenu);
             UnityEngine.Object.DestroyImmediate(_main);
             UnityEngine.Object.DestroyImmediate(_config);
         }
@@ -71,11 +67,11 @@ namespace TinCan.Features.Voyage.Tests
         }
 
         [Test]
-        public void Ended_ShowsTheMatchingScreen_AsAPinnedModal_ThatBackCannotClose()
+        public void Arrived_ShowsTheEndScreen_AsAPinnedModal_ThatBackCannotClose()
         {
-            _state.Phase = VoyagePhase.Lost;
+            _state.Phase = VoyagePhase.Arrived;
             _presenter.Tick();
-            Assert.That(_menus.Current?.MenuId, Is.EqualTo("voyage_lost"));
+            Assert.That(_menus.Current?.MenuId, Is.EqualTo("voyage_arrived"));
             Assert.That((_menus.Current!.Kind, _menus.Current.Pinned), Is.EqualTo((MenuKind.Modal, true)));
 
             int changes = 0;
@@ -84,8 +80,17 @@ namespace TinCan.Features.Voyage.Tests
             _menus.CloseAll();
             _presenter.Tick();
 
-            Assert.That(_menus.Current?.MenuId, Is.EqualTo("voyage_lost"));
+            Assert.That(_menus.Current?.MenuId, Is.EqualTo("voyage_arrived"));
             Assert.That(changes, Is.Zero, "asked again every frame, changed never");
+        }
+
+        [Test]
+        public void Lost_ShowsNothing_ShipLossShowsItsOwnScreen()
+        {
+            _state.Phase = VoyagePhase.Lost;
+            _presenter.Tick();
+
+            Assert.That(_menus.IsOpen, Is.False);
         }
 
         [Test]

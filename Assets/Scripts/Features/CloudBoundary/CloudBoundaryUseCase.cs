@@ -13,7 +13,8 @@ namespace TinCan.Features.CloudBoundary
 {
     /// <summary>
     /// Server, on the simulation tick. Two bounds:
-    /// - **The ship's:** a ship <see cref="CloudBoundaryConfig.EmergencyDepth"/> below the surface starts an emergency;
+    /// - **The ship's:** a ship <see cref="CloudBoundaryConfig.EmergencyDepth"/> below the sea's level starts an emergency
+    ///   (over a hole or rift, the level of the sea around it: falling in is sinking);
     ///   climbing back out clears it, and when it runs out the ship is lost with its whole crew
     ///   (<see cref="IShipLossSource"/>; the voyage ends on it). The last pose where the ship was safe, above the open
     ///   sea, is kept to respawn it there. Bringing the ship back (<see cref="IShipRecovery"/>) clears the emergency.
@@ -108,10 +109,12 @@ namespace TinCan.Features.CloudBoundary
                 _airshipStates.TryGetValue(airship.Id, out CloudEmergencyState previous);
                 Vector3 position = airship.Transform.position;
                 float surfaceHeight = _surfaceQuery.GetSurfaceHeight(position.x, position.z);
+                // Depth counts from the sea's level, also over a hole or rift: falling into one is sinking.
+                float seaHeight = _surfaceQuery.GetSeaHeight(position.x, position.z);
                 CloudEmergencyState current = _processor.EvaluateAirship(
                     previous,
                     position.y,
-                    surfaceHeight,
+                    seaHeight,
                     _config.EmergencyDepth,
                     _config.RecoveryMargin,
                     _config.EmergencyDuration,

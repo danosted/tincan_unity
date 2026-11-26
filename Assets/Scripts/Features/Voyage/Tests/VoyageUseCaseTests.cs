@@ -4,12 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using TinCan.Core.Domain;
-using TinCan.Core.Domain.Abilities.Attributes;
 using TinCan.Core.Domain.Events;
-using TinCan.Core.Gas;
-using TinCan.Core.Humanoid;
 using TinCan.Core.Ship;
 using TinCan.Core.UI;
+using TinCan.Features.ShipLoss;
 using TinCan.Features.Voyage;
 using UnityEngine;
 using TinCan.Tests.Fakes;
@@ -17,7 +15,7 @@ using TinCan.Tests.Fakes;
 namespace TinCan.Features.Voyage.Tests
 {
     /// <summary>
-    /// <see cref="VoyageUseCase"/> (the session loop) and <see cref="RestartVoyageMenuCommand"/>. Plan:
+    /// <see cref="VoyageUseCase"/> (the session loop), <see cref="RestartVoyageMenuCommand"/> and <see cref="VoyageLostChoices"/>. Plan:
     /// <c>voyage-session.md</c>.
     /// </summary>
     public class VoyageUseCaseTests
@@ -35,16 +33,6 @@ namespace TinCan.Features.Voyage.Tests
             public bool RestartRequested;
 
             public void RequestRestart() => RestartRequested = true;
-            public bool RespawnRequested;
-            public void RequestRespawn() => RespawnRequested = true;
-
-            public bool ConsumeRespawnRequest()
-            {
-                bool requested = RespawnRequested;
-                RespawnRequested = false;
-                return requested;
-            }
-
             public bool ConsumeRestartRequest()
             {
                 bool requested = RestartRequested;
@@ -71,34 +59,17 @@ namespace TinCan.Features.Voyage.Tests
             public void SetSessionActive(bool active) => Calls.Add(active ? "on" : "off");
         }
 
-        private sealed class FakeLoss : IShipLossSource, IShipRecovery
+        private sealed class FakeShipLoss : IShipLoss
         {
-            public bool Lost;
-            public Vector3? Safe;
-            public int Recovered;
+            public bool IsLost { get; set; }
+            public List<Vector3> BroughtBackAt { get; } = new();
 
-            public bool IsLost(IAirshipView ship) => Lost;
-
-            public bool TryGetSafePose(IAirshipView ship, out Vector3 position, out Quaternion rotation)
+            public void BringBack(IAirshipView ship, Vector3 position, Quaternion rotation)
             {
-                position = Safe ?? Vector3.zero;
-                rotation = Quaternion.Euler(0f, 90f, 0f);
-                return Safe.HasValue;
+                ship.Transform.SetPositionAndRotation(position, rotation);
+                BroughtBackAt.Add(position);
+                IsLost = false;
             }
-
-            public void Recover(IAirshipView ship)
-            {
-                Recovered++;
-                Lost = false;
-            }
-        }
-
-        private sealed class RecordingRespawn : IHumanoidRespawnService
-        {
-            public List<(IHumanoidCharacterView Character, Vector3 Position)> Resets { get; } = new();
-
-            public void ResetCharacter(IHumanoidCharacterView character, Vector3 position, Quaternion rotation) =>
-                Resets.Add((character, position));
         }
 
         private sealed class RecordingPublisher : IEventPublisher
@@ -113,13 +84,9 @@ namespace TinCan.Features.Voyage.Tests
         private VoyageConfig _config = null!;
         private FakeVoyageState _state = null!;
         private RecordingParticipant _participant = null!;
-        private FakeAbilityController _shipController = null!;
         private FakeAirshipView _ship = null!;
-        private HealthAttribute _health = null!;
-        private MaxHealthAttribute _maxHealth = null!;
         private FakeCrewMember _crew = null!;
-        private FakeLoss _loss = null!;
-        private RecordingRespawn _respawn = null!;
+        private FakeShipLoss _loss = null!;
 
         [SetUp]
         public void SetUp()
@@ -134,19 +101,10 @@ namespace TinCan.Features.Voyage.Tests
             _state = new FakeVoyageState();
             _participant = new RecordingParticipant();
 
-            _health = ScriptableObject.CreateInstance<HealthAttribute>();
-            _health.name = "Attr_Health";
-            _maxHealth = ScriptableObject.CreateInstance<MaxHealthAttribute>();
-            _maxHealth.name = "Attr_MaxHealth";
-            _shipController = new FakeAbilityController();
-            var health = new HealthAttributeSet(_shipController, _health, _maxHealth);
-            health.InitializeBaseValues(1000f);
-            _shipController.RegisterAttributeSet(health);
-            _ship = new FakeAirshipView("Airship", _shipController);
+            _ship = new FakeAirshipView("Airship");
 
             _crew = new FakeCrewMember();
-            _loss = new FakeLoss();
-            _respawn = new RecordingRespawn();
+            _loss = new FakeShipLoss();
 
             _actors.Register(_ship);
             _actors.Register(_state);
@@ -158,8 +116,6 @@ namespace TinCan.Features.Voyage.Tests
         {
             _ship.Destroy();
             UnityEngine.Object.DestroyImmediate(_config);
-            UnityEngine.Object.DestroyImmediate(_health);
-            UnityEngine.Object.DestroyImmediate(_maxHealth);
         }
 
         [Test]
@@ -252,85 +208,34 @@ namespace TinCan.Features.Voyage.Tests
         }
 
         [Test]
-        public void Underway_TheShipsHealthRunningOut_IsLost()
+        public void Underway_TheShipLost_IsLost_AndStopsThePressure()
         {
             var voyage = Underway();
 
-            _shipController.SetAttribute(_health, new AttributeValue(0f));
+            _loss.IsLost = true;
             voyage.Tick();
 
             Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Lost));
             Assert.That(_participant.Calls.Last(), Is.EqualTo("off"));
+            Assert.That(_events.Events.OfType<VoyageEndedEvent>().Single().Outcome, Is.EqualTo(VoyagePhase.Lost));
         }
 
         [Test]
-        public void Underway_ALossSourceLosingTheShip_IsLost_AndHoldsTheShipStill()
+        public void Lost_TheShipRespawned_CarriesOnTheSameVoyage()
         {
-            var voyage = Underway();
-            Assert.That(voyage.Holds(_ship), Is.False);
-
-            _loss.Lost = true;
-            voyage.Tick();
-
-            Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Lost));
-            Assert.That(voyage.Holds(_ship), Is.True, "the lost ship stays where it went down");
-        }
-
-        [Test]
-        public void Respawn_AfterALoss_BringsTheShipBackWholeAtItsSafeSpot_TheCrewAboard_AndCarriesOn()
-        {
-            var movement = new FakeHumanoidMovementView("Player");
-            var player = new FakeHumanoidCharacterView(movement);
-            _actors.Register(player);
             var voyage = Underway();
             Vector3 destination = _state.Destination;
-            _loss.Safe = new Vector3(30f, 12f, 200f);
-            _ship.Transform.position = new Vector3(30f, -80f, 260f);
-            _loss.Lost = true;
+            _loss.IsLost = true;
             voyage.Tick();
 
-            _state.RequestRespawn();
+            _loss.IsLost = false;
             voyage.Tick();
 
             Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Underway));
-            Assert.That(_ship.Transform.position, Is.EqualTo(new Vector3(30f, 12f, 200f)));
-            Assert.That(_loss.Recovered, Is.EqualTo(1), "the ship is made whole");
-            Assert.That(_respawn.Resets.Select(reset => reset.Character), Is.EqualTo(new[] { player }), "the crew is put back aboard");
             Assert.That(_state.Destination, Is.EqualTo(destination), "the same voyage");
             Assert.That(_state.Voyage, Is.EqualTo(1));
             Assert.That(_participant.Calls.Count(call => call == "reset"), Is.EqualTo(1), "the world keeps its progress");
             Assert.That(_participant.Calls.Last(), Is.EqualTo("on"));
-            Assert.That(voyage.Holds(_ship), Is.False);
-            movement.Destroy();
-        }
-
-        [Test]
-        public void Respawn_WithNoSafeSpot_IsWhereTheVoyageBegan()
-        {
-            _ship.Transform.position = new Vector3(5f, 20f, 5f);
-            var voyage = Underway();
-            _ship.Transform.position = new Vector3(5f, -80f, 400f);
-            _loss.Lost = true;
-            voyage.Tick();
-
-            _state.RequestRespawn();
-            voyage.Tick();
-
-            Assert.That(_ship.Transform.position, Is.EqualTo(new Vector3(5f, 20f, 5f)));
-        }
-
-        [Test]
-        public void Respawn_WhileNotLost_DoesNothing()
-        {
-            var voyage = Underway();
-            _ship.Transform.position = new Vector3(0f, 0f, 300f);
-
-            _state.RequestRespawn();
-            voyage.Tick();
-
-            Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Underway));
-            Assert.That(_ship.Transform.position, Is.EqualTo(new Vector3(0f, 0f, 300f)));
-            Assert.That(_loss.Recovered, Is.Zero);
         }
 
         [Test]
@@ -339,7 +244,7 @@ namespace TinCan.Features.Voyage.Tests
             _ship.Transform.position = new Vector3(5f, 20f, 5f);
             var voyage = Underway();
             _ship.Transform.position = new Vector3(5f, -80f, 400f);
-            _loss.Lost = true;
+            _loss.IsLost = true;
             voyage.Tick();
 
             _state.RequestRestart();
@@ -347,19 +252,35 @@ namespace TinCan.Features.Voyage.Tests
 
             Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Briefing));
             Assert.That(_state.Voyage, Is.EqualTo(2));
-            Assert.That(_ship.Transform.position, Is.EqualTo(new Vector3(5f, 20f, 5f)));
+            Assert.That(_loss.BroughtBackAt, Is.EqualTo(new[] { new Vector3(5f, 20f, 5f) }));
             Assert.That(_state.Origin, Is.EqualTo(new Vector3(5f, 20f, 5f)));
-            Assert.That(_loss.Recovered, Is.EqualTo(1));
         }
 
         [Test]
-        public void RespawnMenuCommand_AsksTheStateForARespawn()
+        public void AShipLostBeforeAnyVoyage_WaitsForItsRespawn()
         {
-            var command = new RespawnShipMenuCommand(_actors);
+            _loss.IsLost = true;
+            var voyage = UseCase();
 
-            command.Execute(new MenuContext(null!, "voyage_lost", "respawn"));
+            voyage.Tick();
+            Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Idle));
 
-            Assert.That(_state.RespawnRequested, Is.True);
+            _loss.IsLost = false;
+            voyage.Tick();
+            Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Briefing));
+        }
+
+        [Test]
+        public void LostChoices_OfferRestartVoyage_OnTheLostScreen()
+        {
+            var choices = new VoyageLostChoices(new RestartVoyageMenuCommand(_actors));
+
+            Assert.That(choices.SourceId, Is.EqualTo(ShipLossMenus.ChoicesSource));
+            Assert.That(choices.Rows.Select(row => row.Label), Is.EqualTo(new[] { "Restart Voyage" }));
+
+            choices.Invoke(VoyageLostChoices.RestartKey, new MenuContext(null!, "ship_lost", "choices/restart"));
+
+            Assert.That(_state.RestartRequested, Is.True);
         }
 
         [Test]
@@ -383,7 +304,7 @@ namespace TinCan.Features.Voyage.Tests
         public void Ended_StaysEnded_WithoutARestart()
         {
             var voyage = Underway();
-            _shipController.SetAttribute(_health, new AttributeValue(0f));
+            _loss.IsLost = true;
             voyage.Tick();
 
             for (int i = 0; i < 5; i++) voyage.Tick();
@@ -437,7 +358,7 @@ namespace TinCan.Features.Voyage.Tests
         public void CrewLeaves_OnTheEndScreen_StandsDownToIdle()
         {
             var voyage = Underway();
-            _shipController.SetAttribute(_health, new AttributeValue(0f));
+            _loss.IsLost = true;
             voyage.Tick();
             Assert.That(_state.Phase, Is.EqualTo(VoyagePhase.Lost));
 
@@ -483,6 +404,6 @@ namespace TinCan.Features.Voyage.Tests
 
         private VoyageUseCase UseCase() =>
             new(new FakeNetworkService(), _actors, _time, _events, new VoyageRouteProcessor(), _config, new ISessionParticipant[] { _participant },
-                new System.Random(7), new IShipLossSource[] { _loss }, new IShipRecovery[] { _loss }, _respawn);
+                new System.Random(7), _loss);
     }
 }

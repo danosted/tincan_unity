@@ -553,9 +553,9 @@ namespace TinCan.DevTools.Scenarios
                     .Do("SinkShipInCloud"))
                 .Act(s => s
                     .WaitUntil("VoyagePhase", 45f, "Lost")
-                    .WaitUntil("MenuShown", 5f, "voyage_lost")
+                    .WaitUntil("MenuShown", 5f, TinCan.Features.ShipLoss.ShipLossMenus.MenuId)
                     .Checkpoint("lost")
-                    .Do("PressMenuItem", "respawn")
+                    .Do("PressMenuItem", TinCan.Features.ShipLoss.ShipLossMenus.RespawnItem)
                     .WaitUntil("VoyagePhase", 10f, "Underway")
                     .WaitUntil("NoMenuShown", 5f)
                     .Expect("ShipHealthFull")
@@ -566,7 +566,11 @@ namespace TinCan.DevTools.Scenarios
                     .Expect("ShipBackWhereItSank")
                     .Expect("ShipHealthFull"))
                 .Build(),
-            builder => builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+            builder =>
+            {
+                builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipLossScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
 
         // The server arrives, the subject restarts from its end screen (a server RPC from the client), the server sinks
         // the ship. Lanes run side by side and meet on the replicated voyage phase.
@@ -598,7 +602,7 @@ namespace TinCan.DevTools.Scenarios
                     .Do("PressMenuItem", "restart")
                     .WaitUntil("VoyageAdvanced", 10f)
                     .WaitUntil("VoyagePhase", 60f, "Lost")
-                    .WaitUntil("MenuShown", 5f, "voyage_lost")
+                    .WaitUntil("MenuShown", 5f, TinCan.Features.ShipLoss.ShipLossMenus.MenuId)
                     .Checkpoint("lost"))
                 .Assert(s => s
                     .WaitUntil("VoyagePhase", 60f, "Briefing")
@@ -608,7 +612,11 @@ namespace TinCan.DevTools.Scenarios
                     .Do("SinkShip")
                     .WaitUntil("VoyagePhase", 5f, "Lost"))
                 .Build(),
-            builder => builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+            builder =>
+            {
+                builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipLossScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+            });
 
         /// <summary>
         /// A late joiner boards the ship: the host is aboard before the client connects (the client joins after a delay),
@@ -717,6 +725,7 @@ namespace TinCan.DevTools.Scenarios
             builder =>
             {
                 builder.Register<VoyageScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
+                builder.Register<ShipLossScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
                 builder.Register<SkyIslandImpactScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
@@ -1750,6 +1759,42 @@ namespace TinCan.DevTools.Scenarios
             });
 
         /// <summary>
+        /// The ship lost with no voyage (Test_Galleon: the game's profile, which has none): hurt, it sinks deep into the
+        /// cloud and stays there; the cloud boundary's countdown runs out and Ship Loss holds it behind the Lost screen on
+        /// every peer. The subject presses Respawn with the keyboard (the screen's first, focused row; a server RPC from
+        /// the client): the ship comes back whole where it was last safe. Plan: ship-lost-and-respawn.md.
+        /// </summary>
+        public static readonly ScenarioEntry ShipLostNoVoyage = new(
+            new Scenario.Builder("ShipLostNoVoyage")
+                .InScene(TestScenes.Galleon)
+                .Describe("No voyage: the ship hurt, sunk deep into the cloud -> Lost on both peers after the countdown " +
+                          "-> the subject presses Respawn -> the ship whole where it sank.")
+                .Timeout(150f)
+                .Arrange(s => s
+                    .WaitUntil("SubjectReady", 60f)
+                    .Wait(2f, "settle after spawn; the design builds")
+                    .Do("HurtShip")
+                    .Wait(1f, "the boundary sees the ship safe above the sea")
+                    .Do("SinkShipInCloud"))
+                .Act(s => s
+                    .WaitUntil("ShipLost", 45f, "true")
+                    .WaitUntil("TopMenu", 5f, TinCan.Features.ShipLoss.ShipLossMenus.MenuId)
+                    .Expect("FocusedRow", TinCan.Features.ShipLoss.ShipLossMenus.RespawnItem)
+                    .Checkpoint("lost")
+                    .Tap(ScriptedAction.MenuSubmit)
+                    .WaitUntil("ShipLost", 10f, "false")
+                    .WaitUntil("TopMenu", 5f, "none")
+                    .Expect("ShipHealthFull")
+                    .Checkpoint("respawned"))
+                .Assert(s => s
+                    .WaitUntil("ShipLost", 45f, "true")
+                    .WaitUntil("ShipLost", 30f, "false")
+                    .Expect("ShipBackWhereItSank")
+                    .Expect("ShipHealthFull"))
+                .Build(),
+            builder => builder.Register<ShipLossScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>());
+
+        /// <summary>
         /// The crew body (plan: crew-animation.md, S2) on the Galleon, where the game's profile loads it. The subject
         /// stands on the main deck facing the ship's centre, runs forward, stops, jumps. Its own peer checks the body is
         /// hidden from its first-person camera and stands, flies and lands again; the server sees it run, fly and stand.
@@ -2454,7 +2499,7 @@ namespace TinCan.DevTools.Scenarios
                 builder.Register<ShipSocketsScenarioLibrary>(Lifetime.Singleton).As<IScenarioLibrary>();
             });
 
-        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, ShipLostRespawn, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, CloudWebReal, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone, CrewBodyMoves, StormInWorld, StormCure };
+        private static readonly ScenarioEntry[] All = { NetCatch, EquipCycle, CoreBoot, LanDiscovery, ShipDamage, RepairLoop, ShipDamageLateJoin, AimPitch, InteractRack, HullStressEvent, CannonShot, HazardStrike, CannonMisfire, VoyageLoop, ShipLostRespawn, LateJoinBoarding, HelmSteer, IslandsPerVoyage, IslandRam, BoonGate, EngineBoost, BoilerCombo, ChallengeRelay, DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap, LookApplies, DayMoves, CloudHoleOpens, CloudWebReal, SoarFromDive, CampLoop, IslandForage, MountFitting, HookAboard, ShipStairs, GalleonLoadout, FrameDeck, FrameRoundTrip, FrameStories, FramePartPlace, OverboardRespawn, LeashClimb, WinchRescue, GalleonLeashClimb, ShipLostNoVoyage, CompassCourse, ChartPlot, ChartIslands, ChartHazards, GalleonChartTable, GasSquallEvent, GalleonSternCannon, AnchorHold, LadderClimb, CrystalRun, CrankStart, EncounterZone, CrewBodyMoves, StormInWorld, StormCure };
 
         public static System.Collections.Generic.IReadOnlyList<ScenarioEntry> Entries => All;
 

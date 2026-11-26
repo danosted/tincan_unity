@@ -33,9 +33,6 @@ namespace TinCan.Features.Voyage
         [Tooltip("End screen after a won voyage (Restart, Quit).")]
         public MenuDefinition? ArrivedMenu;
 
-        [Tooltip("End screen after a lost voyage (Restart, Quit).")]
-        public MenuDefinition? LostMenu;
-
         [Tooltip("The destination beacon's material (URP; an asset, so player builds include its shader).")]
         public Material? BeaconMaterial;
 

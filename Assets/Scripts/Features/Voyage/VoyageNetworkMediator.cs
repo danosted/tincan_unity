@@ -9,8 +9,8 @@ namespace TinCan.Features.Voyage
     /// <summary>
     /// Infrastructure Layer: the voyage's replicated state, on the VoyageState ship fixture (with an EntityNetworkMediator,
     /// which registers it as an actor). Server-written variables carry the phase, the voyage number, the destination, the
-    /// briefing countdown and the session layout (seed, origin) to every peer, late joiners included; server RPCs take
-    /// Restart and Respawn from any player.
+    /// briefing countdown and the session layout (seed, origin) to every peer, late joiners included; a server RPC takes
+    /// Restart from any player.
     /// </summary>
     public class VoyageNetworkMediator : NetworkBehaviour, IVoyageState
     {
@@ -34,7 +34,6 @@ namespace TinCan.Features.Voyage
 
         private ActorIdentity? _identity;
         private bool _restartRequested;
-        private bool _respawnRequested;
 
         public Guid Id => (_identity ??= new ActorIdentity(this)).Id;
         public bool IsSimulating => IsSpawned;
@@ -57,20 +56,6 @@ namespace TinCan.Features.Voyage
         {
             bool requested = _restartRequested;
             _restartRequested = false;
-            return requested;
-        }
-
-        public void RequestRespawn()
-        {
-            if (!IsSpawned) return;
-            if (IsServer) _respawnRequested = true;
-            else RequestRespawnRpc();
-        }
-
-        public bool ConsumeRespawnRequest()
-        {
-            bool requested = _respawnRequested;
-            _respawnRequested = false;
             return requested;
         }
 
@@ -103,8 +88,5 @@ namespace TinCan.Features.Voyage
 
         [Rpc(SendTo.Server)]
         private void RequestRestartRpc() => _restartRequested = true;
-
-        [Rpc(SendTo.Server)]
-        private void RequestRespawnRpc() => _respawnRequested = true;
     }
 }

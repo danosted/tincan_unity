@@ -370,6 +370,12 @@ namespace TinCan.DevTools.Editor
         [MenuItem(Root + "ShipLostRespawn (Host + Client, Lag100)")]
         public static void ShipLostRespawnDuo() => RunDuo("ShipLostRespawn", "Lag100");
 
+        [MenuItem(Root + "ShipLostNoVoyage (Host)")]
+        public static void ShipLostNoVoyageSolo() => RunSolo("ShipLostNoVoyage");
+
+        [MenuItem(Root + "ShipLostNoVoyage (Host + Client, Lag100)")]
+        public static void ShipLostNoVoyageDuo() => RunDuo("ShipLostNoVoyage", "Lag100");
+
         [MenuItem(Root + "LateJoinBoarding (Host)")]
         public static void LateJoinBoardingSolo() => RunSolo("LateJoinBoarding");
 

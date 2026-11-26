@@ -51,6 +51,8 @@ namespace TinCan.Features.CloudBoundary
             return height - cut * _config.HoleDepth;
         }
 
+        public float GetSeaHeight(float worldX, float worldZ) => TopologyHeight(worldX, worldZ);
+
         private float TopologyHeight(float worldX, float worldZ)
         {
             switch (_config.Topology)

@@ -18,7 +18,6 @@ MonoBehaviour:
   RouteLength: 4000
   ArrivalRadius: 60
   ArrivedMenu: {fileID: 11400000, guid: 2dd75c01b4be8df458060ae57e760a02, type: 2}
-  LostMenu: {fileID: 11400000, guid: 812bd07cbdf238e4f93f5f6019d109c2, type: 2}
   BeaconMaterial: {fileID: 2100000, guid: 54fb95bcf90e2e849ad29fcab9910e6f, type: 2}
   BeaconHeight: 600
   BeaconWidth: 12

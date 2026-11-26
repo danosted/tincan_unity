@@ -24,6 +24,8 @@ namespace TinCan.Features.CloudFlight.Tests
 
             public float GetSurfaceHeight(float worldX, float worldZ) =>
                 Height + RisePerMetreZ * worldZ - (worldZ >= RiftFromZ ? 400f : 0f);
+
+            public float GetSeaHeight(float worldX, float worldZ) => Height + RisePerMetreZ * worldZ;
         }
 
         private readonly FixedSurface _surface = new();

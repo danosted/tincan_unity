@@ -3,6 +3,7 @@
   "rootNamespace": "TinCan.Features.Voyage.Tests",
   "references": [
     "TinCan.Core.Domain",
+    "TinCan.Features.ShipLoss",
     "TinCan.Features.Voyage",
     "TinCan.Gas",
     "TinCan.Humanoid",

@@ -119,9 +119,23 @@ deceleration). `HumanoidMovementFeelTests` (EditMode) pins them in ticks: walkin
 walk and 3 from a sprint, a reversal within 3. Retune there first; in first person the whole view glides with the body,
 so gentle values feel sluggish (2026-10-04: 30/20 m/s² measured stop p95 ~550 ms; 75/75 measured ~117 ms; 2026-10-14: 200/200 after a host playtest still found 75 sluggish).
 Before retuning a "sluggish" report from the Editor, untick **VSync (Game view only)** in the Game view's aspect
-dropdown: on a 144 Hz monitor, Editor VSync alone made both moving and looking feel laggy (2026-10-15).
+dropdown: on a 144 Hz monitor, Editor VSync alone made both moving and looking feel laggy (2026-10-15). Part of
+that was a real stutter, fixed 2026-11-27: the body's interpolation stamped ticks with frame time, which judders when
+the refresh rate is not a multiple of the tick rate (`HumanoidVisualFramePacingTests`).
 
 The host's own player is local, so its numbers are the floor. The client's numbers are what a remote player feels.
+
+### Frame pacing
+
+During any scripted run (a bot route or a scenario), `DevTools/FramePacingProbe.cs` logs a `[FramePacing]` line
+every 10 s and when play ends. Each line gives the frame rate and, for the nearest ship's simulated pose (read in
+Update), its drawn pose and the camera, how many frames per second moved unevenly (a frozen or doubled frame,
+`FramePacingMeter`). Something drawn at the 30 Hz tick scores dozens per second; drawn smoothly, about zero. On the
+host, "ship simulated" is the stepping ship and "ship drawn" is what you see (`ShipDrawnPose`).
+
+To stand in for another display rate, write a frame rate into `Logs/dev-frame-cap.txt` (for example `75`) before
+the run, and untick **VSync (Game view only)**, which wins over the cap. The log line shows the rate reached. Delete
+the file afterwards; while it exists, every scripted run is capped and logs a warning.
 
 ## Scenarios: feature tests in the live game
 

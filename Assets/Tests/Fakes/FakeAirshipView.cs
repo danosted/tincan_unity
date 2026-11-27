@@ -44,11 +44,10 @@ namespace TinCan.Tests.Fakes
         public Vector3 PositionDelta => Vector3.zero;
         public Quaternion RotationDelta => Quaternion.identity;
 
-        /// <summary>The last base stats a ship design set (IAirshipTuning), or null.</summary>
-        public (float MaxForwardSpeed, float TurnSpeed, float MaxHealth)? BaseStats { get; private set; }
+        /// <summary>The last handling and health a ship design set (IAirshipTuning), or null when none did.</summary>
+        public (ShipHandlingProfile? Handling, float MaxHealth)? Tuned { get; private set; }
 
-        public void ServerSetBaseStats(float maxForwardSpeed, float turnSpeed, float maxHealth) =>
-            BaseStats = (maxForwardSpeed, turnSpeed, maxHealth);
+        public void ServerSetHandling(ShipHandlingProfile? handling, float maxHealth) => Tuned = (handling, maxHealth);
 
         public void Destroy()
         {

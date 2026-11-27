@@ -51,11 +51,11 @@ namespace TinCan.DevTools.Editor.Tests
 
             var catalog = InstalledParts();
             Assert.That(catalog.Problems, Is.Empty);
-            var validation = new ShipDesignValidator().Validate(result.Design!, catalog, config.Limits, config.Frames, config.Flight);
+            var validation = new ShipDesignValidator().Validate(result.Design!, catalog, config.Limits, config.Frames);
             Assert.That(validation.Problems, Is.Empty, validation.ToString());
 
             var stats = new ShipStatsProcessor().Compute(result.Design!, catalog, config.Flight, config.Frames);
-            Assert.That(stats.MaxSpeed, Is.GreaterThan(8f), stats.ToString());
+            Assert.That(stats.Handling, Is.Not.Null, "its core names how it flies: " + stats);
         }
 
         [TestCase(ShipFrameDesigns.StarterName)]

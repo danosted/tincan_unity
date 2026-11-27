@@ -13,23 +13,10 @@ namespace TinCan.Core.Ship
     [RequireComponent(typeof(Rigidbody))]
     public class AirshipControllerView : MonoBehaviour, IPointVelocityMovingGround
     {
-        [Header("Movement Settings")]
-        [SerializeField] private float _maxForwardSpeed = 15f;
-        [SerializeField] private float _maxBackwardSpeed = 8f;
-        [SerializeField] private float _accelerationRate = 5f;
-        [SerializeField] private float _decelerationRate = 2f;
-        [SerializeField] private float _angularAcceleration = 15f;
-        [SerializeField] private float _angularDeceleration = 20f;
-        [SerializeField] private float _velocityBlendRate = 2f;
-        [SerializeField] private float _turnSpeed = 45f;
-        [SerializeField] private float _pitchSpeed = 30f;
-        [SerializeField] private float _maxBankAngle = 15f;
-        [SerializeField] private float _bankSpeed = 2f;
-        [Tooltip("How fast the nose eases back to level with no pitch input, per second of the angle off level.")]
-        [SerializeField, Min(0f)] private float _pitchLevelSpeed = 0.2f;
-        [Tooltip("How much the world pitches this ship: the level the features set (the cloud sea's slope) and a stall's " +
-                 "nose drop. 1: fully, 0: the nose keeps to the horizon.")]
-        [SerializeField, Range(0f, 1f)] private float _externalPitchInfluence = 1f;
+        [Header("Handling")]
+        [Tooltip("How this ship flies when no design says otherwise (a ship with no design). A designed ship flies on "
+                 + "its core part's profile. Empty: ShipHandling.Default.")]
+        [SerializeField] private ShipHandlingProfile _handlingProfile;
 
         [Header("Visual Hierarchy")]
         [SerializeField] private Transform _visualRoot;
@@ -43,20 +30,53 @@ namespace TinCan.Core.Ship
         private Vector3 _targetLinearVelocity;
         private Vector3 _targetAngularVelocity;
 
+        private ShipHandlingProfile _runtimeProfile;
+        private ShipHandlingProfile _listeningTo;
+
+        /// <summary>The profile the ship flies on: the one set at runtime (its design's core), else its prefab's; null: the default.</summary>
+        public ShipHandlingProfile Profile => _runtimeProfile != null ? _runtimeProfile : _handlingProfile;
+
+        /// <summary>What the ship flies on, read from <see cref="Profile"/> each time, so an edit to it applies at once.</summary>
+        public ShipHandling Handling => Profile != null ? Profile.Handling : ShipHandling.Default;
+
+        /// <summary>The handling changed: another profile was set, or the one it flies on was edited (tuned live).</summary>
+        public event Action HandlingChanged;
+
+        /// <summary>Fly on this profile from now on (the server, for a ship built from a design).</summary>
+        public void SetHandling(ShipHandlingProfile profile)
+        {
+            _runtimeProfile = profile;
+            if (isActiveAndEnabled) ListenTo(Profile);
+            HandlingChanged?.Invoke();
+        }
+
+        private void OnEnable() => ListenTo(Profile);
+        private void OnDisable() => ListenTo(null);
+
+        private void ListenTo(ShipHandlingProfile profile)
+        {
+            if (_listeningTo == profile) return;
+            if (_listeningTo != null) _listeningTo.Changed -= OnProfileChanged;
+            _listeningTo = profile;
+            if (_listeningTo != null) _listeningTo.Changed += OnProfileChanged;
+        }
+
+        private void OnProfileChanged() => HandlingChanged?.Invoke();
+
         // Configuration
-        public float MaxForwardSpeed => _maxForwardSpeed;
-        public float MaxBackwardSpeed => _maxBackwardSpeed;
-        public float AccelerationRate => _accelerationRate;
-        public float DecelerationRate => _decelerationRate;
-        public float AngularAcceleration => _angularAcceleration;
-        public float AngularDeceleration => _angularDeceleration;
-        public float VelocityBlendRate => _velocityBlendRate;
-        public float TurnSpeed => _turnSpeed;
-        public float PitchSpeed => _pitchSpeed;
-        public float MaxBankAngle => _maxBankAngle;
-        public float BankSpeed => _bankSpeed;
-        public float PitchLevelSpeed => _pitchLevelSpeed;
-        public float ExternalPitchInfluence => _externalPitchInfluence;
+        public float MaxForwardSpeed => Handling.MaxForwardSpeed;
+        public float MaxBackwardSpeed => Handling.MaxBackwardSpeed;
+        public float AccelerationRate => Handling.AccelerationRate;
+        public float DecelerationRate => Handling.DecelerationRate;
+        public float AngularAcceleration => Handling.AngularAcceleration;
+        public float AngularDeceleration => Handling.AngularDeceleration;
+        public float VelocityBlendRate => Handling.VelocityBlendRate;
+        public float TurnSpeed => Handling.TurnSpeed;
+        public float PitchSpeed => Handling.PitchSpeed;
+        public float MaxBankAngle => Handling.MaxBankAngle;
+        public float BankSpeed => Handling.BankSpeed;
+        public float PitchLevelSpeed => Handling.PitchLevelSpeed;
+        public float ExternalPitchInfluence => Handling.ExternalPitchInfluence;
 
         // IMovingGround data
         public Vector3 Velocity => _velocity;

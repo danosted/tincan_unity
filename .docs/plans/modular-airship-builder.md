@@ -237,6 +237,8 @@ designs select it in their scope. `Airship_Prefab` and its scenes stay as they a
 - **Core change:** `IAirshipTuning` (`Core/Ship/`), implemented by `AirshipNetworkMediator`. The server sets the
   ship's base flight speed, turn speed and health (filled) when a design is applied; they replicate as attributes.
 - New validator rules: `TooHeavy` (lift below mass) and `NoThrust`.
+- *2026-11-27 (developer): replaced.* Parts no longer set speed or turn, and `TooHeavy`/`NoThrust` are gone; a
+  ship flies on its core part's handling profile ([ship-handling-profiles.md](ship-handling-profiles.md)).
 - New parts: `hull.armour` (mass 30, hull 120), `prop.engine` (1 × 1 × 2 cells, mass 40, thrust 400),
   `lift.balloon` (3 × 2 × 3 cells, mass 15, lift 400). Existing parts: block (10, hull 25), deck (3, hull 5),
   helm (30, hull 100).

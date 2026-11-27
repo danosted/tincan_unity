@@ -7,7 +7,7 @@ namespace TinCan.Features.ShipDesigns.Tests
 {
     /// <summary>
     /// <see cref="ShipFrameValidator"/> through <see cref="ShipDesignValidator"/>: the frame's own rules, ids shared with
-    /// parts, the frame's weight, and parts and frame joined to the core through each other.
+    /// parts, and parts and frame joined to the core through each other.
     /// </summary>
     public class ShipFrameValidatorTests
     {
@@ -136,15 +136,6 @@ namespace TinCan.Features.ShipDesigns.Tests
             var validation = Validate(off);
 
             Assert.That(validation.Has(ShipDesignProblemKind.UnanchoredPart) && validation.Has(ShipDesignProblemKind.MissingCore), Is.True, validation.ToString());
-        }
-
-        [Test]
-        public void TheFrameWeighs()
-        {
-            var frame = ShipFrameTestDesigns.DeckFrame();
-            var huge = frame.With(nodes: frame.Nodes.Select(n => n.MovedTo(n.X * 20, 0, n.Z * 20)));
-
-            Assert.That(Validate(WithFrame(ShipFrameTestDesigns.Deck(), huge)).Has(ShipDesignProblemKind.TooHeavy), Is.True, "80 x 80 m of planks outweighs the helm's lift");
         }
 
         [Test]

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TinCan.Core.Ship;
 using TinCan.Core.Ship.Parts;
 using TinCan.Features.ShipDesigns;
 using UnityEngine;
@@ -11,7 +12,7 @@ namespace TinCan.Features.ShipDesigns.Tests
 {
     /// <summary>
     /// A small part set for ship design tests, all standing on plank floors unless said: a one-block block, a three-block
-    /// beam along +X (both with a visual), a two-block-tall core helm (a networked prefab) that lifts and drives, a post
+    /// beam along +X (both with a visual), a two-block-tall core helm (a networked prefab) that lifts and drives and names a handling profile, a post
     /// that sits on a node, and the cairn. Dispose destroys the definitions and prefabs.
     /// </summary>
     public sealed class ShipDesignTestParts : IDisposable
@@ -29,13 +30,17 @@ namespace TinCan.Features.ShipDesigns.Tests
             BlockVisual = new GameObject("BlockVisual");
             BeamVisual = new GameObject("BeamVisual");
             HelmPrefab = new GameObject("HelmPrefab");
+            var handling = ShipHandling.Default;
+            handling.MaxForwardSpeed = 12f;
+            handling.TurnSpeed = 20f;
+            HelmHandling = ShipHandlingProfile.Create("HANDLING_TestHelm", handling);
             _parts = new List<ShipPartDefinition>
             {
                 ShipPartDefinition.Create(Block, false, BlockVisual, null, Vector3.zero, new ShipPartStats(1f, hull: 5f)),
                 ShipPartDefinition.Create(Beam, false, BeamVisual, null, Vector3.zero, new ShipPartStats(3f, hull: 10f),
                     new Vector3Int(0, 0, 0), new Vector3Int(1, 0, 0), new Vector3Int(2, 0, 0)),
                 ShipPartDefinition.Create(Helm, true, null, HelmPrefab, Vector3.zero, new ShipPartStats(10f, lift: 5000f, thrust: 100f, hull: 50f),
-                    new Vector3Int(0, 0, 0), new Vector3Int(0, 1, 0)),
+                    new Vector3Int(0, 0, 0), new Vector3Int(0, 1, 0)).WithHandling(HelmHandling),
                 ShipPartDefinition.Create(Post, false, BlockVisual, null, Vector3.zero, new ShipPartStats(1f), ShipPartAttach.Node, false),
                 ShipPartDefinition.Create(Cairn, false, BlockVisual, null, Vector3.zero, new ShipPartStats(20f), ShipPartAttach.Face, true),
             };
@@ -46,6 +51,9 @@ namespace TinCan.Features.ShipDesigns.Tests
         public GameObject BlockVisual { get; }
         public GameObject BeamVisual { get; }
         public GameObject HelmPrefab { get; }
+
+        /// <summary>The helm's handling profile: the default with a top speed of 12 m/s and a turn of 20 deg/s.</summary>
+        public ShipHandlingProfile HelmHandling { get; }
 
         public ShipPartDefinition this[string partId] => _parts.First(p => p.PartId == partId);
 
@@ -65,6 +73,7 @@ namespace TinCan.Features.ShipDesigns.Tests
             Object.DestroyImmediate(BlockVisual);
             Object.DestroyImmediate(BeamVisual);
             Object.DestroyImmediate(HelmPrefab);
+            Object.DestroyImmediate(HelmHandling);
         }
     }
 }

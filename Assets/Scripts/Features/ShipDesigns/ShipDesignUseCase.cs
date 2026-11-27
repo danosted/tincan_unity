@@ -84,7 +84,7 @@ namespace TinCan.Features.ShipDesigns
             error = null;
             if (!_network.IsServer) error = "Only the server gives ships their design.";
 
-            var validation = _validator.Validate(design, _catalog, _config.Limits, _config.Frames, _config.Flight);
+            var validation = _validator.Validate(design, _catalog, _config.Limits, _config.Frames);
             if (error == null && !validation.IsValid) error = $"\"{design.Name}\" cannot fly: {validation}";
             if (error != null)
             {
@@ -97,7 +97,8 @@ namespace TinCan.Features.ShipDesigns
             state.ServerSetDesign(hash, bytes);
             var flight = _stats.Compute(design, _catalog, _config.Flight, _config.Frames);
             var tuning = state.Ship as IAirshipTuning ?? (state.Ship as UnityEngine.Component)?.GetComponent<IAirshipTuning>();
-            tuning?.ServerSetBaseStats(flight.MaxSpeed, flight.TurnSpeed, flight.MaxHealth);
+            tuning?.ServerSetHandling(flight.Handling, flight.MaxHealth);
+            if (flight.Handling == null) _events.LogWarning(LogSource, $"\"{design.Name}\": its core part names no handling profile, so the ship flies on its prefab's.");
 
             var shipId = state.Ship?.Id ?? state.Id;
             if (validation.Problems.Count > 0) _events.LogWarning(LogSource, $"\"{design.Name}\": {validation}");

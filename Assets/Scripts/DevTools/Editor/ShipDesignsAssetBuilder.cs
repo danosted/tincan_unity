@@ -111,6 +111,7 @@ namespace TinCan.DevTools.Editor
             var helm = Part("PART_CoreHelm", CoreHelm, "Helm", "Core", ShipPartAttach.Face, null, Load<GameObject>(HelmStationPath), Vector3.zero,
                 new ShipPartStats(30f, hull: 100f), Box(3, 2, 5));
             SetFlag(helm, "_isCore");
+            ShipHandlingAssetBuilder.AssignCore(helm, ShipHandlingAssetBuilder.Standard());
 
             var starter = WriteDesign(StarterPath, ShipFrameDesigns.StarterDesign());
             var galleon = WriteDesign(GalleonPath, ShipFrameDesigns.GalleonDesign());

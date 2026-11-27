@@ -17,7 +17,7 @@ namespace TinCan.DevTools.Scenarios
     /// (server); FaceShipYaw "yaw" turns the subject's camera the same way, level
     /// (subject peer). Probes: ShipDesignBuilt: this peer has built the ship from the design its state replicates, with
     /// at least the given number of parts standing. SubjectOnShip: the ground under the subject on this peer belongs to
-    /// the ship (a built part or the helm). ShipTopSpeed: the ship's replicated top speed, set from the design's parts
+    /// the ship (a built part or the helm). ShipTopSpeed: the ship's replicated top speed, set from its core's handling profile
     /// (S4). SubjectFeetAbove "y": the subject's feet are at least that high in ship space on this peer. ShipFrameBuilt "n":
     /// at least n generated frame meshes (planks and beams per story) stand for the ship on this peer. SubjectStandsOn
     /// "prefix": the ground under the subject is a part of the ship whose name starts with the prefix ("Planks" for a frame

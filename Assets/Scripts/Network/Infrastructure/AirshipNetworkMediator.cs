@@ -78,13 +78,25 @@ namespace TinCan.Network.Infrastructure
             _view.Teleport(position, rotation);
         }
 
-        /// <summary>Server: new base speed, turn rate and health (full), for a ship built from a design. Replicates as attributes.</summary>
-        public void ServerSetBaseStats(float maxForwardSpeed, float turnSpeed, float maxHealth)
+        /// <summary>
+        /// Server: the profile the ship flies on (its base speed and turn rate replicate as attributes) and its health
+        /// (full), for a ship built from a design. A null handling keeps the prefab's.
+        /// </summary>
+        public void ServerSetHandling(ShipHandlingProfile handling, float maxHealth)
         {
             if (!IsServer || _attributes == null || _health == null) return;
 
-            _attributes.InitializeBaseValues(maxForwardSpeed, turnSpeed);
+            if (handling != null) _view.SetHandling(handling); // HandlingChanged sets the base speed and turn rate
             _health.InitializeBaseValues(maxHealth);
+        }
+
+        // Server: a new profile, or the one the ship flies on tuned live. Boosts running now stay on top of the new base.
+        private void OnHandlingChanged() => _attributes?.SetBaseValues(_view.MaxForwardSpeed, _view.TurnSpeed);
+
+        public override void OnNetworkDespawn()
+        {
+            if (_view != null) _view.HandlingChanged -= OnHandlingChanged;
+            base.OnNetworkDespawn();
         }
 
         public override void OnNetworkSpawn()
@@ -97,6 +109,7 @@ namespace TinCan.Network.Infrastructure
             _attributes = new AirshipAttributeSet(_abilitySync, _flightSpeedAttribute, _turnSpeedAttribute);
             _attributes.InitializeBaseValues(_view.MaxForwardSpeed, _view.TurnSpeed);
             _abilitySync.RegisterAttributeSet(_attributes);
+            if (IsServer) _view.HandlingChanged += OnHandlingChanged;
 
             _health = new HealthAttributeSet(_abilitySync, _healthAttribute, _maxHealthAttribute);
             _health.InitializeBaseValues(_maxHealth);

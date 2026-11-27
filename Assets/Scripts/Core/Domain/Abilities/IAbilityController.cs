@@ -24,6 +24,12 @@ namespace TinCan.Core.Domain.Abilities
         void SetAttribute(GameplayAttribute attribute, AttributeValue value);
         void ResetAttributesToBase();
 
+        /// <summary>
+        /// Sets an attribute's base value and keeps its active effects on top (the networked controller goes through
+        /// the ability system). This default, for a controller without effects, makes the current value the base.
+        /// </summary>
+        void SetBaseValue(GameplayAttribute attribute, float value) => SetAttribute(attribute, new AttributeValue(value));
+
         bool TryGetAttributeSet<TAttributeSet>(out TAttributeSet set) where TAttributeSet : class, IAttributeSet;
 
         /// <summary>Makes a set findable through <see cref="TryGetAttributeSet{TAttributeSet}"/>; one set per type.</summary>

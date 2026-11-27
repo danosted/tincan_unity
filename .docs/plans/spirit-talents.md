@@ -17,6 +17,22 @@ spirit's growth should show on the spirit itself: you can tell what a ship's spi
   the next talent in a fixed order. There are no points to spend and no choices yet; those can come once the tree
   has been played.
 
+## Decisions (developer, 2026-11-27)
+- **The spirit is a fiery wisp living in a hearth**, the heart of the ship: a cosy room round it with the feel of
+  Howl's Moving Castle's hearth (`ART_DIRECTION.md`), our own spirit and not a copy of that film's fire demon. The
+  cairn part (`spirit.cairn`) is that hearth.
+- **On the Galleon the hearth is in the cabin right under the helm**, not in the hold.
+- Later, from the discussion (nothing decided): the spirit leaves the hearth to attend a perch near a station, buffing
+  it; firewood as its food; the `camp.hearth` fitting may merge into it.
+
+## Progress
+- **2026-11-27, the wisp (built; needs the Editor to compile, rebuild the part assets and run the tests; awaiting a
+  look review).** The cairn prefab is a stone hearth (plinth, back wall, cheeks, timber mantel, hood and flue, an iron
+  grate with two logs on embers) with the spirit on the logs: `Shaders/SpiritFlame.shader` on a quad, coloured from
+  palette roles (`M_SpiritFlame`), and a flickering warm point light (`Features/ShipSpirit/SpiritHearthLightView`).
+  The wisp breathes, sways, blinks, gazes about, dozes when nobody is near, and perks up and looks at you within
+  about 2.5 m. The Galleon's hearth moved to the cabin floor at (0, -5 m), right under the helm.
+
 ## Shape
 - **The spirit is ship state** (as `spirit-cairn.md` says), not the design's: its level and talents carry over every
   rebuild, and they are saved with the world (peaceful-mode P2).

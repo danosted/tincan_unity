@@ -5,7 +5,7 @@
   "nextId": 118,
   "parts": [
     {"id":103,"part":"core.helm","on":{"face":94,"x":0,"z":-50},"rot":0},
-    {"id":104,"part":"spirit.cairn","on":{"face":15,"x":0,"z":-40},"rot":0},
+    {"id":104,"part":"spirit.cairn","on":{"face":53,"x":0,"z":-50},"rot":0},
     {"id":105,"part":"hull.mount","on":{"face":15,"x":-25,"z":-50},"rot":1},
     {"id":106,"part":"hull.mount","on":{"face":15,"x":25,"z":-50},"rot":3},
     {"id":107,"part":"hull.mount","on":{"face":15,"x":-30,"z":30},"rot":0},

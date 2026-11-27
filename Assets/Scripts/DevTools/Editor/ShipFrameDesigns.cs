@@ -41,7 +41,7 @@ namespace TinCan.DevTools.Editor
         /// -3.5 m, 7 m wide) under the main deck (-0.5 m, 9 m wide, the planked hull walls between them leaning in), and the
         /// quarterdeck (2.5 m) over a cabin aft, walled at the sides and stern, open forward. A 3 x 5 m railed hatch in the
         /// main deck holds a flight down to the hold; two 1 m flights rise from the main deck to the quarterdeck's front,
-        /// either side of the helm. A balcony off the quarterdeck's starboard side, through a gate. The cairn in the hold;
+        /// either side of the helm. A balcony off the quarterdeck's starboard side, through a gate. The spirit's hearth (the cairn) in the cabin under the helm;
         /// mount plates on every level (the loadout's sockets: <see cref="GalleonMounts"/>); two propellers on the hold's
         /// stern corners.
         /// </summary>
@@ -143,7 +143,8 @@ namespace TinCan.DevTools.Editor
             b.Rail(ShipFrameRailing.Rail, qe, b1, b2, qf);
 
             b.OnFace(ShipDesignsAssetBuilder.CoreHelm, quarterdeck, 0, -50);
-            b.OnFace(ShipDesignsAssetBuilder.Cairn, holdFloor, 0, -40);
+            // The spirit's hearth in the cabin, right under the helm, open toward the main deck.
+            b.OnFace(ShipDesignsAssetBuilder.Cairn, cabinFloor, 0, -50);
             // The aft hold plates sit 1 m inboard of the walls and face inboard (quarter turns 1 and 3), so the wide fuel
             // fittings clear the leaning walls. The stern plates sit 4 m inside the stern rail: a cannon's seat is 1.8 m
             // behind it, and nearer the stern it hung past the rail.

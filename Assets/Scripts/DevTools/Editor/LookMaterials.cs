@@ -78,8 +78,46 @@ namespace TinCan.DevTools.Editor
         {
             var palette = LookPalette.Load();
             foreach (var entry in Library) Write(entry, palette);
+            SpiritFlame();
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Look] {Library.Count} library materials built on {ShaderName}");
+            Debug.Log($"[Look] {Library.Count} library materials built on {ShaderName}, and {EffectPaths.Count} effect materials");
+        }
+
+        public const string SpiritFlamePath = ShipFolder + "M_SpiritFlame.mat";
+        public const string SpiritFlameShader = "TinCan/Spirit/Flame Wisp";
+
+        /// <summary>
+        /// The library's effect materials: on their own shaders rather than <see cref="ShaderName"/>, still coloured only
+        /// from palette roles, each written by its own function here.
+        /// </summary>
+        public static IReadOnlyList<string> EffectPaths { get; } = new[] { SpiritFlamePath };
+
+        /// <summary>
+        /// The ship spirit's flame (<see cref="SpiritFlameShader"/>), coloured from palette roles: a cloud-white core, a
+        /// lantern-amber body, a burnt-orange rim, a spirit-cyan base and ink eyes. Rewritten in place, so its GUID and
+        /// every reference to it stay.
+        /// </summary>
+        public static Material SpiritFlame()
+        {
+            var shader = Shader.Find(SpiritFlameShader) ?? throw new InvalidOperationException($"shader {SpiritFlameShader} not found");
+            var palette = LookPalette.Load();
+
+            var material = AssetDatabase.LoadAssetAtPath<Material>(SpiritFlamePath);
+            if (material == null)
+            {
+                material = new Material(shader) { name = "M_SpiritFlame" };
+                AssetDatabase.CreateAsset(material, SpiritFlamePath);
+            }
+
+            material.shader = shader;
+            material.SetColor("_CoreColor", palette["cloud"] * 1.6f);
+            material.SetColor("_BodyColor", palette["lantern-amber"] * 1.7f);
+            material.SetColor("_RimColor", palette["burnt-orange"] * 1.3f);
+            material.SetColor("_BaseColor", palette["spirit-cyan"] * 1.3f);
+            material.SetColor("_EyeColor", palette["ink"]);
+            material.SetFloat("_Intensity", 1.2f);
+            EditorUtility.SetDirty(material);
+            return material;
         }
 
         public static Entry Find(string name) =>

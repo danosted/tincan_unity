@@ -15,7 +15,7 @@ outside.
 ## Inspirations, and what we take from each
 | Source | Take | Leave |
 |---|---|---|
-| Howl's Moving Castle | Things built up over time: patches, add-ons, mismatched parts, mechanisms you can see working (gears, chimneys, flaps). Nothing quite symmetrical or quite straight. | The castle's scale of clutter on small parts: our parts must read at a distance. |
+| Howl's Moving Castle | Things built up over time: patches, add-ons, mismatched parts, mechanisms you can see working (gears, chimneys, flaps). Nothing quite symmetrical or quite straight. The hearth as the heart of a home: a cosy, lived-in room round a living fire, firelight warm on wood and stone (developer, 2026-11-27). | The castle's scale of clutter on small parts: our parts must read at a distance. Its characters: our fire spirit is our own, not a copy of its fire demon. |
 | Spirited Away | Red lacquer and lanterns, warm interiors against a cool dusk sky, spirits that glow softly. Bathhouse richness on special places, not everywhere. | Horror beats. |
 | Final Fantasy IX | Chunky, rounded, storybook proportions; airships with propellers, paddles and rotor masts; saturated ochre, red and teal. Every prop has character. | Pre-rendered backdrops and photographic detail. |
 | Ori and the Blind Forest | Atmosphere: air you can see. Layered mist where light and shadow blend into each other, light bleeding into humid air around every glow, deep darks next to luminous highlights, and soft focus on near and far layers so the eye goes to the middle. | Its side-on 2D parallax set-up, and blur that hides what a player needs to read. |
@@ -101,8 +101,9 @@ Build Materials** writes them into `Assets/Materials/ShipParts/` from the palett
 | `M_ShipIron` | iron teal, highlight | Masts, machinery |
 | `M_ShipCanvas` | canvas | Rotor blades, sails |
 | `M_ShipPennant` | lacquer red | Pennants, flags |
-| `M_ShipCairn` | rock ochre | The cairn's stone |
-| `M_ShipSpirit` | spirit cyan, glow | The cairn's spirit |
+| `M_ShipCairn` | rock ochre | The spirit hearth's stone |
+| `M_ShipSpirit` | spirit cyan, glow | Spirit magic (the Ward rings, later) |
+| `M_SpiritFlame` | cloud core, lantern amber body, burnt orange rim, spirit cyan base, ink eyes (on `TinCan/Spirit/Flame Wisp`, not the stylized shader) | The ship's spirit, a fiery wisp in its hearth |
 | `M_FoliageRusset`, `M_FoliageOrange`, `M_FoliageGold` | russet, burnt orange, leaf gold | Island trees' canopies, bushes |
 | `M_IslandMoss` | grass | Moss on island boulders |
 
@@ -177,6 +178,8 @@ An asset is done when a turntable or in-game render shows it and each answer is 
   (`Assets/ThirdParty/`).
 
 ## Decided
+- 2026-11-27 (developer): the ship's spirit is a fiery wisp living in a hearth at the heart of the ship, in a cosy room
+  with the feel of Howl's Moving Castle's hearth. On the Galleon it is the cabin right under the helm.
 - 2026-11-01: the earthy palette stays, leaning into autumn (russet, burnt orange, leaf gold), with a dark end (ink,
   plum, mulberry). Ori and the Blind Forest joins the inspirations for its misty, glowing atmosphere and soft-focus
   depth.

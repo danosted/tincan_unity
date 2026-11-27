@@ -1,6 +1,7 @@
 #nullable enable
 using System.Linq;
 using NUnit.Framework;
+using TinCan.Core.Ship;
 using TinCan.Features.ShipDesigns;
 using TinCan.Tests.Fakes;
 using static TinCan.Features.ShipDesigns.Tests.ShipDesignTestParts;
@@ -8,9 +9,8 @@ using static TinCan.Features.ShipDesigns.Tests.ShipDesignTestParts;
 namespace TinCan.Features.ShipDesigns.Tests
 {
     /// <summary>
-    /// <see cref="ShipStatsProcessor"/> and the flight rules in <see cref="ShipDesignValidator"/>: parts and the frame sum to
-    /// mass, lift, thrust and hull; a cairn's spirit lifts; speed grows with thrust over mass; a ship too heavy or without
-    /// thrust cannot fly.
+    /// <see cref="ShipStatsProcessor"/>: parts and the frame sum to mass, lift, thrust and hull; a cairn's spirit lifts; a
+    /// ship flies on its core part's handling profile, whatever its parts (plan .docs/plans/ship-handling-profiles.md).
     /// </summary>
     public class ShipStatsProcessorTests
     {
@@ -64,34 +64,27 @@ namespace TinCan.Features.ShipDesigns.Tests
         }
 
         [Test]
-        public void Speed_IsThrustOverMass_Capped()
+        public void AShip_FliesOnItsCoresProfile_HoweverHeavyItIs()
         {
             var light = Compute(Bare(Design((Helm, 0, 0, 0))));
-            Assert.That(light.MaxSpeed, Is.EqualTo(_tuning.MaxSpeed), "100 thrust on 10 mass is far past the cap");
 
             // 30 beams of 3 beside the helm, plus the helm's 10: mass 100.
             var beams = Enumerable.Range(1, 30).Select(i => (Beam, 3 * (i % 6) - 9, 2 + i / 6, (byte)0));
             var heavier = Compute(Bare(Design(new[] { (Helm, 0, -3, (byte)0) }.Concat(beams).ToArray())));
+
             Assert.That(heavier.Mass, Is.EqualTo(100f));
-            Assert.That(heavier.MaxSpeed, Is.EqualTo(_tuning.SpeedPerThrustOverMass * 100f / 100f).Within(1e-4f));
-            Assert.That(heavier.TurnSpeed, Is.EqualTo(_tuning.BaseTurnSpeed * _tuning.TurnScaleRange.y).Within(1e-4f),
-                "lighter than the reference mass: the fastest turn");
+            Assert.That(light.Handling, Is.SameAs(_parts.HelmHandling));
+            Assert.That(heavier.Handling, Is.SameAs(_parts.HelmHandling), "parts do not change how a ship flies, for now");
         }
 
         [Test]
-        public void AShipThatCannotFly_HasNoSpeed_AndTheValidatorSaysWhy()
+        public void ADesignWithoutACore_NamesNoProfile()
         {
-            var noHelm = Design((Block, 0, 0, 0));
-
-            var stats = Compute(noHelm);
-            var validation = new ShipDesignValidator().Validate(noHelm, _parts.Catalog, ShipDesignLimits.Default);
-
-            Assert.That((stats.MaxSpeed, stats.TurnSpeed), Is.EqualTo((0f, 0f)));
-            Assert.That(validation.Has(ShipDesignProblemKind.TooHeavy) && validation.Has(ShipDesignProblemKind.NoThrust), Is.True, validation.ToString());
+            Assert.That(Compute(Design((Block, 0, 0, 0))).Handling, Is.Null);
         }
 
         [Test]
-        public void ADesignGivenToAShip_SetsItsSpeedTurnAndHealth()
+        public void ADesignGivenToAShip_SetsItsHandlingAndHealth()
         {
             var ship = new FakeAirshipView("Ship");
             try
@@ -107,7 +100,7 @@ namespace TinCan.Features.ShipDesigns.Tests
                 Assert.That(designs.TryApply(state, design, out var error), Is.True, error);
 
                 var expected = _stats.Compute(design, _parts.Catalog, config.Flight, config.Frames);
-                Assert.That(ship.BaseStats, Is.EqualTo((expected.MaxSpeed, expected.TurnSpeed, expected.MaxHealth)));
+                Assert.That(ship.Tuned, Is.EqualTo(((ShipHandlingProfile?)_parts.HelmHandling, expected.MaxHealth)));
                 UnityEngine.Object.DestroyImmediate(config);
             }
             finally

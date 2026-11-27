@@ -251,6 +251,8 @@ namespace TinCan.Network.Infrastructure.Abilities
             }
         }
 
+        public void SetBaseValue(GameplayAttribute attribute, float value) => _abilitySystem.SetBaseValue(this, attribute, value);
+
         public void ResetAttributesToBase()
         {
             if (!IsServer && !IsOwner) return;

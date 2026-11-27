@@ -946,7 +946,7 @@ namespace TinCan.DevTools.Scenarios
                     .Do("PlaceSubjectAtHelm"))
                 .Act(s => s
                     .WaitUntil("ShipDesignBuilt", 20f, "4")
-                    .WaitUntil("ShipTopSpeed", 10f, "15.56")
+                    .WaitUntil("ShipTopSpeed", 10f, "10")
                     .WaitUntil("SubjectOnShip", 45f)
                     .WaitUntil("SubjectAtHelm", 5f)
                     .Wait(0.5f, "teleport settles")
@@ -970,7 +970,7 @@ namespace TinCan.DevTools.Scenarios
                     .WaitUntil("ShipMoved", 20f, "3")
                     .WaitUntil("ShipTurned", 10f, "3")
                     .WaitUntil("HelmFree", 30f)
-                    .Expect("ShipTopSpeed", "15.56")
+                    .Expect("ShipTopSpeed", "10")
                     .Expect("ShipDesignBuilt", "5"))
                 .Build(),
             builder =>

@@ -58,7 +58,7 @@ change the plan's status line, then run `.\.tools\plans.ps1`.
 - [Spirit cairn: a bound spirit lifts the ship, boat parts steer it](spirit-cairn.md) — the first step (a cairn part, the spirit's lift as one tuning value, balloons retired) was built with [frame-only-ships.md](frame-only-ships.md) on 2026-10-17
 - [The spirit's talents: a tree the ship's spirit grows through, seen on the spirit itself](spirit-talents.md) — (2026-11-22)
 
-## Done (25)
+## Done (26)
 
 - [Airship parts pack: a big ship with decks, stairs and stations](airship-parts-pack.md) — (2026-10-17, superseded): its parts (stairs, rail, wall, window wall, bow) became frame elements or were retired, and the Galleon was rebuilt as a frame ([frame-only-ships.md](frame-only-ships.md)); the propeller stays
 - [Architecture rules as tests (slice 1 of `architecture-review.md`)](architecture-rules-tests.md) — (2026-09-27)
@@ -78,6 +78,7 @@ change the plan's status line, then run `.\.tools\plans.ps1`.
 - [Playtest tuning, 2026-09-30: hazards ahead, two cannons, repair reach and aim](playtest-2026-09-30-tuning.md) — (playtested 2026-11-07: works as intended; sky hazards and the cannon swing want a rework, see "Playtest")
 - [Stacked PR review fixes](pr-review-fixes.md)
 - [PR #19 integration with main](pr19-main-integration.md)
+- [Ship handling profiles: a base for how a ship flies](ship-handling-profiles.md) — H1, H2 and H3 built 2026-11-27 (H1 and H2 play-checked: DesignedShipFlies, ShipyardRoundTrip, ShipPickerSwap; H3 compile and tests, live tuning to playtest); "Later" is open
 - [Ship picker (temporary)](ship-picker-temporary.md)
 - [Spike: Unity Behavior as the authoring and live-debug layer for designed events](spike-unity-behavior-events.md) — (2026-09-28; approved same day, developer: "make a POC with unity behavior")
 - [Test assemblies: one per assembly under test](test-assemblies.md) — (2026-11-04): T0–T6 built, 1371/1371 green, measured; `-Changed` dropped (see Measurements)

@@ -343,7 +343,7 @@ namespace TinCan.Features.Shipyard
         {
             if (_document == null) return false;
 
-            var validation = _validator.Validate(_document.Design, _catalog, _designs.Limits, _designs.Frames, _designs.Flight);
+            var validation = _validator.Validate(_document.Design, _catalog, _designs.Limits, _designs.Frames);
             if (!validation.IsValid)
             {
                 Say($"It cannot fly yet: {validation.Problems.First(p => p.IsBlocking).Message}");
@@ -690,7 +690,7 @@ namespace TinCan.Features.Shipyard
 
         private string Problems(ShipDesign design)
         {
-            var validation = _validator.Validate(design, _catalog, _designs.Limits, _designs.Frames, _designs.Flight);
+            var validation = _validator.Validate(design, _catalog, _designs.Limits, _designs.Frames);
             var blocking = validation.Problems.Where(p => p.IsBlocking).ToList();
             return blocking.Count == 0 ? "ready to fly" : $"{blocking.Count} problem(s): {blocking[0].Message}";
         }

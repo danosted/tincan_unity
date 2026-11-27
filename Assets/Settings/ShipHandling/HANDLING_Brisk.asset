@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e79f107f0374d5140a32a249f9b15c8e, type: 3}
+  m_Name: HANDLING_Brisk
+  m_EditorClassIdentifier: TinCan.Ship::TinCan.Core.Ship.ShipHandlingProfile
+  _handling:
+    MaxForwardSpeed: 30
+    MaxBackwardSpeed: 8
+    AccelerationRate: 10
+    DecelerationRate: 2
+    VelocityBlendRate: 2
+    TurnSpeed: 45
+    AngularAcceleration: 15
+    AngularDeceleration: 20
+    PitchSpeed: 30
+    PitchLevelSpeed: 0.03
+    MaxBankAngle: 15
+    BankSpeed: 2
+    ExternalPitchInfluence: 1

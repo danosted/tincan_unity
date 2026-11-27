@@ -1,6 +1,7 @@
 #nullable enable
 using System.Linq;
 using NUnit.Framework;
+using TinCan.Core.Ship.Parts;
 using TinCan.Features.ShipDesigns;
 using static TinCan.Features.ShipDesigns.Tests.ShipDesignTestParts;
 
@@ -124,14 +125,23 @@ namespace TinCan.Features.ShipDesigns.Tests
         }
 
         [Test]
-        public void Flight_NeedsLiftForTheMass_AndThrust()
+        public void LiftAndThrust_DoNotLimitAShip_ForNow()
         {
-            var heavy = Design((Helm, 0, 0, 0), (Beam, 3, 0, 0));
-            var noThrust = Design((Block, 0, 0, 0), (Cairn, 3, 0, 0));
+            // No cairn, and the helm's own thrust taken away: a design is valid on its core alone
+            // (plan .docs/plans/ship-handling-profiles.md).
+            var core = ShipPartDefinition.Create(Helm, true, null, null, UnityEngine.Vector3.zero, new ShipPartStats(1000000f),
+                new UnityEngine.Vector3Int(0, 0, 0), new UnityEngine.Vector3Int(0, 1, 0));
+            try
+            {
+                var validation = _validator.Validate(Design((Helm, 0, 0, 0), (Beam, 3, 0, 0)),
+                    new ShipPartCatalog(new[] { core, _parts[Beam] }), ShipDesignLimits.Default);
 
-            Assert.That(Validate(heavy).Has(ShipDesignProblemKind.TooHeavy), Is.False, "the helm lifts 5000; the floor and parts weigh less");
-            Assert.That(Validate(noThrust).Has(ShipDesignProblemKind.NoThrust), Is.True);
-            Assert.That(Validate(noThrust).Has(ShipDesignProblemKind.TooHeavy), Is.False, "the cairn's spirit lifts it");
+                Assert.That(validation.IsValid, Is.True, validation.ToString());
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(core);
+            }
         }
 
         [Test]

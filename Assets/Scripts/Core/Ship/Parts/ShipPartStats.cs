@@ -5,8 +5,8 @@ using UnityEngine;
 namespace TinCan.Core.Ship.Parts
 {
     /// <summary>
-    /// What a part adds to a ship. A ship's mass is carried by its lift (it flies only with lift at least its mass), its
-    /// thrust drives it (speed grows with thrust over mass), and its hull is its health.
+    /// What a part adds to a ship: its hull is the ship's health. Mass, lift and thrust are counted but do not change how
+    /// the ship flies for now: its core part's handling profile does (plan .docs/plans/ship-handling-profiles.md).
     /// </summary>
     [Serializable]
     public struct ShipPartStats

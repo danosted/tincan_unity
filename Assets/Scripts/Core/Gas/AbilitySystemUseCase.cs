@@ -424,6 +424,22 @@ namespace TinCan.Core.Gas
             }
         }
 
+        /// <summary>
+        /// Sets an attribute's base value (what it is with no effect on it; the attribute is added if the actor has none
+        /// yet), then reapplies the actor's active effects on top, so a boost running now still counts. For a base that
+        /// comes from data that can change (a ship's handling profile, tuned live), not for gameplay: an effect changes
+        /// attributes there.
+        /// </summary>
+        public void SetBaseValue(IAbilityControllerBase actor, GameplayAttribute attribute, float value)
+        {
+            if (attribute == null) return;
+
+            var attrVal = actor.TryGetAttribute(attribute, out var held) ? held : new AttributeValue(value);
+            attrVal.BaseValue = value;
+            actor.SetAttribute(attribute, attrVal);
+            UpdateAttributes(actor);
+        }
+
         /// <summary>Removes one applied effect (the handle <see cref="ApplyEffect"/> returned); a stale handle is ignored.</summary>
         public void RemoveEffect(IAbilityControllerBase actor, ActiveGameplayEffect effect)
         {

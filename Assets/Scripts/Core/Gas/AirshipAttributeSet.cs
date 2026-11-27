@@ -48,5 +48,12 @@ namespace TinCan.Core.Gas
             _controller.SetAttribute(FlightSpeedDef, new AttributeValue(moveSpeed));
             _controller.SetAttribute(TurnSpeedDef, new AttributeValue(turnSpeed));
         }
+
+        /// <summary>New base speed and turn rate (the ship's handling changed); boosts running now stay on top.</summary>
+        public void SetBaseValues(float moveSpeed, float turnSpeed)
+        {
+            _controller.SetBaseValue(FlightSpeedDef, moveSpeed);
+            _controller.SetBaseValue(TurnSpeedDef, turnSpeed);
+        }
     }
 }

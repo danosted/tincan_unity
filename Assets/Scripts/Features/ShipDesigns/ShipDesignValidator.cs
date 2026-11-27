@@ -11,14 +11,13 @@ namespace TinCan.Features.ShipDesigns
     /// yaws valid; every part held by its anchor (its element there and of the part's kind, a face part's point on its
     /// plank floor); part blocks within the limits and not overlapping; the frame's own rules
     /// (<see cref="ShipFrameValidator"/>); exactly one core part and at most one cairn; the frame in one piece with the
-    /// core's anchor, so every part on it is joined too; lift at least mass (the frame weighs too; the spirit lifts when
-    /// there is a cairn); some thrust. Unknown parts are reported but take no part in the geometry. Plan:
+    /// core's anchor, so every part on it is joined too. Lift and thrust do not limit a ship for now (plan
+    /// .docs/plans/ship-handling-profiles.md). Unknown parts are reported but take no part in the geometry. Plan:
     /// .docs/plans/frame-only-ships.md.
     /// </summary>
     public sealed class ShipDesignValidator
     {
-        public ShipDesignValidation Validate(ShipDesign design, IShipPartCatalog catalog, ShipDesignLimits limits, ShipFrameTuning? frameTuning = null,
-            ShipStatsTuning? flight = null)
+        public ShipDesignValidation Validate(ShipDesign design, IShipPartCatalog catalog, ShipDesignLimits limits, ShipFrameTuning? frameTuning = null)
         {
             var tuning = frameTuning ?? ShipFrameTuning.Default;
             var problems = new List<ShipDesignProblem>();
@@ -46,7 +45,6 @@ namespace TinCan.Features.ShipDesigns
 
             var anchored = CheckParts(design, catalog, shape, limits, problems);
             CheckCoreAndConnection(anchored, shape, problems);
-            CheckFlight(design, catalog, tuning, flight ?? ShipStatsTuning.Default, problems);
             return new ShipDesignValidation(problems);
         }
 
@@ -101,20 +99,6 @@ namespace TinCan.Features.ShipDesigns
             }
 
             return anchored;
-        }
-
-        private static void CheckFlight(ShipDesign design, IShipPartCatalog catalog, ShipFrameTuning tuning, ShipStatsTuning flight,
-            List<ShipDesignProblem> problems)
-        {
-            var stats = new ShipStatsProcessor().Compute(design, catalog, flight, tuning);
-            if (!stats.CanLift)
-            {
-                problems.Add(new(ShipDesignProblemKind.TooHeavy, 0, stats.Lift > 0f
-                    ? $"The spirit lifts {stats.Lift:0} but the ship weighs {stats.Mass:0}: lose weight."
-                    : "Nothing lifts the ship: place a cairn for its spirit."));
-            }
-
-            if (!stats.HasThrust) problems.Add(new(ShipDesignProblemKind.NoThrust, 0, "Nothing drives the ship: add an engine or a propeller."));
         }
 
         private static void CheckIdentity(ShipDesign design, int id, string what, HashSet<int> seenIds, List<ShipDesignProblem> problems)

@@ -17,10 +17,6 @@ namespace TinCan.Features.ShipDesigns
         ExtraCore,
         TooManyParts,
         NameTooLong,
-        /// <summary>Lift is below mass: the ship cannot hold itself up.</summary>
-        TooHeavy,
-        /// <summary>No part gives thrust: the ship cannot move.</summary>
-        NoThrust,
         /// <summary>A frame element names a node or story that is not there.</summary>
         FrameReference,
         /// <summary>An edge joins a node to itself, skips a story, is too short, or doubles another.</summary>

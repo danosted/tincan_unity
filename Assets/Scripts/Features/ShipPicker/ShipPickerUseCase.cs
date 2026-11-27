@@ -67,7 +67,7 @@ namespace TinCan.Features.ShipPicker
             if (!loaded.Succeeded) return Refuse($"\"{key}\" does not load: {loaded.Error}", out message);
 
             var design = loaded.Design!;
-            var validation = _validator.Validate(design, _catalog, _config.Limits, _config.Frames, _config.Flight);
+            var validation = _validator.Validate(design, _catalog, _config.Limits, _config.Frames);
             if (!validation.IsValid) return Refuse($"\"{key}\" cannot fly: {validation.Problems.First(p => p.IsBlocking).Message}", out message);
 
             _designs.Select(design);

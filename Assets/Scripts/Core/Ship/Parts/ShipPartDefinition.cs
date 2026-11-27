@@ -31,6 +31,9 @@ namespace TinCan.Core.Ship.Parts
         [SerializeField] private List<Vector3Int> _footprint = new();
         [Tooltip("The ship's core part: every ship has exactly one, and every other part must connect to it.")]
         [SerializeField] private bool _isCore;
+        [Tooltip("Core parts only: how a ship built on this core flies. A different core is a different way to fly. "
+                 + "Empty: the ship flies on its prefab's profile.")]
+        [SerializeField] private ShipHandlingProfile? _handling;
         [Tooltip("Holds the ship's spirit: the ship's lift is the spirit's (ShipStatsTuning.SpiritLift). A design has one.")]
         [SerializeField] private bool _isCairn;
         [Tooltip("Built on every peer as a plain child of the ship (meshes and colliders, no NetworkObject).")]
@@ -51,6 +54,8 @@ namespace TinCan.Core.Ship.Parts
         public ShipPartAttach Attach => _attach;
         public IReadOnlyList<Vector3Int> Footprint => _footprint.Count > 0 ? _footprint : OriginOnly;
         public bool IsCore => _isCore;
+        /// <summary>How a ship on this core flies (read on core parts only); null: the ship's prefab decides.</summary>
+        public ShipHandlingProfile? Handling => _handling;
         public bool IsCairn => _isCairn;
         public GameObject? Visual => _visual;
         public GameObject? NetworkedPrefab => _networkedPrefab;
@@ -90,6 +95,13 @@ namespace TinCan.Core.Ship.Parts
             part._isCairn = isCairn;
             part._footprint = new List<Vector3Int>(footprint);
             return part;
+        }
+
+        /// <summary>Test and tooling seam: the core's handling profile.</summary>
+        public ShipPartDefinition WithHandling(ShipHandlingProfile? handling)
+        {
+            _handling = handling;
+            return this;
         }
     }
 }

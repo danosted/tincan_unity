@@ -32,6 +32,7 @@ namespace TinCan.DevTools.Editor.Tests
             ShipFrameDesigns.StarterName => ShipFrameDesigns.StarterDesign(),
             ShipFrameDesigns.GalleonName => ShipFrameDesigns.GalleonDesign(),
             ShipFrameDesigns.CorsairName => ShipFrameDesigns.CorsairDesign(),
+            ShipFrameDesigns.ClipperName => ShipFrameDesigns.ClipperDesign(),
             _ => ShipFrameDesigns.RaftDesign(),
         };
 
@@ -39,6 +40,7 @@ namespace TinCan.DevTools.Editor.Tests
         [TestCase(ShipFrameDesigns.GalleonName)]
         [TestCase(ShipFrameDesigns.RaftName)]
         [TestCase(ShipFrameDesigns.CorsairName)]
+        [TestCase(ShipFrameDesigns.ClipperName)]
         public void TheConfig_ListsIt_AndItLoads_AsAValidShip_ThatFlies(string name)
         {
             var config = Config();
@@ -60,6 +62,7 @@ namespace TinCan.DevTools.Editor.Tests
         [TestCase(ShipFrameDesigns.GalleonName)]
         [TestCase(ShipFrameDesigns.RaftName)]
         [TestCase(ShipFrameDesigns.CorsairName)]
+        [TestCase(ShipFrameDesigns.ClipperName)]
         public void TheCommittedFile_IsWhatTheBuilderWrites(string name)
         {
             var file = AssetDatabase.LoadAssetAtPath<TextAsset>(ShipDesignsAssetBuilder.DesignsFolder + name + ".ship.json");
@@ -71,6 +74,7 @@ namespace TinCan.DevTools.Editor.Tests
         [TestCase(ShipFrameDesigns.GalleonName)]
         [TestCase(ShipFrameDesigns.RaftName)]
         [TestCase(ShipFrameDesigns.CorsairName)]
+        [TestCase(ShipFrameDesigns.ClipperName)]
         public void EveryPlankFace_IsCoveredByItsTriangles(string name)
         {
             foreach (var face in ShipFrameShape.From(Built(name).Frame).PlankFaces)
@@ -164,6 +168,83 @@ namespace TinCan.DevTools.Editor.Tests
         }
 
         [Test]
+        public void TheClipper_HasThreeSailMasts_EachWithANetFromEitherRail_AndWingsUnderTheHull()
+        {
+            var clipper = ShipFrameDesigns.ClipperDesign();
+            var shape = ShipFrameShape.From(clipper.Frame);
+
+            Assert.That(Enumerable.Range(0, 3).Select(s => ShipFrameUnits.ToMetres(clipper.Frame.StoryFloor(s))), Is.EqualTo(new[] { -3.5f, -0.5f, 2.5f }));
+            var flights = shape.Stairs(ShipFrameTuning.Default.StairSlope).ToList();
+            Assert.That(flights.Select(f => f.Story), Is.EquivalentTo(new[] { 1, 2, 2 }), "the hatch to the hold, two up to the quarterdeck");
+
+            Vector3 At(ShipPartPlacement part)
+            {
+                Assert.That(ShipPartPose.TryGetAnchorPoint(part.Anchor, shape, out var point), Is.True, part.ToString());
+                return point;
+            }
+
+            var masts = clipper.Parts.Where(p => p.PartId == ShipDesignsAssetBuilder.SailMast).Select(At).ToList();
+            var nets = clipper.Parts.Where(p => p.PartId == ShipDesignsAssetBuilder.RiggingNet).ToList();
+            Assert.That(masts, Has.Count.EqualTo(3));
+            Assert.That(nets, Has.Count.EqualTo(6));
+            foreach (var mast in masts)
+            {
+                Assert.That(mast.x, Is.EqualTo(0f).Within(1e-4f), "a mast stands on the centreline");
+                // The net's model reaches 4.4 m in from its rail node (sail_parts.py): the rail is 5 m out, level with the mast.
+                foreach (float side in new[] { 1f, -1f })
+                {
+                    var net = nets.Single(p => Vector3.Distance(At(p), mast + new Vector3(5f * side, 0f, 0f)) < 1e-3f);
+                    Assert.That(net.Orientation, Is.EqualTo(side > 0f ? 0 : 2), "a net leans inboard");
+                }
+            }
+
+            var wings = clipper.Parts.Where(p => p.PartId == ShipDesignsAssetBuilder.WingSail).ToList();
+            Assert.That(wings, Has.Count.EqualTo(4));
+            foreach (var wing in wings)
+            {
+                var point = At(wing);
+                Assert.That(point.y, Is.LessThan(-3f), "a wing hangs from the chine, low on the hull");
+                Assert.That(wing.Orientation, Is.EqualTo(point.x > 0f ? 0 : 2), "a wing splays outboard");
+            }
+
+            var figurehead = At(clipper.Parts.Single(p => p.PartId == ShipDesignsAssetBuilder.Figurehead));
+            Assert.That(figurehead.z, Is.EqualTo(clipper.Parts.Max(p => At(p).z)), "the figurehead is the bow's foremost part");
+        }
+
+        [Test]
+        public void TheClippersMountPlates_AreWhereTheLoadoutSays_AndItsHearthIsUnderTheHelm()
+        {
+            var clipper = ShipFrameDesigns.ClipperDesign();
+            var mounts = ShipFrameDesigns.ClipperMounts();
+            var shape = ShipFrameShape.From(clipper.Frame);
+
+            Vector3 At(int id)
+            {
+                Assert.That(clipper.TryGetPart(id, out var part), Is.True);
+                Assert.That(part.PartId, Is.EqualTo(ShipDesignsAssetBuilder.HullMount));
+                Assert.That(ShipPartPose.TryGetAnchorPoint(part.Anchor, shape, out var point), Is.True);
+                return point;
+            }
+
+            foreach (int hold in new[] { mounts.HoldPortAft, mounts.HoldStarboardAft, mounts.HoldPortFore, mounts.HoldStarboardFore })
+                Assert.That(At(hold).y, Is.EqualTo(-3.5f).Within(1e-4f), "in the hold");
+            foreach (int deck in new[] { mounts.WaistPort, mounts.WaistStarboard, mounts.CabinFloor })
+                Assert.That(At(deck).y, Is.EqualTo(-0.5f).Within(1e-4f), "on the main deck");
+            foreach (int upper in new[] { mounts.QuarterdeckPort, mounts.QuarterdeckStarboard, mounts.SternPort, mounts.SternStarboard })
+                Assert.That(At(upper).y, Is.EqualTo(2.5f).Within(1e-4f), "on the quarterdeck");
+
+            // A cannon's seat is 1.8 m behind it (CannonAssetBuilder): facing out over the side, it stays on the deck.
+            foreach (int cannon in new[] { mounts.QuarterdeckPort, mounts.QuarterdeckStarboard, mounts.WaistPort, mounts.WaistStarboard })
+                Assert.That(Mathf.Abs(At(cannon).x) - 1.8f, Is.GreaterThan(1.5f), "a cannon's seat clears the middle of the deck");
+
+            var hearth = clipper.Parts.Single(p => p.PartId == ShipDesignsAssetBuilder.Cairn);
+            var helm = clipper.Parts.Single(p => p.PartId == ShipDesignsAssetBuilder.CoreHelm);
+            Assert.That(ShipPartPose.TryGetAnchorPoint(hearth.Anchor, shape, out var hearthPoint), Is.True);
+            Assert.That(ShipPartPose.TryGetAnchorPoint(helm.Anchor, shape, out var helmPoint), Is.True);
+            Assert.That(new Vector2(hearthPoint.x, hearthPoint.z), Is.EqualTo(new Vector2(helmPoint.x, helmPoint.z)), "right under the helm");
+        }
+
+        [Test]
         public void TheShipyardTestProfile_LoadsShipDesignsAndTheShipyard()
         {
             var profile = AssetDatabase.LoadAssetAtPath<FeatureProfile>(ShipDesignsAssetBuilder.ProfilePath);
@@ -185,7 +266,11 @@ namespace TinCan.DevTools.Editor.Tests
 
             Assert.That(parts.Count(p => p.IsCairn), Is.EqualTo(1));
             Assert.That(parts.Where(p => p.Attach == ShipPartAttach.Node).Select(p => p.PartId),
-                Is.EquivalentTo(new[] { ShipDesignsAssetBuilder.Mast, ShipDesignsAssetBuilder.Propeller, ShipDesignsAssetBuilder.RotorMast }));
+                Is.EquivalentTo(new[]
+                {
+                    ShipDesignsAssetBuilder.Mast, ShipDesignsAssetBuilder.Propeller, ShipDesignsAssetBuilder.RotorMast, ShipDesignsAssetBuilder.SailMast,
+                    ShipDesignsAssetBuilder.RiggingNet, ShipDesignsAssetBuilder.WingSail, ShipDesignsAssetBuilder.Figurehead,
+                }));
         }
 
         /// <summary>A face loop's Newell vector: along its normal, as long as twice its area seen along that normal.</summary>

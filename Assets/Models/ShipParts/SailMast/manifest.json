@@ -1,0 +1,520 @@
+{
+  "scene": "sail_mast",
+  "formats": [
+    "fbx"
+  ],
+  "source": ".tools/blender/sail_parts.py (Blender 5.2, builds the models from nothing)",
+  "coordinate_system": "Y-up, -Z forward; one exported unit is one meter",
+  "asset_contract": {
+    "title": "Sail mast",
+    "summary": "A 14 m timber mast banded in brass with a cup top, two yards on iron cranes and two bellied teal sails trimmed in canvas, a canvas swirl on the lower one. Pivot on the frame node it stands on. Ship part hull.sail_mast (node part).",
+    "asset_type": "ship_part",
+    "placement": "Pivot at the frame node the part hangs on (part pivot offset zero).",
+    "nodes": [
+      {
+        "name": "SailMast_Mesh",
+        "role": "Static: the whole part."
+      }
+    ],
+    "materials": "Sail_Wood, Sail_Brass, Sail_Iron, Sail_Sail, Sail_Trim, Sail_Rope; ShipDesignsAssetBuilder swaps each for the shared ship material (M_ShipHull, M_ShipEngine, M_ShipIron, M_ShipSail, M_ShipCanvas, M_ShipDeck).",
+    "footprint_blocks": "The pole and finial (x 0, z 0, y 0..14); the yards and sails forward of it (z 1). One box round the pole on the prefab; the sails and yards are not solid.",
+    "movable_parts": "None yet: the cloth is to sway in its material (ART_DIRECTION.md, Motion and life)."
+  },
+  "footprint": [
+    {
+      "x": -4,
+      "y": 3,
+      "z": 1
+    },
+    {
+      "x": -4,
+      "y": 4,
+      "z": 1
+    },
+    {
+      "x": -4,
+      "y": 5,
+      "z": 1
+    },
+    {
+      "x": -4,
+      "y": 6,
+      "z": 1
+    },
+    {
+      "x": -4,
+      "y": 7,
+      "z": 1
+    },
+    {
+      "x": -4,
+      "y": 8,
+      "z": 1
+    },
+    {
+      "x": -4,
+      "y": 9,
+      "z": 1
+    },
+    {
+      "x": -3,
+      "y": 3,
+      "z": 1
+    },
+    {
+      "x": -3,
+      "y": 4,
+      "z": 1
+    },
+    {
+      "x": -3,
+      "y": 5,
+      "z": 1
+    },
+    {
+      "x": -3,
+      "y": 6,
+      "z": 1
+    },
+    {
+      "x": -3,
+      "y": 7,
+      "z": 1
+    },
+    {
+      "x": -3,
+      "y": 8,
+      "z": 1
+    },
+    {
+      "x": -3,
+      "y": 9,
+      "z": 1
+    },
+    {
+      "x": -3,
+      "y": 10,
+      "z": 1
+    },
+    {
+      "x": -3,
+      "y": 11,
+      "z": 1
+    },
+    {
+      "x": -3,
+      "y": 12,
+      "z": 1
+    },
+    {
+      "x": -2,
+      "y": 3,
+      "z": 1
+    },
+    {
+      "x": -2,
+      "y": 4,
+      "z": 1
+    },
+    {
+      "x": -2,
+      "y": 5,
+      "z": 1
+    },
+    {
+      "x": -2,
+      "y": 6,
+      "z": 1
+    },
+    {
+      "x": -2,
+      "y": 7,
+      "z": 1
+    },
+    {
+      "x": -2,
+      "y": 8,
+      "z": 1
+    },
+    {
+      "x": -2,
+      "y": 9,
+      "z": 1
+    },
+    {
+      "x": -2,
+      "y": 10,
+      "z": 1
+    },
+    {
+      "x": -2,
+      "y": 11,
+      "z": 1
+    },
+    {
+      "x": -2,
+      "y": 12,
+      "z": 1
+    },
+    {
+      "x": -1,
+      "y": 3,
+      "z": 1
+    },
+    {
+      "x": -1,
+      "y": 4,
+      "z": 1
+    },
+    {
+      "x": -1,
+      "y": 5,
+      "z": 1
+    },
+    {
+      "x": -1,
+      "y": 6,
+      "z": 1
+    },
+    {
+      "x": -1,
+      "y": 7,
+      "z": 1
+    },
+    {
+      "x": -1,
+      "y": 8,
+      "z": 1
+    },
+    {
+      "x": -1,
+      "y": 9,
+      "z": 1
+    },
+    {
+      "x": -1,
+      "y": 10,
+      "z": 1
+    },
+    {
+      "x": -1,
+      "y": 11,
+      "z": 1
+    },
+    {
+      "x": -1,
+      "y": 12,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 7,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 7,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 8,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 8,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 9,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 9,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 10,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 10,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 11,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 11,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 12,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 12,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 13,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 14,
+      "z": 0
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 1
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 1
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 1
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "z": 1
+    },
+    {
+      "x": 1,
+      "y": 7,
+      "z": 1
+    },
+    {
+      "x": 1,
+      "y": 8,
+      "z": 1
+    },
+    {
+      "x": 1,
+      "y": 9,
+      "z": 1
+    },
+    {
+      "x": 1,
+      "y": 10,
+      "z": 1
+    },
+    {
+      "x": 1,
+      "y": 11,
+      "z": 1
+    },
+    {
+      "x": 1,
+      "y": 12,
+      "z": 1
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 1
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 1
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 1
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "z": 1
+    },
+    {
+      "x": 2,
+      "y": 7,
+      "z": 1
+    },
+    {
+      "x": 2,
+      "y": 8,
+      "z": 1
+    },
+    {
+      "x": 2,
+      "y": 9,
+      "z": 1
+    },
+    {
+      "x": 2,
+      "y": 10,
+      "z": 1
+    },
+    {
+      "x": 2,
+      "y": 11,
+      "z": 1
+    },
+    {
+      "x": 2,
+      "y": 12,
+      "z": 1
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 1
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 1
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 1
+    },
+    {
+      "x": 3,
+      "y": 6,
+      "z": 1
+    },
+    {
+      "x": 3,
+      "y": 7,
+      "z": 1
+    },
+    {
+      "x": 3,
+      "y": 8,
+      "z": 1
+    },
+    {
+      "x": 3,
+      "y": 9,
+      "z": 1
+    },
+    {
+      "x": 3,
+      "y": 10,
+      "z": 1
+    },
+    {
+      "x": 3,
+      "y": 11,
+      "z": 1
+    },
+    {
+      "x": 3,
+      "y": 12,
+      "z": 1
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 1
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 1
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 1
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "z": 1
+    },
+    {
+      "x": 4,
+      "y": 7,
+      "z": 1
+    },
+    {
+      "x": 4,
+      "y": 8,
+      "z": 1
+    },
+    {
+      "x": 4,
+      "y": 9,
+      "z": 1
+    }
+  ]
+}

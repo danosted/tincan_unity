@@ -59,6 +59,7 @@ namespace TinCan.DevTools.Editor
             new Entry("M_ShipEngine", "brass", highlight: 0.6f),
             new Entry("M_ShipIron", "iron-teal", highlight: 0.35f),
             new Entry("M_ShipCanvas", "canvas"),
+            new Entry("M_ShipSail", "sail-teal"),
             new Entry("M_ShipPennant", "lacquer-red"),
             new Entry("M_ShipCairn", "rock-ochre"),
             new Entry("M_ShipSpirit", "spirit-cyan", glow: 1.6f),

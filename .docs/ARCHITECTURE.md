@@ -39,6 +39,8 @@ To maintain a responsive FPS experience, we follow an **Input-Driven Simulation*
     re-runs the unacknowledged inputs. On a teleport (`TeleportEpoch`, bumped by `ResetCharacter`) it snaps.
   - **Drawing is separate from simulation.** The player's root moves at the tick rate. Its `Visual` child is drawn
     by `HumanoidVisualSmoothingView`, interpolated between ticks in ship space, with replay corrections faded out.
+    It is timed on the network tick clock (`NetworkManager.LocalTime`), never frame time, so it stays even at any
+    refresh rate with VSync (`HumanoidVisualFramePacingTests`).
     The camera follows the visual.
   - **Ship-local rule:** player state is always compared in the local space of the platform underfoot, and
     movement is simulated in that platform's yaw frame (input look and momentum). Each peer sees the ship at a

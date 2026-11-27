@@ -1,6 +1,8 @@
 #nullable enable
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
+using VContainer;
 
 namespace TinCan.Core.Humanoid
 {
@@ -39,6 +41,7 @@ namespace TinCan.Core.Humanoid
         [SerializeField] private Transform? _visualRoot;
 
         private readonly HumanoidVisualInterpolation _interpolation = new();
+        private NetworkManager? _network;
 
         public Vector3 VisualPosition => _visualRoot != null ? _visualRoot.position : transform.position;
 
@@ -73,7 +76,17 @@ namespace TinCan.Core.Humanoid
             HeldSocket.SetParent(_visualRoot, false);
         }
 
-        public void Commit(Transform? platform) => _interpolation.Commit(platform, transform.position, transform.rotation, Time.time);
+        [Inject]
+        public void Construct(NetworkManager network) => _network = network;
+
+        /// <summary>
+        /// The network tick clock: inside a tick it reads that tick's exact time, between ticks the precise time now.
+        /// Frame time would stamp each tick with the frame it landed in, which with VSync on a refresh rate that is not
+        /// a multiple of the tick rate (144 Hz: 4.8 frames per tick) makes the drawn body freeze and jump.
+        /// </summary>
+        private float Now => _network != null && _network.IsListening ? (float)_network.LocalTime.Time : Time.time;
+
+        public void Commit(Transform? platform) => _interpolation.Commit(platform, transform.position, transform.rotation, Now);
 
         public void AbsorbCorrection(Vector3 worldDelta) => _interpolation.AbsorbCorrection(worldDelta);
 
@@ -81,14 +94,15 @@ namespace TinCan.Core.Humanoid
         {
             if (_visualRoot == null) return;
 
-            if (!_interpolation.IsActive(Time.time))
+            float now = Now;
+            if (!_interpolation.IsActive(now))
             {
                 _visualRoot.localPosition = Vector3.zero;
                 _visualRoot.localRotation = Quaternion.identity;
                 return;
             }
 
-            _interpolation.Evaluate(Time.time, Time.deltaTime, out var position, out var rotation);
+            _interpolation.Evaluate(now, Time.deltaTime, out var position, out var rotation);
             _visualRoot.SetPositionAndRotation(position, rotation);
         }
 

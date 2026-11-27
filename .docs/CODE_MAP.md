@@ -433,6 +433,11 @@ Coverage is in `Features/Airship/Fuel/Minigame/Tests/FlyingCanUseCaseTests.cs`, 
   `Visual` child, which trails the simulated root by up to one tick (see `HumanoidVisualSmoothingView`). Put new
   player visuals under `Visual`, look them up with `TransformSearch.FindDescendant`, and read the drawn position from
   `IHumanoidVisualAnchor` rather than `transform.position` when placing cameras or effects.
+- **On the host, the ship's transform is a drawn pose late in the frame.** From its LateUpdate (order -75) until the
+  start of the next frame, `AirshipControllerView` moves the ship to a pose up to one tick behind the simulation
+  (`ShipDrawnPose`), so it does not step at 30 Hz. Read the ship's pose for gameplay in a tick, in Update, or in a
+  LateUpdate before -75, as `HumanoidPlayer` (-100) does. Something drawn against the ship that is not its child
+  should be placed after -75.
 - **Never carry a player with its platform through `CharacterController.Move`.** The capsule sweep collides with the
   ship's own geometry and eats the carry, so players get dragged behind a fast or pitching ship. Use
   `IHumanoidMovementView.Carry` (a rigid transform move), then collide only the player's own motion.

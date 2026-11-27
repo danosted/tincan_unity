@@ -55,6 +55,8 @@ namespace TinCan.DevTools
             builder.Register<HarnessGameplayOverrides>(Lifetime.Singleton).As<IInitializable>();
             builder.Register<MovementTelemetryUseCase>(Lifetime.Singleton).AsSelf().As<IInitializable>().As<IPostLateTickable>();
             builder.Register<ToggleNetOverlayInputHandler>(Lifetime.Singleton).As<IInputCommandHandler>();
+            if (options.IsScripted)
+                builder.Register<FramePacingProbe>(Lifetime.Singleton).As<IInitializable>().As<ITickable>().As<IPostLateTickable>();
             InstallScenario(builder, options);
         }
 

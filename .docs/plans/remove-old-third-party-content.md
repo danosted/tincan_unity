@@ -19,8 +19,9 @@ them; keep the volumetric clouds.
 
 ## Steps
 Each step leaves every scene and scenario working; compile, EditMode tests, and the affected scenarios after each.
-1. **The old cannon module.** Confirm nothing spawns `Cannon_Module` (code, fixtures, scenes); remove it from
-   `DefaultNetworkPrefabs.asset` and delete the prefab.
+1. **The old cannon module.** Done 2026-11-27: nothing spawned `Cannon_Module` (a GUID search of code, fixtures and
+   scenes); it is gone from `DefaultNetworkPrefabs.asset` and deleted. The ship's cannon is our own Blender ray cannon
+   (`.tools/blender/ray_cannon.py`, `CannonAssetBuilder`). `StylShip_Cannon` stays in the pack until step 5.
 2. **Our own helm.** Done 2026-11-24: `.tools/blender/helm.py` builds an airship console sized for the crew body
    (`Assets/Models/ShipParts/Helm/`, manifest beside it): a 1.1 m wheel (yaw) and two levers (throttle, pitch) as
    moving parts for steering motion later. `HelmAssetBuilder` wraps it on the library materials; footprint and seat

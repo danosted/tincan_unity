@@ -1,0 +1,32 @@
+{
+  "scene": "ray_cannon",
+  "formats": [
+    "fbx"
+  ],
+  "source": ".tools/blender/ray_cannon.py (Blender 5.2, builds the model from nothing)",
+  "coordinate_system": "Y-up, -Z forward; one exported unit is one meter",
+  "asset_contract": {
+    "title": "Ray cannon",
+    "summary": "The ship's spirit-beam gun, built like a deck harpoon: a wooden plinth and tripod carrying a slim iron post, a brass turntable and iron fork on it, and the gun on its trunnions: a long iron barrel on a timber stock with brass focusing collars, a spirit crystal clasped along the breech, two spade grips behind, and a harpoon head of three barbed brass prongs closing round a crystal at the muzzle. The CannonStation fixture.",
+    "asset_type": "ship_part",
+    "placement": "Pivot at the centre of the deck under the post. The barrel points +Z at rest; the gunner's Seat is at (0, 1.05, -1.8). Height about 2.7 m (the breech crystal); the post and plinth stand in 1 m.",
+    "nodes": [
+      {
+        "name": "RayCannon_Base",
+        "role": "Static: plinth with rivets, tripod braces on brass shoes, the banded iron post and the bearing collar."
+      },
+      {
+        "name": "RayCannon_Yoke",
+        "role": "Moving part (yaw). Pivot at (0, 2.4, 0), the prefab's YawPivot; turns about local Y. Turntable, lacquered ring, the two fork cheeks and the trunnion pin."
+      },
+      {
+        "name": "RayCannon_Barrel",
+        "role": "Moving part (pitch). Pivot at (0, 2.4, 0), the prefab's PitchPivot; pitches about local X, -15 to +40 degrees (CannonConfig) without touching the yoke. The muzzle crystal ends at z 2.28, just behind the prefab's Muzzle (z 2.3) where the beam starts."
+      }
+    ],
+    "materials": "RayCannon_Wood, RayCannon_Brass, RayCannon_Iron, RayCannon_Paint, RayCannon_Spirit; CannonAssetBuilder swaps each for the shared ship material (M_ShipHull, M_ShipEngine, M_ShipIron, M_ShipPennant, M_ShipSpirit).",
+    "triangles": "About 3.4k (base 0.9k, yoke 0.7k, barrel 1.8k).",
+    "collision": "One box round the post on the prefab (1 x 2.6 x 1 m): what Interact aims at and what blocks walking. No mesh collider.",
+    "movable_parts": "The yoke and barrel move with the aim (they sit under YawPivot and PitchPivot)."
+  }
+}

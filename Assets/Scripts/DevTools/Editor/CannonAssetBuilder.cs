@@ -27,7 +27,8 @@ namespace TinCan.DevTools.Editor
     /// slice's data is reviewable as code: tags, effects, abilities, the sweep and interaction definitions, configs, the
     /// cannon and hazard prefabs, the fixture, the installers, and the profiles that load them. Scriptable objects are
     /// re-applied on every run; prefabs are built only when missing (delete one to rebuild it), so their network ids stay
-    /// stable. Plans: .docs/plans/cannon-and-hazards.md, .docs/plans/ray-cannons.md (the beam: its material and sound).
+    /// stable, but the cannon's look (the Blender ray cannon, .tools/blender/ray_cannon.py) is rebuilt in place every run.
+    /// Plans: .docs/plans/cannon-and-hazards.md, .docs/plans/ray-cannons.md (the beam: its material and sound).
     /// </summary>
     public static class CannonAssetBuilder
     {
@@ -37,7 +38,10 @@ namespace TinCan.DevTools.Editor
         private const string Attributes = "Assets/Abilities/Attributes/";
         private const string Materials = "Assets/Materials/Weapons/";
         private const string CannonPrefab = "Assets/Prefabs/Weapons/CannonStation.prefab";
-        private const string HazardPrefab = "Assets/Prefabs/SkyHazards/SkyHazard.prefab";
+        private const string CannonModel = "Assets/Models/ShipParts/RayCannon/ray_cannon.fbx";
+        // The children BuildLook owns: today's look, and the greybox carriage, mount and barrel it replaced.
+        private static readonly string[] LookChildren = { "Carriage", "Base", "YawPivot/Mount", "YawPivot/Yoke", "YawPivot/PitchPivot/Barrel" };
+        private const string HazardPrefab ="Assets/Prefabs/SkyHazards/SkyHazard.prefab";
         private const string Installers = "Assets/Resources/Installers/";
         private const string AbilityMediatorType = "TinCan.Network.Infrastructure.Abilities.AbilityNetworkMediator, TinCan.Network";
         private const string TransformMediatorType = "TinCan.Network.Infrastructure.NetworkTransformMediator, TinCan.Network";
@@ -172,6 +176,7 @@ namespace TinCan.DevTools.Editor
             // Prefabs and the fixtures
             var cannon = BuildCannonPrefab(occupyInteraction, occupyAbility, fireAbility);
             EnsureCameraMount(CannonPrefab);
+            BuildLook(CannonPrefab);
             var hazard = BuildHazardPrefab(health, maxHealth);
             EnsureTransformSync(HazardPrefab);
             var starboardFixture = Asset<ShipFixtureDefinition>("Assets/Settings/Fixtures/CannonStationFixture.asset", definition =>
@@ -219,8 +224,6 @@ namespace TinCan.DevTools.Editor
             var existing = AssetDatabase.LoadAssetAtPath<GameObject>(CannonPrefab);
             if (existing != null) return existing;
 
-            var iron = Material("M_CannonIron", new Color(0.18f, 0.18f, 0.2f));
-            var wood = Material("M_CannonWood", new Color(0.45f, 0.3f, 0.18f));
             var preview = Material("M_CannonAimPreview", new Color(1f, 0.6f, 0.1f), unlit: true);
 
             var root = new GameObject("CannonStation");
@@ -231,16 +234,9 @@ namespace TinCan.DevTools.Editor
             SetField(mediator, "_occupyAbility", occupy);
             SetList(mediator, "_grantedAbilities", new Object[] { fire });
 
-            // One collider for the whole station: what Interact aims at, and an obstacle on the deck.
-            var box = root.AddComponent<BoxCollider>();
-            box.center = new Vector3(0f, 1.3f, 0f);
-            box.size = new Vector3(1.4f, 2.6f, 1.4f);
-
-            Visual(PrimitiveType.Cylinder, "Carriage", root.transform, new Vector3(0f, 1.1f, 0f), Vector3.zero, new Vector3(1.2f, 1.1f, 1.2f), wood);
+            // The look (meshes and collider) is added by BuildLook, on every run.
             var yaw = Child("YawPivot", root.transform, new Vector3(0f, 2.4f, 0f));
-            Visual(PrimitiveType.Cube, "Mount", yaw, Vector3.zero, Vector3.zero, new Vector3(0.9f, 0.5f, 0.9f), wood);
             var pitch = Child("PitchPivot", yaw, Vector3.zero);
-            Visual(PrimitiveType.Cylinder, "Barrel", pitch, new Vector3(0f, 0f, 1.1f), new Vector3(90f, 0f, 0f), new Vector3(0.45f, 1.1f, 0.45f), iron);
             Child("Muzzle", pitch, new Vector3(0f, 0f, 2.3f));
             Child("Seat", root.transform, new Vector3(0f, 1.05f, -1.8f));
 
@@ -279,6 +275,86 @@ namespace TinCan.DevTools.Editor
             {
                 PrefabUtility.UnloadPrefabContents(root);
             }
+        }
+
+        /// <summary>
+        /// The Blender ray cannon (.tools/blender/ray_cannon.py), in place on the existing prefab so its network id is kept:
+        /// RayCannon_Base under the root as "Base", RayCannon_Yoke under YawPivot as "Yoke", RayCannon_Barrel under
+        /// PitchPivot as "Barrel", each with its imported materials swapped for the shared ship materials; and one box round
+        /// the post (what Interact aims at, and an obstacle on the deck). The model's pivots are the prefab's (yaw and pitch
+        /// at (0, 2.4, 0), the muzzle 2.3 m along the barrel), so the parts go in where they were. Whatever was there before
+        /// (the greybox carriage, mount and barrel, an older collider) is replaced.
+        /// </summary>
+        private static void BuildLook(string path)
+        {
+            var importer = AssetImporter.GetAtPath(CannonModel) as ModelImporter
+                           ?? throw new InvalidOperationException($"Missing model {CannonModel}: run .tools/blender/ray_cannon.py.");
+            importer.globalScale = 1f;
+            importer.addCollider = false;
+            importer.importCameras = false;
+            importer.importLights = false;
+            importer.importAnimation = false;
+            importer.animationType = ModelImporterAnimationType.None;
+            importer.SaveAndReimport();
+
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                foreach (var name in LookChildren)
+                {
+                    var old = root.transform.Find(name);
+                    if (old != null) Object.DestroyImmediate(old.gameObject);
+                }
+                foreach (var collider in root.GetComponents<Collider>()) Object.DestroyImmediate(collider);
+
+                var yaw = root.transform.Find("YawPivot") ?? throw new InvalidOperationException($"{path} has no YawPivot.");
+                var pitch = yaw.Find("PitchPivot") ?? throw new InvalidOperationException($"{path} has no PitchPivot.");
+                var shared = new Dictionary<string, Material>
+                {
+                    ["RayCannon_Wood"] = LookMaterials.Get("M_ShipHull"),
+                    ["RayCannon_Brass"] = LookMaterials.Get("M_ShipEngine"),
+                    ["RayCannon_Iron"] = LookMaterials.Get("M_ShipIron"),
+                    ["RayCannon_Paint"] = LookMaterials.Get("M_ShipPennant"),
+                    ["RayCannon_Spirit"] = LookMaterials.Get("M_ShipSpirit"),
+                };
+
+                // The model comes in whole at the root (both pivots sit at their place in it) and is taken apart, each
+                // part keeping its world placement under the pivot that moves it.
+                var model = (GameObject)PrefabUtility.InstantiatePrefab(Load<GameObject>(CannonModel), root.transform);
+                PrefabUtility.UnpackPrefabInstance(model, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+                Part(model, "RayCannon_Base", root.transform, "Base", shared);
+                Part(model, "RayCannon_Yoke", yaw, "Yoke", shared);
+                Part(model, "RayCannon_Barrel", pitch, "Barrel", shared);
+                Object.DestroyImmediate(model);
+
+                var box = root.AddComponent<BoxCollider>();
+                box.center = new Vector3(0f, 1.3f, 0f);
+                box.size = new Vector3(1f, 2.6f, 1f);
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+
+            // The greybox's materials; nothing else uses them.
+            AssetDatabase.DeleteAsset(Materials + "M_CannonIron.mat");
+            AssetDatabase.DeleteAsset(Materials + "M_CannonWood.mat");
+        }
+
+        private static void Part(GameObject model, string meshName, Transform parent, string name, IReadOnlyDictionary<string, Material> shared)
+        {
+            var part = Array.Find(model.GetComponentsInChildren<Transform>(), t => t.name == meshName)
+                       ?? throw new InvalidOperationException($"{CannonModel} has no {meshName}.");
+            part.SetParent(parent, worldPositionStays: true);
+            part.name = name;
+            var renderer = part.GetComponent<MeshRenderer>();
+            var materials = renderer.sharedMaterials;
+            for (int i = 0; i < materials.Length; i++)
+            {
+                if (materials[i] != null && shared.TryGetValue(materials[i].name, out var ship)) materials[i] = ship;
+            }
+            renderer.sharedMaterials = materials;
         }
 
         /// <summary>Hazards move on the server (drift), so clients follow their position through an interpolated transform sync.</summary>

@@ -72,7 +72,7 @@ public class MyFeatureInstaller : FeatureInstaller
    references. Order only matters if you depend on another feature's registrations (`UiFeatureInstaller` is -10,
    `FlyingCanFeatureInstaller` is 10 because it needs the fuel feature).
 3. **Fixtures on the ship**: make the fixture a prefab with a `NetworkObject` (`AutoObjectParentSync` and
-   `SyncOwnerTransformWhenParented` on, like `Cannon_Module`), no `NetworkTransform` needed since it rides the ship
+   `SyncOwnerTransformWhenParented` on), no `NetworkTransform` needed since it rides the ship
    as a child. Author its parts in ship-local coordinates. Optionally implement `IShipModule` on the root to get
    `OnAttachedToShip(ship)` on the server; on clients override `OnNetworkObjectParentChanged` or read
    `transform.parent` in `OnNetworkSpawn` (see `FuelTankNetworkMediator`). Create a `ShipFixtureDefinition` asset

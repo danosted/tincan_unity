@@ -38,7 +38,10 @@ than iron balls ("Magic is soft light", `ART_DIRECTION.md` pillar 5).
   long as it is held. It is free, and it overheats over time: at full heat it stops and vents until it is cold.
   (R1's charge and cooldown are gone.)
 - **The look:** a beam of pale cyan and warm gold with a soft falloff, a glow at the muzzle, a bloom where it hits,
-  and a hum. No hard neon. Its cue replaces the cannonball's bang.
+  and a hum. No hard neon. Its cue replaces the cannonball's bang. The gun itself (2026-11-27, developer: "a fantasy
+  ray cannon with influence from a harpoon shooter") is a Blender part, `.tools/blender/ray_cannon.py`: a slim post on a
+  tripod, a fork, and a long barrel with brass focusing collars, a spirit crystal on the breech, spade grips and a
+  barbed three-prong harpoon head round a muzzle crystal. `CannonAssetBuilder.BuildLook` puts it on the prefab.
 - **Names:** the station, feature and assets get a new name (open question 2). Until then the code keeps `Cannon`, so
   the change stays small.
 

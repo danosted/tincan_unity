@@ -1,0 +1,128 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7101ab5c4c49b644fb0c56241351311f, type: 3}
+  m_Name: PART_SailMast
+  m_EditorClassIdentifier: TinCan.Ship::TinCan.Core.Ship.Parts.ShipPartDefinition
+  _partId: hull.sail_mast
+  _displayName: Sail mast
+  _category: Hull
+  _attach: 1
+  _footprint:
+  - {x: -4, y: 3, z: 1}
+  - {x: -4, y: 4, z: 1}
+  - {x: -4, y: 5, z: 1}
+  - {x: -4, y: 6, z: 1}
+  - {x: -4, y: 7, z: 1}
+  - {x: -4, y: 8, z: 1}
+  - {x: -4, y: 9, z: 1}
+  - {x: -3, y: 3, z: 1}
+  - {x: -3, y: 4, z: 1}
+  - {x: -3, y: 5, z: 1}
+  - {x: -3, y: 6, z: 1}
+  - {x: -3, y: 7, z: 1}
+  - {x: -3, y: 8, z: 1}
+  - {x: -3, y: 9, z: 1}
+  - {x: -3, y: 10, z: 1}
+  - {x: -3, y: 11, z: 1}
+  - {x: -3, y: 12, z: 1}
+  - {x: -2, y: 3, z: 1}
+  - {x: -2, y: 4, z: 1}
+  - {x: -2, y: 5, z: 1}
+  - {x: -2, y: 6, z: 1}
+  - {x: -2, y: 7, z: 1}
+  - {x: -2, y: 8, z: 1}
+  - {x: -2, y: 9, z: 1}
+  - {x: -2, y: 10, z: 1}
+  - {x: -2, y: 11, z: 1}
+  - {x: -2, y: 12, z: 1}
+  - {x: -1, y: 3, z: 1}
+  - {x: -1, y: 4, z: 1}
+  - {x: -1, y: 5, z: 1}
+  - {x: -1, y: 6, z: 1}
+  - {x: -1, y: 7, z: 1}
+  - {x: -1, y: 8, z: 1}
+  - {x: -1, y: 9, z: 1}
+  - {x: -1, y: 10, z: 1}
+  - {x: -1, y: 11, z: 1}
+  - {x: -1, y: 12, z: 1}
+  - {x: 0, y: 0, z: 0}
+  - {x: 0, y: 1, z: 0}
+  - {x: 0, y: 2, z: 0}
+  - {x: 0, y: 3, z: 0}
+  - {x: 0, y: 3, z: 1}
+  - {x: 0, y: 4, z: 0}
+  - {x: 0, y: 4, z: 1}
+  - {x: 0, y: 5, z: 0}
+  - {x: 0, y: 5, z: 1}
+  - {x: 0, y: 6, z: 0}
+  - {x: 0, y: 6, z: 1}
+  - {x: 0, y: 7, z: 0}
+  - {x: 0, y: 7, z: 1}
+  - {x: 0, y: 8, z: 0}
+  - {x: 0, y: 8, z: 1}
+  - {x: 0, y: 9, z: 0}
+  - {x: 0, y: 9, z: 1}
+  - {x: 0, y: 10, z: 0}
+  - {x: 0, y: 10, z: 1}
+  - {x: 0, y: 11, z: 0}
+  - {x: 0, y: 11, z: 1}
+  - {x: 0, y: 12, z: 0}
+  - {x: 0, y: 12, z: 1}
+  - {x: 0, y: 13, z: 0}
+  - {x: 0, y: 14, z: 0}
+  - {x: 1, y: 3, z: 1}
+  - {x: 1, y: 4, z: 1}
+  - {x: 1, y: 5, z: 1}
+  - {x: 1, y: 6, z: 1}
+  - {x: 1, y: 7, z: 1}
+  - {x: 1, y: 8, z: 1}
+  - {x: 1, y: 9, z: 1}
+  - {x: 1, y: 10, z: 1}
+  - {x: 1, y: 11, z: 1}
+  - {x: 1, y: 12, z: 1}
+  - {x: 2, y: 3, z: 1}
+  - {x: 2, y: 4, z: 1}
+  - {x: 2, y: 5, z: 1}
+  - {x: 2, y: 6, z: 1}
+  - {x: 2, y: 7, z: 1}
+  - {x: 2, y: 8, z: 1}
+  - {x: 2, y: 9, z: 1}
+  - {x: 2, y: 10, z: 1}
+  - {x: 2, y: 11, z: 1}
+  - {x: 2, y: 12, z: 1}
+  - {x: 3, y: 3, z: 1}
+  - {x: 3, y: 4, z: 1}
+  - {x: 3, y: 5, z: 1}
+  - {x: 3, y: 6, z: 1}
+  - {x: 3, y: 7, z: 1}
+  - {x: 3, y: 8, z: 1}
+  - {x: 3, y: 9, z: 1}
+  - {x: 3, y: 10, z: 1}
+  - {x: 3, y: 11, z: 1}
+  - {x: 3, y: 12, z: 1}
+  - {x: 4, y: 3, z: 1}
+  - {x: 4, y: 4, z: 1}
+  - {x: 4, y: 5, z: 1}
+  - {x: 4, y: 6, z: 1}
+  - {x: 4, y: 7, z: 1}
+  - {x: 4, y: 8, z: 1}
+  - {x: 4, y: 9, z: 1}
+  _isCore: 0
+  _isCairn: 0
+  _visual: {fileID: 2256080718665296855, guid: fa2ac8a5dee60664bbe5559a8a760c5a, type: 3}
+  _networkedPrefab: {fileID: 0}
+  _pivotOffset: {x: 0, y: 0, z: 0}
+  _stats:
+    Mass: 15
+    Lift: 0
+    Thrust: 150
+    Hull: 20

@@ -1,0 +1,16 @@
+{
+  "formatVersion": 1,
+  "fittings": [
+    {"part":260,"socket":0,"fitting":"fuel.receiver"},
+    {"part":261,"socket":0,"fitting":"stores.crystal_bin"},
+    {"part":262,"socket":0,"fitting":"storage.tool_rack"},
+    {"part":263,"socket":0,"fitting":"navigation.chart_table"},
+    {"part":264,"socket":0,"fitting":"weapon.cannon"},
+    {"part":265,"socket":0,"fitting":"weapon.cannon"},
+    {"part":266,"socket":0,"fitting":"weapon.cannon"},
+    {"part":267,"socket":0,"fitting":"weapon.cannon"},
+    {"part":268,"socket":0,"fitting":"ship.anchor"},
+    {"part":269,"socket":0,"fitting":"rescue.leash_winch"},
+    {"part":270,"socket":0,"fitting":"fuel.crank"}
+  ]
+}

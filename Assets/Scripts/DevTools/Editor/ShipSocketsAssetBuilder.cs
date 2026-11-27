@@ -21,7 +21,8 @@ namespace TinCan.DevTools.Editor
     /// <summary>
     /// TinCan > Dev > Ship Sockets > Build Assets: IA_MountFitting, the sockets config, the ShipSocketsState prefab and
     /// fixture, the installer, the first fittings (the cannon station, from the Cannon feature; the tool rack, from Damage),
-    /// and their place in Profile_Test_Shipyard (which also gains the Cannon). Run TinCan > Dev > Ship Designs > Build
+    /// their place in Profile_Test_Shipyard (which also gains the Cannon), and the Clipper's built-in loadout
+    /// (<see cref="ClipperLoadout"/>). Run TinCan > Dev > Ship Designs > Build
     /// Assets first. Plan: .docs/plans/modular-airship-builder.md (S5).
     /// </summary>
     public static class ShipSocketsAssetBuilder
@@ -42,6 +43,7 @@ namespace TinCan.DevTools.Editor
         public const string CrystalRackFittingId = "fuel.crystal_rack";
         public const string NetRackFittingId = "fuel.net_rack";
 
+        public const string ClipperLoadoutPath = "Assets/Settings/ShipSockets/Clipper.fittings.json";
         public const string GalleonDesignKey = "Galleon";
         public const string GalleonLoadoutPath = "Assets/Settings/ShipSockets/Galleon.fittings.json";
         public const string GalleonPrefabPath = "Assets/Prefabs/Airship/Galleon_Prefab.prefab";
@@ -93,8 +95,37 @@ namespace TinCan.DevTools.Editor
             var profile = Load<FeatureProfile>(ShipDesignsAssetBuilder.ProfilePath);
             AddUnique(profile, "_installers", installer, cannonInstaller);
 
+            // The Clipper's built-in loadout (its design is written by Ship Designs > Build Assets).
+            AddUnique(config, nameof(ShipSocketsConfig.BuiltInLoadouts), WriteText(ClipperLoadoutPath, ShipFittingLoadoutJsonCodec.Encode(ClipperLoadout())));
+
             AssetDatabase.SaveAssets();
             Debug.Log("[ShipSocketsAssetBuilder] Ship socket assets built.");
+        }
+
+        /// <summary>
+        /// The Clipper's stations for a crew of eight (<see cref="ShipFrameDesigns.ClipperMounts"/>): four cannons facing out
+        /// over the sides, a pair on the quarterdeck and a pair in the waist; in the hold the fuel receiver (port aft) across
+        /// from the crystal bin, the tool rack (port fore) across from the chart table; the anchor and the leash winch on the
+        /// quarterdeck's stern corners, their chain and leash over the side; the hand crank on the cabin floor. With the helm,
+        /// the same stations as the Galleon's.
+        /// </summary>
+        public static ShipFittingLoadout ClipperLoadout()
+        {
+            var mounts = ShipFrameDesigns.ClipperMounts();
+            return new ShipFittingLoadout(new[]
+            {
+                new ShipFittingPlacement(new ShipSocketId(mounts.HoldPortAft, 0), FuelReceiverFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.HoldStarboardAft, 0), GatheringAssetBuilder.CrystalBinFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.HoldPortFore, 0), ToolRackFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.HoldStarboardFore, 0), ChartTableFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.QuarterdeckPort, 0), CannonFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.QuarterdeckStarboard, 0), CannonFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.WaistPort, 0), CannonFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.WaistStarboard, 0), CannonFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.SternPort, 0), AnchorAssetBuilder.FittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.SternStarboard, 0), LeashWinchFittingId),
+                new ShipFittingPlacement(new ShipSocketId(mounts.CabinFloor, 0), FuelAssetBuilder.CrankFittingId),
+            });
         }
 
         /// <summary>

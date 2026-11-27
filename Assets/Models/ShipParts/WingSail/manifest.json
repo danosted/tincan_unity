@@ -1,0 +1,150 @@
+{
+  "scene": "wing_sail",
+  "formats": [
+    "fbx"
+  ],
+  "source": ".tools/blender/sail_parts.py (Blender 5.2, builds the models from nothing)",
+  "coordinate_system": "Y-up, -Z forward; one exported unit is one meter",
+  "asset_contract": {
+    "title": "Wing sail",
+    "summary": "A cleat on the hull and three spars (the middle one the boom) splaying down and out 3.9 m, teal cloth between them trimmed in canvas, brass points. Outboard is +X: starboard wings unturned, port wings turned half round. Pivot on the chine node it hangs from. Ship part hull.wing_sail (node part).",
+    "asset_type": "ship_part",
+    "placement": "Pivot at the frame node the part hangs on (part pivot offset zero).",
+    "nodes": [
+      {
+        "name": "WingSail_Mesh",
+        "role": "Static: the whole part."
+      }
+    ],
+    "materials": "Sail_Wood, Sail_Brass, Sail_Iron, Sail_Sail, Sail_Trim, Sail_Rope; ShipDesignsAssetBuilder swaps each for the shared ship material (M_ShipHull, M_ShipEngine, M_ShipIron, M_ShipSail, M_ShipCanvas, M_ShipDeck).",
+    "footprint_blocks": "Blocks out to x 4 and down to y -4, z -1..1; not solid.",
+    "movable_parts": "None yet: the cloth is to sway in its material (ART_DIRECTION.md, Motion and life)."
+  },
+  "footprint": [
+    {
+      "x": 0,
+      "y": -1,
+      "z": -1
+    },
+    {
+      "x": 0,
+      "y": -1,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": -1,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": -1
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 1
+    },
+    {
+      "x": 1,
+      "y": -2,
+      "z": -1
+    },
+    {
+      "x": 1,
+      "y": -2,
+      "z": 0
+    },
+    {
+      "x": 1,
+      "y": -2,
+      "z": 1
+    },
+    {
+      "x": 1,
+      "y": -1,
+      "z": -1
+    },
+    {
+      "x": 1,
+      "y": -1,
+      "z": 0
+    },
+    {
+      "x": 1,
+      "y": -1,
+      "z": 1
+    },
+    {
+      "x": 2,
+      "y": -3,
+      "z": -1
+    },
+    {
+      "x": 2,
+      "y": -3,
+      "z": 0
+    },
+    {
+      "x": 2,
+      "y": -3,
+      "z": 1
+    },
+    {
+      "x": 2,
+      "y": -2,
+      "z": -1
+    },
+    {
+      "x": 2,
+      "y": -2,
+      "z": 0
+    },
+    {
+      "x": 2,
+      "y": -2,
+      "z": 1
+    },
+    {
+      "x": 3,
+      "y": -4,
+      "z": -1
+    },
+    {
+      "x": 3,
+      "y": -4,
+      "z": 0
+    },
+    {
+      "x": 3,
+      "y": -4,
+      "z": 1
+    },
+    {
+      "x": 3,
+      "y": -3,
+      "z": -1
+    },
+    {
+      "x": 3,
+      "y": -3,
+      "z": 0
+    },
+    {
+      "x": 3,
+      "y": -3,
+      "z": 1
+    },
+    {
+      "x": 4,
+      "y": -4,
+      "z": 0
+    }
+  ]
+}

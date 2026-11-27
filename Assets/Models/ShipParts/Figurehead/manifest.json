@@ -1,0 +1,130 @@
+{
+  "scene": "figurehead",
+  "formats": [
+    "fbx"
+  ],
+  "source": ".tools/blender/sail_parts.py (Blender 5.2, builds the models from nothing)",
+  "coordinate_system": "Y-up, -Z forward; one exported unit is one meter",
+  "asset_contract": {
+    "title": "Figurehead",
+    "summary": "A pale carved horn up the stem and out over the bow (+Z), curling back at a brass point, banded in teal, with two swept fins either side. Pivot on the bow's tip node. Ship part hull.figurehead (node part).",
+    "asset_type": "ship_part",
+    "placement": "Pivot at the frame node the part hangs on (part pivot offset zero).",
+    "nodes": [
+      {
+        "name": "Figurehead_Mesh",
+        "role": "Static: the whole part."
+      }
+    ],
+    "materials": "Sail_Wood, Sail_Brass, Sail_Iron, Sail_Sail, Sail_Trim, Sail_Rope; ShipDesignsAssetBuilder swaps each for the shared ship material (M_ShipHull, M_ShipEngine, M_ShipIron, M_ShipSail, M_ShipCanvas, M_ShipDeck).",
+    "footprint_blocks": "Blocks z -1..3, y -2..3 on the centreline; not solid.",
+    "movable_parts": "None yet: the cloth is to sway in its material (ART_DIRECTION.md, Motion and life)."
+  },
+  "footprint": [
+    {
+      "x": -1,
+      "y": 0,
+      "z": -1
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 0
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": -1
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": -2,
+      "z": -1
+    },
+    {
+      "x": 0,
+      "y": -2,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": -1,
+      "z": -1
+    },
+    {
+      "x": 0,
+      "y": -1,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": -1,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 1
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 2
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 2
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 3
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 2
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 3
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": -1
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 0
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": -1
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 0
+    }
+  ]
+}

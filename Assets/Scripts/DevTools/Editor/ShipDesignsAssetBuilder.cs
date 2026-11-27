@@ -19,7 +19,7 @@ namespace TinCan.DevTools.Editor
     /// <summary>
     /// TinCan > Dev > Ship Designs > Build Assets: the ship parts that hang on a frame (the helm as the core part,
     /// contributed by the Helm installer; the cairn, the engine, the propeller, the mast, the mount plate, the rotor mast
-    /// from its Blender model), their greybox prefabs, the ship designs config and installer, and the built-in designs (<see cref="ShipFrameDesigns"/>,
+    /// and the Clipper's sail mast, rigging net, wing sail and figurehead from their Blender models), their greybox prefabs, the ship designs config and installer, and the built-in designs (<see cref="ShipFrameDesigns"/>,
     /// written through the codec, so the files are in canonical form). Materials come from the look's library
     /// (<see cref="LookMaterials"/>, coloured from the palette). Every prefab's pivot is its anchor point: on the floor for a face part, at the node for a
     /// node part. Plans: .docs/plans/modular-airship-builder.md, .docs/plans/frame-only-ships.md.
@@ -33,7 +33,9 @@ namespace TinCan.DevTools.Editor
         public const string GalleonPath = DesignsFolder + "Galleon.ship.json";
         public const string RaftPath = DesignsFolder + "Raft.ship.json";
         public const string CorsairPath = DesignsFolder + "Corsair.ship.json";
-        private const string RotorMastModelPath = "Assets/Models/ShipParts/RotorMast/rotor_mast.fbx";
+        public const string ClipperPath = DesignsFolder + "Clipper.ship.json";
+        private const string ModelsFolder = "Assets/Models/ShipParts/";
+        private const string RotorMastModelPath = ModelsFolder + "RotorMast/rotor_mast.fbx";
         public const string InstallerPath = "Assets/Resources/Installers/ShipDesignsFeatureInstaller.asset";
         private const string PrefabsFolder = "Assets/Prefabs/ShipParts/";
         private const string HelmInstallerPath = "Assets/Resources/Installers/HelmFeatureInstaller.asset";
@@ -53,6 +55,10 @@ namespace TinCan.DevTools.Editor
         public const string Mast = "hull.mast";
         public const string HullMount = "hull.mount";
         public const string RotorMast = "hull.rotor_mast";
+        public const string SailMast = "hull.sail_mast";
+        public const string RiggingNet = "hull.rigging_net";
+        public const string WingSail = "hull.wing_sail";
+        public const string Figurehead = "hull.figurehead";
 
         /// <summary>A mount plate's thickness; it lies on the floor, its socket on top.</summary>
         private const float PlateThickness = 0.1f;
@@ -84,6 +90,18 @@ namespace TinCan.DevTools.Editor
             // 6.35 m) and two pennants streaming aft (-Z); the Blender model (.tools/blender/rotor_mast.py). Mostly flavour.
             var rotorMast = Part("PART_RotorMast", RotorMast, "Rotor mast", "Hull", ShipPartAttach.Node, RotorMastPrefab(brass, wood), null,
                 Vector3.zero, new ShipPartStats(15f, lift: 150f, hull: 15f), RotorMastFootprint());
+            // The Clipper's sail parts (.tools/blender/sail_parts.py; blocks from each manifest). Mostly flavour: the sails
+            // add a little thrust, the wings lift like a rotor mast (the Clipper's big hull needs it). A box round the mast's
+            // pole is the only solid piece.
+            var sailMast = Part("PART_SailMast", SailMast, "Sail mast", "Hull", ShipPartAttach.Node,
+                SailPartPrefab("SailMast", "sail_mast", new Bounds(new Vector3(0f, 7f, 0f), new Vector3(0.4f, 14f, 0.4f))), null, Vector3.zero,
+                new ShipPartStats(15f, thrust: 150f, hull: 20f), ManifestFootprint("SailMast"));
+            var riggingNet = Part("PART_RiggingNet", RiggingNet, "Rigging net", "Hull", ShipPartAttach.Node, SailPartPrefab("RiggingNet", "rigging_net", null),
+                null, Vector3.zero, new ShipPartStats(3f, hull: 5f), ManifestFootprint("RiggingNet"));
+            var wingSail = Part("PART_WingSail", WingSail, "Wing sail", "Hull", ShipPartAttach.Node, SailPartPrefab("WingSail", "wing_sail", null),
+                null, Vector3.zero, new ShipPartStats(10f, lift: 150f, hull: 10f), ManifestFootprint("WingSail"));
+            var figurehead = Part("PART_Figurehead", Figurehead, "Figurehead", "Hull", ShipPartAttach.Node, SailPartPrefab("Figurehead", "figurehead", null),
+                null, Vector3.zero, new ShipPartStats(5f, hull: 10f), ManifestFootprint("Figurehead"));
             // The cairn: the hearth where the ship's spirit lives, a fiery wisp that lifts the ship (ShipStatsTuning.SpiritLift).
             var cairn = Part("PART_Cairn", Cairn, "Spirit hearth", "Spirit", ShipPartAttach.Face, CairnPrefab(stone, spirit), null, Vector3.zero,
                 new ShipPartStats(40f, hull: 40f), new Vector3Int(0, 0, 0), new Vector3Int(0, 1, 0));
@@ -98,9 +116,10 @@ namespace TinCan.DevTools.Editor
             var galleon = WriteDesign(GalleonPath, ShipFrameDesigns.GalleonDesign());
             var raft = WriteDesign(RaftPath, ShipFrameDesigns.RaftDesign());
             var corsair = WriteDesign(CorsairPath, ShipFrameDesigns.CorsairDesign());
+            var clipper = WriteDesign(ClipperPath, ShipFrameDesigns.ClipperDesign());
             var config = Asset<ShipDesignsConfig>(ConfigPath, designs =>
             {
-                designs.BuiltInDesigns = new List<TextAsset> { starter, galleon, raft, corsair };
+                designs.BuiltInDesigns = new List<TextAsset> { starter, galleon, raft, corsair, clipper };
                 designs.DefaultDesign = ShipFrameDesigns.StarterName;
                 Configure(designs);
             });
@@ -114,7 +133,7 @@ namespace TinCan.DevTools.Editor
             var installer = Asset<ShipDesignsFeatureInstaller>(InstallerPath, i =>
             {
                 SetField(i, "_config", config);
-                SetList(i, "_parts", new Object[] { cairn, engine, propeller, mast, mount, rotorMast });
+                SetList(i, "_parts", new Object[] { cairn, engine, propeller, mast, mount, rotorMast, sailMast, riggingNet, wingSail, figurehead });
                 SetField(i, "_stateFixture", stateFixture);
             });
             var helmInstaller = Load<HelmFeatureInstaller>(HelmInstallerPath);
@@ -130,7 +149,8 @@ namespace TinCan.DevTools.Editor
 
             AssetDatabase.SaveAssets();
             Debug.Log($"[ShipDesignsAssetBuilder] Ship design assets built ({installer.name}; {ShipFrameDesigns.StarterDesign()}, "
-                      + $"{ShipFrameDesigns.GalleonDesign()}, {ShipFrameDesigns.RaftDesign()}, {ShipFrameDesigns.CorsairDesign()}).");
+                      + $"{ShipFrameDesigns.GalleonDesign()}, {ShipFrameDesigns.RaftDesign()}, {ShipFrameDesigns.CorsairDesign()}, "
+                      + $"{ShipFrameDesigns.ClipperDesign()}).");
         }
 
         /// <summary>The config's frame materials, and defaults for limits and tuning added after the asset was made.</summary>
@@ -317,10 +337,39 @@ namespace TinCan.DevTools.Editor
         /// ship materials (so the parts batch), and a box round the pole the only collider; the rotors and pennants are not
         /// solid. RotorLow and RotorHigh spin about local Y (static for now).
         /// </summary>
-        private static GameObject RotorMastPrefab(Material brass, Material wood)
+        private static GameObject RotorMastPrefab(Material brass, Material wood) =>
+            ModelPrefab("ShipPart_RotorMast", RotorMastModelPath, "rotor_mast.py", new Dictionary<string, Material>
+            {
+                ["RotorMast_Iron"] = LookMaterials.Get("M_ShipIron"),
+                ["RotorMast_Brass"] = brass,
+                ["RotorMast_Wood"] = wood,
+                ["RotorMast_Canvas"] = LookMaterials.Get("M_ShipCanvas"),
+                ["RotorMast_Pennant"] = LookMaterials.Get("M_ShipPennant"),
+            }, new Bounds(new Vector3(0f, 3.9f, 0f), new Vector3(0.4f, 7.8f, 0.4f)));
+
+        /// <summary>
+        /// One of the Clipper's sail parts (.tools/blender/sail_parts.py: the sail mast, the rigging net, the wing sail, the
+        /// figurehead) wrapped as a part, its Sail_* materials swapped for the ship's; only the given box is solid.
+        /// </summary>
+        private static GameObject SailPartPrefab(string folder, string stem, Bounds? solid) =>
+            ModelPrefab("ShipPart_" + folder, $"{ModelsFolder}{folder}/{stem}.fbx", "sail_parts.py", new Dictionary<string, Material>
+            {
+                ["Sail_Wood"] = LookMaterials.Get("M_ShipHull"),
+                ["Sail_Brass"] = LookMaterials.Get("M_ShipEngine"),
+                ["Sail_Iron"] = LookMaterials.Get("M_ShipIron"),
+                ["Sail_Sail"] = LookMaterials.Get("M_ShipSail"),
+                ["Sail_Trim"] = LookMaterials.Get("M_ShipCanvas"),
+                ["Sail_Rope"] = LookMaterials.Get("M_ShipDeck"),
+            }, solid);
+
+        /// <summary>
+        /// A Blender model wrapped as a part: its pivot on the anchor, its imported materials swapped for the shared ship
+        /// materials by name (so the parts batch), and the given box its only collider (none: not solid).
+        /// </summary>
+        private static GameObject ModelPrefab(string name, string modelPath, string script, IReadOnlyDictionary<string, Material> shared, Bounds? solid)
         {
-            var importer = AssetImporter.GetAtPath(RotorMastModelPath) as ModelImporter
-                           ?? throw new InvalidOperationException($"Missing model {RotorMastModelPath}: run .tools/blender/rotor_mast.py.");
+            var importer = AssetImporter.GetAtPath(modelPath) as ModelImporter
+                           ?? throw new InvalidOperationException($"Missing model {modelPath}: run .tools/blender/{script}.");
             importer.globalScale = 1f;
             importer.addCollider = false;
             importer.importCameras = false;
@@ -329,16 +378,8 @@ namespace TinCan.DevTools.Editor
             importer.animationType = ModelImporterAnimationType.None;
             importer.SaveAndReimport();
 
-            var shared = new Dictionary<string, Material>
-            {
-                ["RotorMast_Iron"] = LookMaterials.Get("M_ShipIron"),
-                ["RotorMast_Brass"] = brass,
-                ["RotorMast_Wood"] = wood,
-                ["RotorMast_Canvas"] = LookMaterials.Get("M_ShipCanvas"),
-                ["RotorMast_Pennant"] = LookMaterials.Get("M_ShipPennant"),
-            };
-            var root = new GameObject("ShipPart_RotorMast");
-            var model = (GameObject)PrefabUtility.InstantiatePrefab(Load<GameObject>(RotorMastModelPath), root.transform);
+            var root = new GameObject(name);
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(Load<GameObject>(modelPath), root.transform);
             model.name = "Mesh";
             foreach (var renderer in model.GetComponentsInChildren<MeshRenderer>())
             {
@@ -347,10 +388,38 @@ namespace TinCan.DevTools.Editor
                     .ToArray();
             }
 
-            var pole = root.AddComponent<BoxCollider>();
-            pole.center = new Vector3(0f, 3.9f, 0f);
-            pole.size = new Vector3(0.4f, 7.8f, 0.4f);
+            if (solid is { } box)
+            {
+                var collider = root.AddComponent<BoxCollider>();
+                collider.center = box.center;
+                collider.size = box.size;
+            }
+
             return Save(root);
+        }
+
+        /// <summary>A Blender part's blocks, as its script worked them out from the geometry (manifest.json, "footprint").</summary>
+        private static Vector3Int[] ManifestFootprint(string folder)
+        {
+            var path = $"{ModelsFolder}{folder}/manifest.json";
+            var manifest = JsonUtility.FromJson<PartManifest>(File.ReadAllText(Path.GetFullPath(path)));
+            if (manifest?.footprint == null || manifest.footprint.Count == 0)
+                throw new InvalidOperationException($"{path} lists no footprint: run .tools/blender/sail_parts.py.");
+            return manifest.footprint.Select(b => new Vector3Int(b.x, b.y, b.z)).ToArray();
+        }
+
+        [Serializable]
+        private sealed class PartManifest
+        {
+            public List<ManifestBlock> footprint = new();
+        }
+
+        [Serializable]
+        private sealed class ManifestBlock
+        {
+            public int x;
+            public int y;
+            public int z;
         }
 
         private static void Piece(GameObject root, string name, PrimitiveType shape, Vector3 centre, Vector3 size, Material material, bool solid,

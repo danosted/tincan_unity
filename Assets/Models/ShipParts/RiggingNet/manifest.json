@@ -1,0 +1,85 @@
+{
+  "scene": "rigging_net",
+  "formats": [
+    "fbx"
+  ],
+  "source": ".tools/blender/sail_parts.py (Blender 5.2, builds the models from nothing)",
+  "coordinate_system": "Y-up, -Z forward; one exported unit is one meter",
+  "asset_contract": {
+    "title": "Rigging net",
+    "summary": "Three shrouds and their ratlines from deadeyes just outboard of a rail node up 4.4 m inboard to under a mast's top (8.45 m). Inboard is -X: starboard nets stand unturned, port nets turned half round. Pivot on the rail node. Ship part hull.rigging_net (node part).",
+    "asset_type": "ship_part",
+    "placement": "Pivot at the frame node the part hangs on (part pivot offset zero).",
+    "nodes": [
+      {
+        "name": "RiggingNet_Mesh",
+        "role": "Static: the whole part."
+      }
+    ],
+    "materials": "Sail_Wood, Sail_Brass, Sail_Iron, Sail_Sail, Sail_Trim, Sail_Rope; ShipDesignsAssetBuilder swaps each for the shared ship material (M_ShipHull, M_ShipEngine, M_ShipIron, M_ShipSail, M_ShipCanvas, M_ShipDeck).",
+    "footprint_blocks": "One row of blocks at z 0, from the rail (x 0) in to x -4; not solid.",
+    "movable_parts": "None yet: the cloth is to sway in its material (ART_DIRECTION.md, Motion and life)."
+  },
+  "footprint": [
+    {
+      "x": -4,
+      "y": 7,
+      "z": 0
+    },
+    {
+      "x": -4,
+      "y": 8,
+      "z": 0
+    },
+    {
+      "x": -3,
+      "y": 5,
+      "z": 0
+    },
+    {
+      "x": -3,
+      "y": 6,
+      "z": 0
+    },
+    {
+      "x": -3,
+      "y": 7,
+      "z": 0
+    },
+    {
+      "x": -2,
+      "y": 4,
+      "z": 0
+    },
+    {
+      "x": -2,
+      "y": 5,
+      "z": 0
+    },
+    {
+      "x": -1,
+      "y": 2,
+      "z": 0
+    },
+    {
+      "x": -1,
+      "y": 3,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 0
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 0
+    }
+  ]
+}

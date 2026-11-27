@@ -7,7 +7,7 @@ namespace TinCan.DevTools.Editor
 {
     /// <summary>
     /// The built-in designs, all frames with parts hung on them (.docs/plans/frame-only-ships.md), written by
-    /// <see cref="ShipDesignsAssetBuilder"/>: the Starter sloop, the Galleon, the Raft and the Corsair. Positions are frame units (10
+    /// <see cref="ShipDesignsAssetBuilder"/>: the Starter sloop, the Galleon, the Raft, the Corsair and the Clipper. Positions are frame units (10
     /// cm), x across the ship (+ starboard), z along it (+ bow); every design's first story floor is at -0.5 m.
     /// </summary>
     public static class ShipFrameDesigns
@@ -16,6 +16,7 @@ namespace TinCan.DevTools.Editor
         public const string GalleonName = "Galleon";
         public const string RaftName = "Raft";
         public const string CorsairName = "Corsair";
+        public const string ClipperName = "Clipper";
 
         /// <summary>
         /// The starter: a sloop 6 m wide and 11 m long, one railed deck with a pointed bow; the helm midships, the cairn
@@ -304,6 +305,175 @@ namespace TinCan.DevTools.Editor
             b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, -36, -60);
             b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeck, 34, -60);
             return b.Build(CorsairName);
+        }
+
+        /// <summary>The Clipper's hold floor, seen from above in frame units (x, z): stern port, stern starboard, up the starboard side, the bow, down the port side.</summary>
+        private static readonly (int X, int Z)[] ClipperHold =
+        {
+            (-22, -148), (22, -148), (28, -128), (30, -75), (30, -5), (30, 72), (26, 94), (18, 114), (8, 130),
+            (0, 138), (-8, 130), (-18, 114), (-26, 94), (-30, 72), (-30, -5), (-30, -75), (-28, -128),
+        };
+
+        /// <summary>The Clipper's chine, node for node round the hold: the wing sails hang from it, the propellers from its stern.</summary>
+        private static readonly (int X, int Z)[] ClipperChine =
+        {
+            (-32, -160), (32, -160), (40, -138), (42, -78), (42, -5), (42, 80), (38, 104), (27, 127), (12, 146),
+            (0, 156), (-12, 146), (-27, 127), (-38, 104), (-42, 80), (-42, -5), (-42, -78), (-40, -138),
+        };
+
+        /// <summary>
+        /// The Clipper's main deck, node for node over the chine; the bow sheers up (drift). The rail is 5 m out at the cabin's
+        /// front (index 3, 15) and beside the main and fore masts (4, 14 and 5, 13), where the rigging nets stand.
+        /// </summary>
+        private static readonly (int X, int Z, int Drift)[] ClipperDeck =
+        {
+            (-40, -170, 0), (40, -170, 0), (48, -145, 0), (50, -80, 0), (50, -5, 0), (50, 85, 0), (46, 110, 0), (34, 135, 1), (16, 158, 3),
+            (0, 172, 6), (-16, 158, 3), (-34, 135, 1), (-46, 110, 0), (-50, 85, 0), (-50, -5, 0), (-50, -80, 0), (-48, -145, 0),
+        };
+
+        /// <summary>
+        /// The Clipper, after a sky-sailing-ship concept: a long, round-bellied hull 10 m wide and 34 m long with a carved
+        /// figurehead, three sail masts with their rigging nets, and four wing sails under the hull, room and stations for a
+        /// crew of eight. Three stories: the hold (floor -3.5 m) with a bilge rising to the chine; the main deck (-0.5 m), a
+        /// railed hatch with a flight to the hold forward of the main mast; the quarterdeck (2.5 m) over a cabin aft, walled at
+        /// the sides and stern, open forward, two flights down to the main deck either side of its middle. The helm on the
+        /// quarterdeck aft of the mizzen, the spirit's hearth in the cabin under it, an engine in the hold, two propellers on the
+        /// stern chine. Mount plates (the loadout's sockets, <see cref="ClipperMounts"/>): a cannon pair on the quarterdeck and
+        /// one in the waist, each facing out over its side, four in the hold, two at the quarterdeck's stern corners, one on the
+        /// cabin floor.
+        /// </summary>
+        public static ShipDesign ClipperDesign() => Clipper(out _);
+
+        /// <summary>The Clipper's mount plates by place, as their part instance ids (the socket ids its loadout names).</summary>
+        public static ClipperMountIds ClipperMounts()
+        {
+            Clipper(out var mounts);
+            return mounts;
+        }
+
+        public readonly struct ClipperMountIds
+        {
+            public ClipperMountIds(int holdPortAft, int holdStarboardAft, int holdPortFore, int holdStarboardFore, int quarterdeckPort,
+                int quarterdeckStarboard, int waistPort, int waistStarboard, int sternPort, int sternStarboard, int cabinFloor)
+            {
+                HoldPortAft = holdPortAft;
+                HoldStarboardAft = holdStarboardAft;
+                HoldPortFore = holdPortFore;
+                HoldStarboardFore = holdStarboardFore;
+                QuarterdeckPort = quarterdeckPort;
+                QuarterdeckStarboard = quarterdeckStarboard;
+                WaistPort = waistPort;
+                WaistStarboard = waistStarboard;
+                SternPort = sternPort;
+                SternStarboard = sternStarboard;
+                CabinFloor = cabinFloor;
+            }
+
+            public int HoldPortAft { get; }
+            public int HoldStarboardAft { get; }
+            public int HoldPortFore { get; }
+            public int HoldStarboardFore { get; }
+            public int QuarterdeckPort { get; }
+            public int QuarterdeckStarboard { get; }
+            public int WaistPort { get; }
+            public int WaistStarboard { get; }
+            public int SternPort { get; }
+            public int SternStarboard { get; }
+            public int CabinFloor { get; }
+        }
+
+        private static ShipDesign Clipper(out ClipperMountIds mounts)
+        {
+            var b = new FrameBuilder(-35, 30, 30, 30);
+            int n = ClipperHold.Length;
+
+            // The keel story (0): the hold floor, and the bilge round it up to the chine.
+            int[] hold = ClipperHold.Select(p => b.Node(0, p.X, p.Z)).ToArray();
+            int[] chine = ClipperChine.Select(p => b.Node(0, p.X, p.Z, 4)).ToArray();
+            int holdFloor = b.Face(hold);
+            for (int i = 0; i < n; i++) b.Face(hold[i], hold[(i + 1) % n], chine[(i + 1) % n], chine[i]);
+
+            // The main deck (story 1) and the hull walls up to it from the chine.
+            int[] d = ClipperDeck.Select(p => b.Node(1, p.X, p.Z, p.Drift)).ToArray();
+            for (int i = 0; i < n; i++) b.Face(chine[i], chine[(i + 1) % n], d[(i + 1) % n], d[i]);
+
+            // The deck: the cabin floor, the waist aft of the main mast (its beam across), the four faces round the hatch
+            // forward of it (the fore one ending on the fore mast's beam), and the bow.
+            int main = b.Node(1, 0, -5), fore = b.Node(1, 0, 85);
+            int k1 = b.Node(1, -15, 10), k2 = b.Node(1, 15, 10), k3 = b.Node(1, 15, 60), k4 = b.Node(1, -15, 60);
+            int cabinFloor = b.Face(d[0], d[1], d[2], d[3], d[15], d[16]);
+            b.Face(d[15], d[3], d[4], main, d[14]);
+            b.Face(d[14], main, d[4], k2, k1);
+            int waistStarboard = b.Face(d[4], d[5], k3, k2);
+            int waistPort = b.Face(d[13], d[14], k1, k4);
+            b.Face(d[5], fore, d[13], k4, k3);
+            b.Face(d[5], d[6], d[7], d[8], d[9], d[10], d[11], d[12], d[13], fore);
+            b.Rail(ShipFrameRailing.Rail, d[3], d[4], d[5], d[6], d[7], d[8], d[9], d[10], d[11], d[12], d[13], d[14], d[15]);
+            b.Rail(ShipFrameRailing.Rail, k2, k3, k4, k1);
+            b.Stair(k1, k2, 0, 1);
+
+            // The quarterdeck (story 2) over the cabin: the mizzen's beam across it, its front split for the two flights.
+            int q0 = b.Node(2, -40, -170), q1 = b.Node(2, 40, -170), q2 = b.Node(2, 48, -145), q3 = b.Node(2, 50, -110), q4 = b.Node(2, 50, -80),
+                qd = b.Node(2, 18, -80), qc = b.Node(2, 8, -80), qb = b.Node(2, -8, -80), qa = b.Node(2, -18, -80), q5 = b.Node(2, -50, -80),
+                q6 = b.Node(2, -50, -110), q7 = b.Node(2, -48, -145), mizzen = b.Node(2, 0, -110);
+            b.Face(d[0], d[1], q1, q0);
+            b.Face(d[1], d[2], q2, q1);
+            b.Face(d[2], d[3], q4, q3, q2);
+            b.Face(d[16], d[0], q0, q7);
+            b.Face(d[15], d[16], q7, q6, q5);
+            int quarterdeckAft = b.Face(q0, q1, q2, q3, mizzen, q6, q7);
+            int quarterdeckFore = b.Face(q6, mizzen, q3, q4, qd, qc, qb, qa, q5);
+            b.Rail(ShipFrameRailing.Rail, qd, q4, q3, q2, q1, q0, q7, q6, q5, qa);
+            b.Rail(ShipFrameRailing.Rail, qb, qc);
+            b.Stair(qa, qb, 0, 1);
+            b.Stair(qc, qd, 0, 1);
+
+            b.OnFace(ShipDesignsAssetBuilder.CoreHelm, quarterdeckAft, 0, -145);
+            // The spirit's hearth in the cabin, right under the helm, open toward the main deck.
+            b.OnFace(ShipDesignsAssetBuilder.Cairn, cabinFloor, 0, -145);
+            b.OnFace(ShipDesignsAssetBuilder.Engine, holdFloor, 0, -115);
+            b.OnNode(ShipDesignsAssetBuilder.Propeller, chine[0]);
+            b.OnNode(ShipDesignsAssetBuilder.Propeller, chine[1]);
+
+            // The masts, their sails forward of them; a rigging net from the rail either side of each, up to its top. A net
+            // leans in toward -X, so the port ones turn half round (quarter turns 2).
+            b.OnNode(ShipDesignsAssetBuilder.SailMast, mizzen);
+            b.OnNode(ShipDesignsAssetBuilder.SailMast, main);
+            b.OnNode(ShipDesignsAssetBuilder.SailMast, fore);
+            foreach (var (starboard, port) in new[] { (q3, q6), (d[4], d[14]), (d[5], d[13]) })
+            {
+                b.OnNode(ShipDesignsAssetBuilder.RiggingNet, starboard);
+                b.OnNode(ShipDesignsAssetBuilder.RiggingNet, port, 2);
+            }
+
+            // The wing sails from the chine abreast of the main and fore masts, splaying out over +X (port ones turned). The
+            // outline runs round, so starboard node i faces port node n + 1 - i.
+            foreach (int i in new[] { 4, 5 })
+            {
+                b.OnNode(ShipDesignsAssetBuilder.WingSail, chine[i]);
+                b.OnNode(ShipDesignsAssetBuilder.WingSail, chine[n + 1 - i], 2);
+            }
+
+            b.OnNode(ShipDesignsAssetBuilder.Figurehead, d[9]);
+
+            // The mount plates. The hold's aft pair 1 m inside the walls, facing inboard (the fuel fittings are wide); its
+            // fore pair beside the hatch's flight. The cannons face out over their sides (quarter turns 1: starboard, 3:
+            // port), 1 m inside the rail, their seats 1.8 m inboard of them. The stern corners face out too, so the anchor's
+            // chain and the leash hang over the side.
+            int holdPortAft = b.OnFace(ShipDesignsAssetBuilder.HullMount, holdFloor, -20, -80, 1);
+            int holdStarboardAft = b.OnFace(ShipDesignsAssetBuilder.HullMount, holdFloor, 20, -80, 3);
+            int holdPortFore = b.OnFace(ShipDesignsAssetBuilder.HullMount, holdFloor, -18, 80);
+            int holdStarboardFore = b.OnFace(ShipDesignsAssetBuilder.HullMount, holdFloor, 18, 80);
+            int quarterdeckPort = b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeckFore, -40, -95, 3);
+            int quarterdeckStarboard = b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeckFore, 40, -95, 1);
+            int waistPortMount = b.OnFace(ShipDesignsAssetBuilder.HullMount, waistPort, -40, 40, 3);
+            int waistStarboardMount = b.OnFace(ShipDesignsAssetBuilder.HullMount, waistStarboard, 40, 40, 1);
+            int sternPort = b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeckAft, -32, -158, 3);
+            int sternStarboard = b.OnFace(ShipDesignsAssetBuilder.HullMount, quarterdeckAft, 32, -158, 1);
+            int cabinPlate = b.OnFace(ShipDesignsAssetBuilder.HullMount, cabinFloor, -30, -100);
+            mounts = new ClipperMountIds(holdPortAft, holdStarboardAft, holdPortFore, holdStarboardFore, quarterdeckPort, quarterdeckStarboard,
+                waistPortMount, waistStarboardMount, sternPort, sternStarboard, cabinPlate);
+            return b.Build(ClipperName);
         }
 
         /// <summary>

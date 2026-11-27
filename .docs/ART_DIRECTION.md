@@ -72,6 +72,7 @@ samples of each colour; `palette.svg` is the whole set) and the table below. A t
 | ![](art/palette/iron-teal.svg) | Iron teal | `#3E5E5E` | Masts, machinery, pipes |
 | ![](art/palette/lacquer-red.svg) | Lacquer red | `#B5402F` | Flags, roofs, accents, special places |
 | ![](art/palette/canvas.svg) | Canvas | `#E6DCC0` | Sails, rotor blades, awnings |
+| ![](art/palette/sail-teal.svg) | Sail teal | `#47918E` | Dyed sails and wing cloth, trimmed in canvas |
 | ![](art/palette/lantern-amber.svg) | Lantern amber | `#F2A541` | Lanterns, windows at dusk, warm glow |
 | ![](art/palette/spirit-cyan.svg) | Spirit cyan | `#8FE3F0` | The cairn's spirit, magic, interaction glow |
 | ![](art/palette/grass.svg) | Grass | `#7FA650` | Island tops |
@@ -99,7 +100,8 @@ Build Materials** writes them into `Assets/Materials/ShipParts/` from the palett
 | `M_ShipDeck` | deck | Plank floors, stair steps |
 | `M_ShipEngine` | brass, highlight | Engines, hubs, bands |
 | `M_ShipIron` | iron teal, highlight | Masts, machinery |
-| `M_ShipCanvas` | canvas | Rotor blades, sails |
+| `M_ShipCanvas` | canvas | Rotor blades, sails, the trim and swirl on teal sails |
+| `M_ShipSail` | sail teal | Dyed sails and wing cloth (the Clipper) |
 | `M_ShipPennant` | lacquer red | Pennants, flags |
 | `M_ShipCairn` | rock ochre | The spirit hearth's stone |
 | `M_ShipSpirit` | spirit cyan, glow | Spirit magic (the Ward rings, later) |
@@ -168,7 +170,7 @@ An asset is done when a turntable or in-game render shows it and each answer is 
 6. Did the developer see the render and accept it?
 
 ## Today, and the gap
-- Ship parts are greybox primitives, except the rotor mast and the helm (Blender parts, `.tools/blender/`); all are on
+- Ship parts are greybox primitives, except the rotor mast, the helm and the ray cannon (Blender parts, `.tools/blender/`); all are on
   the stylized shader and the library materials.
 - The frame hull has three materials: deck floors, timber-dark walls, timber-warm beams and railings.
 - Sky islands share the ships' light model; clouds have their own shaders. The volumetric clouds look too realistic

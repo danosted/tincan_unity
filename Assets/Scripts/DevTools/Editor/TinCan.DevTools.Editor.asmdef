@@ -36,6 +36,7 @@
         "TinCan.Features.Voyage",
         "TinCan.Features.SkyIslands",
         "TinCan.Features.ShipDesigns",
+        "TinCan.Features.ShipSpirit",
         "TinCan.Features.Shipyard",
         "TinCan.Features.SkillChecks",
         "TinCan.Features.ShipSockets",

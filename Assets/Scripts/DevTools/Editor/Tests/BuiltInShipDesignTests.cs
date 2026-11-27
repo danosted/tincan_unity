@@ -126,6 +126,25 @@ namespace TinCan.DevTools.Editor.Tests
         }
 
         [Test]
+        public void TheGalleonsSpiritHearth_IsInTheCabin_RightUnderTheHelm()
+        {
+            var galleon = ShipFrameDesigns.GalleonDesign();
+            var shape = ShipFrameShape.From(galleon.Frame);
+
+            Vector3 Where(string partId)
+            {
+                var part = galleon.Parts.Single(p => p.PartId == partId);
+                Assert.That(ShipPartPose.TryGetAnchorPoint(part.Anchor, shape, out var point), Is.True);
+                return point;
+            }
+
+            var hearth = Where(ShipDesignsAssetBuilder.Cairn);
+            var helm = Where(ShipDesignsAssetBuilder.CoreHelm);
+            Assert.That(hearth.y, Is.EqualTo(-0.5f).Within(1e-4f), "on the main deck's cabin floor, under the quarterdeck");
+            Assert.That(new Vector2(hearth.x, hearth.z), Is.EqualTo(new Vector2(helm.x, helm.z)), "right under the helm");
+        }
+
+        [Test]
         public void TheCorsair_HasFourStories_JoinedByStairs_AndThreeRotorMastsOnItsCentreline()
         {
             var corsair = ShipFrameDesigns.CorsairDesign();

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PART_Cairn
   m_EditorClassIdentifier: TinCan.Ship::TinCan.Core.Ship.Parts.ShipPartDefinition
   _partId: spirit.cairn
-  _displayName: Cairn
+  _displayName: Spirit hearth
   _category: Spirit
   _attach: 0
   _footprint:

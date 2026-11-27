@@ -63,7 +63,7 @@ namespace TinCan.DevTools.Editor
             var wood = LookMaterials.Get("M_ShipHull");
             var brass = LookMaterials.Get("M_ShipEngine");
             var stone = LookMaterials.Get("M_ShipCairn");
-            var spirit = LookMaterials.Get("M_ShipSpirit");
+            var spirit = LookMaterials.SpiritFlame();
 
             // The engine fills its block and the one behind it (-Z).
             var enginePrefab = BoxPrefab("ShipPart_Engine", new Vector3(0f, 0.5f, -0.5f), new Vector3(0.9f, 0.9f, 2f), brass);
@@ -84,8 +84,8 @@ namespace TinCan.DevTools.Editor
             // 6.35 m) and two pennants streaming aft (-Z); the Blender model (.tools/blender/rotor_mast.py). Mostly flavour.
             var rotorMast = Part("PART_RotorMast", RotorMast, "Rotor mast", "Hull", ShipPartAttach.Node, RotorMastPrefab(brass, wood), null,
                 Vector3.zero, new ShipPartStats(15f, lift: 150f, hull: 15f), RotorMastFootprint());
-            // The cairn: a stone holding the ship's spirit, which lifts the ship (ShipStatsTuning.SpiritLift).
-            var cairn = Part("PART_Cairn", Cairn, "Cairn", "Spirit", ShipPartAttach.Face, CairnPrefab(stone, spirit), null, Vector3.zero,
+            // The cairn: the hearth where the ship's spirit lives, a fiery wisp that lifts the ship (ShipStatsTuning.SpiritLift).
+            var cairn = Part("PART_Cairn", Cairn, "Spirit hearth", "Spirit", ShipPartAttach.Face, CairnPrefab(stone, spirit), null, Vector3.zero,
                 new ShipPartStats(40f, hull: 40f), new Vector3Int(0, 0, 0), new Vector3Int(0, 1, 0));
             SetFlag(cairn, "_isCairn");
             // The helm console (.tools/blender/helm.py) fits one block, but keeps the 3 x 2 x 5 blocks of the pirate stand it
@@ -234,12 +234,48 @@ namespace TinCan.DevTools.Editor
                 select new Vector3Int(x, y, z)).ToArray();
 
 
-        /// <summary>A stone pillar on the floor with the spirit, a glowing ball, above it.</summary>
+        /// <summary>
+        /// The spirit's hearth, open toward +Z: a stone plinth, back wall and cheeks, a timber mantel, a hood and flue
+        /// rising behind it, an iron grate with two logs on glowing embers, and on them the spirit, a fiery wisp drawn by
+        /// its shader (<see cref="LookMaterials.SpiritFlame"/>) on a quad, with the warm light it throws on the room. Its solid
+        /// pieces fit its 1 x 2 x 1 blocks; the flue rises a little above them. Plan: .docs/plans/spirit-talents.md.
+        /// </summary>
         private static GameObject CairnPrefab(Material stone, Material spirit)
         {
+            var wood = LookMaterials.Get("M_ShipHull");
+            var logs = LookMaterials.Get("M_ShipWalls");
+            var iron = LookMaterials.Get("M_ShipIron");
+            var ember = LookMaterials.Get("M_CampEmber");
+
             var root = new GameObject("ShipPart_Cairn");
-            Piece(root, "Stone", PrimitiveType.Cube, new Vector3(0f, 0.6f, 0f), new Vector3(0.8f, 1.2f, 0.8f), stone, solid: true);
-            Piece(root, "Spirit", PrimitiveType.Sphere, new Vector3(0f, 1.55f, 0f), Vector3.one * 0.45f, spirit, solid: false);
+            Piece(root, "Plinth", PrimitiveType.Cube, new Vector3(0f, 0.12f, 0f), new Vector3(1f, 0.24f, 0.9f), stone, solid: true);
+            Piece(root, "BackWall", PrimitiveType.Cube, new Vector3(0f, 0.74f, -0.36f), new Vector3(1f, 1f, 0.16f), stone, solid: true);
+            Piece(root, "CheekLeft", PrimitiveType.Cube, new Vector3(-0.42f, 0.74f, 0.02f), new Vector3(0.16f, 1f, 0.62f), stone, solid: true);
+            Piece(root, "CheekRight", PrimitiveType.Cube, new Vector3(0.42f, 0.74f, 0.02f), new Vector3(0.16f, 1f, 0.62f), stone, solid: true);
+            Piece(root, "Mantel", PrimitiveType.Cube, new Vector3(0f, 1.29f, 0.02f), new Vector3(1f, 0.1f, 0.84f), wood, solid: true);
+            Piece(root, "Hood", PrimitiveType.Cube, new Vector3(0f, 1.62f, -0.14f), new Vector3(0.8f, 0.56f, 0.5f), stone, solid: true);
+            Piece(root, "Flue", PrimitiveType.Cube, new Vector3(0f, 2.2f, -0.2f), new Vector3(0.44f, 0.6f, 0.34f), stone, solid: false);
+            Piece(root, "Grate", PrimitiveType.Cube, new Vector3(0f, 0.28f, 0.02f), new Vector3(0.6f, 0.04f, 0.42f), iron, solid: false);
+            Piece(root, "Embers", PrimitiveType.Sphere, new Vector3(0f, 0.31f, 0.02f), new Vector3(0.5f, 0.05f, 0.32f), ember, solid: false);
+            Piece(root, "LogLeft", PrimitiveType.Cylinder, new Vector3(-0.08f, 0.35f, 0.03f), new Vector3(0.11f, 0.24f, 0.11f), logs, solid: false,
+                Quaternion.Euler(0f, 25f, 90f));
+            Piece(root, "LogRight", PrimitiveType.Cylinder, new Vector3(0.09f, 0.37f, 0f), new Vector3(0.1f, 0.22f, 0.1f), logs, solid: false,
+                Quaternion.Euler(0f, -30f, 90f));
+            Piece(root, "Spirit", PrimitiveType.Quad, new Vector3(0f, 0.78f, 0.04f), new Vector3(0.72f, 0.95f, 1f), spirit, solid: false);
+            var spiritRenderer = root.transform.Find("Spirit").GetComponent<MeshRenderer>();
+            spiritRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            spiritRenderer.receiveShadows = false;
+
+            var glow = new GameObject("HearthLight");
+            glow.transform.SetParent(root.transform, false);
+            glow.transform.localPosition = new Vector3(0f, 0.8f, 0.4f);
+            var light = glow.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = LookPalette.Load()["lantern-amber"];
+            light.range = 6f;
+            light.intensity = 3f;
+            light.shadows = LightShadows.None;
+            glow.AddComponent<TinCan.Features.ShipSpirit.SpiritHearthLightView>();
             return Save(root);
         }
 

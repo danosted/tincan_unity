@@ -41,7 +41,9 @@ namespace TinCan.DevTools.Editor.Tests
         [Test]
         public void ShipParts_AndTheFrameHull_UseLibraryMaterialsOnly()
         {
-            var library = LookMaterials.Library.Select(Load).ToHashSet();
+            var library = LookMaterials.Library.Select(Load)
+                .Concat(LookMaterials.EffectPaths.Select(path => AssetDatabase.LoadAssetAtPath<Material>(path)))
+                .ToHashSet();
             var config = AssetDatabase.LoadAssetAtPath<ShipDesignsConfig>(ShipDesignsAssetBuilder.ConfigPath);
             Assert.That(new[] { config.FramePlanks, config.FrameBeams, config.FrameWalls }, Is.SubsetOf(library), "frame materials");
 
